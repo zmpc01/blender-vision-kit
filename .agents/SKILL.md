@@ -1,4 +1,4 @@
-# SKILL.md — Meta-Agent Notes (for working ON the kit)
+# SKILL.md — Meta-Agent Notes (for working ON the kit) — VISION VARIANT
 
 > For the orchestrating/meta-agent developing, maintaining, or extending
 > the kit. If you're a CONSUMER agent making scenes, read **AGENTS.md**.
@@ -6,19 +6,51 @@
 > This is NOT a worklog, NOT a plan tracker. It is the **distilled,
 > generalized meta-knowledge** of working on this kit.
 
-## Design philosophy
+## VARIANT CONTEXT (read first)
 
-The kit uses the **hybrid architecture** (3D-Agent, DD3M, Scenethesis):
-agent emits JSON patch or bpy script → blrun.sh → Blender → viewport/screenshot
-→ VLM critiques → agent iterates. The iteration loop — how fast the
-agent can act, see, and correct — matters more than the raw API surface.
+This repo is **blender-vision-kit**, the vision-first VARIANT of
+blender-agent-kit (upstream @3c0c60d, docs condensed from upstream
+@01dd147). Upstream serves BLIND agents (ascii packs + z-ai VLM API);
+this variant serves agents with NATIVE image understanding. Design doc:
+`docs/DESIGN_vision_kit_v1.md` (D1–D14, audited). The vision deltas:
+
+- `scripts/look.py` + `scripts/annotate.py` are the variant's core add:
+  ONE-invocation perceive+verify (renders + validator verdict + object
+  manifest + readiness headers, printed BESIDE the images), with a
+  render-time-only annotation layer (grid/gnomon/labels/flag-boxes,
+  `KIT_ANNOT_*` prefix, deleted in `finally`, never saved).
+- Doctrine: **eyes triage and compose; gates decide geometry**. Vision
+  impressions are hypotheses; mm-class claims need audit/validate/schema
+  numbers. L1 image-budget, L2 chirality-via-gnomon, L3 overlay-trust,
+  L4 color-from-schema laws are in AGENTS.md.
+- State carrier: `apply_patch --save-blend` → `look --load-blend`.
+  `--scene` REBUILDS (fresh only). Never rebuild to inspect.
+- Resolution defaults re-tuned for vision: previz 480×270, look angles
+  640×480, motion cells 480×360 (pixels are cheap; cold start is not).
+- Blind machinery (ascii_vision.py, vlm_critique.py, z-ai CLI) is KEPT
+  but DEMOTED to escalation. Don't delete: text-only sub-agents use it.
+- Crowd sim lives in sibling zmpc01/blender-crowd-kit (pre-v1); the
+  in-kit stub was DELETED to avoid import shadowing.
+- Exit codes: look.py exits 3 on validator P0/P1; RAW blender
+  propagates, blrun.sh does NOT (grep `VERDICT:` lines instead).
+- Vision regression: `tests/test_v1_look.py` (27 checks, in-Blender).
+
+## Design philosophy (variant framing)
+
+Same hybrid architecture (3D-Agent, DD3M, Scenethesis): agent emits JSON
+patch or bpy script → blrun.sh → Blender → look.py renders+verdicts →
+the agent LOOKS at the images itself → iterate. The iteration loop —
+how fast the agent can act, see, and correct — matters more than the
+raw API surface. The variant's bet: an embodied eye cuts perception
+latency to zero but makes self-sycophancy the #1 failure mode, so the
+tool surface forces the numbers to travel WITH the images.
 
 ## Core principles (internalize these)
 
 1. **The perceive→reason→act→verify loop is the product.** Every feature
-   must serve it: faster mutations, faster visualization, or more accurate
-   VLM verification. Don't add features that don't serve the loop.
-2. **Workbench is the fast-iteration default** (~0.2s/frame, no shader
+   must serve it: faster mutations, faster visualization, or more honest
+   verification. Don't add features that don't serve the loop.
+2. **Workbench is the fast-iteration default** (~0.05–0.3s/frame, no shader
    compile). EEVEE is 2-5s warm / 28s cold. Cycles is ~50s/frame. Use
    Workbench for "did this op look right?", EEVEE/Cycles for final.
 3. **The schema layer is the agent's mental model.** Agents reason over
@@ -27,11 +59,11 @@ agent can act, see, and correct — matters more than the raw API surface.
 4. **Patches avoid full rebuilds.** A small JSON patch (~2s) beats
    re-running build_scene+animate+render (~10-30s). Follow the
    handler-function + MUTATIONS-dict pattern for new ops.
-5. **VLMs can't process video** — keyframe contact sheets are the
+5. **Agents can't process video** — keyframe contact sheets are the
    canonical workaround. Sample N frames, stitch into a grid with labels.
 6. **Multi-angle viewport capture catches spatial issues** —
-   front/side/top/persp gives VLM the context to spot floating/intersecting
-   objects that single-angle renders hide.
+   front/side/top/persp gives the eye the context to spot
+   floating/intersecting objects that single-angle renders hide.
 7. **Blender's bundled Python is isolated** — ignores PYTHONPATH (use
    `--python-use-system-env`), no Pillow by default (install.sh pip-installs
    it), no numpy/scipy. When adding Python deps, update install.sh.
@@ -41,14 +73,13 @@ agent can act, see, and correct — matters more than the raw API surface.
    EEVEE rewritten in 4.2, action.fcurves moved in 5.x. Always use
    `blender_kit._safe_set()` / `iter_fcurves()` / `ensure_use_nodes()` /
    `normalize_engine_id()` — never reach for raw version-specific attrs.
-10. **VLMs have blind spots** — catch visible issues but miss geometric
-    ones if the camera angle hides them. Defense-in-depth: multi-angle
-    captures + close-up prompts + `validate_scene.py` (deterministic bbox
-    checks). VLMs are reliable for composition/color, unreliable for
-    precise geometry.
-11. **VLM noise vs reality** — VLMs flag issues that don't exist (e.g.
-    "floating zombie" when grounded at z=0). Always verify geometric
-    claims programmatically before acting.
+10. **Vision agents have blind spots too** — catch visible issues but miss
+    geometric ones if the camera angle hides them. Defense-in-depth:
+    multi-angle captures + `--closeup` + `validate_scene.py`. Eyes are
+    reliable for composition/color, unreliable for precise geometry.
+11. **Self-sycophancy is the vision agent's noise-vs-reality failure** —
+    verify geometric claims programmatically before acting (look.py
+    prints the verdict beside the images by construction).
 12. **Workbench MATERIAL color_type** (not OBJECT) — OBJECT shows flat
     gray, hiding material color coding. Kit defaults to MATERIAL.
 13. **AgX crushes previz colors** — force `view_transform='Standard'`
@@ -130,7 +161,7 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 
 1. **Calling blender without blrun.sh** — `import blender_kit` fails (no PYTHONPATH). Always go through blrun.sh.
 2. **Not warming EEVEE shader cache** — first render is 28s. `blrun.sh --warm-cache` once per container.
-3. **Editing in `/home/z/my-project/`** — watchdog reverts every 20s. Work in `/home/z/blender-kit/`.
+3. **Editing in `/home/z/my-project/`** — watchdog reverts every 20s. Work in a clone outside it (e.g. `/home/z/work/blender-vision-kit/`). Also: git checkout writing inside a symlinked `tools/` REPLACES the symlink (broken-symlink signature; scope-check warns).
 4. **Setting EEVEE attrs that don't exist** — `use_bloom` removed in 4.2+. Use `_safe_set()`.
 5. **Not cleaning up temp cameras** — `viewport_capture.py` temp cameras accumulate. Use `_cleanup_temp_camera()`.
 6. **Not validating render output** — EEVEE shader failures produce 0-byte PNGs with exit 0. Always `_validate_outputs()`.
