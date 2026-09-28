@@ -1,0 +1,106 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+    doc = "Blender v4.5.13 LTS"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "root" (
+    customData = {
+        dictionary Blender = {
+            bool generated = 1
+        }
+        dictionary previz = {
+            dictionary entity = {
+                string kind = "environment"
+                string schema_version = "1.0"
+                dictionary shots = {
+                    dictionary "0" = {
+                        int f0 = 1
+                        int f1 = 48
+                        string id = "S1"
+                    }
+                    dictionary "1" = {
+                        int f0 = 49
+                        int f1 = 132
+                        string id = "S2"
+                    }
+                }
+                string[] tags = ["a", "b", "c"]
+            }
+        }
+    }
+)
+{
+    custom color3f previz:identityColor = (0.85, 0.2, 0.15)
+
+    def Xform "HeroCube" (
+        customData = {
+            dictionary previz = {
+                dictionary entity = {
+                    string anchor_to = ""
+                    string blender_name = "HeroCube"
+                    string blender_type = "MESH"
+                    string body_type = "mesh"
+                }
+            }
+        }
+    )
+    {
+        custom string userProperties:blender:object_name = "HeroCube"
+        float3 xformOp:rotateXYZ = (0, -0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Mesh "Cube" (
+            active = true
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 7, 6, 6, 7, 5, 4, 4, 5, 1, 0, 2, 6, 4, 0, 7, 3, 1, 5]
+            normal3f[] normals = [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                interpolation = "faceVarying"
+            )
+            point3f[] points = [(-1, -1, -1), (-1, -1, 1), (-1, 1, -1), (-1, 1, 1), (1, -1, -1), (1, -1, 1), (1, 1, -1), (1, 1, 1)]
+            texCoord2f[] primvars:st = [(0.375, 0), (0.625, 0), (0.625, 0.25), (0.375, 0.25), (0.375, 0.25), (0.625, 0.25), (0.625, 0.5), (0.375, 0.5), (0.375, 0.5), (0.625, 0.5), (0.625, 0.75), (0.375, 0.75), (0.375, 0.75), (0.625, 0.75), (0.625, 1), (0.375, 1), (0.125, 0.5), (0.375, 0.5), (0.375, 0.75), (0.125, 0.75), (0.625, 0.5), (0.875, 0.5), (0.875, 0.75), (0.625, 0.75)] (
+                interpolation = "faceVarying"
+            )
+            uniform token subdivisionScheme = "none"
+            custom string userProperties:blender:data_name = "Cube"
+        }
+    }
+
+    def Xform "Camera" (
+        customData = {
+            dictionary previz = {
+                dictionary entity = {
+                    string anchor_to = ""
+                    string blender_name = "Camera"
+                    string blender_type = "CAMERA"
+                    string body_type = "camera"
+                }
+            }
+        }
+    )
+    {
+        custom string userProperties:blender:object_name = "Camera"
+        float3 xformOp:rotateXYZ = (57.295776, 0.0000018616355, 51.5662)
+        float3 xformOp:scale = (1, 1, 0.99999994)
+        double3 xformOp:translate = (4, -4, 3)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Camera "Camera"
+        {
+            float2 clippingRange = (0.1, 1000)
+            float focalLength = 0.5
+            float horizontalAperture = 0.36
+            token projection = "perspective"
+            custom string userProperties:blender:data_name = "Camera"
+            float verticalAperture = 0.2025
+        }
+    }
+}
+

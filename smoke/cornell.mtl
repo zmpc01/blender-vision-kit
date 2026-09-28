@@ -1,0 +1,67 @@
+# MTL companion for the canonical Cornell OBJ export
+# (webgpu-previz / oracle-mitsuba / export_cornell_obj.py)
+#
+# NOTE: this file exists so OBJ importers split geometry by material
+# and give materials human-readable names. The JSON sidecar
+# (<obj>.scene.json) is the source of truth for material semantics.
+#
+# Kd values are albedo-style colors for diffuse/conductor materials;
+# the emitter's radiance (>1) is carried in Ke (PBR extension) and
+# clamped to 1 in Kd for compatibility.
+
+newmtl mat_0
+# name: floor
+# kind: diffuse
+Kd 0.8 0.8 0.8
+Ka 0 0 0
+illum 1
+
+newmtl mat_1
+# name: ceiling
+# kind: diffuse
+Kd 0.8 0.8 0.8
+Ka 0 0 0
+illum 1
+
+newmtl mat_2
+# name: back
+# kind: diffuse
+Kd 0.8 0.8 0.8
+Ka 0 0 0
+illum 1
+
+newmtl mat_3
+# name: left
+# kind: diffuse
+Kd 0.85 0.1 0.1
+Ka 0 0 0
+illum 1
+
+newmtl mat_4
+# name: right
+# kind: diffuse
+Kd 0.1 0.2 0.85
+Ka 0 0 0
+illum 1
+
+newmtl mat_5
+# name: ceiling_light
+# kind: emitter
+Kd 1 1 1
+Ke 15 15 15
+illum 1
+
+newmtl mat_6
+# name: diff_sphere
+# kind: diffuse
+Kd 0.85 0.85 0.85
+Ka 0 0 0
+illum 1
+
+newmtl mat_7
+# name: cond_sphere
+# kind: conductor
+Kd 0.7 0.7 0.7
+Ks 1 1 1
+Ns 950
+illum 2

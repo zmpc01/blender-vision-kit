@@ -1,0 +1,36 @@
+# Build artifacts
+output/
+download/
+*.pyc
+__pycache__/
+.blender-home/
+
+# Blender binaries (too large for git, install.sh provisions them)
+tools/blender-*/
+tools/blender
+tools/*.tar.xz
+tools/*.deb
+tools/local-libs/
+
+# OS
+.DS_Store
+
+# Smoke test outputs (BOOT-BL-1; smoke/smoke_render.py itself is tracked)
+smoke/*.png
+smoke/*.blend
+smoke/*.blend1
+smoke/*.json
+assets/vendor/ual/ual.zip
+
+# Kit-scope guard (session-14 REPO_HYGIENE_v2): project artifacts belong in
+# the project repo (blender-escape-previz) or R&D repo (placement-lab).
+# Enforced by tests/test_kit_scope.py (bash run.sh --scope-check).
+project/
+experiments/
+assets/dialog/
+assets/characters/
+smoke/impl_bl_prep/
+smoke/*.exr
+
+# Local dual-toolchain symlink (session-25 A/B convenience)
+tools/blender45
