@@ -2974,3 +2974,19 @@ Stage Summary:
   M0+M1 done in 1 session (vs 1.5-2 estimated).
 - v1.3 vendor-bgyss-wholesale strategy PROVEN end-to-end INSIDE BLENDER 5.2.2 LTS.
 - Next: M2 (Authorable MVP) — behavior graph adapter, force fields via crowd_fields, gait_modifiers integration, zombie-escape port as regression test.
+
+---
+Task ID: 6-implement-1
+Agent: orchestrator
+Task: Implement core vision-loop tools (look.py + annotate.py) + D3 defaults
+
+Work Log:
+- D3 applied: previz preset 240x135→480x270; viewport_capture 480x360→640x480; keyframe sheet 320x240→480x360; patch render_viewport 480x360→640x480
+- scripts/annotate.py NEW: disposable annotation layer (KIT_ANNOT_ prefix): 1m ground grid, RGB axis gnomon, top-N FONT label billboards (per-angle aim, flat for top view), red bbox wireframes on validator-flagged objects, delete_annotation_layer()
+- scripts/look.py NEW: ONE-invocation perceive+verify (D4): --load-blend default carrier / --scene fresh-only; frame_set; validator first; annotation build; per-angle renders via viewport_capture.render_angle imports; --closeup auto-framed macro; readiness headers (luma/clipped/dark/subject% via PIL); verdict block + object-id manifest (look_manifest.json); exit 3 on P0; annotation layer deleted unconditionally in finally
+- Fixed during self-vision testing: mat key strip bug; manifest excluding annot objects; target computed BEFORE annot build (grid skew); labels aimed per-angle (was missing); ground-like slabs excluded from labels (giant billboard blocked top view — measured); gnomon origin→SW offset -1.5m (origin gnomon sat INSIDE the cube — measured); top-view labels laid flat (edge-on strokes — measured)
+
+Stage Summary:
+- look.py end-to-end GREEN: VERDICT PASS, readiness headers, manifest, annotations deleted after render
+- Orchestrator vision-verified the grid image: gnomon RGB readable in all 4 angles, labels legible incl. top view
+- Vision-agent self-testing loop WORKS: orchestrator looked at rendered grids and found 4 real defects numbers alone would not surface

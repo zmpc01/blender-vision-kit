@@ -340,8 +340,8 @@ def main():
                    help="Render engine (default: workbench — fastest, solid shading)")
     p.add_argument("--samples", type=int, default=1,
                    help="Samples for eevee/cycles (default: 1)")
-    p.add_argument("--w", type=int, default=480)
-    p.add_argument("--h", type=int, default=360)
+    p.add_argument("--w", type=int, default=640)
+    p.add_argument("--h", type=int, default=480)
     p.add_argument("--lens", type=int, default=50,
                    help="Camera lens in mm (default: 50)")
     p.add_argument("--target", default=None,

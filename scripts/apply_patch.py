@@ -240,8 +240,8 @@ def _apply_render_viewport(obj, params):
     angle = params.get("angle", "persp")
     engine = params.get("engine", "workbench")
     samples = params.get("samples", 1)
-    width = params.get("width", 480)
-    height = params.get("height", 360)
+    width = params.get("width", 640)
+    height = params.get("height", 480)
     target_str = params.get("target")
     if target_str:
         target = tuple(target_str)

@@ -210,8 +210,12 @@ unauditable — require a LAW MAP table.) Contents:
   stabilization laws deleted or compressed into L1–L4; placement/physics
   laws kept verbatim.
 - Vision-specific gotchas continue numbering after upstream's last law.
-- Target ≤40% of upstream's 1384 lines (vision agents need less
-  perception remediation, ALL the mechanics).
+- TARGET REBASED (parallel-session event 2026-09-28): upstream condensed
+  AGENTS.md to 29K chars (454 lines) + SKILL.md to 16K and synced both
+  into this repo (commit 6f1aca8, upstream@01dd147). The variant rewrite
+  starts from THAT condensed base: keep its tool reference + mechanics
+  laws; rewrite the perception sections (canonical workflow steps 3/5,
+  gotchas 20-27) into the vision loop; add L1–L4 + law map.
 `.agents/SKILL.md` rewritten for variant work; new `kb/vision_loop.md`
 (look.py protocol, annotation rules, readiness scores, measured timings).
 

@@ -46,10 +46,10 @@ def main():
     p.add_argument("--engine", default="workbench",
                    choices=["workbench", "eevee", "cycles"])
     p.add_argument("--samples", type=int, default=1)
-    p.add_argument("--w", type=int, default=320,
-                   help="Per-frame width (default: 320)")
-    p.add_argument("--h", type=int, default=240,
-                   help="Per-frame height (default: 240)")
+    p.add_argument("--w", type=int, default=480,
+                   help="Per-frame width (default: 480)")
+    p.add_argument("--h", type=int, default=360,
+                   help="Per-frame height (default: 360)")
     p.add_argument("--grid-cols", type=int, default=3,
                    help="Contact sheet grid columns (default: 3)")
     p.add_argument("--orbit", action="store_true",

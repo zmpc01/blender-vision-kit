@@ -354,7 +354,7 @@ def common_parser(*, require_output: bool = True) -> argparse.ArgumentParser:
     p.add_argument("--quality", choices=["previz", "viewport", "draft",
                                         "preview", "final"],
                    default="preview",
-                   help="Quality preset (previz=240x135 workbench op-check, "
+                   help="Quality preset (previz=480x270 workbench vision check, "
                         "viewport=960x540 workbench FLAT albedo (vid2vid "
                         "guidance -- THE previz deliverable standard), "
                         "draft=320x180/8s, preview=640x360/16s, "
@@ -388,7 +388,7 @@ def apply_quality(args: argparse.Namespace) -> None:
     (ultra-fast solid-shading render, ~0.2s/frame, no shadow/GI/AA).
     """
     QUALITY = {
-        "previz":  {"samples": 1,  "w": 240, "h": 135, "engine": "BLENDER_WORKBENCH"},
+        "previz":  {"samples": 1,  "w": 480, "h": 270, "engine": "BLENDER_WORKBENCH"},
         "viewport": {"samples": 1, "w": 960, "h": 540, "engine": "BLENDER_WORKBENCH"},
         "draft":   {"samples": 8,  "w": 320, "h": 180},
         "preview": {"samples": 16, "w": 640, "h": 360},
