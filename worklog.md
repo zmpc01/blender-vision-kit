@@ -3028,3 +3028,12 @@ Stage Summary:
 - Waves: 3 waves + T6, 5 consumer-agent sessions, ~50 friction items triaged, 2 fix batches, regression 27/27 GREEN throughout
 - Doctrine "eyes triage and compose; gates decide geometry" validated end-to-end including dense scenes
 - Remaining infra-gate: crowd-kit Rust build (network-hostile sandbox; user offered bigger compute)
+
+---
+## Session 2 — 2026-09-28 — perception tuning campaign (M5)
+
+- Env restore: fresh clone /home/z/bvk (dangling symlinks tools/ + .blender-home from prior shared-provision removed); Blender 5.2.2 re-provisioned (single-stream OK this time; first extract was OOM-killed → binary SIGSEGV → re-extract with `xz -M 900MiB` cap fixed it — 4GB RAM sandbox); libEGL debs extracted; Pillow installed into bundled py3.13; EEVEE cache warmed.
+- REGRESSION 27/27 GREEN after restore.
+- **Sub-agent vision probe (agent-d770c805)**: sub-agents still CANNOT Read images in this harness (placeholder returned). BUT `z-ai vision` (glm-5v-turbo) WORKS in-sandbox and describes kit renders accurately → P5: promote vlm_critique.py to delegated-agent eye channel; waves 4+ = VLM-bridged consumers + orchestrator native-eye verification.
+- blrun.sh gotcha reproduced: omitting `--background` → GUI-on-Xvfb startup hangs SILENTLY (zero output, infinite). Defensive auto-`-b` flagged in PLAN M5.
+- PLAN.md: M5 campaign opened (P1 color / P2 shade-light / P3 animation rep / P4 transient scan / P5 vision bridge / waves 4+).

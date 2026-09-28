@@ -46,11 +46,25 @@ critique rounds — audit 5-a incorporated in DRAFT-2).
 - [x] Wave 3: T5 fresh-eyes doc validation — ship-arc fixed, exit-code lore corrected, error UX fixed
 - [x] Orchestrator vision passes on all wave outputs (sub-agents cannot see PNGs in this harness)
 
-### M4 — Wrap-up & handover (CURRENT)
+### M5 — Perception tuning campaign (CURRENT, session 2, 2026-09-28)
+Owner IS the vision agent; tuning targets what WE actually perceive best.
+Sub-agent vision reality (re-confirmed empirically, agent-d770c805):
+harness strips images from sub-agent Read ("images not available in
+sub-agent context") BUT `z-ai vision` (glm-5v-turbo) works → delegated
+agents see through the VLM bridge; orchestrator sees natively via Read.
+
+- [ ] P1 COLOR doctrine: color vs mono matrix (native-eye scored + VLM agreement); when color helps vs when luminance-only wins
+- [ ] P2 SHADE/LIGHT doctrine: workbench FLAT/STUDIO/SCENE × shadows/cavity × Standard/AgX; objective (luminance histogram, edge contrast) + subjective (my read) + VLM accuracy; possible look.py default change
+- [ ] P3 ANIMATION REP: frame-grid vs filmstrip vs onion-skin ghosts vs root-trajectory overlay vs pixel-diff heatmap; my eyes judge motion legibility (speed/direction/timing); codify winning representation
+- [ ] P4 TRANSIENT SCAN: all-frame low-res render + adjacent-pixel-diff ranking → suspect frames → high-res look + validator at suspects (issues that only exist off-keyframe)
+- [ ] P5 VISION-BRIDGE promotion: vlm_critique.py documented as the DELEGATED-AGENT eye (structured intent+vocab prompts); waves 4+ run VLM-bridged with orchestrator native-eye verification
+- [ ] Waves 4+: vision-bridged consumer agents (docs-only briefs), findings → fix batches; keep iterating
+- Note: blrun.sh without --background hangs silently (GUI-on-Xvfb startup) — defensive fix candidate (auto -b)
+
+### M4 — Wrap-up & handover (complete for session 1)
 - [x] Distill wave learnings into AGENTS.md/SKILL.md/kb
-- [ ] Upstream PR(s): D11 install.sh chunked fallback (+ any blind-agent-relevant fixes surfaced)
-- [ ] /home/sync backup + GitHub/GitLab final push + HANDOFF final
-- [ ] Release tag v0.1.0-vision
+- [x] /home/sync backup + GitHub/GitLab final push + HANDOFF final
+- [ ] Upstream PR(s): D11 install.sh chunked fallback (+ blind-agent fixes)
 
 ## Backlog (not committed to a milestone)
 - Diff-look (before/after side-by-side renders in one image)
