@@ -47,7 +47,23 @@ if [[ -x "$TOOLS_DIR/blender/blender" ]] && \
 else
     echo "[install] Downloading Blender $BLENDER_VERSION..."
     cd "$TOOLS_DIR"
-    curl -fL --retry 3 -o "$BL_TARBALL" "$BL_URL"
+    # D11 (vision-kit): single-stream downloads stall in this sandbox
+    # (measured: 0% for minutes; the repo's own chunked_dl.sh assembled
+    # 383MB in ~20s via 16 parallel ranged chunks). Try single-stream with
+    # a stall watchdog; on stall/failure fall back to chunked_dl.sh.
+    BL_SIZE="$(curl -sIL --max-time 20 "$BL_URL" | grep -i content-length | tail -1 | tr -d '\r' | awk '{print $2}')"
+    if [[ -n "$BL_SIZE" ]] && curl -fL --retry 3 --speed-time 30 --speed-limit 20000 \
+         -o "$BL_TARBALL" "$BL_URL" 2>/dev/null \
+         && [[ "$(stat -c%s "$BL_TARBALL" 2>/dev/null || echo 0)" = "$BL_SIZE" ]]; then
+        echo "[install] single-stream download complete (${BL_SIZE} bytes)"
+    else
+        echo "[install] single-stream stalled/failed — falling back to chunked_dl.sh"
+        if [[ -z "$BL_SIZE" ]]; then
+            echo "[install] ERROR: couldn't read Content-Length from $BL_URL" >&2
+            exit 1
+        fi
+        bash "$TOOLS_DIR/chunked_dl.sh" "$BL_URL" "$BL_TARBALL" "$BL_SIZE"
+    fi
     echo "[install] Extracting..."
     tar xf "$BL_TARBALL"
     ln -sfn "blender-${BLENDER_VERSION}-linux-x64" blender

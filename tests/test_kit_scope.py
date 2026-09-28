@@ -164,6 +164,27 @@ def main() -> int:
         print("See docs/REPO_HYGIENE_v2.md + docs/PROJECTS.md.")
         return 1
 
+    # 3. toolchain hygiene (D12, vision-kit): tools/ may be a SYMLINK to a
+    # shared provisioned toolchain, but git rewrites symlinked dirs when a
+    # checkout writes inside them — leaving a REAL dir with only the two
+    # tracked scripts and no blender binary (the broken-symlink signature,
+    # hit twice in one session). Warn loudly; not a scope failure.
+    tools = os.path.join(KIT_ROOT, "tools")
+    if os.path.islink(tools):
+        print("test_kit_scope: tools/ is a symlink to %s (shared toolchain OK)"
+              % os.readlink(tools))
+    elif os.path.isdir(tools):
+        entries = sorted(os.listdir(tools))
+        if entries and all(e in ("chunked_dl.sh", "dl_watchdog.sh", "local-libs")
+                           for e in entries) \
+                and not os.path.exists(os.path.join(tools, "blender", "blender")):
+            print("!! test_kit_scope WARNING: tools/ is a REAL dir with no "
+                  "blender binary — this is the broken-symlink signature "
+                  "(git rewrote a symlinked tools/). Run install.sh or "
+                  "re-link: ln -sfn <provisioned>/tools tools")
+        else:
+            print("test_kit_scope: tools/ is a real dir (provisioned here?)")
+
     print("test_kit_scope: PASS (%d tracked files, all kit-scope)" % len(tracked))
     return 0
 
