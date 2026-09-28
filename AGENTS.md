@@ -307,7 +307,7 @@ Severities: floating = P1, below-floor = P0, intersection = P1 (P0 at
 | `previz` | 480×270 | Workbench | vision geometry check | ~0.3s |
 | `viewport` | 960×540 | Workbench | vid2vid guidance track | ~0.05s |
 | `draft` | 320×180 | EEVEE | material iteration | ~0.5s warm |
-| `preview` | 640×360 | EEVEE | final preview animation | ~2s |
+| `preview` | 640×360 | EEVEE | final preview animation | ~2s (MEASURED 8.5s/frame on 4-core llvmpipe 2026-09-28 — budget 10s/frame; a 24f render ≈ 3.5min, EXCEEDS a 2-min tool timeout: run inside one long-timeout call or render_daemon) |
 | `final` | 960×540 | Cycles | final still | ~50s |
 
 look.py/viewport_capture default 640×480 workbench — the vision sweet
@@ -347,6 +347,10 @@ cold-start, not pixels).
 
 ### Scene building
 11. **Cube "floating"**: `primitive_cube_add(size=S, location=(0,0,Z))` puts the ORIGIN at Z. To rest on z=0: `location=(0,0,S/2)`.
+11b. **Verified primitives on 5.2.2**: cube/sphere/cylinder/cone/torus/plane/empty. `primitive_capsule_add` DOES NOT EXIST — capsule = cylinder + hemisphere caps (or a scaled sphere for previz actors).
+11c. **`frame_set()` takes ints only** — fractional keyframe math needs `int()` (floats raise TypeError).
+11d. **Multi-part actor assembly**: child parts need `part.parent = body; part.matrix_parent_inverse = body.matrix_world.inverted()` (keep-pose parenting) or the body walks away and leaves them. Origins at the joint, mesh offset below.
+11e. **Swing axis ⊥ travel**: a leg keyframed on `rotation_euler.x` swings along ±Y — walking +X needs the swing axis ⊥ the travel direction. Verify gait with matrix probes (f1 vs fN), not gates or stills.
 12. **`set_location` moves the ORIGIN** — on origin-baked meshes this acts relative. Use `move_to` for world-space moves.
 13. **`transform_apply(scale=True)` zeroes location** (4.5.13) — avoid it. Pass `scale=` to primitives instead.
 14. **Vertex-baked origins detonate transforms** — build geometry around local (0,0,0) for anything animated/simulated.
@@ -414,6 +418,9 @@ cold-start, not pixels).
 114. **Camera offsets are FIXED 5m** in the standard angles — big scenes overflow the frame (ground overflow is fine; the subject cluster should fit). Aim with `--target`/`--lens` or `--closeup`.
 115. **blrun swallows exit codes** (raw blender propagates; blrun doesn't) — when scripting around look.py, grep the `VERDICT:` line or run the raw binary with blrun's env. The in-blender test suites use raw-binary subprocesses and DO see exit codes.
 116. **Trusting a look without readiness** — a BLOWN-OUT/NEAR-BLACK/NEAR-EMPTY flag means your eyes have nothing to work with; fix the render (exposure/fill/crop) before reasoning about the scene. The flag is printed BESIDE the image; read it first.
+117. **Animated scenes: the look verdict evaluates the `--frame` POSE** — jointed actors legitimately FAIL P0 at mid-stride scissor-pass frames (leg bboxes cross by design). Verify gait with matrix probes across frames (law 108), not with the frame verdict or a single still. `--no-fail-on-issues` keeps exit codes clean for probe loops.
+118. **Contact sheets are for EYES, ascii packs probe them poorly** — at 96 cols a 1.4m actor is ~3 chars and workbench cells are achromatic; motion truth comes from numeric probes (manifest f1 vs fN, fcurve sampling). "Labeled grid" means visual-only labels.
+119. **Verified primitives on 5.2.2**: cube/sphere/cylinder/cone/torus/plane/empty — `primitive_capsule_add` DOES NOT EXIST (capsule = cylinder + caps, or a scaled sphere for previz). **`frame_set()` takes ints only.** **Multi-part actors**: `part.parent = body; part.matrix_parent_inverse = body.matrix_world.inverted()` (keep-pose) or the body walks away and leaves them; origins at the joint; swing axis ⊥ travel direction.
 
 ### Mechanics laws 104-110 (kept from upstream sessions 25-26)
 104. **Bake-input pools are NOT export payload** — purge unassigned actions before glTF (one-object-one-action contract).
