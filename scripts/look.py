@@ -86,6 +86,15 @@ def _camera_loc_for_angle(label: str, target) -> tuple:
     return tuple(target)
 
 
+def _default_exposure(args) -> float:
+    """M5 tuning: workbench STUDIO renders ~98% of pixels in the darkest
+    third of the range (docs/TUNING_perception_v1.md). Lift workbench by
+    +1.0 EV by default; eevee/cycles already expose the scene lighting."""
+    if args.exposure is not None:
+        return args.exposure
+    return 1.0 if args.engine == "workbench" else 0.0
+
+
 def main():
     p = argparse.ArgumentParser(
         description="look.py — one-invocation perceive+verify for vision agents")
@@ -101,6 +110,10 @@ def main():
                         "(closeup-only look — L1 image budget)")
     p.add_argument("--engine", default="workbench",
                    choices=["workbench", "eevee", "cycles"])
+    p.add_argument("--exposure", type=float, default=None,
+                   help="View exposure lift in EV. Default: +1.0 on "
+                        "workbench (tuned: docs/TUNING_perception_v1.md), "
+                        "0.0 on eevee/cycles")
     p.add_argument("--samples", type=int, default=1)
     p.add_argument("--w", type=int, default=640)
     p.add_argument("--h", type=int, default=480)
@@ -226,7 +239,8 @@ def main():
                                            flat=(lbl == "top"))
                 vc.render_angle(lbl, out_path, engine=args.engine,
                                 samples=args.samples, width=args.w,
-                                height=args.h, target=target, lens=args.lens)
+                                height=args.h, target=target, lens=args.lens,
+                                exposure=_default_exposure(args))
                 per_angle[lbl] = out_path
             images = list(per_angle.values())
         else:
@@ -241,7 +255,8 @@ def main():
                                                    flat=(lbl == "top"))
                         vc.render_angle(lbl, tmp_path, engine=args.engine,
                                         samples=args.samples, width=args.w,
-                                        height=args.h, target=target, lens=args.lens)
+                                        height=args.h, target=target, lens=args.lens,
+                                        exposure=_default_exposure(args))
                         per_angle[lbl] = tmp_path
                     grid_path = os.path.join(outdir, "grid.png")
                     vc.stitch_contact_sheet(list(per_angle.values()), grid_path,
@@ -267,7 +282,8 @@ def main():
             vc.render_angle("custom", closeup_path, engine=args.engine,
                             samples=args.samples, width=args.w, height=args.h,
                             target=(cx, cy, cz), lens=args.lens,
-                            custom_location=closeup_loc)
+                            custom_location=closeup_loc,
+                            exposure=_default_exposure(args))
             images.append(closeup_path)
 
         # ---- readiness headers -------------------------------------------

@@ -140,11 +140,24 @@ def render_angle(angle_label: str, out_path: str, *,
                  height: int = 360,
                  target: Tuple[float, float, float] = (0, 0, 0),
                  lens: int = 50,
-                 custom_location: Tuple[float, float, float] = None) -> str:
+                 custom_location: Tuple[float, float, float] = None,
+                 light: str = None,
+                 color_type: str = None,
+                 shadows: bool = None,
+                 cavity: bool = None,
+                 exposure: float = None) -> str:
     """Render the scene from a single angle. Returns the output path.
 
     `angle_label` can be one of VIEW_ANGLES keys, OR 'active' to use the
     scene's existing active camera, OR 'custom' (requires custom_location).
+
+    Workbench shading overrides (vision-kit M5 tuning): light/color_type/
+    shadows/cavity default to the tuned kit defaults below; `exposure` is a
+    view_settings exposure lift in EV stops (None = scene untouched).
+    Measured (docs/TUNING_perception_v1.md): workbench STUDIO renders ~98%
+    of pixels in the darkest third of the range; +1.0 EV roughly doubles
+    usable contrast (stdev 42->54, edge energy 2.3->3.2) without washing
+    material colors. look.py passes exposure=1.0 on workbench by default.
     """
     scene = bpy.context.scene
 
@@ -177,22 +190,26 @@ def render_angle(angle_label: str, out_path: str, *,
         # Workbench-specific: solid shading with material colors visible.
         # Per session-5 worklog: OBJECT color_type shows flat gray, hiding
         # material-based color coding. Use MATERIAL instead.
-        scene.display.shading.light = 'STUDIO'
+        scene.display.shading.light = light or 'STUDIO'
         # MATERIAL shows real material base colors (needed to verify
         # color-coded previz assets); OBJECT only uses obj.color RGBA.
-        scene.display.shading.color_type = 'MATERIAL'
-        scene.display.shading.show_shadows = True
-        scene.display.shading.show_cavity = True
+        scene.display.shading.color_type = color_type or 'MATERIAL'
+        scene.display.shading.show_shadows = True if shadows is None else shadows
+        scene.display.shading.show_cavity = True if cavity is None else cavity
         # Per session-5 worklog: AgX crushes low-chroma colors in previz.
         # Use Standard so authored material colors read true.
         try:
             scene.view_settings.view_transform = 'Standard'
         except AttributeError:
             pass
+        if exposure is not None:
+            scene.view_settings.exposure = exposure
     elif engine == "eevee":
         from blender_kit import EEVEE_ENGINE_ID
         scene.render.engine = EEVEE_ENGINE_ID
         scene.eevee.taa_render_samples = samples
+        if exposure is not None:
+            scene.view_settings.exposure = exposure
     elif engine == "cycles":
         scene.render.engine = 'CYCLES'
         scene.cycles.device = 'CPU'
