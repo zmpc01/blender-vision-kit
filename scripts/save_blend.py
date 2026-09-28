@@ -24,8 +24,11 @@ from blender_kit import script_argv
 def main():
     p = argparse.ArgumentParser(
         description="Save a Blender scene as .blend + optional high-quality still.")
-    p.add_argument("--scene", required=True,
+    p.add_argument("--scene", default=None,
                    help="Scene module name (e.g. scene_template)")
+    p.add_argument("--load-blend", default=None,
+                   help="Copy/re-save an existing .blend instead of building "
+                        "a scene module (wave-3: honors the state-carrier loop)")
     p.add_argument("--blend-out", required=True,
                    help="Output .blend path")
     p.add_argument("--still-frame", type=int, default=None,
@@ -40,12 +43,21 @@ def main():
     p.add_argument("--start", type=int, default=1)
     args = p.parse_args(script_argv())
 
-    print(f"[save_blend] importing scene module: {args.scene}")
-    mod = safe_import_scene(args.scene)
+    if not args.scene and not args.load_blend:
+        print("[save_blend] ERROR: --scene or --load-blend required",
+              file=sys.stderr)
+        sys.exit(1)
 
-    ctx = mod.build_scene()
-    if hasattr(mod, "animate"):
-        mod.animate(ctx, start_frame=args.start, n_frames=args.frames)
+    if args.load_blend:
+        print(f"[save_blend] loading .blend: {args.load_blend}")
+        bpy.ops.wm.open_mainfile(filepath=args.load_blend)
+    else:
+        print(f"[save_blend] importing scene module: {args.scene}")
+        mod = safe_import_scene(args.scene)
+
+        ctx = mod.build_scene()
+        if hasattr(mod, "animate"):
+            mod.animate(ctx, start_frame=args.start, n_frames=args.frames)
 
     # Save .blend
     os.makedirs(os.path.dirname(os.path.abspath(args.blend_out)), exist_ok=True)

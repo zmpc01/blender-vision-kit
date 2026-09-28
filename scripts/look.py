@@ -316,7 +316,7 @@ def main():
         print(f"[look] manifest ({len(man)} objects; meshes {len(mesh_rows)}):")
         for m in man[:24]:
             if m["type"] == "MESH":
-                print(f"[look]   {m['id']:24s} dims={m['dims_m']} centroid={m['centroid']}")
+                print(f"[look]   {m['id']:24s} dims_m={m['dims_m']} centroid={m['centroid']}")
             else:
                 print(f"[look]   {m['id']:24s} {m['type']}"
                       + (f" {m.get('light')} {m.get('energy_W')}W" if m.get("light") else ""))
@@ -325,12 +325,28 @@ def main():
                   f"{os.path.join(outdir, 'look_manifest.json')})")
         print(f"[look] annotations: {'grid+gnomon+labels(top-%d)+flags(%s)' % (args.labels, len(flagged)) if annotated else 'OFF'}"
               "  [render-time only, never saved]")
+        if annotated and label_ids:
+            lbl_map = [{"index": i, "id": name} for name, i in label_ids]
+            print("[look] labels: " + " ".join(
+                f"[{e['index']}]={e['id']}" for e in lbl_map))
+        else:
+            lbl_map = []
+        # wave-3 T6: fixed 5m camera offsets clip large subject clusters
+        # while readiness scores clean — add an overflow hint
+        if meshes and mn:
+            import math as _math
+            diag = _math.dist(mn, mx)
+            visible = 2 * 5.0 * _math.atan(18.0 / max(args.lens, 1))
+            if diag > visible * 1.4:
+                print(f"[look] HINT: SUBJECT-OVERFLOW (cluster diag {diag:.1f}m "
+                      f"> visible ~{visible:.1f}m at {args.lens}mm/5m offset) "
+                      "— aim with --target/--lens or --closeup for readable frames")
         print("=" * 64)
 
         with open(os.path.join(outdir, "look_manifest.json"), "w") as f:
             json.dump({"engine": args.engine, "frame": args.frame,
                        "validator": report, "images": ready,
-                       "manifest": man}, f, indent=2)
+                       "manifest": man, "labels": lbl_map}, f, indent=2)
 
         if (p0 or p1) and args.fail_on_issues:
             sys.exit(3)

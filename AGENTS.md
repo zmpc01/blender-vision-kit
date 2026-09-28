@@ -85,9 +85,9 @@ Annotations (default ON, `--no-annotate` to strip): 1m ground grid, RGB
 axis gnomon (X red / Y green / Z blue), top-8 object index labels (yellow,
 `--labels N`), red bbox wireframes on validator-flagged objects.
 `--closeup <id>` adds an auto-framed macro render of one object.
-Exit codes: 0 = PASS/WARN clean, 3 = validator P0/P1 present.
-NOTE: blrun.sh does not propagate script exit codes (it fail-closes on
-tracebacks instead) — grep the `VERDICT:` line when scripting around it.
+Exit codes: 0 = PASS/WARN clean, 3 = validator P0/P1 present —
+propagated through blrun (verified); in pipelines check
+`${PIPESTATUS[0]}` or grep the `VERDICT:` line.
 
 ### The two-column law (the core discipline)
 
@@ -166,6 +166,9 @@ EOF
     --quality preview --encode-mp4
 ./scripts/blrun.sh --background --python scripts/export_gltf.py -- \
     --scene my_scene --output output/my_scene/scene.glb --frames 24
+# patch-built scenes: export/save accept --load-blend too (ship the
+# SAVED state, not a rebuild):
+#   export_gltf.py --load-blend output/my_scene/work.blend --output .../scene.glb
 ./scripts/blrun.sh --background --python scripts/save_blend.py -- \
     --scene my_scene --blend-out output/my_scene/scene.blend
 cp viewer/index.html output/my_scene/
@@ -182,17 +185,21 @@ Env vars: `BLENDER_BIN`, `BLENDER_DISPLAY` (default `:99`), `KEEP_XVFB=1`,
 `BLENDER_HOME` (caches), `BLENDER_KIT_LIBS`. Handles: Xvfb lifecycle,
 libEGL `LD_LIBRARY_PATH`, `--python-use-system-env` (so `import
 blender_kit` works), signal traps, stale X locks, fail-closed gate
-(grep for Python errors → nonzero exit). Script exit codes are NOT
-propagated — scripts signal via greppable output lines.
+(grep for Python errors → nonzero exit). Script exit codes ARE
+propagated (verified: look.py exit 3 → blrun exit 3; the old "not
+propagated" lore was a pipeline-probe artifact — `$?` after a pipe is
+the LAST command's exit, not blrun's).
 
 ### look.py — the one vision-loop command (see THE VISION LOOP above)
 ```bash
-... look.py -- --load-blend work.blend [--angles front,side,top,persp] \
+... look.py -- --load-blend work.blend [--angles front,side,top,persp|none] \
     [--frame N] [--engine workbench] [--annotate|--no-annotate] \
     [--labels 8] [--closeup Obj] [--closeup-fill 1.5] [--grid-cols 2] \
     [--no-grid] [--lens 50] [--target X,Y,Z] [--w 640 --h 480] \
     [--output DIR] [--no-fail-on-issues]
 ```
+`--angles none --closeup Obj` = closeup-only look (L1 image budget:
+no grid when you already know the subject).
 Defaults tuned for vision: 640×480 angles. Large scenes overflow the
 fixed 5m camera offsets — aim with `--target`/`--lens`, or look at the
 subject cluster (the ground overflowing the frame is fine).
@@ -416,7 +423,7 @@ cold-start, not pixels).
 112. **Ground planes don't get labels** — a 20×20m ground "label" renders as a giant billboard blocking the top view (measured, first run). Ground-like slabs (flat + ≥6m² footprint) are excluded from labeling. If you label a huge flat object deliberately, do it in your own scene code, not via look.
 113. **The gnomon sits SW of scene center** (center −1.5m, −1.5m) — inside standard framing but off the subject. At world origin it sits INSIDE the centered subject (invisible); at the scene corner it's out of frame. Both measured.
 114. **Camera offsets are FIXED 5m** in the standard angles — big scenes overflow the frame (ground overflow is fine; the subject cluster should fit). Aim with `--target`/`--lens` or `--closeup`.
-115. **blrun swallows exit codes** (raw blender propagates; blrun doesn't) — when scripting around look.py, grep the `VERDICT:` line or run the raw binary with blrun's env. The in-blender test suites use raw-binary subprocesses and DO see exit codes.
+115. **blrun propagates exit codes; pipelines don't** — look.py exit 3 arrives at blrun's caller intact (verified twice). The earlier "swallowed" claim was a probe error: `$?` after `blrun ... | grep ...` is GREP's exit, not blrun's. In pipelines check `${PIPESTATUS[0]}` or grep the `VERDICT:` line.
 116. **Trusting a look without readiness** — a BLOWN-OUT/NEAR-BLACK/NEAR-EMPTY flag means your eyes have nothing to work with; fix the render (exposure/fill/crop) before reasoning about the scene. The flag is printed BESIDE the image; read it first.
 117. **Animated scenes: the look verdict evaluates the `--frame` POSE** — jointed actors legitimately FAIL P0 at mid-stride scissor-pass frames (leg bboxes cross by design). Verify gait with matrix probes across frames (law 108), not with the frame verdict or a single still. `--no-fail-on-issues` keeps exit codes clean for probe loops.
 118. **Contact sheets are for EYES, ascii packs probe them poorly** — at 96 cols a 1.4m actor is ~3 chars and workbench cells are achromatic; motion truth comes from numeric probes (manifest f1 vs fN, fcurve sampling). "Labeled grid" means visual-only labels.

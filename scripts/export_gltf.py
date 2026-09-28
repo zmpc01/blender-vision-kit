@@ -23,9 +23,13 @@ from blender_kit import script_argv, clear_scene, export_gltf
 def main():
     p = argparse.ArgumentParser(
         description="Export a Blender scene to .glb for web preview.")
-    p.add_argument("--scene", required=True,
+    p.add_argument("--scene", default=None,
                    help="Scene module name (e.g. scene_template). "
                         "Must be importable from scripts/.")
+    p.add_argument("--load-blend", default=None,
+                   help="Load a .blend instead of building a scene module "
+                        "(wave-3: exports patch-built state — the ship arc "
+                        "of the load-blend loop)")
     p.add_argument("--output", required=True,
                    help="Output .glb path")
     p.add_argument("--frames", type=int, default=24,
@@ -33,6 +37,11 @@ def main():
     p.add_argument("--start", type=int, default=1,
                    help="Start frame (default: 1)")
     args = p.parse_args(script_argv())
+
+    if not args.scene and not args.load_blend:
+        print("[export_gltf] ERROR: --scene or --load-blend required",
+              file=sys.stderr)
+        sys.exit(1)
 
     # Validate output early (fail fast)
     from blender_kit import validate_output
@@ -42,13 +51,18 @@ def main():
               file=sys.stderr)
         sys.exit(1)
 
-    print(f"[export_gltf] importing scene module: {args.scene}")
-    mod = safe_import_scene(args.scene)
+    if args.load_blend:
+        import bpy
+        print(f"[export_gltf] loading .blend: {args.load_blend}")
+        bpy.ops.wm.open_mainfile(filepath=args.load_blend)
+    else:
+        print(f"[export_gltf] importing scene module: {args.scene}")
+        mod = safe_import_scene(args.scene)
 
-    # Build & animate
-    ctx = mod.build_scene()
-    if hasattr(mod, "animate"):
-        mod.animate(ctx, start_frame=args.start, n_frames=args.frames)
+        # Build & animate
+        ctx = mod.build_scene()
+        if hasattr(mod, "animate"):
+            mod.animate(ctx, start_frame=args.start, n_frames=args.frames)
 
     # Export
     out_path = export_gltf(args, out_path=args.output)

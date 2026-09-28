@@ -31,8 +31,9 @@ this variant serves agents with NATIVE image understanding. Design doc:
   but DEMOTED to escalation. Don't delete: text-only sub-agents use it.
 - Crowd sim lives in sibling zmpc01/blender-crowd-kit (pre-v1); the
   in-kit stub was DELETED to avoid import shadowing.
-- Exit codes: look.py exits 3 on validator P0/P1; RAW blender
-  propagates, blrun.sh does NOT (grep `VERDICT:` lines instead).
+- Exit codes: look.py exits 3 on validator P0/P1; blrun propagates them
+  (wave-3 verified — the earlier "swallowed" claim was a pipeline probe
+  artifact: `$?` after `cmd | grep` is grep's exit).
 - Vision regression: `tests/test_v1_look.py` (27 checks, in-Blender).
 
 ## Design philosophy (variant framing)

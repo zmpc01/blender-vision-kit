@@ -98,7 +98,9 @@ def _require(mut, key, op, *, expected_type=None, expected_len=None):
     Usage: loc = _require(mut, "location", "set_location", expected_type=list, expected_len=3)
     """
     if key not in mut:
-        raise RuntimeError(f"op '{op}' missing required key '{key}'")
+        # wave-3: print the op's signature, not just the key name
+        raise RuntimeError(f"op '{op}' missing required key '{key}' — "
+                           f"signature: {PARAM_DOCS.get(op, '(see --list)')}")
     val = mut[key]
     if expected_type and not isinstance(val, expected_type):
         raise RuntimeError(f"op '{op}' key '{key}' must be {expected_type.__name__}, got {type(val).__name__}")
@@ -930,6 +932,28 @@ PARAM_DOCS = {
 }
 
 
+def _warn_unknown_keys(op: str, mut: dict):
+    """wave-3: a misspelled OPTIONAL key (refrence vs reference) silently
+    fell back to the default — placement semantics changed with zero
+    warning. Parse the op's PARAM_DOCS signature and warn on extras."""
+    doc = PARAM_DOCS.get(op)
+    if not doc:
+        return
+    allowed = {"op", "id"}
+    for token in doc.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        name = token.split(":")[0].split("?")[0].split("!")[0].strip()
+        if name:
+            allowed.add(name)
+    unknown = [k for k in mut if k not in allowed]
+    if unknown:
+        print(f"[apply_patch] WARNING: op '{op}' got unknown param(s) "
+              f"{sorted(unknown)} (ignored — check spelling); "
+              f"signature: {doc}")
+
+
 def apply_mutation(mut: dict):
     op = mut.get("op")
     if op not in MUTATIONS:
@@ -939,6 +963,7 @@ def apply_mutation(mut: dict):
     obj = _get_obj(mut["id"]) if needs_obj and "id" in mut else None
     if needs_obj and obj is None and "id" in mut:
         raise RuntimeError(f"op '{op}' requires object id '{mut['id']}' but not found")
+    _warn_unknown_keys(op, mut)
     try:
         fn(obj, mut)
     except KeyError as e:
