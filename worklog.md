@@ -3006,3 +3006,25 @@ Work Log:
 Stage Summary:
 - 27/27 ALL PASS; exit-code semantics now: 0=PASS, 3=P0/P1 issues, FAIL/WARN/PASS verdict text, all grep-able
 - NOTE for docs: blrun swallows script exit codes (only traceback gate); look.py verdict lines are the greppable channel
+
+---
+Task ID: 7-testing
+Agent: orchestrator
+Task: Usability waves 1-3 + fix batches + vision verification
+
+Work Log:
+- WAVE 1 (T0 smoke / T1 placement circuit / T2 interior+physics, 3 parallel consumer sub-agents, AGENTS.md-only briefs):
+  * INFRA FINDING: sub-agent Read cannot render PNGs in this harness → orchestrator = vision verifier of record; escalation path (ascii packs + gates) worked as designed
+  * T1: audit caught real 25mm leg penetration; planted 150mm float caught by look validator (audit pair-pad law) — layered defense held
+  * 16 friction items → fix batch 1: move_to doc bug (P0), PARAM_DOCS + --list signatures, audit id-scoping, settle verdict tokens, render_viewport engine aliases + readiness, validator nearest-support hint, placement doc laws
+- WAVE 2a (T4 animated walk): motion proven (Δ=1.200m exact); 10 items → gotchas 117-119, EEVEE real timing (8.5s/frame vs 2s claimed), capsule-actor walk recipe, primitives/frame_set/parenting notes
+- WAVE 2b (T3 crowd): crowd-kit Rust build REQUIRED (no prebuilt wheel); rustup stable installed; pinned-toolchain sync + crate downloads stall repeatedly on this network (cargo retry loop) → T3 remains INFRA-GATED per D14, documented
+- WAVE 3 (T5 doc-claim validation / T6 dense-scene 120 agents):
+  * T5: --list signatures + audit id-scope + --angles none VERIFIED; found ship arc broken for patch-built scenes (export/save had no --load-blend) → FIXED; exit-code lore corrected (blrun DOES propagate; earlier claim was a pipe-probe artifact, verified twice)
+  * T6: floater caught 3 independent ways, ZERO false positives at 120 agents, 8.99s look; labels map + SUBJECT-OVERFLOW hint added
+- ORCHESTRATOR VISION PASSES: annotation defects caught on look_test1-4 (5 fixes); T1 final placement scene verified by eye (matches audit JSON); T6 dense grid verified (red flag box visible among 120, no clutter)
+
+Stage Summary:
+- Waves: 3 waves + T6, 5 consumer-agent sessions, ~50 friction items triaged, 2 fix batches, regression 27/27 GREEN throughout
+- Doctrine "eyes triage and compose; gates decide geometry" validated end-to-end including dense scenes
+- Remaining infra-gate: crowd-kit Rust build (network-hostile sandbox; user offered bigger compute)
