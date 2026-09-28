@@ -78,12 +78,12 @@ def _readiness(path: str) -> dict:
         a = np.asarray(im, dtype=np.float32) / 255.0
         luma = a @ [0.2126, 0.7152, 0.0722]
         clipped = float((luma >= 0.98).mean() * 100.0)
-        dark = float((luma <= 0.02).mean() * 100.0)
-        # subject coverage: fraction of pixels differing from the corner
-        # background estimate by >0.12 luma
-        corners = [luma[2, 2], luma[2, -3], luma[-3, 2], luma[-3, -3]]
-        bg = float(sum(corners) / 4.0)
-        subj = float((abs(luma - bg) > 0.12).mean() * 100.0)
+        dark = float((luma <= 0.08).mean() * 100.0)
+        # subject coverage: fraction of pixels whose RGB differs from the
+        # corner background estimate (luma-only missed red-on-gray subjects
+        # — measured in test_v1_look #2)
+        corners = (a[2, 2] + a[2, -3] + a[-3, 2] + a[-3, -3]) / 4.0
+        subj = float((np.abs(a - corners).sum(axis=2) > 0.25).mean() * 100.0)
         flags = []
         if clipped > 25.0:
             flags.append("BLOWN-OUT")
@@ -146,7 +146,12 @@ def main():
                    help="Closeup framing factor over the object's bbox diagonal")
     p.add_argument("--output", default=None,
                    help="Output dir (default: output/look/<stamp>)")
-    p.add_argument("--fail-on-p0", action="store_true", default=True)
+    p.add_argument("--fail-on-issues", action="store_true", default=True,
+                   help="Exit 3 on P0/P1 validator issues (parity with "
+                        "validate_scene --fail-on-issues; --no-fail-on-issues "
+                        "to disable)")
+    p.add_argument("--no-fail-on-issues", dest="fail_on_issues",
+                   action="store_false")
     args = p.parse_args(script_argv())
 
     if not args.load_blend and not args.scene:
@@ -302,8 +307,9 @@ def main():
             mx = (round(max(p.x for p in pts), 2), round(max(p.y for p in pts), 2),
                   round(max(p.z for p in pts), 2))
 
+        verdict = "FAIL" if p0 else ("WARN" if p1 else "PASS")
         print("=" * 64)
-        print(f"[look] VERDICT: {'FAIL' if p0 else ('WARN' if p1 else 'PASS')}"
+        print(f"[look] VERDICT: {verdict}"
               f"  engine={args.engine} frame={args.frame}"
               f"  objects={len(scene.objects)} meshes={len(meshes)}")
         if mn:
@@ -344,7 +350,7 @@ def main():
                        "validator": report, "images": ready,
                        "manifest": man}, f, indent=2)
 
-        if p0 and args.fail_on_p0:
+        if (p0 or p1) and args.fail_on_issues:
             sys.exit(3)
     finally:
         # LAW (D5): annotations are render-time only — delete unconditionally.

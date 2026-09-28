@@ -2990,3 +2990,19 @@ Stage Summary:
 - look.py end-to-end GREEN: VERDICT PASS, readiness headers, manifest, annotations deleted after render
 - Orchestrator vision-verified the grid image: gnomon RGB readable in all 4 angles, labels legible incl. top view
 - Vision-agent self-testing loop WORKS: orchestrator looked at rendered grids and found 4 real defects numbers alone would not surface
+
+---
+Task ID: 6-implement-2
+Agent: orchestrator
+Task: D8/D11/D12 + test_v1_look regression suite
+
+Work Log:
+- D8: deleted scripts/crowd/ ImportError stub (prevents import shadowing of sibling blender-crowd-kit)
+- D11: install.sh detects stalled single-stream download (--speed-time 30 --speed-limit 20000 + size verify) → falls back to tools/chunked_dl.sh (16 parallel ranged chunks; measured 383MB in ~20s vs single-stream stall)
+- D12: test_kit_scope warns on the broken-symlink signature (tools/ real dir with only chunked_dl.sh+dl_watchdog.sh and no blender binary)
+- tests/test_v1_look.py NEW: 27 checks — annotate roundtrip (zero residue incl. FONT curve data), readiness flags (bright/dark/normal/red-on-gray), validator pairing (planted floater), look subprocess exit-3 + verdict + manifest exclusion + cleanup, clean-scene exit-0
+- Suite caught 5 real bugs, all fixed: (1) FONT curve data outlived object deletion → curve purge by prefix; (2) dark-image threshold 0.02 too strict (black frames have luma ~0.02-0.05) → 0.08; (3) subject-coverage luma-only missed red-on-gray → RGB distance from corner bg; (4) floating=P1 upstream severity, design said exit-3-on-P0 → amended to fail-on-issues parity (P0 or P1 → exit 3, WARN verdict on P1, FAIL on P0); (5) probe: raw blender propagates sys.exit(3) but blrun swallows it (rc=0) → documented, markers remain grep-able
+
+Stage Summary:
+- 27/27 ALL PASS; exit-code semantics now: 0=PASS, 3=P0/P1 issues, FAIL/WARN/PASS verdict text, all grep-able
+- NOTE for docs: blrun swallows script exit codes (only traceback gate); look.py verdict lines are the greppable channel

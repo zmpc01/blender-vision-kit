@@ -235,4 +235,12 @@ def delete_annotation_layer(layer: dict) -> int:
                 bpy.data.materials.remove(bpy.data.materials[mat_name])
             except Exception:
                 pass
+    # FONT curve data outlives its object unless purged by name
+    # (caught by test_v1_look #1: KIT_ANNOT_lbl_1 residue)
+    for curve_name in list(bpy.data.curves.keys()):
+        if curve_name.startswith(ANNOT_PREFIX):
+            try:
+                bpy.data.curves.remove(bpy.data.curves[curve_name])
+            except Exception:
+                pass
     return n
