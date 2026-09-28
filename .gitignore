@@ -34,3 +34,4 @@ smoke/*.exr
 
 # Local dual-toolchain symlink (session-25 A/B convenience)
 tools/blender45
+tools/*
