@@ -72,3 +72,24 @@
 - The `viewport` preset (960×540 FLAT) is unchanged for vid2vid — if a
   wave confirms vision agents misuse it for geometry checks, document
   harder or rename.
+
+## Session-close addendum (2026-09-28, post-waves)
+
+M3 is COMPLETE except T3's infra gate. Final wave status:
+- Fix batches 1+2 landed, test_v1_look 27/27 GREEN, regression held after every batch.
+- All AGENTS.md claims are now MEASURED (wave agents verified them literally).
+- Sub-agent harness cannot render PNGs — vision verification is the
+  orchestrator's job in this environment; in a real vision-agent sandbox
+  the consumer IS the seer (that's the kit's design center).
+- T3 crowd: resume by finishing the bgyss Rust build in
+  blender-crowd-kit/vendor/blender-crowd (`rustup run stable cargo build
+  --release -p crowd-blender --features extension-module` + maturin
+  wheel into Blender's bundled python) — the pinned 1.94.1 toolchain
+  download stalls on this network; stable 1.98.1 compiles the crates
+  fine. Network-hostile sandbox is the only blocker; user offered
+  bigger compute.
+- Exit-code lore corrected everywhere: blrun PROPAGATES script exit
+  codes (verified twice). Old claim was a `$?`-after-pipe probe error.
+- Next session quick start: `git clone …blender-vision-kit && cd
+  blender-vision-kit && ./install.sh && ./scripts/blrun.sh --background
+  --python tests/test_v1_look.py --` → expect 27/27 ALL PASS.

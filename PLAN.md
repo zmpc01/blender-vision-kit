@@ -37,15 +37,17 @@ critique rounds — audit 5-a incorporated in DRAFT-2).
 - [x] README.md variant framing; .agents/SKILL.md variant context
 - [x] PLAN/HANDOFF variant docs (upstream snapshots preserved)
 
-### M3 — Usability waves (IN PROGRESS)
-- [x] Wave 1: T0 smoke + T1 placement circuit + T2 interior room (vision consumer agents, friction report)
-- [ ] Fixes from wave 1 + regression (T0+T1 re-run)
-- [x] Wave 2: T4 animated + T3 crowd (infra-gated, excluded from termination)
-- [ ] Wave 3: fresh-eyes validation wave (archetypes varied) — ONLY-P2 gate
-- [ ] Minimum 3 waves even if clean (D14); T3 excluded from termination
+### M3 — Usability waves (COMPLETE except T3 infra-gate, 2026-09-28)
+- [x] Wave 1: T0/T1/T2 (3 consumer agents) — 16 friction items → fix batch 1
+- [x] Wave 1 regression: test_v1_look 27/27 GREEN
+- [x] Wave 2a: T4 animated — 10 items → gotchas 117-119 + timing corrections
+- [x] Wave 2b: T3 crowd — INFRA-GATED (crowd-kit Rust build stalls on this sandbox network; retry loop documented; rustup stable installed, vendor tree ready — resume needs network or bigger compute)
+- [x] Wave 2c: T6 dense-scene proxy (120 agents, pure bpy) — floater caught 3 ways, 0 false positives; labels map + overflow hint added
+- [x] Wave 3: T5 fresh-eyes doc validation — ship-arc fixed, exit-code lore corrected, error UX fixed
+- [x] Orchestrator vision passes on all wave outputs (sub-agents cannot see PNGs in this harness)
 
-### M4 — Wrap-up & handover
-- [ ] Distill wave learnings into AGENTS.md/SKILL.md/kb
+### M4 — Wrap-up & handover (CURRENT)
+- [x] Distill wave learnings into AGENTS.md/SKILL.md/kb
 - [ ] Upstream PR(s): D11 install.sh chunked fallback (+ any blind-agent-relevant fixes surfaced)
 - [ ] /home/sync backup + GitHub/GitLab final push + HANDOFF final
 - [ ] Release tag v0.1.0-vision
