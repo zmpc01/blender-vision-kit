@@ -252,6 +252,43 @@ def _warn_if_clipped(out_path: str, engine: str) -> None:
         print(f"[viewport] (clip-check skipped: {e})", flush=True)
 
 
+def image_readiness(path: str) -> dict:
+    """Per-image vision-readiness header (vision-kit D6; wave-1 fixed).
+
+    Shared by look.py's verdict block and apply_patch's render_viewport op
+    so EVERY image the kit writes carries its own trustworthiness stats:
+    luma mean, clipped/dark percentages, subject coverage (RGB distance
+    from corner-estimated background — luma-only missed red-on-gray),
+    and BLOWN-OUT / NEAR-BLACK / NEAR-EMPTY flags.
+    """
+    try:
+        from PIL import Image
+        import numpy as np
+        im = Image.open(path).convert("RGB")
+        w, h = im.size
+        a = np.asarray(im, dtype=np.float32) / 255.0
+        luma = a @ [0.2126, 0.7152, 0.0722]
+        clipped = float((luma >= 0.98).mean() * 100.0)
+        dark = float((luma <= 0.08).mean() * 100.0)
+        corners = (a[2, 2] + a[2, -3] + a[-3, 2] + a[-3, -3]) / 4.0
+        subj = float((np.abs(a - corners).sum(axis=2) > 0.25).mean() * 100.0)
+        flags = []
+        if clipped > 25.0:
+            flags.append("BLOWN-OUT")
+        if dark > 40.0:
+            flags.append("NEAR-BLACK")
+        if subj < 1.5:
+            flags.append("NEAR-EMPTY")
+        return {"path": path, "w": w, "h": h,
+                "luma_mean": round(float(luma.mean()), 3),
+                "clipped_pct": round(clipped, 1),
+                "dark_pct": round(dark, 1),
+                "subject_pct": round(subj, 1),
+                "flags": flags}
+    except Exception as e:  # never let a diagnostic break a render
+        return {"path": path, "error": str(e)}
+
+
 # ---------------------------------------------------------------------------
 # Contact sheet stitching
 # ---------------------------------------------------------------------------

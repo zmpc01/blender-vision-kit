@@ -105,6 +105,23 @@ def validate_scene(*, ground_z: float = 0.0,
                     supported = True
                     break
             if not supported:
+                # wave-1 friction #7: "above ground" alone misdirects the
+                # fix when the object floats above a TABLE — name the
+                # nearest support below (x/y-overlapping, top under bottom)
+                hint = ""
+                best_gap, best_name = None, None
+                for other_name, other_b in bounds_map.items():
+                    if other_name == name:
+                        continue
+                    if other_b["max"][2] <= bottom_z and _bounds_overlap(
+                            {**b, "min": [b["min"][0], b["min"][1], -9999]},
+                            {**other_b, "max": [other_b["max"][0], other_b["max"][1], 9999]}):
+                        gap = bottom_z - other_b["max"][2]
+                        if best_gap is None or gap < best_gap:
+                            best_gap, best_name = gap, other_name
+                if best_name is not None:
+                    hint = (f"; nearest support below: '{best_name}' "
+                            f"(+{best_gap:.3f}m gap)")
                 issues.append({
                     "type": "floating",
                     "severity": "P1",
@@ -112,7 +129,9 @@ def validate_scene(*, ground_z: float = 0.0,
                     "bottom_z": round(bottom_z, 3),
                     "ground_z": ground_z,
                     "gap_m": round(bottom_z - ground_z, 3),
-                    "description": f"Object '{name}' is floating {bottom_z - ground_z:.3f}m above ground (no support below)"
+                    "nearest_support": best_name,
+                    "support_gap_m": round(best_gap, 3) if best_gap is not None else None,
+                    "description": f"Object '{name}' is floating {bottom_z - ground_z:.3f}m above ground (no support below){hint}"
                 })
 
     # ---- Check 2: below-floor objects ------------------------------

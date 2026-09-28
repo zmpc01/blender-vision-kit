@@ -29,6 +29,12 @@ cp scripts/scene_template.py scripts/my_scene.py  # copy + edit build_scene()/an
     --scene my_scene --output output/my_scene/look             # LOOK at it
 ```
 
+NOTE: the script filename IS the scene name — `scripts/my_scene.py` is
+addressed as `--scene my_scene` / `--scene-name my_scene` everywhere.
+A static scene (no animation) is fine: make `animate()` a no-op or
+delete it — look.py and the render path both handle scenes without
+animation.
+
 ## THE VISION LOOP (this replaces the blind kit's perceive/critique loop)
 
 ```
@@ -132,7 +138,7 @@ tracebacks instead) — grep the `VERDICT:` line when scripting around it.
 # 3. Patch fixes without full rebuild (~2s) — batch + save state
 cat > /tmp/patch.json << EOF
 {"scene":"my_scene","frames":24,"mutations":[
-  {"op":"move_to","id":"Cube","location":[1,0,0.6]},
+  {"op":"move_to","id":"Cube","target":[1,0,0.6]},
   {"op":"place_on","id":"Cube","supports":["Table"]},
   {"op":"audit"},
   {"op":"render_viewport","output":"output/my_scene/check2.png","angle":"persp"}
@@ -228,6 +234,23 @@ Full details: `/kb/placement_and_physics.md`. Headlines:
   CLEAR (clearance_mm); audit only sees pairs within 100mm pad — floaters
   >300mm appear in NO pair; use `physics_gate` or `look` verdict for
   scene-wide floating
+- **reference tokens**: `move_to` reference = `bottom-center` (default) |
+  `centroid` | `origin`; `snap_z`/`seat_at` reference = `bottom`
+  (default) | `origin` | `centroid`. `bottom` anchors the object's bbox
+  BOTTOM to the target z — usually what you want for resting.
+- **place_on: name the TOPMOST surface** the mover should rest on. The
+  single-contact solver ignores interposed supports — `supports:["Floor"]`
+  under a rug rests the object THROUGH the rug; name the `Rug`.
+- **seat_at facing**: `align:true` (default) copies the anchor empty's
+  rotation to the seated object — face a chair by rotating its anchor.
+- **Furnished/set-dressed scenes**: a scene-wide `audit` fails on any
+  pre-existing penetration (the shipped `scene_interior_room` fails its
+  own validator baseline — window frame embedded in wall, by design as
+  a test fixture). On such scenes pass `{"op":"audit",
+  "fail_on_penetration":false}` for the report, or scope it:
+  `{"op":"audit","id":"MyMover"}` reports only that object's pairs.
+- `apply_patch --list` prints every op's param signature — check it
+  before guessing key names (a wrong key now errors with the signature).
 
 ### viewport_capture.py — multi-angle screenshots (look.py uses this)
 ```bash
@@ -441,6 +464,17 @@ actors by id.
   (Quaternius CC0) is the vetted hero-swap path. See `/kb/rigged_characters.md`.
 - No geometry nodes helpers; no Grease Pencil.
 - No external-VLM dependency in the primary loop (that's upstream's design).
+
+## Shipped scenes (test fixtures — know their baseline)
+
+- `scene_template` — cube+sphere+ground; validator PASS. The copy-and-edit base.
+- `scene_interior_room` — furnished living room; **validator baseline FAILS**
+  (P0=4/P1=12: window frame embedded in wall, TV/sofa overlaps — fixture
+  geometry, not your bug). Gate only YOUR movers (`physics_gate
+  verify_movers:[...]`) and scope audits (see Placement headlines).
+- `scene_cornell` — Cornell box; render/engine smoke fixture.
+- `scene_scenarios`, `scene_physics_usability`, `scene_corpus` —
+  physics/gate test fixtures (see tests/).
 
 ## When to ask for clarification
 

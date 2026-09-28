@@ -234,11 +234,19 @@ def _apply_render_viewport(obj, params):
     # obj is None for this op
     # Lazy import to avoid circular dep
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from viewport_capture import render_angle, _compute_scene_center
+    from viewport_capture import render_angle, _compute_scene_center, image_readiness
     out = params["output"]
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     angle = params.get("angle", "persp")
     engine = params.get("engine", "workbench")
+    # wave-1 friction #10: accept the doc vocabulary (BLENDER_EEVEE_NEXT /
+    # BLENDER_EEVEE / BLENDER_WORKBENCH / CYCLES) — normalize to the
+    # engine tokens render_angle understands.
+    _ENGINE_ALIASES = {"BLENDER_EEVEE_NEXT": "eevee", "BLENDER_EEVEE": "eevee",
+                       "BLENDER_WORKBENCH": "workbench", "CYCLES": "cycles",
+                       "EEVEE": "eevee", "EEVEE_NEXT": "eevee",
+                       "WORKBENCH": "workbench"}
+    engine = _ENGINE_ALIASES.get(str(engine).upper(), engine)
     samples = params.get("samples", 1)
     width = params.get("width", 640)
     height = params.get("height", 480)
@@ -253,6 +261,13 @@ def _apply_render_viewport(obj, params):
                  width=width, height=height, target=target, lens=lens,
                  custom_location=custom_loc)
     print(f"[apply_patch] rendered viewport -> {out}  ({os.path.getsize(out)} bytes)")
+    # wave-1: every kit image carries readiness stats (D6 forced pairing)
+    r = image_readiness(out)
+    if "error" not in r:
+        fl = (" flags=" + ",".join(r["flags"])) if r["flags"] else ""
+        print(f"[apply_patch] readiness {os.path.basename(out)} "
+              f"luma={r['luma_mean']} clipped={r['clipped_pct']}% "
+              f"dark={r['dark_pct']}% subject={r['subject_pct']}%{fl}")
 
 
 
@@ -313,7 +328,8 @@ _PHYSICS_FAILURES = []
 
 
 def _apply_move_to(obj, params):
-    rep = _PL.move_to(obj, params["target"],
+    rep = _PL.move_to(obj, _require(params, "target", "move_to",
+                                     expected_type=list, expected_len=3),
                       reference=params.get("reference", "bottom-center"),
                       override=params.get("override"),
                       output=params.get("output"))
@@ -380,6 +396,22 @@ def _apply_audit(obj, params):
                           contact_band_mm=params.get("contact_band_mm", 0.1),
                           clearance_pad_mm=params.get("clearance_pad_mm", 100.0),
                           force=params.get("force", False))
+    scope_id = params.get("id")
+    if scope_id:
+        # wave-1 friction #5: the id param was accepted but silently
+        # non-scoping. Scope the VERDICT to pairs involving this object
+        # (the pair search still runs scene-wide; the failure decision
+        # and printed pairs now honor the scope).
+        scoped = [p for p in rep["pairs"]
+                  if p.get("a") == scope_id or p.get("b") == scope_id]
+        rep = dict(rep)
+        rep["pairs"] = scoped
+        rep["pairs_checked"] = len(scoped)
+        counts = {}
+        for p in scoped:
+            counts[p["verdict"]] = counts.get(p["verdict"], 0) + 1
+        rep["state_counts"] = counts
+        rep["failed"] = any(p["verdict"] == "PENETRATING" for p in scoped)
     _LAST_REPORTS["audit"] = rep
     if params.get("output"):
         out = params["output"]
@@ -435,6 +467,10 @@ def _apply_physics_settle(obj, params):
                      output=params.get("output"))
     _LAST_REPORTS["physics_settle"] = rep
     print("[apply_patch] physics_settle:", rep.get("verdict"))
+    # wave-1 friction #6: the documented per-mover verdict tokens
+    # (AT_REST/SETTLED/SLIPPED/TOPPLED/...) were JSON-only — print them
+    for o in (rep.get("objects") or [])[:8]:
+        print("[apply_patch]   settle:", o.get("obj"), "->", o.get("verdict"))
     _physics_warn(rep)
 
 
@@ -851,6 +887,48 @@ MUTATIONS = {
     "add_empty":                (_apply_add_empty, False),
 }
 
+# wave-1 friction #2/#11: param schemas were only discoverable by
+# trial-and-error KeyError. One-line-per-op signature for --list and
+# for friendly error conversion in apply_mutation.
+PARAM_DOCS = {
+    "set_location":       "id, location:[x,y,z]",
+    "move_to":            "id, target:[x,y,z], reference?(bottom-center|centroid|origin), override?, output?",
+    "set_rotation":       "id, rotation_deg:[rx,ry,rz]",
+    "set_scale":          "id, scale:[sx,sy,sz]",
+    "set_material_color": "id, color:[r,g,b(,a)], match?(name-regex)",
+    "set_material_roughness": "id, roughness:float",
+    "set_material_metallic":  "id, metallic:float",
+    "delete_object":      "id",
+    "duplicate_object":   "id, new_id",
+    "set_camera_location": "id, location:[x,y,z]",
+    "set_camera_lens":    "id, lens_mm:float",
+    "set_camera_dof":     "id, focus_distance(m), aperture_fstop",
+    "set_light_energy":   "id, energy:float(watts)",
+    "set_light_color":    "id, color:[r,g,b]",
+    "set_world_strength": "strength:float",
+    "set_exposure":       "exposure:float (EV shift)",
+    "set_frame":          "frame:int",
+    "render_viewport":    "output:path, angle?(persp|front|side|top|back|right|active|custom), engine?(workbench|eevee|cycles), width?, height?, samples?, target?, custom_loc?",
+    "place_on":           "id, supports:[names..] (name the TOPMOST surface!), clearance?, footprint?, mode?, keep_xy?, align_to_surface?, output?",
+    "seat_at":            "id, seat:anchor-empty-name, reference?(bottom), offset?, align?(bool), seat_mesh?, output?",
+    "snap_z":             "id, target_z:float, reference?(bottom|origin|centroid), override?, output?",
+    "heat_bake":          "id",
+    "audit":              "pairs?:['A,B',..], id?(scope report to this object), exclude?:[names], fail_on_penetration?(bool, default true), output?",
+    "seam_views":         "id, supports",
+    "clear_bvh_cache":    "-",
+    "physics_settle":     "objs?:[names] (null=whole scene, almost never wanted), environment?:[names], frames?, apply?, repair_penetrations?(refuse|physics), snap?, output?",
+    "physics_place":      "id, drop_mm?, snap?, output?",
+    "physics_oracle":     "id, target_z:float, output?",
+    "physics_gate":       "fail_hard?(bool), verify_movers?:[names], output?",
+    "add_cube":           "id, size?(scalar|[x,y,z]), location?(CENTER!), rotation_deg?, color?",
+    "add_sphere":         "id, radius, location?(CENTER!), segments?, color?",
+    "add_cylinder":       "id, radius, depth, location?(CENTER!), vertices?, color?",
+    "add_cone":           "id, radius1, radius2?, depth, location?(CENTER!), color?",
+    "add_torus":          "id, radius_major, radius_minor, location?(CENTER!), color?",
+    "add_plane":          "id, size, location?(CENTER!), color?",
+    "add_empty":          "id, location, empty_type?, size?",
+}
+
 
 def apply_mutation(mut: dict):
     op = mut.get("op")
@@ -861,7 +939,15 @@ def apply_mutation(mut: dict):
     obj = _get_obj(mut["id"]) if needs_obj and "id" in mut else None
     if needs_obj and obj is None and "id" in mut:
         raise RuntimeError(f"op '{op}' requires object id '{mut['id']}' but not found")
-    fn(obj, mut)
+    try:
+        fn(obj, mut)
+    except KeyError as e:
+        # wave-1: bare KeyError('target') taught consumers nothing —
+        # convert to the op's signature (add_* ops raise their own
+        # friendly errors already).
+        raise RuntimeError(
+            f"op '{op}' missing/invalid param {e}; signature: "
+            f"{PARAM_DOCS.get(op, '(see --list)')}") from None
     print(f"[apply_patch] applied: {op}" +
           (f" on '{mut['id']}'" if needs_obj and obj else ""))
 
@@ -897,13 +983,16 @@ def main():
     args = p.parse_args(script_argv())
 
     if args.list:
-        print("[apply_patch] supported mutation ops (op: needs object id?):")
+        print("[apply_patch] supported mutation ops (op: id? | params):")
         for op, (_fn, needs_obj) in sorted(MUTATIONS.items()):
             if op.startswith("add_"):
                 tag = "required (op creates it)"
             else:
                 tag = "required" if needs_obj else "optional"
             print(f"  {op:24s} id={tag}")
+            doc = PARAM_DOCS.get(op)
+            if doc:
+                print(f"{'':26s}{doc}")
         print("[apply_patch] set_camera_dof params: focus_distance (m), "
               "aperture_fstop — or CLI: --camera --focus-distance "
               "--aperture-fstop")

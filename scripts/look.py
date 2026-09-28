@@ -69,36 +69,8 @@ def _manifest() -> dict:
 
 
 def _readiness(path: str) -> dict:
-    """Per-image vision-readiness header (extends upstream _warn_if_clipped)."""
-    try:
-        from PIL import Image
-        import numpy as np
-        im = Image.open(path).convert("RGB")
-        w, h = im.size
-        a = np.asarray(im, dtype=np.float32) / 255.0
-        luma = a @ [0.2126, 0.7152, 0.0722]
-        clipped = float((luma >= 0.98).mean() * 100.0)
-        dark = float((luma <= 0.08).mean() * 100.0)
-        # subject coverage: fraction of pixels whose RGB differs from the
-        # corner background estimate (luma-only missed red-on-gray subjects
-        # — measured in test_v1_look #2)
-        corners = (a[2, 2] + a[2, -3] + a[-3, 2] + a[-3, -3]) / 4.0
-        subj = float((np.abs(a - corners).sum(axis=2) > 0.25).mean() * 100.0)
-        flags = []
-        if clipped > 25.0:
-            flags.append("BLOWN-OUT")
-        if dark > 40.0:
-            flags.append("NEAR-BLACK")
-        if subj < 1.5:
-            flags.append("NEAR-EMPTY")
-        return {"path": path, "w": w, "h": h,
-                "luma_mean": round(float(luma.mean()), 3),
-                "clipped_pct": round(clipped, 1),
-                "dark_pct": round(dark, 1),
-                "subject_pct": round(subj, 1),
-                "flags": flags}
-    except Exception as e:  # never let a diagnostic break a look
-        return {"path": path, "error": str(e)}
+    """Shared per-image readiness (single implementation in viewport_capture)."""
+    return vc.image_readiness(path)
 
 
 def _camera_loc_for_angle(label: str, target) -> tuple:
@@ -124,7 +96,9 @@ def main():
     p.add_argument("--frames", type=int, default=24)
     p.add_argument("--frame", type=int, default=None,
                    help="Frame to evaluate (default: scene start)")
-    p.add_argument("--angles", default="front,side,top,persp")
+    p.add_argument("--angles", default="front,side,top,persp",
+                   help="Comma list, or 'none' to skip grid renders "
+                        "(closeup-only look — L1 image budget)")
     p.add_argument("--engine", default="workbench",
                    choices=["workbench", "eevee", "cycles"])
     p.add_argument("--samples", type=int, default=1)
@@ -233,6 +207,8 @@ def main():
     try:
         # ---- angle list (mirrors viewport_capture main) -------------------
         angle_labels = [a.strip() for a in args.angles.split(",") if a.strip()]
+        if angle_labels == ["none"]:
+            angle_labels = []  # closeup-only look
         for lbl in angle_labels:
             if lbl not in vc.VIEW_ANGLES and lbl not in ("active", "custom"):
                 print(f"[look] ERROR: unknown angle '{lbl}'")
@@ -254,21 +230,23 @@ def main():
                 per_angle[lbl] = out_path
             images = list(per_angle.values())
         else:
-            with tempfile.TemporaryDirectory() as tmp:
-                for lbl in angle_labels:
-                    tmp_path = os.path.join(tmp, f"{lbl}.png")
-                    if annotated:
-                        annotate.aim_labels_at(layer["labels"],
-                                               _camera_loc_for_angle(lbl, target),
-                                               flat=(lbl == "top"))
-                    vc.render_angle(lbl, tmp_path, engine=args.engine,
-                                    samples=args.samples, width=args.w,
-                                    height=args.h, target=target, lens=args.lens)
-                    per_angle[lbl] = tmp_path
-                grid_path = os.path.join(outdir, "grid.png")
-                vc.stitch_contact_sheet(list(per_angle.values()), grid_path,
-                                        grid_cols=args.grid_cols)
-                images = [grid_path]
+            images = []
+            if angle_labels:
+                with tempfile.TemporaryDirectory() as tmp:
+                    for lbl in angle_labels:
+                        tmp_path = os.path.join(tmp, f"{lbl}.png")
+                        if annotated:
+                            annotate.aim_labels_at(layer["labels"],
+                                                   _camera_loc_for_angle(lbl, target),
+                                                   flat=(lbl == "top"))
+                        vc.render_angle(lbl, tmp_path, engine=args.engine,
+                                        samples=args.samples, width=args.w,
+                                        height=args.h, target=target, lens=args.lens)
+                        per_angle[lbl] = tmp_path
+                    grid_path = os.path.join(outdir, "grid.png")
+                    vc.stitch_contact_sheet(list(per_angle.values()), grid_path,
+                                            grid_cols=args.grid_cols)
+                    images.append(grid_path)
 
         # ---- closeup (auto-framed macro of one object) --------------------
         if args.closeup:
@@ -308,10 +286,14 @@ def main():
                   round(max(p.z for p in pts), 2))
 
         verdict = "FAIL" if p0 else ("WARN" if p1 else "PASS")
+        n_annot = sum(1 for o in scene.objects
+                      if o.name.startswith(annotate.ANNOT_PREFIX))
+        n_scene = len(scene.objects) - n_annot
         print("=" * 64)
         print(f"[look] VERDICT: {verdict}"
               f"  engine={args.engine} frame={args.frame}"
-              f"  objects={len(scene.objects)} meshes={len(meshes)}")
+              f"  objects={n_scene}" +
+              (f" (+{n_annot} annot, render-time only)" if n_annot else ""))
         if mn:
             print(f"[look] scene bounds min={mn} max={mx}")
         print(f"[look] validator: P0={p0} P1={p1} P2={p2}"
