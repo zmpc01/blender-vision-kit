@@ -334,8 +334,13 @@ at previz res (~0.3s/frame), then combines TWO radars:
 Findings are classified by DURATION: short windows = TRANSIENT (the hunt
 target); present in most frames = PERSISTENT baseline design (a jump
 reads as flight-floaters on every airborne frame — listed once, not
-per-frame). Output: EVENT-TABLE + `suspects.png` strip (start/PEAK/end
-+ BAD cells) + doctrine line. **The scanner RANKS; the eyes VERDICT** —
+per-frame). Reading the EVENT-TABLE: the event SPAN/peak comes from the
+pixel-diff change radar, the indented `TRANSIENT <sev> <type> (<ids>)
+fA..fB` lines are the validator's semantic state findings — the state
+window can start AFTER the pixel peak (change and wrong-state are
+different things; confirm the state frame, not just the peak). Output:
+EVENT-TABLE + `suspects.png` strip (start/PEAK/end + BAD cells) +
+doctrine line. **The scanner RANKS; the eyes VERDICT** —
 confirm suspects at full res: `look.py --load-blend work.blend --frame N
 --angles none --closeup <id>`.
 
