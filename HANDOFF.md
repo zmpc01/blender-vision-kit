@@ -1,95 +1,80 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session close: 2026-09-28 (M0–M2 complete, M3 wave 1 complete).
-> PLAN.md = long-horizon tracker. Upstream project HANDOFF preserved at
-> `docs/UPSTREAM_HANDOFF_snapshot.md`.
+> Session close: 2026-09-29 (session 3+4: M5 P1–P4 SETTLED, wave 4a done,
+> fix batch 3 shipped). PLAN.md = long-horizon tracker. Upstream project
+> HANDOFF preserved at `docs/UPSTREAM_HANDOFF_snapshot.md`.
 
 ## State at handoff
 
-- Repo: https://github.com/zmpc01/blender-vision-kit (main) + GitLab
-  mirror remote `gitlab` (oauth2 glpat; WAF-blocks ~1/3+ pushes — retry
-  loop; GitHub is source of truth). Fresh-root repo: base tree =
-  upstream @3c0c60d, docs synced from upstream@01dd147 (parallel session
-  condensed upstream's AGENTS.md/SKILL.md mid-session — handled, merged).
-- Toolchain: NOT committed. `tools/` + `.blender-home` are symlinks to
-  `/home/z/work/blender-agent-kit/tools` (Blender 5.2.2 provisioned
-  there by install.sh). In a FRESH sandbox: `./install.sh` (D11
-  chunked-download fallback included), then re-link or let install.sh
-  provision locally.
-- Design: `docs/DESIGN_vision_kit_v1.md` DRAFT-2 — D1–D14 with audit
-  5-a amendments. All decisions FINAL except where waves amend.
-- Vision tools: `scripts/look.py` + `scripts/annotate.py` (see
-  kb/vision_loop.md). Regression: `tests/test_v1_look.py` 27/27 GREEN.
-- Docs: AGENTS.md is the vision-first consumer guide (LAW MAP included);
-  .agents/SKILL.md has VARIANT CONTEXT up top; README frames the fork.
-- Upstream snapshots: docs/UPSTREAM_{PLAN,HANDOFF,FINDINGS,SOP}_snapshot.md.
+- Repo: https://github.com/zmpc01/blender-vision-kit (main, HEAD ~a90e2e1)
+  + GitLab mirror remote `gitlab` (oauth2 glpat; WAF-blocks ~1/3 of
+  pushes — retry loop; GitHub is source of truth). Last GitLab sync:
+  session 2 — RE-MIRROR CURRENT HEAD EARLY NEXT SESSION (see TODO 1).
+- Toolchain: NOT committed. In a fresh sandbox: `./install.sh`
+  (D11 chunked fallback; the kit now OWNS tools/chunked_dl.sh — the old
+  upstream symlink is gone). Blender 5.2.2 + libEGL + Pillow.
+- M5 perception campaign (all MEASURED, see PLAN + kb/vision_loop.md):
+  - P1 color: annotations REQUIRE color; mono = geometry second-look
+  - P2 shade: Standard/MATERIAL+shadows+cavity, exposure +1.0EV default
+  - P3 animation: `motion_study.py` (2×2 grid: trajectory row +
+    onion-skin row + numeric MOTION-TABLE with POP/BURST/SPIN flags)
+  - P4 transient: `transient_scan.py` (change radar + validator state
+    radar + duration classification + suspects strip w/ BAD cells)
+  - Label-stick bug FIXED (annotate.refresh_labels + frame pinning) —
+    verified visually at f16 closeup
+- Fixtures: T6 `t6_transient.py` (planted sink), T7 `t7_wave4_debug.py`
+  (planted intersection transient + teleport pop + persistent hover).
+- Regression: test_v1_look 27/27 + test_v2_motion 27/27 (in-Blender
+  suites via `blrun.sh --background --python tests/...`).
+- Wave 4a: consumer agent (VLM-bridged) operated the full workflow,
+  found both planted defects + a REAL blocker (hardcoded n_frames=64 —
+  fixed in batch 3). Findings: docs/WAVE4A_findings.md. Key doctrine
+  validation: **VLM + paired numbers is sufficient for a delegated
+  vision agent; numbers overrule VLM hallucinations.**
+
+## Immediate next-session TODO (in order)
+
+1. GitLab re-mirror: `git push gitlab main` with retry loop (WAF 403s);
+   verify `git ls-remote gitlab` HEAD matches GitHub.
+2. Wave 4b/5 (P5): run 1–2 more VLM-bridged consumer waves (fresh
+   agents, docs-only briefs) targeting: placement workflow + crowd
+   sibling-repo read path. Use the wave-4a brief pattern (Task tool,
+   docs-only, VLM bridge note, worklog append).
+3. P5 doc polish: add a short "delegated-agent vision" section to
+   AGENTS.md (z-ai vision CLI usage + pairing law) — it currently lives
+   only in PLAN/escalation notes.
+4. T3 (carried): crowd-kit Rust build is network-gated; if network
+   allows, `cargo build --release` in blender-crowd-kit, then run the
+   crowd workflow end-to-end and vision-verify a dense scene.
+5. Milestone backup: /home/sync copy + both remotes (see backup cmd in
+   PLAN M4).
+
+## Known-open friction (from waves, triaged, NOT yet fixed)
+
+- motion_study filmstrip labels are frame numbers only (fine); suspects
+  strip cells could carry diff magnitudes (NIT, low value).
+- transient_scan on crowd-dense scenes: validator sweep cost grows
+  pairwise — if a crowd wave runs one, measure and consider
+  `--validate-every N` stride (N=1 default).
+- blrun.sh without `--background` hangs on GUI-on-Xvfb (candidate:
+  auto-inject -b with a warning; needs a decision).
 
 ## Worklog + artifacts
 
-- Multi-agent worklog: /home/z/work/worklog.md (NOT pushed — replicate
-  key entries into the repo worklog.md if lost; repo worklog.md has the
-  implementation entries).
-- Wave-1 friction reports: .agents/research/VISION_WAVE1_report.md
-  (T0/T1/T2 consumer-agent usability tests).
-- Absorption briefs: worklog entries 2-a (demo repo) + 2-b (kit tool
-  surface); design audit 5-a (DRAFT-1 critique).
+- Multi-agent worklog: /home/z/my-project/worklog.md (harness dir;
+  REPLICATE key entries into repo worklog.md — the harness dir does not
+  survive sandbox resets). Repo worklog.md has session-1 history.
+- Design docs: docs/DESIGN_vision_kit_v1.md (D1–D14 FINAL) + tuning
+  harness scripts (tuning_*.py) from P1/P2.
+- Wave outputs: output/t6_*, output/t7_*, output/w4a_scene/ (not
+  pushed; regenerable from fixtures).
 
-## Immediate next-session scope (M3 continuation)
+## Doctrine reminders for the next session
 
-1. **Wave-1 fixes** (from .agents/research/VISION_WAVE1_report.md):
-   triage each friction item (infra vs usability, P0–P2), fix doc/tool
-   surface, re-run T0+T1 regression.
-2. **Wave 2**: T4 animated (capsule walk + keyframe contact sheet +
-   glTF export + viewer) + T3 crowd via sibling blender-crowd-kit
-   (INFRA-GATED: provision crowd-kit toolchain first — clone, install.sh
-   or symlink tools/; verify bgyss wheel builds/loads on 5.2; T3 is
-   EXCLUDED from the wave-termination criterion per D14).
-3. **Wave 3**: fresh-eyes validation wave (different archetype briefs);
-   termination = a wave with only P2 usability friction.
-4. After waves: distill learnings into AGENTS.md gotchas (continue
-   numbering 117+), kb/vision_loop.md, SKILL.md; then M4 wrap-up.
-
-## Sandbox / environment notes for the next session
-
-- Work ONLY in /home/z/work/ (watchdog reverts /home/z/my-project/).
-- Write tool works under /home/z/ only — /home/z/work/ is fine.
-- Blender binary: tools/blender/blender via blrun.sh ONLY (raw runs
-  lack libEGL/Xvfb env and die silently; raw binary DOES propagate
-  script exit codes — blrun does not).
-- EEVEE: run `./scripts/blrun.sh --warm-cache` once per container
-  (~30s) before first EEVEE use; workbench needs nothing.
-- Tests: `./scripts/blrun.sh --background --python tests/test_v1_look.py --`
-  and `bash run.sh --scope-check`.
-- Git: rebase before push (a parallel session pushed mid-session once
-  already); never force; GitLab needs retry loops.
-
-## Known gaps / open questions
-
-- blrun.sh swallows look.py's exit 3 — acceptable (verdict lines are
-  greppable) but a `--propagate-exit` blrun flag is a nice upstream PR.
-- Crowd T3 infra unverified (bgyss wheel on Blender 5.2 / this sandbox).
-- look.py labels are indexes; named-label mode is backlog.
-- The `viewport` preset (960×540 FLAT) is unchanged for vid2vid — if a
-  wave confirms vision agents misuse it for geometry checks, document
-  harder or rename.
-
-## Session-close addendum (2026-09-28, post-waves)
-
-M3 is COMPLETE except T3's infra gate. Final wave status:
-- Fix batches 1+2 landed, test_v1_look 27/27 GREEN, regression held after every batch.
-- All AGENTS.md claims are now MEASURED (wave agents verified them literally).
-- Sub-agent harness cannot render PNGs — vision verification is the
-  orchestrator's job in this environment; in a real vision-agent sandbox
-  the consumer IS the seer (that's the kit's design center).
-- T3 crowd: resume by finishing the bgyss Rust build in
-  blender-crowd-kit/vendor/blender-crowd (`rustup run stable cargo build
-  --release -p crowd-blender --features extension-module` + maturin
-  wheel into Blender's bundled python) — the pinned 1.94.1 toolchain
-  download stalls on this network; stable 1.98.1 compiles the crates
-  fine. Network-hostile sandbox is the only blocker; user offered
-  bigger compute.
-- Exit-code lore corrected everywhere: blrun PROPAGATES script exit
-  codes (verified twice). Old claim was a `$?`-after-pipe probe error.
-- Next session quick start: `git clone …blender-vision-kit && cd
-  blender-vision-kit && ./install.sh && ./scripts/blrun.sh --background
-  --python tests/test_v1_look.py --` → expect 27/27 ALL PASS.
+- GIT IS THE DISK: push on every micro step (session 3 lost unpushed
+  P3/P4 work to a sandbox wipe; the loss boundary was exactly the last
+  push). Never force push.
+- Every new tool gets an in-Blender regression test before merge.
+- Eyes triage and compose; gates decide geometry (two-column law).
+- Scanner ranks; eyes verdict (L6). A clean keyframe sheet proves
+  nothing about transients (the reason transient_scan exists).

@@ -3037,3 +3037,19 @@ Stage Summary:
 - **Sub-agent vision probe (agent-d770c805)**: sub-agents still CANNOT Read images in this harness (placeholder returned). BUT `z-ai vision` (glm-5v-turbo) WORKS in-sandbox and describes kit renders accurately → P5: promote vlm_critique.py to delegated-agent eye channel; waves 4+ = VLM-bridged consumers + orchestrator native-eye verification.
 - blrun.sh gotcha reproduced: omitting `--background` → GUI-on-Xvfb startup hangs SILENTLY (zero output, infinite). Defensive auto-`-b` flagged in PLAN M5.
 - PLAN.md: M5 campaign opened (P1 color / P2 shade-light / P3 animation rep / P4 transient scan / P5 vision bridge / waves 4+).
+
+---
+Task ID: 4-d (session-3 close: wave 4a + fix batch 3 + wrap)
+Agent: vision-agent (orchestrator)
+Task: Wave 4a VLM-bridged consumer test, fix batch 3, handoff refresh
+
+Work Log:
+- T7 fixture (t7_wave4_debug.py): planted Lamp-table intersection transient, Crate teleport pop, Hover persistent baseline; table-base z bug caught by own scan (data.transform+scale double-lift) and fixed
+- Wave 4a sub-agent (docs-only brief, VLM bridge): found both planted defects + weak unattributed burst, confirmed at full res, cross-tool consistency (scan f23 = motion POP f23); BLOCKER: --scene path hardcoded n_frames=64 (fixed: --frames arg both tools); friction fixes: tracked/NOT-TRACKED ids printed, SPIN note via rotation fcurves, blrun stale .blender-home symlink resilience; 54/54 regression checks re-green
+- Wave-4a doctrine validation: VLM + paired numbers sufficient for delegated vision agents; numbers overrule VLM hallucinations (phantom float caught)
+- HANDOFF.md rewritten for session close; AGENTS.md EVENT-TABLE reading nit
+
+Stage Summary:
+- 12 commits this session (ed0b41b..a90e2e1) pushed to GitHub
+- M5: P1-P4 SETTLED, wave 4a complete, fix batches 1-3 shipped
+- Open: GitLab re-mirror, waves 4b/5, P5 AGENTS.md section, T3 crowd build
