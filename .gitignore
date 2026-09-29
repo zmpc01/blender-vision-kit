@@ -35,3 +35,6 @@ smoke/*.exr
 # Local dual-toolchain symlink (session-25 A/B convenience)
 tools/blender45
 tools/*
+# ... but the kit OWNS its chunked downloader (install.sh D11 fallback
+# depends on it; the tools symlink died with the old upstream checkout)
+!tools/chunked_dl.sh
