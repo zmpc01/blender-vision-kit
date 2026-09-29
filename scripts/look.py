@@ -196,6 +196,13 @@ def main():
     validate_output(os.path.join(outdir, "grid.png"))
 
     # ---- annotations (render-time only; deleted before any return) -------
+    # stale-read law (kit's own prop_carry.py:53): re-issue frame_set +
+    # double view_layer update before ANY matrix read. The validator ran
+    # in between and depsgraph state must be pinned to args.frame again.
+    if args.frame is not None:
+        scene.frame_set(args.frame)
+    bpy.context.view_layer.update()
+    bpy.context.view_layer.update()
     layer = {"objects": [], "labels": []}
     annotated = False
     if not args.no_annotate:
@@ -234,6 +241,8 @@ def main():
             for lbl in angle_labels:
                 out_path = os.path.join(outdir, f"{lbl}.png")
                 if annotated:
+                    annotate.refresh_labels(layer)
+                    bpy.context.view_layer.update()
                     annotate.aim_labels_at(layer["labels"],
                                            _camera_loc_for_angle(lbl, target),
                                            flat=(lbl == "top"))
@@ -250,6 +259,8 @@ def main():
                     for lbl in angle_labels:
                         tmp_path = os.path.join(tmp, f"{lbl}.png")
                         if annotated:
+                            annotate.refresh_labels(layer)
+                            bpy.context.view_layer.update()
                             annotate.aim_labels_at(layer["labels"],
                                                    _camera_loc_for_angle(lbl, target),
                                                    flat=(lbl == "top"))
@@ -277,6 +288,8 @@ def main():
             dist = diag * args.closeup_fill
             closeup_loc = (cx + dist * 0.85, cy - dist * 0.85, cz + dist * 0.6)
             if annotated:
+                annotate.refresh_labels(layer)
+                bpy.context.view_layer.update()
                 annotate.aim_labels_at(layer["labels"], closeup_loc)
             closeup_path = os.path.join(outdir, f"closeup_{args.closeup}.png")
             vc.render_angle("custom", closeup_path, engine=args.engine,

@@ -185,6 +185,8 @@ def build_annotation_layer(flagged_ids=None, label_ids=None,
         curve.align_x = 'CENTER'
         curve.align_y = 'CENTER'
         txt = bpy.data.objects.new(f"{ANNOT_PREFIX}lbl_{idx}_{name}", curve)
+        txt["kit_target"] = name  # refresh_labels() reads this (robust to
+        # underscores in object names — the name-suffix parse is NOT)
         bpy.context.collection.objects.link(txt)
         center_xy = (obj.matrix_world @ type(obj.location)(Vector(obj.bound_box[0])))
         cx = sum((obj.matrix_world @ type(obj.location)(cc)).x for cc in obj.bound_box) / 8.0
@@ -214,6 +216,33 @@ def aim_labels_at(labels, cam_loc, flat=False):
             txt.rotation_euler = (0.0, 0.0, 0.0)
         else:
             txt.rotation_euler = d.to_track_quat('Z', 'Y').to_euler()
+
+
+def refresh_labels(layer):
+    """Re-evaluate label POSITIONS from their target objects at the CURRENT
+    frame state (M5 label-stick fix, measured: a look built at f1 then
+    rendered at f16 left labels at f1 positions — the billboard for a
+    moved object aimed from a stale offset rendered edge-on).
+
+    Call (+ view_layer.update()) before EVERY aim_labels_at / render: cheap
+    (<=8 labels), and makes labels frame-safe for animated scenes.
+    """
+    scene = bpy.context.scene
+    for txt in layer.get("labels", []):
+        try:
+            target_name = txt["kit_target"]
+        except KeyError:
+            continue
+        obj = scene.objects.get(target_name)
+        if obj is None or obj.type != 'MESH':
+            continue
+        mw = obj.matrix_world
+        corners = [mw @ type(obj.location)(cc) for cc in obj.bound_box]
+        top = max(c.z for c in corners)
+        cx = sum(c.x for c in corners) / 8.0
+        cy = sum(c.y for c in corners) / 8.0
+        size = txt.data.size
+        txt.location = (cx, cy, top + size * 0.9)
 
 
 def delete_annotation_layer(layer: dict) -> int:
