@@ -6,10 +6,11 @@
 
 ## State at handoff
 
-- Repo: https://github.com/zmpc01/blender-vision-kit (main, HEAD ~a90e2e1)
-  + GitLab mirror remote `gitlab` (oauth2 glpat; WAF-blocks ~1/3 of
-  pushes — retry loop; GitHub is source of truth). Last GitLab sync:
-  session 2 — RE-MIRROR CURRENT HEAD EARLY NEXT SESSION (see TODO 1).
+- Repo: https://github.com/zmpc01/blender-vision-kit (main, HEAD ~72cf468)
+  + GitLab mirror gitlab.com/ansgareutychisO/blender-vision-kit (PAT
+  namespace is ansgareutychisO — NOT zmpc01; WAF 403s are probabilistic,
+  retry; verified synced @72cf468 session-3 close). GitHub is source of
+  truth.
 - Toolchain: NOT committed. In a fresh sandbox: `./install.sh`
   (D11 chunked fallback; the kit now OWNS tools/chunked_dl.sh — the old
   upstream symlink is gone). Blender 5.2.2 + libEGL + Pillow.
@@ -34,8 +35,7 @@
 
 ## Immediate next-session TODO (in order)
 
-1. GitLab re-mirror: `git push gitlab main` with retry loop (WAF 403s);
-   verify `git ls-remote gitlab` HEAD matches GitHub.
+1. (DONE session-3 close) GitLab synced @72cf468. Next session: only re-push new commits.
 2. Wave 4b/5 (P5): run 1–2 more VLM-bridged consumer waves (fresh
    agents, docs-only briefs) targeting: placement workflow + crowd
    sibling-repo read path. Use the wave-4a brief pattern (Task tool,
