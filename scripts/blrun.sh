@@ -38,6 +38,14 @@ KIT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BLENDER_BIN="${BLENDER_BIN:-$KIT_ROOT/tools/blender/blender}"
 BLENDER_DISPLAY="${BLENDER_DISPLAY:-:99}"
 BLENDER_HOME="${BLENDER_HOME:-$KIT_ROOT/.blender-home}"
+# Wave-4a resilience: a STALE SYMLINK to a wiped checkout (e.g. a clone
+# restored from git where .blender-home was a relative symlink) makes
+# every run print mkdir/cache errors and silently disables the shader
+# cache — replace the dead link with a real dir.
+if [[ -L "$BLENDER_HOME" && ! -e "$BLENDER_HOME" ]]; then
+    rm -f "$BLENDER_HOME"
+    echo "[blrun] removed stale .blender-home symlink (was dangling)" >&2
+fi
 # Read-only checkout fallback (usability round-1/U2): a kit clone mounted
 # read-only would make the default HOME dir unwritable — fall back to /tmp.
 if [[ ! -w "$KIT_ROOT" && -z "${BLENDER_HOME:-}" && ! -w "$BLENDER_HOME" ]]; then

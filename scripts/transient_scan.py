@@ -47,6 +47,10 @@ def _parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--scene", default=None)
     p.add_argument("--load-blend", default=None)
+    p.add_argument("--frames", type=int, default=24,
+                   help="--scene path only: how many frames to ANIMATE the "
+                        "freshly built scene over (wave-4a BLOCKER fix: was "
+                        "hardcoded 64, silently re-timing shorter scenes)")
     p.add_argument("--start", type=int, default=None)
     p.add_argument("--end", type=int, default=None)
     p.add_argument("--top", type=int, default=6)
@@ -66,7 +70,7 @@ def _load(args):
         clear_scene()
         ctx = mod.build_scene()
         if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=1, n_frames=64)
+            mod.animate(ctx, start_frame=1, n_frames=args.frames)
     else:
         print("[scan] ERROR: need --scene or --load-blend")
         sys.exit(1)
@@ -253,8 +257,10 @@ def main():
     args = _parse_args()
     _load(args)
     scene = bpy.context.scene
-    start = args.start if args.start is not None else scene.frame_start
-    end = args.end if args.end is not None else scene.frame_end
+    start = args.start if args.start is not None else (
+        1 if args.scene else scene.frame_start)
+    end = args.end if args.end is not None else (
+        args.frames if args.scene else scene.frame_end)
     if end - start < 1:
         print(f"[scan] ERROR: frame range {start}..{end} too short to scan")
         sys.exit(1)

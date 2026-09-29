@@ -65,6 +65,12 @@ def _parse_args():
     p.add_argument("--objects", default=None,
                    help="comma-separated object ids to track (default top-3)")
     p.add_argument("--samples", type=int, default=8)
+    p.add_argument("--frames", type=int, default=24,
+                   help="--scene path only: how many frames to ANIMATE the "
+                        "freshly built scene over (matches the scene-CLI "
+                        "--frames default). Wave-4a BLOCKER fix: this was "
+                        "hardcoded 64, silently re-timing 24-frame scenes "
+                        "— study range and animation range must agree.")
     p.add_argument("--start", type=int, default=None)
     p.add_argument("--end", type=int, default=None)
     p.add_argument("--out", default=None)
@@ -246,6 +252,23 @@ def build_trajectories(objs, start, end, coarse=48):
 # Numeric block: the motion table (printed beside the images)
 # ---------------------------------------------------------------------------
 
+def _rotation_span(obj):
+    """Total rotation range in degrees across keyframes (wave-4a finding:
+    a pure spin reads 'static' in the center-displacement table — center
+    never moves; rotation fcurves are the only table-visible signal)."""
+    from blender_kit import iter_fcurves
+    if not (obj.animation_data and obj.animation_data.action):
+        return None
+    best = 0.0
+    for fc in iter_fcurves(obj.animation_data.action):
+        if not fc.data_path.startswith(("rotation_euler", "rotation_quaternion")):
+            continue
+        vals = [kp.co[1] for kp in fc.keyframe_points]
+        if len(vals) >= 2:
+            best = max(best, max(vals) - min(vals))
+    return math.degrees(best) if best > 1e-6 else None
+
+
 def motion_numbers(objs, start, end, frames):
     """Per-object per-step displacement + pop/static flags. Printed as text
     so the agent gets NUMBERS with its pictures (forced pairing)."""
@@ -273,6 +296,10 @@ def motion_numbers(objs, start, end, frames):
         # the T6 GlitchBox read 0.000m median while sinking f14-18)
         burst = (not static and med < 1e-3 and max(mags) > 0.02)
         arc = "static" if static else f"median-step {med:.3f}m"
+        spin = _rotation_span(o)
+        if spin is not None and spin > 5.0:
+            arc += f" + SPIN {spin:.0f}deg (center-static spin is invisible "
+            arc += "in displacement — read the onion row's ghost orientations)"
         line = (f"  {o.name}: start {step_frames[0]} end {step_frames[-1]}, "
                 f"{arc}")
         if pops:
@@ -317,13 +344,15 @@ def main():
         clear_scene()
         ctx = mod.build_scene()
         if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=1, n_frames=64)
+            mod.animate(ctx, start_frame=1, n_frames=args.frames)
     scene = bpy.context.scene
     if not args.load_blend and not args.scene:
         print("[motion] ERROR: need --scene or --load-blend")
         sys.exit(1)
-    start = args.start if args.start is not None else scene.frame_start
-    end = args.end if args.end is not None else scene.frame_end
+    start = args.start if args.start is not None else (
+        1 if args.scene else scene.frame_start)
+    end = args.end if args.end is not None else (
+        args.frames if args.scene else scene.frame_end)
     if end <= start:
         print(f"[motion] ERROR: frame range {start}..{end} is empty — "
               "this scene has no animation to study")
@@ -336,8 +365,16 @@ def main():
     objs = ([bpy.context.scene.objects.get(nm.strip()) for nm in args.objects.split(",")]
             if args.objects else None)
     objs = [o for o in (objs or []) if o] or _pick_objects(3)
+    # Wave-4a friction fix: name the tracked set AND what was dropped
+    meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH'
+              and not o.name.startswith(MOTION_PREFIX) and not _groundlike(o)]
+    ranked_all = sorted(meshes, key=lambda o: -o.dimensions.length)
+    dropped = [o.name for o in ranked_all if o not in objs]
     print(f"[motion] tracking {len(objs)} objects over frames {start}..{end} "
           f"(samples {frames})")
+    print(f"[motion] tracked: {[o.name for o in objs]}"
+          + (f"  NOT-TRACKED (top-3 cap — pass --objects to override): "
+             f"{dropped}" if dropped else ""))
 
     outdir = args.out or os.path.join(
         "output", args.scene or os.path.basename(args.load_blend or "motion"),
