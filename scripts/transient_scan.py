@@ -111,6 +111,32 @@ def _diff_series(rendered):
     return series
 
 
+def _validator_sweep(start, end):
+    """THE STATE RADAR: run the validator at EVERY frame. Pixel diff finds
+    CHANGE; a parked pathological STATE (object sunk through the floor for
+    3 frames) is a semantic fact — below-floor is P0 at f16 regardless of
+    pixel deltas (measured: the T6 sunk state produced no diff peak).
+    Returns {frame: [(severity, type, object), ...]} of nonzero findings."""
+    import validate_scene as vs
+    scene = bpy.context.scene
+    findings = {}
+    for f in range(start, end + 1):
+        scene.frame_set(f)
+        bpy.context.view_layer.update()
+        try:
+            report = vs.validate_scene()
+        except Exception as exc:  # a broken frame must not kill the sweep
+            findings[f] = [("P0", f"validator-error: {exc}", "-")]
+            continue
+        rows = []
+        for issue in report["issues"]:
+            who = issue.get("object") or ",".join(issue.get("objects", [])) or "-"
+            rows.append((issue["severity"], issue.get("type", "issue"), who))
+        if rows:
+            findings[f] = rows
+    return findings
+
+
 def _events(series, top_k):
     """Cluster consecutive frames into events; rank by peak diff.
     An event = maximal run of frames with mean diff above the adaptive
@@ -147,6 +173,44 @@ def _events(series, top_k):
     return evs[:top_k]
 
 
+def _fold_findings(evs, findings, top_k, total_frames):
+    """Classify validator findings by DURATION, then fold:
+    - signature present in <=40% of frames = TRANSIENT (the hunt target —
+      a short window of wrong state)
+    - present in >60% = PERSISTENT baseline (design, e.g. a jump reads as
+      flight-floaters on every airborne frame — NOT a transient)
+    Transient findings attach to their enclosing change event (or form
+    their own) and get BAD cells in the strip. Persistent ones print once
+    as baseline notes."""
+    sig_frames = {}
+    sig_example = {}
+    for f, rows in findings.items():
+        for row in rows:
+            sig = (row[0], row[1], row[2])  # (severity, type, who)
+            sig_frames.setdefault(sig, []).append(f)
+            sig_example.setdefault(sig, row)
+    transient, persistent = [], []
+    for sig, frames in sig_frames.items():
+        frac = len(set(frames)) / max(total_frames, 1)
+        (transient if frac <= 0.4 else persistent).append((sig, sorted(set(frames))))
+    evs_out = list(evs)
+    for sig, frames in transient:
+        host = next((e for e in evs_out
+                     if e["start"] - 2 <= frames[0] and frames[-1] <= e["end"] + 2
+                     or (frames[0] <= e["end"] + 2 and frames[-1] >= e["start"] - 2)),
+                    None)
+        if host is None:
+            host = {"start": frames[0], "end": frames[-1], "mean": 0.0,
+                    "peak_frame": frames[len(frames) // 2], "peak_diff": 0.0}
+            evs_out.append(host)
+        host["start"] = min(host["start"], *frames)
+        host["end"] = max(host["end"], *frames)
+        host["transient"] = sorted(
+            host.get("transient", []) + [(sig, frames)])
+    evs_out.sort(key=lambda e: (-len(e.get("transient", [])), -e["peak_diff"]))
+    return evs_out[:top_k], persistent
+
+
 def _suspect_strip(evs, outdir, w, h, engine):
     """Re-render each event's START / PEAK / END frames at read resolution
     (fixed camera parity with the scan). The peak alone can miss the
@@ -164,8 +228,16 @@ def _suspect_strip(evs, outdir, w, h, engine):
     cells = []
     with tempfile.TemporaryDirectory() as td:
         for i, e in enumerate(evs):
-            for tag, f in (("start", e["start"]), ("PEAK", e["peak_frame"]),
-                           ("end", e["end"])):
+            frames_map = {"start": e["start"], "PEAK": e["peak_frame"],
+                          "end": e["end"]}
+            # worst TRANSIENT frames get cells too (semantic suspects)
+            bad = []
+            for _, frames in e.get("transient", []):
+                bad.extend(frames[:2])
+            bad = sorted(set(bad))[:2]
+            for j, bf in enumerate(bad):
+                frames_map[f"BAD{j}"] = bf
+            for tag, f in frames_map.items():
                 scene.frame_set(f)
                 bpy.context.view_layer.update()
                 p = os.path.join(td, f"e{i}_{tag}_{f}.png")
@@ -173,7 +245,7 @@ def _suspect_strip(evs, outdir, w, h, engine):
                                 target=(cx, cy, cz))
                 cells.append(p)
         strip = os.path.join(outdir, "suspects.png")
-        vc.stitch_contact_sheet(cells, strip, grid_cols=min(len(cells), 3))
+        vc.stitch_contact_sheet(cells, strip, grid_cols=min(len(cells), 4))
     return strip
 
 
@@ -198,6 +270,17 @@ def main():
     rendered = _render_range(start, end, outdir, w, h, args.engine)
     series = _diff_series(rendered)
     evs = _events(series, args.top)
+    print("[scan] validator sweep (semantic state radar, every frame)...")
+    findings = _validator_sweep(start, end)
+    evs, persistent = _fold_findings(evs, findings, args.top,
+                                     end - start + 1)
+
+    if persistent:
+        print("[scan] PERSISTENT findings (baseline design, not transients):")
+        for (sev, typ, who), frames in persistent[:4]:
+            span = (f"f{frames[0]}..f{frames[-1]}" if frames[-1] > frames[0]
+                    else f"f{frames[0]}")
+            print(f"  {sev} {typ} ({who}) {span} — present in most frames")
 
     print("[scan] EVENT-TABLE (ranked by peak pixel-diff; floor = "
           "median+2*MAD)")
@@ -207,8 +290,15 @@ def main():
     for i, e in enumerate(evs):
         span = (f"f{e['start']}" if e['start'] == e['end']
                 else f"f{e['start']}..f{e['end']}")
-        print(f"  #{i + 1}: {span}  peak f{e['peak_frame']} "
-              f"(diff {e['peak_diff']:.3f}, mean {e['mean']:.3f})")
+        line = (f"  #{i + 1}: {span}  peak f{e['peak_frame']} "
+                f"(diff {e['peak_diff']:.3f}, mean {e['mean']:.3f})")
+        print(line)
+        for sig, frames in e.get("transient", []):
+            sev, typ, who = sig
+            span = (f"f{frames[0]}..f{frames[-1]}" if frames[-1] > frames[0]
+                    else f"f{frames[0]}")
+            print(f"      TRANSIENT {sev} {typ} ({who}) {span} "
+                  "<-- short-window wrong state")
 
     strip = None
     if evs:

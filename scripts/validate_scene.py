@@ -65,6 +65,14 @@ def _object_volume(b: dict) -> float:
             (b["max"][2] - b["min"][2]))
 
 
+def _is_ground_like(b: dict) -> bool:
+    """Flat, wide slab at/near the floor (the ground itself, roads, pads).
+    Same shape rule as look.py's label exclusion (measured there)."""
+    height = b["max"][2] - b["min"][2]
+    area = (b["max"][0] - b["min"][0]) * (b["max"][1] - b["min"][1])
+    return height <= 0.05 and area >= 6.0
+
+
 def validate_scene(*, ground_z: float = 0.0,
                    floating_threshold: float = 0.05,
                    overlap_volume_threshold: float = 0.001) -> dict:
@@ -147,6 +155,31 @@ def validate_scene(*, ground_z: float = 0.0,
                 "top_z": round(top_z, 3),
                 "ground_z": ground_z,
                 "description": f"Object '{name}' is entirely below the floor (top at z={top_z:.3f})"
+            })
+
+    # ---- Check 2b: floor-penetration (M5, transient-scan driven) ----
+    # below_floor only catches FULLY-sunk objects; a HALF-SUNK box (top
+    # above floor) was invisible to every check (T6 planted glitch,
+    # measured). Flag deep penetration into the ground: depth > max(5cm,
+    # 20% of height) so intentional shallow embeds (posts, rugs) stay
+    # silent but sunk-through-floor bugs surface as P1.
+    for name, b in bounds_map.items():
+        if name.lower() in [n.lower() for n in CEILING_NAMES]:
+            continue
+        if _is_ground_like(b):
+            continue
+        min_z = b["min"][2]
+        height = b["max"][2] - min_z
+        depth = ground_z - min_z
+        if min_z < ground_z - 0.001 and depth > max(0.05, 0.2 * height):
+            issues.append({
+                "type": "floor_penetration",
+                "severity": "P1",
+                "object": name,
+                "penetration_m": round(depth, 3),
+                "ground_z": ground_z,
+                "description": (f"Object '{name}' penetrates the floor by "
+                                f"{depth:.3f}m ({depth / max(height, 1e-6) * 100:.0f}% of its height)")
             })
 
     # ---- Check 3: suspicious intersections -------------------------
