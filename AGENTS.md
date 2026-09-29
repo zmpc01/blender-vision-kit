@@ -123,6 +123,17 @@ propagated through blrun (verified); in pipelines check
 - **L4 COLOR FROM SCHEMA**: never judge absolute color from a render;
   read material color from `scene_schema.py`. Workbench Standard/MATERIAL
   is calibrated for hue comparison, not absolute values.
+- **L5 REPRESENTATION SPLIT (motion)**: no single animation image answers
+  everything — trajectory grids answer PATH SHAPE, onion-skins answer
+  SPEED/AGE/DIRECTION, the numeric table answers MAGNITUDE; filmstrips
+  answer none of these well. Ask which question you're answering, read
+  that row/cell; when in doubt run motion_study.py (one invocation, all
+  of them).
+- **L6 SCANNER RANKS, EYES VERDICT**: transient_scan's event table is an
+  attention device, not a verdict — pixel diff finds CHANGE, the
+  validator sweep names STATES, but only your eyes at full res (--frame N
+  --closeup) decide what actually happened. Conversely: a clean keyframe
+  sheet proves NOTHING about transients between keys.
 
 ## Canonical workflow (full arc)
 
@@ -156,9 +167,13 @@ EOF
     --load-blend output/my_scene/work.blend --closeup Cube \
     --output output/my_scene/look3
 
-# 6. Animation check (keyframe contact sheet at vision-tuned resolution)
-./scripts/blrun.sh --background --python scripts/keyframe_contact_sheet.py -- \
-    --scene my_scene --output output/my_scene/motion.png --frames 6 --grid-cols 3
+# 6. Animation understanding (path shape + speed/age + numeric table)
+./scripts/blrun.sh --background --python scripts/motion_study.py -- \
+    --load-blend output/my_scene/work.blend --out output/my_scene/motion
+
+# 6b. Transient spot-check (issues that only exist on some frames)
+./scripts/blrun.sh --background --python scripts/transient_scan.py -- \
+    --load-blend output/my_scene/work.blend --out output/my_scene/scan
 
 # 7. Ship: full render + MP4 + glTF + .blend + viewer
 ./scripts/blrun.sh --background --python scripts/my_scene.py -- \
@@ -271,14 +286,58 @@ Angles: `front,side,top,persp,back,right,active,custom` or `--ring N`.
 Defaults: workbench, 640×480, lens 50, target = scene bbox center.
 `--no-grid` = individual files. No annotations (that's look.py's job).
 
-### keyframe_contact_sheet.py — animation verification
+### keyframe_contact_sheet.py — animation verification (superseded for understanding)
 ```bash
 ... --scene my_scene --output motion.png --frames 6 --grid-cols 3 --engine workbench
 ... --orbit --orbit-radius 8 --orbit-height 4
 ```
 Samples N frames across the range, stitches a labeled grid (480×360 cells
 default). Mid-stride freezes read "fallen" to your eyes — that is noise;
-verify motion with fcurve probes, not one still.
+verify motion with fcurve probes, not one still. For UNDERSTANDING motion
+use motion_study.py below; the contact sheet remains a quick eyeball of
+frame states.
+
+### motion_study.py — animation understanding (M5 P3, measured)
+```bash
+... --scene my_scene | --load-blend work.blend   # + --start/--end --samples 8 --objects A,B
+```
+ONE invocation -> numeric MOTION-TABLE + a labeled 2×2 grid
+(`motion_grid.png`) + filmstrip. Read order is printed beside the images:
+- **Row 1 TRAJECTORY** (top=plan, front=elevation): green polyline = path
+  SHAPE, yellow ticks = time (tick spacing = speed). Shadowless by design
+  (see gotcha 121).
+- **Row 2 ONION-SKIN**: ghost copies at sampled frames — lightest = oldest,
+  solid red = now; ghost SPACING = speed; direction unambiguous. This is
+  the measured winner for rise/fall/speed/direction reads.
+- **MOTION-TABLE**: per-object median step + `POP-FRAMES` (teleports) and
+  `BURST-MOTION` (median≈0 but real bursts = sampled transient → run
+  transient_scan.py).
+Measured verdicts that shaped it: filmstrips lose vertical nuance and
+hide spin; onion-skin reads rise/speed instantly; trajectory overlays are
+the only honest path-shape read and MUST be multi-angle (a vertical trail
+collapses from one angle); solid ghosts occlude thin polylines at slow
+motion, hence the two render passes.
+
+### transient_scan.py — spot-check for frame-transient issues (M5 P4)
+```bash
+... --scene my_scene | --load-blend work.blend   # + --start/--end --top 6
+```
+Some issues only exist on certain frames — usually BETWEEN keyframes. A
+keyframe contact sheet catches them by luck. The scan renders EVERY frame
+at previz res (~0.3s/frame), then combines TWO radars:
+1. **change radar**: consecutive-frame pixel diff, MAD-adaptive floor,
+   clustered into ranked EVENTS (catches pops, flickers, teleport bursts)
+2. **state radar**: the validator run at EVERY frame — a parked wrong
+   state (object sunk through the floor) has near-zero pixel diff; the
+   validator names it semantically (`P1 floor_penetration (GlitchBox)
+   f15..f19`)
+Findings are classified by DURATION: short windows = TRANSIENT (the hunt
+target); present in most frames = PERSISTENT baseline design (a jump
+reads as flight-floaters on every airborne frame — listed once, not
+per-frame). Output: EVENT-TABLE + `suspects.png` strip (start/PEAK/end
++ BAD cells) + doctrine line. **The scanner RANKS; the eyes VERDICT** —
+confirm suspects at full res: `look.py --load-blend work.blend --frame N
+--angles none --closeup <id>`.
 
 ### scene_schema.py — JSON scene state export
 ```bash
@@ -293,10 +352,11 @@ THE source for absolute colors (L4) and exact numbers.
 ```bash
 ... --scene my_scene --output validation.json --fail-on-issues
 ```
-Floating / below-floor / suspicious intersections (>5% of smaller object
-volume; P0 at ≥30%) / above-ceiling. Deterministic bbox analysis.
-Severities: floating = P1, below-floor = P0, intersection = P1 (P0 at
-≥30%), above-ceiling = P2.
+Floating / below-floor / floor-penetration / suspicious intersections
+(>5% of smaller object volume; P0 at ≥30%) / above-ceiling. Deterministic
+bbox analysis. Severities: floating = P1, below-floor = P0,
+floor_penetration = P1 (depth > max(5cm, 20% height); ground slabs
+excluded), intersection = P1 (P0 at ≥30%), above-ceiling = P2.
 
 ### export_gltf.py / save_blend.py / agent_server.py / polyhaven.py
 - `export_gltf.py --scene S --output scene.glb --frames N` — glTF for the
@@ -428,6 +488,11 @@ cold-start, not pixels).
 117. **Animated scenes: the look verdict evaluates the `--frame` POSE** — jointed actors legitimately FAIL P0 at mid-stride scissor-pass frames (leg bboxes cross by design). Verify gait with matrix probes across frames (law 108), not with the frame verdict or a single still. `--no-fail-on-issues` keeps exit codes clean for probe loops.
 118. **Contact sheets are for EYES, ascii packs probe them poorly** — at 96 cols a 1.4m actor is ~3 chars and workbench cells are achromatic; motion truth comes from numeric probes (manifest f1 vs fN, fcurve sampling). "Labeled grid" means visual-only labels.
 119. **Verified primitives on 5.2.2**: cube/sphere/cylinder/cone/torus/plane/empty — `primitive_capsule_add` DOES NOT EXIST (capsule = cylinder + caps, or a scaled sphere for previz). **`frame_set()` takes ints only.** **Multi-part actors**: `part.parent = body; part.matrix_parent_inverse = body.matrix_world.inverted()` (keep-pose) or the body walks away and leaves them; origins at the joint; swing axis ⊥ travel direction.
+120. **Blender 5.2 slotted actions: `Action.fcurves` is GONE** — use the kit's `iter_fcurves(action)` compat helper (handles 4.x/5.x). Same class of trap: `scene.view_layer` DOES NOT EXIST (`AttributeError`) — it's `bpy.context.view_layer`.
+121. **Workbench shadow buffer goes stale across in-process `hide_render` toggles** — objects hidden between renders still CAST SHADOWS in the next render (measured in motion_study: ghost shadows with no ghosts). If you toggle visibility for multi-pass rendering, disable shadows for the passes that shouldn't have them; don't trust shadow absence/presence after a toggle.
+122. **Solid overlays occlude thin overlays** — onion ghost spheres buried the 15mm trajectory polylines entirely when motion was slow (n64 bisect, green=0). Render competing representation layers in SEPARATE passes and stitch, or shrink/alpha the dominant layer.
+123. **`mats = other.data.materials` on a LINKED duplicate strips the ORIGINAL's materials** — material slots live on mesh data; a `.copy()` object shares the mesh. For re-materialized copies use `obj.data = original.data.copy()` and name the copy (`KIT_*` prefix so cleanup finds it).
+124. **below_floor only catches FULLY-submerged objects** — a half-sunk box (top above floor) was invisible to every validator check (T6 measured). The `floor_penetration` P1 check (depth > max(5cm, 20% height)) now covers it; ground-like slabs are excluded so roads/rugs stay silent.
 
 ### Mechanics laws 104-110 (kept from upstream sessions 25-26)
 104. **Bake-input pools are NOT export payload** — purge unassigned actions before glTF (one-object-one-action contract).

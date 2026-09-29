@@ -90,6 +90,58 @@ pre-patch state; the agent then "fixes" already-fixed objects. The
 manifest ids + validator numbers come from the SAME state as the images —
 one state, one truth.
 
+## Label frame-safety (M5 label-stick fix, measured)
+
+Labels (and flag boxes) were built from build-time evaluated state; a
+`--frame 16` look on an animated scene rendered labels at stale positions
+and the closeup label aim came out edge-on ("yellow stick"). Two fixes:
+1. look.py re-issues `frame_set(args.frame)` + DOUBLE `view_layer.update()`
+   right before annotation build (the kit's own stale-read law,
+   prop_carry.py:53 — the validator runs in between and depsgraph state
+   must be re-pinned).
+2. `annotate.refresh_labels(layer)` re-reads each label's target object
+   bbox (`KIT_ANNOT_lbl_*["kit_target"]` custom prop — name-suffix parsing
+   breaks on underscored ids) at the CURRENT frame; called before EVERY
+   `aim_labels_at` (grid loop + closeup). Verified: f16 closeup label "2"
+   reads perfectly; flag box wraps the sunk GlitchBox at its f16 bbox.
+
+## Animation representation (M5 P3, measured on T6 parabola/drift/sink)
+
+| representation | answers well | fails at |
+|---|---|---|
+| filmstrip (frame grid) | translation drift over time | vertical nuance weak; spin INVISIBLE; samples can straddle a transient |
+| onion-skin ghosts | rise/fall, speed (spacing), direction, age (lightness ramp: lightest=oldest, red=now) | path shape (overlap), absolute shape noise |
+| trajectory polyline | path SHAPE (unmatched), tick spacing = speed | nothing per se — but MUST be multi-angle (a vertical trail collapses to a stub from one angle) |
+| numeric motion table | magnitudes, POP/BURST flags | everything visual |
+
+Build lessons (each measured): solid ghost spheres buried 15mm polylines
+entirely at slow motion → render trajectory and onion in SEPARATE passes
+(stitched 2×2: row1 traj shadowless, row2 onion with shadows); ghosts
+coincident with the current pose z-fight into stripe noise → skip them
+(<5mm from current); ticks at 0.1m dominated the line → 0.036m; linked
+duplicate ghosts share mesh data → re-materializing them strips the REAL
+object's materials → full mesh copy per ghost, `KIT_MOTION_` prefixed;
+workbench shadow buffer goes stale across in-process hide_render toggles
+→ shadows=off for the pass without solids.
+
+## Transient scan (M5 P4, planted T6 sink f14-18)
+
+A 3-frame glitch between keyframes is INVISIBLE to keyframe sheets unless
+a sample lands inside it (measured: sampling caught it only by luck).
+transient_scan.py renders every frame (~0.3s/frame previz) and combines:
+- change radar: consecutive pixel diff, floor = median+2*MAD (MAD-robust),
+  clustered events ranked by peak diff. Finds pops/flickers. CANNOT find
+  a parked wrong state (the sunk state itself has near-zero diff — the
+  T6 diff peak was the RECOVERY end f19, not the sunk f16).
+- state radar: validator at every frame — semantic findings
+  (`floor_penetration` P1 on GlitchBox f15..f19). Classified by duration:
+  ≤40% of range = TRANSIENT; >60% = PERSISTENT baseline (a jump is
+  "floating" on every airborne frame — design, not bug; listed once).
+Output: EVENT-TABLE + suspects strip (start/PEAK/end + BAD cells) →
+eyes verdict at full res (`look.py --frame N --angles none --closeup`).
+The scanner ranks; the eyes verdict. A clean keyframe sheet proves
+nothing about transients.
+
 ## Known limits / deferred
 
 - Camera offsets are fixed 5m (upstream VIEW_ANGLES) — huge scenes

@@ -53,12 +53,13 @@ harness strips images from sub-agent Read ("images not available in
 sub-agent context") BUT `z-ai vision` (glm-5v-turbo) works → delegated
 agents see through the VLM bridge; orchestrator sees natively via Read.
 
-- [ ] P1 COLOR doctrine: color vs mono matrix (native-eye scored + VLM agreement); when color helps vs when luminance-only wins
-- [ ] P2 SHADE/LIGHT doctrine: workbench FLAT/STUDIO/SCENE × shadows/cavity × Standard/AgX; objective (luminance histogram, edge contrast) + subjective (my read) + VLM accuracy; possible look.py default change
-- [ ] P3 ANIMATION REP: frame-grid vs filmstrip vs onion-skin ghosts vs root-trajectory overlay vs pixel-diff heatmap; my eyes judge motion legibility (speed/direction/timing); codify winning representation
-- [ ] P4 TRANSIENT SCAN: all-frame low-res render + adjacent-pixel-diff ranking → suspect frames → high-res look + validator at suspects (issues that only exist off-keyframe)
+- [x] P1 COLOR doctrine: SETTLED (session-2, commit 961d81d) — annotations REQUIRE color (mono destroys labels/flags/gnomon); mono is a legitimate geometry second-look; workbench +1.0EV exposure default (98% dark-range fix); render_angle shading kwargs
+- [x] P2 SHADE/LIGHT doctrine: SETTLED (same commit) — Standard/MATERIAL + shadows + cavity + exposure=1.0; MATCAP kills color identity; real EEVEE only config where cast shadows honestly reveal floating
+- [x] P3 ANIMATION REP: SETTLED (session-3, motion_study.py) — trajectory (multi-angle) = path shape; onion-skin = speed/age/direction; filmstrip supplementary (vertical nuance weak, spin invisible); numeric table w/ POP/BURST flags; measured build defects: ghost-occlusion of polylines → split passes, coincident-ghost z-fight → skip, stale shadow buffer on hide toggles → shadows=off for traj pass; tests test_v2_motion 27/27
+- [x] P4 TRANSIENT SCAN: SETTLED (session-3, transient_scan.py) — change radar (pixel diff, MAD floor) + state radar (validator per frame) + duration classification (≤40% = TRANSIENT, >60% = PERSISTENT baseline); new validator floor_penetration P1 (half-sunk was invisible); suspects strip start/PEAK/end/BAD; label-stick bug fixed (refresh_labels + frame pinning) and visually verified at f16 closeup; tests 27/27 + v1 suite 27/27
 - [ ] P5 VISION-BRIDGE promotion: vlm_critique.py documented as the DELEGATED-AGENT eye (structured intent+vocab prompts); waves 4+ run VLM-bridged with orchestrator native-eye verification
 - [ ] Waves 4+: vision-bridged consumer agents (docs-only briefs), findings → fix batches; keep iterating
+- [ ] T6 scene ships in kit (t6_transient.py) as the transient/label regression vehicle; consider --frames interplay doc (look --frames N vs animate n_frames)
 - Note: blrun.sh without --background hangs silently (GUI-on-Xvfb startup) — defensive fix candidate (auto -b)
 
 ### M4 — Wrap-up & handover (complete for session 1)
