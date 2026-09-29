@@ -89,7 +89,7 @@ def _render_range(start, end, outdir, w, h, engine):
     out = []
     for f in range(start, end + 1):
         scene.frame_set(f)
-        scene.view_layer.update()
+        bpy.context.view_layer.update()
         p = os.path.join(outdir, f"f{f:04d}.png")
         vc.render_angle("persp", p, engine=engine, width=w, height=h,
                         target=(cx, cy, cz))
@@ -148,8 +148,10 @@ def _events(series, top_k):
 
 
 def _suspect_strip(evs, outdir, w, h, engine):
-    """Re-render each event's peak frame at read resolution (fixed camera
-    parity with the scan — same target math)."""
+    """Re-render each event's START / PEAK / END frames at read resolution
+    (fixed camera parity with the scan). The peak alone can miss the
+    transient body: the T6 sink's peak was the recovery end f19, the
+    actual buried state was f16 — span cells catch both (measured)."""
     import viewport_capture as vc
     scene = bpy.context.scene
     meshes = [o for o in scene.objects if o.type == 'MESH']
@@ -162,12 +164,14 @@ def _suspect_strip(evs, outdir, w, h, engine):
     cells = []
     with tempfile.TemporaryDirectory() as td:
         for i, e in enumerate(evs):
-            scene.frame_set(e["peak_frame"])
-            scene.view_layer.update()
-            p = os.path.join(td, f"peak{i}.png")
-            vc.render_angle("persp", p, engine=engine, width=w, height=h,
-                            target=(cx, cy, cz))
-            cells.append(p)
+            for tag, f in (("start", e["start"]), ("PEAK", e["peak_frame"]),
+                           ("end", e["end"])):
+                scene.frame_set(f)
+                bpy.context.view_layer.update()
+                p = os.path.join(td, f"e{i}_{tag}_{f}.png")
+                vc.render_angle("persp", p, engine=engine, width=w, height=h,
+                                target=(cx, cy, cz))
+                cells.append(p)
         strip = os.path.join(outdir, "suspects.png")
         vc.stitch_contact_sheet(cells, strip, grid_cols=min(len(cells), 3))
     return strip

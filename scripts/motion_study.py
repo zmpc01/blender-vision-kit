@@ -91,8 +91,8 @@ def _eval_matrix_world(obj, frame):
     double view_layer update before ANY read — prop_carry.py:53)."""
     scene = bpy.context.scene
     scene.frame_set(frame)
-    scene.view_layer.update()
-    scene.view_layer.update()
+    bpy.context.view_layer.update()
+    bpy.context.view_layer.update()
     return obj.matrix_world.copy()
 
 
@@ -155,6 +155,14 @@ def build_onion_skin(objs, frames):
     mats = [_make_mat(f"ghost{i}", rgb) for i, rgb in enumerate(_GHOST_RGB)]
     cur_mat = _make_mat("current", _CURRENT_RGB)
     n = len(frames)
+    # current-pose position per object (ghosts coincident with it are
+    # SKIPPED: coincident faces z-fight into stripe noise on mostly-static
+    # objects — measured on T6 GlitchBox, whose f1..14 rest ghosts fought
+    # the red current face in top view)
+    cur_pos = {}
+    for o in objs:
+        mn, mx = _world_bbox(o, frames[-1])
+        cur_pos[o.name] = (mn + mx) / 2.0
     for o in objs:
         for i, f in enumerate(frames[:-1]):
             # map ghost age onto the 4-step ramp (oldest sample = index 0)
@@ -167,6 +175,12 @@ def build_onion_skin(objs, frames):
             ghost.data.name = f"{MOTION_PREFIX}mesh_{o.name}_{f}"
             ghost.name = f"{MOTION_PREFIX}ghost_{o.name}_{f}"
             ghost.matrix_world = _eval_matrix_world(o, f)
+            mn, mx = _world_bbox(o, f)
+            if ((mn + mx) / 2.0 - cur_pos[o.name]).length < 0.005:
+                mesh_ref = ghost.data  # capture BEFORE object removal
+                bpy.data.objects.remove(ghost, do_unlink=True)
+                bpy.data.meshes.remove(mesh_ref)
+                continue
             # strip animation from the ghost so it stays put at render frame
             ghost.animation_data_clear()
             for c in list(ghost.constraints):
@@ -216,14 +230,15 @@ def build_trajectories(objs, start, end, coarse=48):
             made.append(_thin_box(
                 f"{MOTION_PREFIX}traj_{o.name}_{i}", a, b, 0.015, traj_mat))
         # time ticks: every coarse/8-th sample point, small yellow cubes
+        # (0.035m — measured: 0.1m ticks dominate the polyline and bury it)
         step = max(coarse // 8, 1)
         for i in range(0, len(pts), step):
             p = pts[i]
-            s = 0.05
+            s = 0.018
             made.append(_thin_box(
                 f"{MOTION_PREFIX}tick_{o.name}_{i}",
                 (p.x - s, p.y - s, p.z - s), (p.x + s, p.y + s, p.z + s),
-                0.02, tick_mat))
+                0.008, tick_mat))
     return made
 
 
@@ -254,11 +269,17 @@ def motion_numbers(objs, start, end, frames):
         # pop = step >> median (teleport / sim instability)
         pops = [(f, round(d, 3)) for f, d in deltas if med > 0 and d > max(4 * med, 0.25)]
         static = all(d < 1e-4 for d in mags)
+        # burst = median ~0 but real motion elsewhere (sampled transient!
+        # the T6 GlitchBox read 0.000m median while sinking f14-18)
+        burst = (not static and med < 1e-3 and max(mags) > 0.02)
         arc = "static" if static else f"median-step {med:.3f}m"
         line = (f"  {o.name}: start {step_frames[0]} end {step_frames[-1]}, "
                 f"{arc}")
         if pops:
             line += f"  POP-FRAMES {pops}  <-- suspect transient"
+        if burst:
+            line += (f"  BURST-MOTION (max-step {max(mags):.3f}m, rest "
+                     "static) <-- sampled transient, run transient_scan.py")
         lines.append(line)
     return lines
 
@@ -332,11 +353,11 @@ def main():
         for ln in motion_numbers(objs, start, end, frames):
             print(ln)
 
-        # --- trajectories + onion-skin in ONE state, 2 angles -------------
-        # Trajectory needs the DENSE path; onion needs the SAMPLED ghosts.
-        # Build both into the same scene: trajectory polylines from dense
-        # sampling, ghosts from the sample frames, then render top+front.
-        # The onion read needs the ghosts NEAR the path — same frame state.
+        # --- representations in SEPARATE passes (M5 measured defect: solid
+        # ghost spheres OCCLUDE the thin trajectory chains when motion is
+        # slow relative to sample spacing — n64 bisect, green=0). One layer,
+        # two render passes toggled by name prefix, stitched as a labeled
+        # 2x2: row 1 = TRAJECTORY (path shape), row 2 = ONION (age/speed).
         made += build_trajectories(objs, start, end, coarse=48)
         made += build_onion_skin(objs, frames)
         bpy.context.view_layer.update()
@@ -347,16 +368,32 @@ def main():
             o.hide_render = True
             real_hidden.append(o)
 
-        grid = os.path.join(outdir, "onion_traj.png")
-        tmp = []
+        def _set_layer_visibility(show_traj: bool):
+            for o in made:
+                nm = o.name
+                is_traj = (nm.startswith(f"{MOTION_PREFIX}traj")
+                           or nm.startswith(f"{MOTION_PREFIX}tick"))
+                o.hide_render = not (is_traj == show_traj)
+
         import tempfile
+        cells = []
         with tempfile.TemporaryDirectory() as td:
-            for lbl in ("top", "front"):
-                p = os.path.join(td, f"{lbl}.png")
-                vc.render_angle(lbl, p, engine=args.engine, width=w, height=h)
-                tmp.append(p)
-            vc.stitch_contact_sheet(tmp, grid, grid_cols=2)
-        print(f"[motion] onion+trajectory grid: {grid}")
+            for show_traj, tag in ((True, "traj"), (False, "onion")):
+                _set_layer_visibility(show_traj)
+                bpy.context.view_layer.update()
+                for lbl in ("top", "front"):
+                    p = os.path.join(td, f"{tag}_{lbl}.png")
+                    # Workbench shadow-buffer goes STALE across in-process
+                    # hide_render toggles (measured: hidden ghosts kept
+                    # casting in the traj pass) — and shadows only help
+                    # the onion depth read, so: traj=shadowless.
+                    vc.render_angle(lbl, p, engine=args.engine,
+                                    width=w, height=h,
+                                    shadows=not show_traj)
+                    cells.append(p)
+            grid = os.path.join(outdir, "motion_grid.png")
+            vc.stitch_contact_sheet(cells, grid, grid_cols=2)
+        print(f"[motion] motion grid (row1=TRAJECTORY row2=ONION): {grid}")
 
         # restore reals, strip the motion layer, filmstrip the raw scene
         for o in real_hidden:
@@ -378,10 +415,10 @@ def main():
             if me.startswith(MOTION_PREFIX):
                 bpy.data.meshes.remove(bpy.data.meshes[me])
 
-    print("[motion] READ-ORDER: 1) trajectory grid for path SHAPE "
-          "(top=plan view, front=elevation), 2) ghost spacing for SPEED, "
-          "3) ghost lightness for AGE (lightest=oldest, red=now), "
-          "4) POP-FRAMES in the table above = transient suspects -> "
+    print("[motion] READ-ORDER: row 1 TRAJECTORY (top=plan, front=elevation) "
+          "for path SHAPE + yellow tick spacing for speed; row 2 ONION: "
+          "ghost spacing = speed, lightness = age (lightest=oldest, red=now); "
+          "POP-/BURST-MOTION lines above = transient suspects -> "
           "transient_scan.py / look.py --frame N --closeup")
 
 
