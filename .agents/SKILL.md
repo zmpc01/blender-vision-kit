@@ -31,6 +31,10 @@ this variant serves agents with NATIVE image understanding. Design doc:
   in the session-4 course correction (commit ef86b85): this kit is FOR
   vision-native agents ONLY. An agent that cannot see images is upstream's
   audience. Numeric gates live in scripts/image_metrics.py.
+- QA division of labor (session-4, owner-ruled): sub-agents do NON-VISUAL
+  QA only (code review, script execution, textual assertions — wave 5-b
+  caught 3 real bugs this way); the principal makes EVERY visual verdict.
+  Do not rebuild VLM bridges or delegated-vision paths — retracted.
 - Crowd sim lives in sibling zmpc01/blender-crowd-kit (pre-v1); the
   in-kit stub was DELETED to avoid import shadowing.
 - Exit codes: look.py exits 3 on validator P0/P1; blrun propagates them
@@ -173,6 +177,8 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 8. **Forgetting `--python-use-system-env`** — if you must call blender directly (debugging), add this flag.
 9. **Not exercising every gate path** — a gate that only runs at render time passes every dry-run. Always run one full pipeline pass (dry-run + render + encode + export) before shipping.
 10. **Letting advisory gates stay advisory** — a gate that can't abort the build protects nothing. Flip to fail-closed the round you add it.
+11. **Editing a script while it executes in background** — bash reads by byte offset; a mid-run Edit desyncs and kills it silently (an install died this way, session-4). Kill first, edit, re-run.
+12. **Inventing API return keys** — asserted `r["state"]` on a report whose real keys are `ok`/`post_contact` (T8). Read the function's return dict BEFORE writing the assert; the kit's own "check the real API first" law applies to tests too.
 
 ## Verification discipline
 
@@ -183,6 +189,8 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 - **Fixtures carrying ground truth must SELF-VERIFY** — planted bugs in fixtures make subjects report honest tool output while you debug the wrong layer. `_check(tag, measured, planted)` at build time.
 - **Fresh-process-wins arbitration** — when in-process audit contradicts fresh-process schema/gate on the same file, the fresh process is right. Then hunt cache staleness.
 - **A verifier must never repair** — gate raising ValueError on repair params is what makes its PASS meaningful.
+- **Bisect empirical laws before redesigning around them** — the 5.2 ortho near-plane bbox cull was pinned with 4 renders (near-z 1.20 / 0.87 / 0.802 / 0.80) before touching the diagnostic design; the redesign then targeted the real mechanism, not a guess (gotcha 125).
+- **Fixtures must exercise the DIAGNOSTICS, not just the tools** — t1-t6 gated numerically for sessions while the slice renders were unrenderable slabs; T8's principal-eye pass caught it the first session it existed.
 
 ## Vision + numbers division
 
