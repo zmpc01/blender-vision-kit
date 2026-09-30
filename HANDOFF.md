@@ -1,16 +1,23 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session close: 2026-09-29 (session 3+4: M5 P1–P4 SETTLED, wave 4a done,
-> fix batch 3 shipped). PLAN.md = long-horizon tracker. Upstream project
-> HANDOFF preserved at `docs/UPSTREAM_HANDOFF_snapshot.md`.
+> Session close: 2026-09-30 (session 4: COURSE CORRECTION — kit is
+> vision-native ONLY, all VLM/ascii machinery removed; P5 core-flow
+> hardening DONE incl. T8 fixture + measured 5.2 near-plane cull law +
+> diagnostic redesign + QA wave 5-b). PLAN.md = long-horizon tracker.
+> Upstream project HANDOFF preserved at `docs/UPSTREAM_HANDOFF_snapshot.md`.
 
 ## State at handoff
 
-- Repo: https://github.com/zmpc01/blender-vision-kit (main, HEAD ~72cf468)
+- Repo: https://github.com/zmpc01/blender-vision-kit (main, HEAD 98f5e15+)
   + GitLab mirror gitlab.com/ansgareutychisO/blender-vision-kit (PAT
   namespace is ansgareutychisO — NOT zmpc01; WAF 403s are probabilistic,
-  retry; verified synced @72cf468 session-3 close). GitHub is source of
-  truth.
+  retry). GitHub is source of truth. Session-4 head: see `git log --oneline
+  ef86b85..HEAD` for the 9 course-correction + hardening commits.
+- SCOPE DOCTRINE (binding, owner-ruled): this kit is FOR vision-native
+  agents ONLY. No VLM bridges, no ascii packs, no delegated-vision paths —
+  do not reintroduce them. Non-vision agents = upstream blender-agent-kit.
+  Sub-agents in QA waves: NON-VISUAL work only (code review, script runs,
+  textual assertions); the principal makes every visual verdict.
 - Toolchain: NOT committed. In a fresh sandbox: `./install.sh`
   (D11 chunked fallback; the kit now OWNS tools/chunked_dl.sh — the old
   upstream symlink is gone). Blender 5.2.2 + libEGL + Pillow.
@@ -38,18 +45,18 @@
 ## Immediate next-session TODO (in order)
 
 1. (DONE session-3 close) GitLab synced @72cf468. Next session: only re-push new commits.
-2. P5 CORE-FLOW HARDENING (owner directive, session-4): placement
-   workflow end-to-end real build with the principal making every visual
-   verdict; look/annotate/motion_study/transient_scan edge cases;
-   install.sh + blrun.sh robustness. Crowd EXCLUDED (pre-v1 upstream).
-   Sub-agents may run non-visual QA only (code review, script execution,
-   textual assertions) — NO VLM bridging, no visual delegation.
-3. T3 (carried): crowd-kit Rust build is network-gated; if network
-   allows, `cargo build --release` in blender-crowd-kit, then run the
-   crowd workflow end-to-end and vision-verify a dense scene. (LOW
-   priority — crowd excluded from hardening scope until stable upstream.)
-4. Milestone backup: /home/sync copy + both remotes (see backup cmd in
-   PLAN M4).
+2. Placement hardening next round (candidate): chaos-fuzz — randomly
+   perturb assembled furniture (t8 diorama + t3 jeep), run
+   audit→look→section_pair per perturbation, principal judges; also
+   seat_at edge cases (t3 covers the happy path only).
+3. Core-flow edge cases still open: look.py on degenerate inputs
+   (empty scene, single object off-origin, extreme aspect ratios);
+   motion_study/transient_scan on 1-2 frame timelines.
+4. T3 crowd (LOW priority, owner-excluded from hardening until stable):
+   crowd-kit Rust build is network-gated; `cargo build --release` in
+   blender-crowd-kit, then crowd workflow end-to-end + vision-verify.
+5. Milestone backup: /home/sync copy + both remotes (see backup cmd in
+   PLAN M4). Session-4 close backup was taken at commit 4257b4c+docs.
 
 ## Known-open friction (from waves, triaged, NOT yet fixed)
 
