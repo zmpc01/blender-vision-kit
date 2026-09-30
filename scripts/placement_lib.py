@@ -1263,9 +1263,11 @@ def seam_views(a, b, *, out_dir, res=(640, 360), engine='workbench',
                        union-diagonal framing put a 1.2mm gap at ~1.3px,
                        unresolvable)
       three_quarter  — context view (both subjects identifiable)
-      section_top    — ortho top-down, clip plane just above contact z
-                       (interference outline slice)
-      section_side   — ortho side, clip plane through contact centroid
+      section_top    — INTACT ortho top-down plan of the contact,
+                       seam-framed (no clip — near planes that cut an
+                       object's bbox cull it whole on 5.2 workbench)
+      section_side   — INTACT ortho side elevation, seam-framed (the
+                       view where gap/penetration depth is visible)
     a/b: objects OR their string names (patch-op style; round-2/U7).
     Returns dict with paths + exact camera coords for re-shoots."""
     import os
@@ -1381,13 +1383,24 @@ def seam_views(a, b, *, out_dir, res=(640, 360), engine='workbench',
                                  clip_start=0.01, cam_type='ORTHO')
     # section_side: INTACT side elevation of the seam region (no front
     # clip — same per-object near-cull). This is the view where gap/pen
-    # DEPTH is visible to the eye.
+    # DEPTH is visible to the eye. Camera stands OUTSIDE the union bbox
+    # along `side` (session-4 QA #11: a fixed 1m standoff puts the camera
+    # INSIDE a large support's bbox — its own near plane then culls the
+    # support from the elevation).
     side = Vector((0, -1, 0)) if abs(normal.z) > 0.7 else \
         Vector((normal.x, normal.y, 0)).normalized()
     if side.length < 1e-3:
         side = Vector((0, -1, 0))
+    umn, umx = _aabb_union(a, b)
+    # distance from centroid along `side` that exits the union bbox
+    d_exit = 0.0
+    for i in range(3):
+        if side[i] > 1e-6:
+            d_exit = max(d_exit, (umx[i] - centroid[i]) / side[i])
+        elif side[i] < -1e-6:
+            d_exit = max(d_exit, (umn[i] - centroid[i]) / side[i])
     paths["section_side"] = shoot(
-        "section_side", centroid + side * 1.0, centroid,
+        "section_side", centroid + side * (d_exit + 0.15), centroid,
         ortho=sec_ortho, clip_start=0.01,
         cam_type='ORTHO')
 
@@ -1650,13 +1663,18 @@ def section_pair(a, b, *, out_dir, band_mm=2.0, res=(640, 360)):
         scene.render.resolution_x, scene.render.resolution_y = res
         path = os.path.join(out_dir, f"slice_{tag}.png")
         scene.render.filepath = path
-        bpy.ops.render.render(write_still=True)
-        scene.camera = old_cam
-        scene.render.engine = old_engine
-        scene.render.resolution_x, scene.render.resolution_y = old_res
-        a.hide_render = hide_a
-        bpy.data.objects.remove(cam, do_unlink=True)
-        bpy.data.cameras.remove(cam_d)
+        try:
+            bpy.ops.render.render(write_still=True)
+        finally:
+            # session-4 QA (#10): a render exception must not leave A
+            # hidden / the temp camera leaked — a later look in the same
+            # process would silently show a false-CLEAR scene.
+            scene.camera = old_cam
+            scene.render.engine = old_engine
+            scene.render.resolution_x, scene.render.resolution_y = old_res
+            a.hide_render = hide_a
+            bpy.data.objects.remove(cam, do_unlink=True)
+            bpy.data.cameras.remove(cam_d)
         return path
 
     p_below = _slice("below", True)    # A hidden: bare support reference

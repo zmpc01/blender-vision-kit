@@ -174,7 +174,6 @@ def main() -> int:
         print("test_kit_scope: tools/ is a symlink to %s (shared toolchain OK)"
               % os.readlink(tools))
     elif os.path.isdir(tools):
-        entries = sorted(os.listdir(tools))
         if not os.path.exists(os.path.join(tools, "blender", "blender")):
             if os.path.exists(os.path.join(tools, "chunked_dl.sh")):
                 # Since the kit owned its downloader (session-3), tools/ is a

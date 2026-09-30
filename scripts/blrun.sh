@@ -188,6 +188,7 @@ fi
 # Auto-inject --background; a real GUI need should be explicit and rare.
 wants_bg=0
 for a in "$@"; do
+    [ "$a" = "--" ] && break   # args after -- belong to the script, not Blender
     case "$a" in
         --background|-b) wants_bg=1; break ;;
     esac

@@ -69,7 +69,7 @@ code-level finding (--frames BLOCKER) remains valid.
 - [ ] P5 CORE-FLOW HARDENING (owner directive: placement included, crowd excluded — crowd still pre-v1 upstream): placement_lib end-to-end real build (T3-class) with visual verification by the principal; look/annotate/motion_study/transient_scan edge cases; install.sh + blrun.sh robustness (both failed reproducibly in this sandbox)
 - [ ] Hardening waves: sub-agents run non-visual QA (fresh-context code review, script execution, textual assertions); principal makes every visual verdict; findings → fix batches; keep iterating
 - [ ] T6 scene ships in kit (t6_transient.py) as the transient/label regression vehicle; consider --frames interplay doc (look --frames N vs animate n_frames)
-- Note: blrun.sh without --background hangs silently (GUI-on-Xvfb startup) — defensive fix candidate (auto -b)
+- Note: blrun.sh without --background hangs silently (GUI-on-Xvfb startup) — FIXED session-4 (auto-inject --background guard)
 
 ### M4 — Wrap-up & handover (complete for session 1)
 - [x] Distill wave learnings into AGENTS.md/SKILL.md/kb

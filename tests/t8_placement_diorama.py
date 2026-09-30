@@ -195,6 +195,8 @@ def main():
     n_sec = len([f for f in os.listdir(sec_dir) if f.endswith(".png")]) \
         if os.path.isdir(sec_dir) else 0
     check("C4.section_pngs", n_sec >= 1, True)
+    # session-4 QA (#15): make the section verdict self-verifying
+    check("C4.section_truth", sec.get("truth_state"), "TOUCHING")
 
     # ---- Final scene summary for the principal's look run
     print("[T8] == placed-state z table (for the principal's eye check) ==")

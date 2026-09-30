@@ -139,7 +139,7 @@ if [[ -n "$BLENDER_PY" && -x "$BLENDER_PY" ]]; then
                     break
                 fi
             fi
-            sleep $((attempt * 5))
+            if [[ $attempt -lt 3 ]]; then sleep $((attempt * 5)); fi
         done
         if [[ $PILLOW_OK -eq 1 ]]; then
             echo "[install] Pillow installed OK"
@@ -163,7 +163,7 @@ echo "[install] Verifying setup..."
 import bpy
 print(f'[verify] Blender {bpy.app.version_string}')
 print(f'[verify] Cycles available:', 'CYCLES' in [e.name for e in bpy.types.RenderEngine.__subclasses__() if hasattr(e, \"name\")])
-" 2>&1 | grep -E '\[verify\]|\[blender\] Blender' | head -5
+" 2>&1 | grep -E '\[verify\]|\[blender\] Blender' | head -5 || true
 
 echo "[install] Done."
 echo "[install] Next: cp scripts/scene_template.py scripts/my_scene.py && edit it"

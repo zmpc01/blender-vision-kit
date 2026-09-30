@@ -71,5 +71,5 @@ if __name__ == "__main__":
     for path in sys.argv[1:]:
         a = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
         s = range_stats(a)
-        print(f"{path}: stdev={s['stdev']:.1f}/255 p_dark={s['p_dark']:.0%} "
+        print(f"{path}: stdev={s['stdev'] * 255:.1f}/255 p_dark={s['p_dark']:.0%} "
               f"sat={sat_val(a):.2f} edge={sobel_energy(luma(a)):.2f}")
