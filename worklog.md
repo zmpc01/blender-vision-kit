@@ -3053,3 +3053,26 @@ Stage Summary:
 - 12 commits this session (ed0b41b..a90e2e1) pushed to GitHub
 - M5: P1-P4 SETTLED, wave 4a complete, fix batches 1-3 shipped
 - Open: GitLab re-mirror, waves 4b/5, P5 AGENTS.md section, T3 crowd build
+
+---
+Task ID: 5 (session-4: course correction + P5 core-flow hardening)
+Agent: vision-agent (orchestrator)
+Task: Owner course correction (vision-native ONLY kit) + harden core flows (placement in, crowd out)
+
+Work Log:
+- COURSE CORRECTION: removed ALL VLM/ascii vision-substitute machinery per owner ruling (ascii_vision/ascii_read/vlm_critique/test_ascii_vision/kb/ascii_vision + orphaned corpus line calibrate_auto/scene_corpus/corpus_synthetic/ground_truth_export + 3 ad-hoc probes the scope gate caught); added scripts/image_metrics.py (numeric gates: luma/sat/edge/range); scope doctrine codified across README/AGENTS/PLAN/HANDOFF/SKILL/kb/DESIGN (dated amendment; WAVE4A methodology banner RETRACTED; QA division: principal sees, sub-agents non-visual only)
+- Env rebuild: fresh clone @6a1e52b, Blender 5.2.2 provisioned, Pillow retry path verified, 54/54 regression green
+- Hygiene: untracked stale .blender-home symlink (fresh-clone landmine); install.sh creates real dir
+- Hardening: blrun.sh auto --background guard (GUI-on-Xvfb silent hang); install.sh Pillow idempotent+retry fail-closed; test_kit_scope tools/ heuristic de-staled
+- T8 t8_placement_diorama.py: end-to-end placed scene (7 then 8 gates): mug solved 0.0000mm onto tabletop, audit clean, physics PLACED, diagnostics exist + section truth_state==TOUCHING; saved-blend state carrier for look
+- PRINCIPAL VISUAL VERDICTS: look grid PASS (P2 exposure doctrine holds on placed scenes); closeups PASS (stool-leg false alarm resolved numeric-first+closeup per law 108); heat_view EXCELLENT; seam macro/3q usable; section slices BROKEN
+- MEASURED LAW (gotcha 125): 5.2 workbench ortho near-plane intersecting an object's bbox culls the object's below-plane geometry ENTIRELY (bisection s4_a/b/c/d) → clip-sandwich unrenderable → section_pair + seam_views section_top/side redesigned to INTACT seam-framed plan/elevation views (mm truth numeric); re-verified readable by eyes; t2/t3/t4 green
+- QA wave 5-b (fresh-context NON-VISUAL review, revised protocol): 0 blockers, 3 bugs, 6 nits → fix batch 4 (image_metrics stdev /255, _slice try/finally hide_render leak, section_side camera outside union bbox, docstrings, blrun -- scan-stop, install sleep/SIGPIPE, t8 assert, PLAN note)
+- Self-inflicted + codified (gotcha 126): editing install.sh mid-run desynced the executing bash and killed the install silently
+
+Stage Summary:
+- 8 commits (ef86b85, 68990fc, 5d4c034, 4cdb0b5, aa4e832, 032819e, 8bfdce6, + docs) pushed to GitHub; GitLab mirror pending re-push
+- Kit doctrine: VISION-NATIVE ONLY (no VLM/ascii anywhere); numeric gates = image_metrics.py
+- Placement core flow hardened end-to-end with principal eyes; crowd excluded per owner
+- Full battery at close: scope OK + t1-t6 ALL PASS + v1 27/27 + v2 27/27 + t8 8/8
+- Gotchas 125 (near-plane bbox cull), 126 (no mid-run edits), 127 (images=WHERE, verdicts=HOW-MUCH)
