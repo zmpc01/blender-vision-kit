@@ -36,7 +36,7 @@ echo "[install] ROOT=$ROOT"
 echo "[install] BLENDER_VERSION=$BLENDER_VERSION"
 echo "[install] BL_URL=$BL_URL"
 
-mkdir -p "$TOOLS_DIR" "$SCRIPTS_DIR" "$ROOT/output" "$ROOT/download"
+mkdir -p "$TOOLS_DIR" "$SCRIPTS_DIR" "$ROOT/output" "$ROOT/download" "$ROOT/.blender-home"
 
 # ----------------------------------------------------------------------------
 # 1. Blender binary
