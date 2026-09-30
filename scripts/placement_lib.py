@@ -1294,8 +1294,6 @@ def seam_views(a, b, *, out_dir, res=(640, 360), engine='workbench',
             normal = Vector(nrm).normalized()
     except Exception:
         pass
-    diag = (_aabb_union(a, b)[1] - _aabb_union(a, b)[0]).length
-
     scene = bpy.context.scene
     cam_data = bpy.data.cameras.new("SeamCam")
     cam = bpy.data.objects.new("SeamCam", cam_data)
@@ -1365,23 +1363,32 @@ def seam_views(a, b, *, out_dir, res=(640, 360), engine='workbench',
         paths["three_quarter"] = shoot("three_quarter", loc_q, centroid,
                                        lens=35)
 
-    # section_top: ortho down, clip just above contact z
-    top_z = centroid.z + max(0.002, contact_band_mm / 1000.0 * 2)
-    h = 5.0
+    # section_top: INTACT plan view of the contact, seam-framed.
+    # Session-4 T8: (1) seam-region scale, not the union diagonal (a 12cm
+    # mug on a 2.8m table was an ~18px dot); (2) NO near-plane clip — an
+    # ortho near plane intersecting an object's bbox culls the object
+    # entirely on 5.2 workbench (measured), so the old 'clip just above
+    # contact' slice rendered nothing. The mm truth is in the returned
+    # contact_state; this view shows WHERE the contact is.
+    h = 1.0
+    sec_ortho = max(seam_ext * 3.0, 0.15)
     paths["section_top"] = shoot("section_top", Vector((centroid.x,
-                                                        centroid.y, top_z + h)),
-                                 Vector((centroid.x, centroid.y, top_z)),
-                                 ortho=max(diag * 1.2, 0.3),
-                                 clip_start=h, cam_type='ORTHO')
-    # section_side: ortho horizontal, clip through centroid depth
+                                                        centroid.y,
+                                                        centroid.z + h)),
+                                 Vector((centroid.x, centroid.y,
+                                         centroid.z)),
+                                 ortho=sec_ortho,
+                                 clip_start=0.01, cam_type='ORTHO')
+    # section_side: INTACT side elevation of the seam region (no front
+    # clip — same per-object near-cull). This is the view where gap/pen
+    # DEPTH is visible to the eye.
     side = Vector((0, -1, 0)) if abs(normal.z) > 0.7 else \
         Vector((normal.x, normal.y, 0)).normalized()
     if side.length < 1e-3:
         side = Vector((0, -1, 0))
-    d_to_centroid = (centroid - (centroid + side * 5)).length
     paths["section_side"] = shoot(
-        "section_side", centroid + side * 5.0, centroid,
-        ortho=max(diag * 1.2, 0.3), clip_start=d_to_centroid,
+        "section_side", centroid + side * 1.0, centroid,
+        ortho=sec_ortho, clip_start=0.01,
         cam_type='ORTHO')
 
     scene.camera = old_cam
@@ -1570,12 +1577,19 @@ def nearest_pair_midpoint(a, b, sample_cap=4000):
 
 
 def section_pair(a, b, *, out_dir, band_mm=2.0, res=(640, 360)):
-    """The two-slice 'sandwich' that visually brackets contact within
-    band_mm: slice BELOW the support top (presence there = penetrating
-    beyond band) and slice ABOVE it (presence = object's lowest point below
-    the plane). Decides: penetrating>band / within-band-or-touching /
-    floating>band. Returns verdict + paths (X2 lesson: a single slice
-    cannot separate touching from shallow penetration).
+    """Seam-bracketing pair of PLAN views + exact numeric verdict.
+
+    Session-4 T8 redesign: the original near-plane clip 'sandwich' is
+    UNRENDERABLE on Blender 5.2 workbench — an ortho near plane that
+    intersects an object's bbox culls the object's below-plane geometry
+    ENTIRELY (measured bisection: mug visible at near-z 1.20, vanished at
+    0.87 = the first plane cutting its bbox). The slices therefore render
+    INTACT geometry, seam-framed:
+      slice_below — B ALONE (A hidden): the bare support reference
+      slice_above — A + B intact: A's footprint at the support plane
+    The readable difference IS A's occupancy at the plane. The mm truth
+    (penetrating / within-band / floating) stays NUMERIC below — never
+    read off the images.
     a/b: objects OR their string names (round-2/U7)."""
     import os, math as _m
     if isinstance(a, str):
@@ -1596,18 +1610,35 @@ def section_pair(a, b, *, out_dir, band_mm=2.0, res=(640, 360)):
     normal = Vector(nrm).normalized() if nrm else Vector((0, 0, 1))
     off = band_mm / 1000.0
 
-    def _slice(tag, plane_pt):
+    # Frame the SEAM REGION, not the union bbox (session-4 T8: a 12cm mug
+    # on a 2.8m table rendered as an ~18px disc — the diagnostic showed a
+    # featureless table corner). Scale = the bbox-intersection extent (the
+    # seam neighborhood), floored to a sane minimum.
+    aabb_a, aabb_b = _aabb(a), _aabb(b)
+    seam_ext = max(
+        min(aabb_a[1][i], aabb_b[1][i]) - max(aabb_a[0][i], aabb_b[0][i])
+        for i in range(3))
+    if seam_ext <= 0.0:
+        ext_a = (aabb_a[1] - aabb_a[0]).length
+        ext_b = (aabb_b[1] - aabb_b[0]).length
+        small = aabb_a if ext_a <= ext_b else aabb_b
+        seam_ext = min((small[1] - small[0]).length / 3.0, 0.2)
+    ortho = max(seam_ext * 3.0, 0.15)
+
+    hide_a = a.hide_render
+
+    def _slice(tag, hide_a_):
+        a.hide_render = hide_a_
         cam_d = bpy.data.cameras.new(f"SliceCam_{tag}")
         cam = bpy.data.objects.new(f"SliceCam_{tag}", cam_d)
         scene.collection.objects.link(cam)
         cam_d.type = 'ORTHO'
-        diag = (_aabb_union(a, b)[1] - _aabb_union(a, b)[0]).length
-        cam_d.ortho_scale = max(diag * 1.3, 0.25)
-        h = 4.0
-        cam.location = plane_pt + normal * h
+        cam_d.ortho_scale = ortho
+        h = 1.0
+        cam.location = surf + normal * h
         dirv = -normal
         cam.rotation_euler = dirv.to_track_quat('-Z', 'Y').to_euler()
-        cam_d.clip_start = h          # near plane exactly at the slice
+        cam_d.clip_start = 0.01   # nothing clipped — intact plan view
         cam_d.clip_end = h + 50
         old_cam = scene.camera
         scene.camera = cam
@@ -1623,12 +1654,13 @@ def section_pair(a, b, *, out_dir, band_mm=2.0, res=(640, 360)):
         scene.camera = old_cam
         scene.render.engine = old_engine
         scene.render.resolution_x, scene.render.resolution_y = old_res
+        a.hide_render = hide_a
         bpy.data.objects.remove(cam, do_unlink=True)
         bpy.data.cameras.remove(cam_d)
         return path
 
-    p_below = _slice("below", seam - normal * off)
-    p_above = _slice("above", seam + normal * off)
+    p_below = _slice("below", True)    # A hidden: bare support reference
+    p_above = _slice("above", False)   # intact: A's footprint at the plane
 
     # A's lowest extent along the support normal, relative to the seam:
     #   bottom < -off  -> penetrates more than band below the surface
@@ -1649,4 +1681,5 @@ def section_pair(a, b, *, out_dir, band_mm=2.0, res=(640, 360)):
     return {"verdict": verdict, "truth_state": contact["state"],
             "slices": {"below": p_below, "above": p_above},
             "seam": [round(v, 4) for v in seam],
+            "ortho_scale_m": round(ortho, 3),
             "band_mm": band_mm}
