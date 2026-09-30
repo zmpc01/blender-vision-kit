@@ -693,7 +693,8 @@ def _validate_outputs(outdir: str) -> None:
 
 def _write_metadata(args: argparse.Namespace, *, scene_name: str,
                     elapsed: float, scene: bpy.types.Scene) -> None:
-    """Write metadata.json alongside renders, plus scene.json for VLM context."""
+    """Write metadata.json alongside renders, plus scene.json (structured
+    scene context for any consumer -- validator pairing, diffing, QA)."""
     import datetime
     meta = {
         "scene": scene_name,

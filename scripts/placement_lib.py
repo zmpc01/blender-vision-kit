@@ -1400,7 +1400,7 @@ def _aabb_union(a, b):
 
 
 # ---------------------------------------------------------------------------
-# ASCII maps (VLM-blind workflow)
+# Text maps (numeric ground truth -- gates, not eyes)
 # ---------------------------------------------------------------------------
 
 _HEIGHT_CHARS = "0123456789ABCDEF"

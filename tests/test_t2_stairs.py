@@ -8,7 +8,7 @@ Builds 4 steps + a blocky humanoid figure (feet at z=0), then:
   3. sabotage: move figure to z=0.34 (20mm into the step) -> audit flags
      PENETRATING ~20mm
   4. sabotage: floating 3cm -> audit flags CLEAR 30mm (touch band no-trap)
-  5. ascii_height_map shows the staircase bands (VLM-blind check)
+  5. ascii_height_map shows the staircase bands (numeric text-map check)
   6. multi-level support: figure straddling steps 2+3 -> multi_level flag
 Runs INSIDE Blender via run.sh.
 """
@@ -149,7 +149,7 @@ def main():
     check("float.clear", p4["clearance_mm"], 30.0, tol=1.0)
     R["sabotage_float"] = p4
 
-    # -- 5. ascii height map (VLM-blind) ------------------------------------
+    # -- 5. ascii height map (numeric text-map check) -----------------------
     txt, legend = PL.ascii_height_map(
         region=((-0.8, -0.2), (0.8, 1.5)), supports=[ground] + steps, grid=40)
     print(f"[T2] height map:\n{txt}\n{legend}")

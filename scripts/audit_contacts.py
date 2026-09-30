@@ -118,7 +118,7 @@ def main():
                    help="|gap| <= this counts as TOUCHING (default 0.1)")
     p.add_argument("--ascii", action="store_true",
                    help="Print the scene height map + pair maps for "
-                        "problem pairs (VLM-blind check)")
+                        "problem pairs (numeric text-map check)")
     p.add_argument("--seam-views", default=None, metavar="OUT_DIR",
                    help="Render the 4 seam-inspection views for the "
                         "worst pair into OUT_DIR")
@@ -183,7 +183,7 @@ def main():
                   f"{r.get('verdict', r.get('state'))}")
     print(f"[audit] report: {args.output}")
 
-    # ---- optional ASCII maps (VLM-blind) ---------------------------------
+    # ---- optional text maps (numeric ground truth) -----------------------
     if args.ascii:
         txt, legend = PL.ascii_height_map(grid=48)
         print(f"[audit] height map:\n{txt}\n{legend}")

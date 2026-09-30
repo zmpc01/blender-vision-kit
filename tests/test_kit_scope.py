@@ -60,7 +60,7 @@ VENDORED = {
 # positives). If a control fails, the pattern list itself drifted.
 MUST_MATCH = [
     "project/research/anything.md",
-    "experiments/ascii_vision/runs/x.json",
+    "experiments/preview/runs/x.json",
     "output/ual/red_check.png",
     "smoke/impl_bl_prep/probe_light.py",
     "smoke/cornell_cycles.exr",
@@ -86,7 +86,7 @@ MUST_MATCH = [
 MUST_NOT_MATCH = [
     "scripts/scene_template.py",
     "scripts/scene_cornell.py",
-    "scripts/scene_corpus.py",
+    "scripts/transient_scan.py",
     "scripts/scene_schema.py",
     "scripts/scene_physics_usability.py",
     "scripts/scene_interior_room.py",
