@@ -182,6 +182,21 @@ PY
     set -- --background --python "$WARM_SCRIPT"
 fi
 
+# ----- GUI-hang guard (session-4 hardening) -----
+# A --python invocation without --background opens a GUI window on the
+# headless Xvfb display and hangs SILENTLY (burned a session segment).
+# Auto-inject --background; a real GUI need should be explicit and rare.
+wants_bg=0
+for a in "$@"; do
+    case "$a" in
+        --background|-b) wants_bg=1; break ;;
+    esac
+done
+if [[ $wants_bg -eq 0 ]]; then
+    echo "[blrun] no --background given — injecting it (GUI on headless Xvfb hangs silently; pass --background explicitly if you really meant GUI)" >&2
+    set -- --background "$@"
+fi
+
 # ----- Run Blender, prefix its output, preserve exit code -----
 # Pipe through sed for log clarity, use PIPESTATUS to capture Blender's exit
 # (not sed's).

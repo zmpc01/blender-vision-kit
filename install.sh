@@ -123,10 +123,33 @@ import sys; print(sys.executable)
 " 2>/dev/null | tail -1)
 fi
 if [[ -n "$BLENDER_PY" && -x "$BLENDER_PY" ]]; then
-    # Install without --user flag (goes to bundled site-packages, persists across HOME changes)
-    "$BLENDER_PY" -m pip install --quiet --no-warn-script-location Pillow 2>&1 | tail -3 || \
-        echo "[install] WARNING: Pillow install failed (contact sheets will fall back to ImageMagick)"
-    # Verify
+    # Idempotent: skip if Pillow already importable (re-run after partial install)
+    if "$BLENDER_PY" -c "from PIL import Image" >/dev/null 2>&1; then
+        echo "[install] Pillow already present — skipping install"
+    else
+        # Session-4 hardening: this step died twice on hostile networks and
+        # left install.sh half-done. Retry with backoff; verify import after.
+        PILLOW_OK=0
+        for attempt in 1 2 3; do
+            echo "[install] Pillow install attempt $attempt/3..."
+            if "$BLENDER_PY" -m pip install --quiet --no-warn-script-location \
+                    --retries 5 --timeout 30 Pillow 2>&1 | tail -3; then
+                if "$BLENDER_PY" -c "from PIL import Image" >/dev/null 2>&1; then
+                    PILLOW_OK=1
+                    break
+                fi
+            fi
+            sleep $((attempt * 5))
+        done
+        if [[ $PILLOW_OK -eq 1 ]]; then
+            echo "[install] Pillow installed OK"
+        else
+            echo "[install] ERROR: Pillow failed after 3 attempts (contact sheets" >&2
+            echo "[install]        need it). Manual recovery:" >&2
+            echo "[install]        $BLENDER_PY -m pip install Pillow" >&2
+            exit 1
+        fi
+    fi
     "$BLENDER_PY" -c "from PIL import Image; print('[install] Pillow', Image.__version__)" 2>&1 | grep -E '\[install\]' || true
 else
     echo "[install] WARNING: couldn't find Blender's python — skipping Pillow install"

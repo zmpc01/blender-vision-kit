@@ -175,15 +175,21 @@ def main() -> int:
               % os.readlink(tools))
     elif os.path.isdir(tools):
         entries = sorted(os.listdir(tools))
-        if entries and all(e in ("chunked_dl.sh", "dl_watchdog.sh", "local-libs")
-                           for e in entries) \
-                and not os.path.exists(os.path.join(tools, "blender", "blender")):
-            print("!! test_kit_scope WARNING: tools/ is a REAL dir with no "
-                  "blender binary — this is the broken-symlink signature "
-                  "(git rewrote a symlinked tools/). Run install.sh or "
-                  "re-link: ln -sfn <provisioned>/tools tools")
+        if not os.path.exists(os.path.join(tools, "blender", "blender")):
+            if os.path.exists(os.path.join(tools, "chunked_dl.sh")):
+                # Since the kit owned its downloader (session-3), tools/ is a
+                # real dir by design; without a blender binary this is just a
+                # fresh clone / mid-provision state. Normal, not an error.
+                print("test_kit_scope: tools/ real dir, not yet provisioned "
+                      "(fresh clone or install.sh mid-run) — normal")
+            else:
+                # Legacy broken-symlink signature: a real dir that carries
+                # neither the downloader nor a blender binary.
+                print("!! test_kit_scope WARNING: tools/ is a REAL dir with "
+                      "no blender binary and no chunked_dl.sh — broken-symlink "
+                      "signature. Run install.sh")
         else:
-            print("test_kit_scope: tools/ is a real dir (provisioned here?)")
+            print("test_kit_scope: tools/ is a real dir (provisioned)")
 
     print("test_kit_scope: PASS (%d tracked files, all kit-scope)" % len(tracked))
     return 0
