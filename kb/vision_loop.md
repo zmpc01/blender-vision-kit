@@ -29,7 +29,7 @@ Measured on the sandbox (Workbench, 640×480, 4 angles + annotations):
 
 kb/render_speed.md: AA-OFF Workbench ≈ 0.05s/frame at 960×540 — pixels
 are cheap; the cold start is the budget. The vision agent reads geometry
-from 640×480 cells that a 96-col ASCII pack could never carry.
+straight from 640×480 cells with its own eyes — give the eyes pixels.
 
 ## Annotation layer internals (D5)
 

@@ -2,9 +2,11 @@
 
 > Read this first if using the kit to make scenes. This is the
 > **vision-capable agent** variant of blender-agent-kit: your own image
-> understanding (Read a rendered PNG) is the primary eye. Blind-agent
-> machinery (ASCII packs, external VLM API) is demoted to escalation.
-> If you're the meta-agent working ON the kit, read `.agents/SKILL.md`.
+> understanding (Read a rendered PNG) is the primary eye — and the only
+> eye. There is NO vision-substitute machinery in this kit (no ASCII
+> packs, no external VLM): if you cannot see images natively, use
+> upstream blender-agent-kit instead. If you're the meta-agent working
+> ON the kit, read `.agents/SKILL.md`.
 >
 > Lineage: fork of zmpc01/blender-agent-kit @3c0c60d (docs condensed from
 > upstream@01dd147). Upstream serves BLIND agents; this variant serves
@@ -393,7 +395,7 @@ cold-start, not pixels).
 | 1-10 (engine/rendering) | KEPT verbatim (§ Engine & rendering) |
 | 11-19 (scene building) | KEPT verbatim |
 | 20-26 (VLM verification) | REWRITTEN → two-column law + L1-L4 (remote-VLM stabilization is obsolete; the underlying truth — verify geometry programmatically — kept and strengthened) |
-| 27 (ASCII packs) | DEMOTED → Escalation paths (kept in tree, `/kb/ascii_vision.md`) |
+| 27 (ASCII packs) | DEMOTED → Escalation paths (kept in tree, `/kb/ascii_vision.md`); later REMOVED entirely by the session-4 course correction — vision-native-only kit |
 | 28-36 (placement & physics) | KEPT verbatim |
 | 37-40 (color discipline) | KEPT verbatim |
 | 41-43 (sub-agent orchestration) | KEPT verbatim |
@@ -491,7 +493,7 @@ cold-start, not pixels).
 115. **blrun propagates exit codes; pipelines don't** — look.py exit 3 arrives at blrun's caller intact (verified twice). The earlier "swallowed" claim was a probe error: `$?` after `blrun ... | grep ...` is GREP's exit, not blrun's. In pipelines check `${PIPESTATUS[0]}` or grep the `VERDICT:` line.
 116. **Trusting a look without readiness** — a BLOWN-OUT/NEAR-BLACK/NEAR-EMPTY flag means your eyes have nothing to work with; fix the render (exposure/fill/crop) before reasoning about the scene. The flag is printed BESIDE the image; read it first.
 117. **Animated scenes: the look verdict evaluates the `--frame` POSE** — jointed actors legitimately FAIL P0 at mid-stride scissor-pass frames (leg bboxes cross by design). Verify gait with matrix probes across frames (law 108), not with the frame verdict or a single still. `--no-fail-on-issues` keeps exit codes clean for probe loops.
-118. **Contact sheets are for EYES, ascii packs probe them poorly** — at 96 cols a 1.4m actor is ~3 chars and workbench cells are achromatic; motion truth comes from numeric probes (manifest f1 vs fN, fcurve sampling). "Labeled grid" means visual-only labels.
+118. **Contact sheets are for EYES, not for text probing** — pixel-level text dumps lose actors and achromatic cells; motion truth comes from numeric probes (manifest f1 vs fN, fcurve sampling) and your own eyes on the sheet. "Labeled grid" means visual-only labels.
 119. **Verified primitives on 5.2.2**: cube/sphere/cylinder/cone/torus/plane/empty — `primitive_capsule_add` DOES NOT EXIST (capsule = cylinder + caps, or a scaled sphere for previz). **`frame_set()` takes ints only.** **Multi-part actors**: `part.parent = body; part.matrix_parent_inverse = body.matrix_world.inverted()` (keep-pose) or the body walks away and leaves them; origins at the joint; swing axis ⊥ travel direction.
 120. **Blender 5.2 slotted actions: `Action.fcurves` is GONE** — use the kit's `iter_fcurves(action)` compat helper (handles 4.x/5.x). Same class of trap: `scene.view_layer` DOES NOT EXIST (`AttributeError`) — it's `bpy.context.view_layer`.
 121. **Workbench shadow buffer goes stale across in-process `hide_render` toggles** — objects hidden between renders still CAST SHADOWS in the next render (measured in motion_study: ghost shadows with no ghosts). If you toggle visibility for multi-pass rendering, disable shadows for the passes that shouldn't have them; don't trust shadow absence/presence after a toggle.
@@ -508,18 +510,21 @@ cold-start, not pixels).
 109. **Stale build caches impersonate reverts** — on sandbox boot, kill + nuke + restart dev servers; treat single-digit-ms compiles as cache hits.
 110. **PHANTOM OFFSETS: anchor captures must be SAME-FRAME snapshots; every carry gets a sanity radius** — live-read (frame_set + 2× update) before ANY matrix read.
 
-## Escalation paths (kept from the blind kit, not part of the primary loop)
+## Numeric image gates (the complement to your eyes)
 
-- **ASCII vision packs** (`scripts/ascii_vision.py`): renders → deterministic
-  text (stats, color-class grid, component table with fractional coords,
-  zoom tiles). Use when: you are a text-only sub-agent, handing context to
-  one, or need count-faithful component reads. `python3 scripts/ascii_vision.py
-  IMG --auto --cols 96 --components --tiles 2`. Protocol: `/kb/ascii_vision.md`.
-- **VLM critique** (`scripts/vlm_critique.py`, `z-ai vision` CLI): an
-  EXTERNAL eye — use only if your own vision is unavailable. Sycophancy
-  rules apply doubly (colors as OUTPUT, neutral readback first).
-- Disagreement between any two eyes (yours, packs, external VLM) =
-  automatic programmatic probe. The gates win ties.
+- **`scripts/image_metrics.py`**: deterministic pixel statistics
+  (luma / saturation / Sobel edge energy / dynamic-range usage incl.
+  `p_dark`). Use to anchor exposure and contrast verdicts in numbers
+  (the +1.0EV workbench default was chosen with exactly these) and for
+  regression checkpoints that must not depend on subjective reading.
+  `python3 scripts/image_metrics.py render.png [...]` prints a one-line
+  summary per image.
+- Doctrine: eyes triage and compose; gates decide geometry. A numeric
+  gate NEVER substitutes for looking (that was the blind kit's way) —
+  and looking never overrides a failing gate without a measured reason.
+- Sub-agents WITHOUT vision: this kit is not for them (upstream's
+  audience). In QA waves they may still run scripts and assert textual
+  output, but every visual verdict belongs to the vision-native agent.
 
 ## Crowd system (sibling repo composition)
 
@@ -547,7 +552,10 @@ actors by id.
   the v2 rigged attempt failed (~10 sessions of trap-fixing). UAL
   (Quaternius CC0) is the vetted hero-swap path. See `/kb/rigged_characters.md`.
 - No geometry nodes helpers; no Grease Pencil.
-- No external-VLM dependency in the primary loop (that's upstream's design).
+- No external-VLM or ascii-pack machinery AT ALL — not even as
+  escalation. Vision-native agents don't need it; agents that do need
+  it belong to upstream blender-agent-kit. (Disagreement between your
+  eyes and a gate = automatic programmatic probe; the gates win ties.)
 
 ## Shipped scenes (test fixtures — know their baseline)
 
@@ -557,7 +565,7 @@ actors by id.
   geometry, not your bug). Gate only YOUR movers (`physics_gate
   verify_movers:[...]`) and scope audits (see Placement headlines).
 - `scene_cornell` — Cornell box; render/engine smoke fixture.
-- `scene_scenarios`, `scene_physics_usability`, `scene_corpus` —
+- `scene_scenarios`, `scene_physics_usability` —
   physics/gate test fixtures (see tests/).
 
 ## When to ask for clarification
@@ -571,7 +579,6 @@ batched question round.
 - `/kb/vision_loop.md` — look.py protocol, annotation rules, readiness scores, measured timings (VARIANT)
 - `/kb/placement_and_physics.md` — placement_lib + physics_place deep reference
 - `/kb/rigged_characters.md` — why capsule actors, UAL hero-swap path
-- `/kb/ascii_vision.md` — ESCALATION: ASCII pack protocol + scorecard
 - `/kb/render_speed.md` — engine benchmarks, AA/cavity tradeoffs
 - `/kb/glTF_export.md` — export flags, three.js loader quirks
 - `/kb/crowd_fields.md` — influence fields, relax PBD, gait phase engine

@@ -3,6 +3,14 @@
 > Status: DRAFT-2 — incorporates design audit 5-a (all 5 required
 > amendments + per-decision verdicts). Change log vs DRAFT-1 at §4.
 > Still open to critique round 2; implement only after FINAL stamp.
+>
+> **AMENDMENT (session-4, owner-ruled course correction, 2026-09-30):**
+> the escalation design below (D-decisions stating ascii_vision.py /
+> vlm_critique.py / ascii_read.py "stay in tree" as escalation paths) is
+> OVERTURNED. This kit is for vision-native agents ONLY; all
+> vision-substitute machinery was removed (commit ef86b85) and numeric
+> image gates live in scripts/image_metrics.py. Sections describing the
+> escalation paths are preserved as design history.
 
 ## 0. Context and thesis
 

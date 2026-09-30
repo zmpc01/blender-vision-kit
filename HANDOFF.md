@@ -27,26 +27,28 @@
   (planted intersection transient + teleport pop + persistent hover).
 - Regression: test_v1_look 27/27 + test_v2_motion 27/27 (in-Blender
   suites via `blrun.sh --background --python tests/...`).
-- Wave 4a: consumer agent (VLM-bridged) operated the full workflow,
-  found both planted defects + a REAL blocker (hardcoded n_frames=64 —
-  fixed in batch 3). Findings: docs/WAVE4A_findings.md. Key doctrine
-  validation: **VLM + paired numbers is sufficient for a delegated
-  vision agent; numbers overrule VLM hallucinations.**
+- Wave 4a: consumer agent operated the full workflow, found both planted
+  defects + a REAL blocker (hardcoded n_frames=64 — fixed in batch 3).
+  Findings: docs/WAVE4A_findings.md. **METHODOLOGY RETRACTED (session-4
+  course correction):** the VLM-bridge pattern is gone from the kit and
+  from the wave protocol — this kit is for VISION-NATIVE agents only
+  (commit ef86b85 removed all VLM/ascii machinery; the wave's code-level
+  findings remain valid; its visual-verdict protocol does not).
 
 ## Immediate next-session TODO (in order)
 
 1. (DONE session-3 close) GitLab synced @72cf468. Next session: only re-push new commits.
-2. Wave 4b/5 (P5): run 1–2 more VLM-bridged consumer waves (fresh
-   agents, docs-only briefs) targeting: placement workflow + crowd
-   sibling-repo read path. Use the wave-4a brief pattern (Task tool,
-   docs-only, VLM bridge note, worklog append).
-3. P5 doc polish: add a short "delegated-agent vision" section to
-   AGENTS.md (z-ai vision CLI usage + pairing law) — it currently lives
-   only in PLAN/escalation notes.
-4. T3 (carried): crowd-kit Rust build is network-gated; if network
+2. P5 CORE-FLOW HARDENING (owner directive, session-4): placement
+   workflow end-to-end real build with the principal making every visual
+   verdict; look/annotate/motion_study/transient_scan edge cases;
+   install.sh + blrun.sh robustness. Crowd EXCLUDED (pre-v1 upstream).
+   Sub-agents may run non-visual QA only (code review, script execution,
+   textual assertions) — NO VLM bridging, no visual delegation.
+3. T3 (carried): crowd-kit Rust build is network-gated; if network
    allows, `cargo build --release` in blender-crowd-kit, then run the
-   crowd workflow end-to-end and vision-verify a dense scene.
-5. Milestone backup: /home/sync copy + both remotes (see backup cmd in
+   crowd workflow end-to-end and vision-verify a dense scene. (LOW
+   priority — crowd excluded from hardening scope until stable upstream.)
+4. Milestone backup: /home/sync copy + both remotes (see backup cmd in
    PLAN M4).
 
 ## Known-open friction (from waves, triaged, NOT yet fixed)

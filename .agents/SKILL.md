@@ -27,8 +27,10 @@ this variant serves agents with NATIVE image understanding. Design doc:
   `--scene` REBUILDS (fresh only). Never rebuild to inspect.
 - Resolution defaults re-tuned for vision: previz 480×270, look angles
   640×480, motion cells 480×360 (pixels are cheap; cold start is not).
-- Blind machinery (ascii_vision.py, vlm_critique.py, z-ai CLI) is KEPT
-  but DEMOTED to escalation. Don't delete: text-only sub-agents use it.
+- Blind machinery (ascii_vision.py, vlm_critique.py, z-ai CLI) was REMOVED
+  in the session-4 course correction (commit ef86b85): this kit is FOR
+  vision-native agents ONLY. An agent that cannot see images is upstream's
+  audience. Numeric gates live in scripts/image_metrics.py.
 - Crowd sim lives in sibling zmpc01/blender-crowd-kit (pre-v1); the
   in-kit stub was DELETED to avoid import shadowing.
 - Exit codes: look.py exits 3 on validator P0/P1; blrun propagates them
@@ -153,10 +155,11 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 |------|-----------|-----|
 | Research (web search + summarize) | YES | Fresh context, dedicated focus |
 | Code review / audits | YES | Catch issues orchestrator misses |
-| Scene building | MAYBE | VLM-verify output; don't blindly trust |
+| Scene building (non-visual QA) | YES | Run scripts, assert textual output; visual verdicts stay with the principal |
 | Well-specified implementation | YES | If spec is detailed enough |
 | Decisions needing full context | NO | Sub-agents don't see history |
 | Skill compliance tasks | NO | Sub-agents miss skill instructions |
+| ANY visual verdict / render judgment | NEVER | Sub-agent Read strips images in this harness; the kit is vision-native-only and does not bridge (course correction) |
 
 ## Common meta-agent mistakes
 
@@ -184,9 +187,9 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 ## Vision + numbers division
 
 - **Plain renders are undecidable** for vision agents at scene scale (12mm penetration, 30mm float undecidable; 55mm float readable).
-- **Purpose-built encodings flip decidability** — heat maps, section pairs, ASCII vision packs.
+- **Purpose-built encodings flip decidability** — heat maps, section pairs, onion-skin ghosts, trajectory overlays, closeups.
 - **Vision triages WHERE; numbers decide WHAT; never blend the two roles.**
-- **ASCII vision packs** (`scripts/ascii_vision.py`): pack-first for geometry/grounding/count/layout; VLM for semantics/hue/gist/aesthetics. Disagreement = automatic programmatic probe (failure modes are opposite: false-accept vs false-reject).
+- **Numeric image gates** (`scripts/image_metrics.py`): deterministic pixel stats (luma/sat/edge/range) anchor exposure/contrast verdicts and regression checkpoints. Gates complement the eyes, never substitute for them.
 
 ## Physics layer (bullet-in-Blender headless)
 
@@ -243,11 +246,9 @@ For user delivery: copy whole dir to `/home/z/my-project/download/<scene_name>/`
   10 rig gotchas if you go rigged (bind pose ≠ standing, quaternion axis
   conventions, action-slot law `ad.action_slot = act.slots[0]`); UAL (Quaternius
   CC0) vetted hero-swap: 42/46 actions animate, drift 0.000m.
-- `/kb/ascii_vision.md` — ASCII vision pack protocol, scorecard, param rules
-  **Headlines**: pack-first for geometry/grounding/count, VLM for semantics/hue;
-  ASCII WINS dark/monochrome (+0.32), tiny <2% objects (+0.12); R4 decisive:
-  pack found planted floater at exact coords, fabricated nothing; VLM
-  hallucinated floats on grounded actors. Disagreement = automatic probe.
+- `/kb/vision_loop.md` — look.py protocol, annotation rules, readiness scores,
+  measured timings, M5 P1–P4 perception doctrine (color / exposure / animation
+  representation / transient scan)
 - `/kb/render_speed.md` — engine benchmarks, AA/cavity tradeoffs, cold-start cost
   **Headlines**: AA = 92% of Workbench wall time (OFF is 5-6× faster); cold
   start ~2.5 min dominates batch renders; EEVEE peaks 1.6GB for 273 objects

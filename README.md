@@ -14,7 +14,7 @@ shared mechanics — different perception doctrine:
 | | upstream (blind agents) | this kit (vision agents) |
 |---|---|---|
 | Primary eye | `ascii_vision.py` text packs | your own vision on rendered PNGs |
-| Secondary eye | `z-ai vision` CLI API | escalation only (kept in tree) |
+| Secondary eye | `z-ai vision` CLI API | none — numeric gates (`image_metrics.py`) complement the eyes; no external eye exists here |
 | Look loop | 3 invocations (capture→validate→schema) | **`look.py` — 1 invocation**: images + verdict + manifest + readiness |
 | Render defaults | 240×135 previz / 480×360 views (token economy) | 480×270 previz / 640×480 views (eyes need pixels) |
 | Geometry truth | gates (unchanged) | gates (unchanged — "eyes triage and compose; gates decide geometry") |
@@ -45,7 +45,9 @@ meta-agent notes, and **kb/vision_loop.md** for the look.py deep reference.
 
 - Agent reads images natively (GLM-4.6V-class, Read tool renders PNGs)
   → **this kit**.
-- Agent is text-only / token-frugal → upstream blender-agent-kit.
+- Agent is text-only / cannot see images → upstream blender-agent-kit.
+  **This is a hard scope rule, not a preference**: this kit carries no
+  vision-substitute machinery (no ascii packs, no VLM bridge) by design.
 - Both kits share `blrun.sh`, `blender_kit/`, `apply_patch.py`,
   `placement_lib.py`, `physics_place.py`, export/validator surfaces —
   skills transfer.

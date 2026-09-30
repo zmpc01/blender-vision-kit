@@ -1,5 +1,14 @@
 # WAVE 4A — Consumer Usability Test Findings (Task 4-c)
 
+> **METHODOLOGY SUPERSEDED (session-4 course correction):** this wave ran
+> through a VLM bridge because the consumer sub-agent could not see
+> images. That pattern is RETRACTED — the kit is for vision-native
+> agents only; non-visual agents belong to upstream blender-agent-kit.
+> The code-level findings below (F1 --frames BLOCKER, F2+ friction) were
+> produced by script execution and textual assertions and remain valid;
+> any *visual* verdicts in this file are superseded by the principal's
+> own eyes.
+
 Agent: consumer vision agent (no orchestrator knowledge; AGENTS.md as sole manual).
 Date: 2026-09-29. Blender 5.2.2 LTS, kit @ post-6efe702 checkout.
 Scope: author+study an animated scene (Task A), debug `t7_wave4_debug` from tool

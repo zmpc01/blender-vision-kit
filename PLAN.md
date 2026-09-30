@@ -12,6 +12,10 @@ understanding replaces ASCII packs + external VLM API as the primary
 eye; defensive tool design targets the vision agent's OWN failure modes
 (self-sycophancy, context flooding, chirality, overlay trust, color
 constancy); the workflow is re-shaped around one-invocation look cycles.
+**SCOPE DOCTRINE (session-4, owner-ruled): this kit is FOR agents with
+native vision — period. No VLM bridges, no ascii vision packs, no
+delegated-vision machinery. An agent that cannot see images natively is
+upstream blender-agent-kit's audience, not ours.**
 Full design: `docs/DESIGN_vision_kit_v1.md` (D1–D14, audited by 2
 critique rounds — audit 5-a incorporated in DRAFT-2).
 
@@ -46,19 +50,24 @@ critique rounds — audit 5-a incorporated in DRAFT-2).
 - [x] Wave 3: T5 fresh-eyes doc validation — ship-arc fixed, exit-code lore corrected, error UX fixed
 - [x] Orchestrator vision passes on all wave outputs (sub-agents cannot see PNGs in this harness)
 
-### M5 — Perception tuning campaign (CURRENT, session 2, 2026-09-28)
+### M5 — Perception tuning campaign (CURRENT, session 4, 2026-09-30)
 Owner IS the vision agent; tuning targets what WE actually perceive best.
-Sub-agent vision reality (re-confirmed empirically, agent-d770c805):
+Sub-agent vision reality (re-confirmed empirically, sessions 2+3): this
 harness strips images from sub-agent Read ("images not available in
-sub-agent context") BUT `z-ai vision` (glm-5v-turbo) works → delegated
-agents see through the VLM bridge; orchestrator sees natively via Read.
+sub-agent context"). Owner ruling: the kit does NOT compensate — no VLM
+bridge, no ascii packs. QA division of labor: ALL visual verdicts belong
+to the vision-native principal; sub-agents do NON-VISUAL QA only (code
+review, script execution, textual output assertions). The VLM-bridged
+consumer-wave pattern (wave 4a) is RETRACTED as a kit pattern; its
+code-level finding (--frames BLOCKER) remains valid.
 
 - [x] P1 COLOR doctrine: SETTLED (session-2, commit 961d81d) — annotations REQUIRE color (mono destroys labels/flags/gnomon); mono is a legitimate geometry second-look; workbench +1.0EV exposure default (98% dark-range fix); render_angle shading kwargs
 - [x] P2 SHADE/LIGHT doctrine: SETTLED (same commit) — Standard/MATERIAL + shadows + cavity + exposure=1.0; MATCAP kills color identity; real EEVEE only config where cast shadows honestly reveal floating
 - [x] P3 ANIMATION REP: SETTLED (session-3, motion_study.py) — trajectory (multi-angle) = path shape; onion-skin = speed/age/direction; filmstrip supplementary (vertical nuance weak, spin invisible); numeric table w/ POP/BURST flags; measured build defects: ghost-occlusion of polylines → split passes, coincident-ghost z-fight → skip, stale shadow buffer on hide toggles → shadows=off for traj pass; tests test_v2_motion 27/27
 - [x] P4 TRANSIENT SCAN: SETTLED (session-3, transient_scan.py) — change radar (pixel diff, MAD floor) + state radar (validator per frame) + duration classification (≤40% = TRANSIENT, >60% = PERSISTENT baseline); new validator floor_penetration P1 (half-sunk was invisible); suspects strip start/PEAK/end/BAD; label-stick bug fixed (refresh_labels + frame pinning) and visually verified at f16 closeup; tests 27/27 + v1 suite 27/27
-- [ ] P5 VISION-BRIDGE promotion: vlm_critique.py documented as the DELEGATED-AGENT eye (structured intent+vocab prompts); waves 4+ run VLM-bridged with orchestrator native-eye verification
-- [ ] Waves 4+: vision-bridged consumer agents (docs-only briefs), findings → fix batches; keep iterating
+- [x] COURSE CORRECTION (session-4, commit ef86b85): all VLM/ascii vision-substitute machinery REMOVED (ascii_vision/ascii_read/vlm_critique/kb/ascii_vision + orphaned corpus line); image_metrics.py added as the numeric gate complement; scope doctrine codified
+- [ ] P5 CORE-FLOW HARDENING (owner directive: placement included, crowd excluded — crowd still pre-v1 upstream): placement_lib end-to-end real build (T3-class) with visual verification by the principal; look/annotate/motion_study/transient_scan edge cases; install.sh + blrun.sh robustness (both failed reproducibly in this sandbox)
+- [ ] Hardening waves: sub-agents run non-visual QA (fresh-context code review, script execution, textual assertions); principal makes every visual verdict; findings → fix batches; keep iterating
 - [ ] T6 scene ships in kit (t6_transient.py) as the transient/label regression vehicle; consider --frames interplay doc (look --frames N vs animate n_frames)
 - Note: blrun.sh without --background hangs silently (GUI-on-Xvfb startup) — defensive fix candidate (auto -b)
 

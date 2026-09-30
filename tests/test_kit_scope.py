@@ -91,7 +91,7 @@ MUST_NOT_MATCH = [
     "scripts/scene_physics_usability.py",
     "scripts/scene_interior_room.py",
     "scripts/test_polyhaven.py",
-    "scripts/test_ascii_vision.py",
+    "scripts/motion_study.py",
     "scripts/render_daemon.py",
     "scripts/framing_audit.py",
     "scripts/flicker_probe.py",
