@@ -160,11 +160,11 @@ def seat_checks(S):
     """Gap B: seat_at edge behaviors (in-process)."""
     import mathutils
     # anchors
-    bpy.ops.mesh.primitive_empty_add(location=(1.5, 0.5, 0.60))
+    bpy.ops.object.empty_add(type='PLAIN_AXES', location=(1.5, 0.5, 0.60))
     a1 = bpy.context.active_object
     a1.name = "AnchorA"
     a1.rotation_euler = Euler((0, 0, math.radians(35)), 'XYZ')
-    bpy.ops.mesh.primitive_empty_add(location=(2.2, 0.5, 0.60))
+    bpy.ops.object.empty_add(type='PLAIN_AXES', location=(2.2, 0.5, 0.60))
     a2 = bpy.context.active_object
     a2.name = "AnchorB"
 
