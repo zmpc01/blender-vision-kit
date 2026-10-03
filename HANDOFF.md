@@ -1,89 +1,86 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session close: 2026-09-30 (session 4: COURSE CORRECTION — kit is
-> vision-native ONLY, all VLM/ascii machinery removed; P5 core-flow
-> hardening DONE incl. T8 fixture + measured 5.2 near-plane cull law +
-> diagnostic redesign + QA wave 5-b). PLAN.md = long-horizon tracker.
-> Upstream project HANDOFF preserved at `docs/UPSTREAM_HANDOFF_snapshot.md`.
+> Session close: 2026-10-03 (session 5: HANDOFF gaps C/D/A/B closed via
+> test_v3_edges 20/20 + t9_chaos_fuzz; then TWO full dog-food usability
+> rounds (R1 reading-nook, R2 crate-stack) producing 7 kit fixes all
+> verified end-to-end. PLAN.md = long-horizon tracker. Upstream snapshot
+> preserved at docs/UPSTREAM_HANDOFF_snapshot.md.
 
 ## State at handoff
 
-- Repo: https://github.com/zmpc01/blender-vision-kit (main, HEAD 98f5e15+)
-  + GitLab mirror gitlab.com/ansgareutychisO/blender-vision-kit (PAT
-  namespace is ansgareutychisO — NOT zmpc01; WAF 403s are probabilistic,
-  retry). GitHub is source of truth. Session-4 head: see `git log --oneline
-  ef86b85..HEAD` for the 9 course-correction + hardening commits.
+- Repo: https://github.com/zmpc01/blender-vision-kit (main; session-5
+  head = cb7b220 + docs commits). GitLab mirror
+  gitlab.com/ansgareutychisO/blender-vision-kit (PAT namespace is
+  ansgareutychisO; WAF 403s probabilistic — retry). GitHub = source of
+  truth. NEVER force push.
 - SCOPE DOCTRINE (binding, owner-ruled): this kit is FOR vision-native
-  agents ONLY. No VLM bridges, no ascii packs, no delegated-vision paths —
-  do not reintroduce them. Non-vision agents = upstream blender-agent-kit.
-  Sub-agents in QA waves: NON-VISUAL work only (code review, script runs,
-  textual assertions); the principal makes every visual verdict.
-- Toolchain: NOT committed. In a fresh sandbox: `./install.sh`
-  (D11 chunked fallback; the kit now OWNS tools/chunked_dl.sh — the old
-  upstream symlink is gone). Blender 5.2.2 + libEGL + Pillow.
-- M5 perception campaign (all MEASURED, see PLAN + kb/vision_loop.md):
-  - P1 color: annotations REQUIRE color; mono = geometry second-look
-  - P2 shade: Standard/MATERIAL+shadows+cavity, exposure +1.0EV default
-  - P3 animation: `motion_study.py` (2×2 grid: trajectory row +
-    onion-skin row + numeric MOTION-TABLE with POP/BURST/SPIN flags)
-  - P4 transient: `transient_scan.py` (change radar + validator state
-    radar + duration classification + suspects strip w/ BAD cells)
-  - Label-stick bug FIXED (annotate.refresh_labels + frame pinning) —
-    verified visually at f16 closeup
-- Fixtures: T6 `t6_transient.py` (planted sink), T7 `t7_wave4_debug.py`
-  (planted intersection transient + teleport pop + persistent hover).
-- Regression: test_v1_look 27/27 + test_v2_motion 27/27 (in-Blender
-  suites via `blrun.sh --background --python tests/...`).
-- Wave 4a: consumer agent operated the full workflow, found both planted
-  defects + a REAL blocker (hardcoded n_frames=64 — fixed in batch 3).
-  Findings: docs/WAVE4A_findings.md. **METHODOLOGY RETRACTED (session-4
-  course correction):** the VLM-bridge pattern is gone from the kit and
-  from the wave protocol — this kit is for VISION-NATIVE agents only
-  (commit ef86b85 removed all VLM/ascii machinery; the wave's code-level
-  findings remain valid; its visual-verdict protocol does not).
+  agents ONLY. No VLM bridges, no ascii packs. Sub-agents: NON-VISUAL
+  QA only. The principal makes every visual verdict.
+- Toolchain: NOT committed. Fresh sandbox: `./install.sh` (run the big
+  download/extract steps in FOREGROUND — the harness reaps background
+  processes; setsid/nohup did NOT survive).
+- Regression battery (all green at close): test_kit_scope, test_v1_look
+  27/27, test_v2_motion 27/27, test_v3_edges 20/20, t1-t6 placement
+  suites, t8 8/8, t9_chaos_fuzz ALL PASS.
+- Session-5 kit changes (see docs/USABILITY_R1.md + R2 for the evidence):
+  1. place_on override='keyframe' + _rebase_location_keys — placement of
+     ANIMATED props rebases the whole keyframe path by the delta
+     (replaces current-frame re-key; killed measured 20mm@f24 drift)
+  2. place_on footprint AUTO-WIDEN bottom->grid (pedestal supports)
+  3. move_to works on EMPTY/non-mesh (was AttributeError)
+  4. validate_scene intersection: relative pct>=5 OR absolute —
+     small-object sinks now visible (mug 20% fires; was invisible)
+  5. PARAM_DOCS sync (add_empty rotation_deg; place_on/seat_at override)
+  6. apply_patch _get_obj available-ids hint on every raw lookup
+  7. transient_scan finding lines carry "(bbox-proxy; confirm with
+     audit mesh numbers)"
+- Laws added: audit pairs match `state` (PENETRATING/TOUCHING/NESTED/
+  CLEAR), never `verdict`; AGENTS.md placement headlines carry auto-widen
+  + animation-rebase.
+- Study artifacts: docs/USABILITY_R1.md, docs/USABILITY_R2.md (friction
+  logs + what-worked lists); study scenes shipped as scripts/
+  reading_nook.py + scripts/crate_stack.py (also edge fixtures
+  scripts/edge_*.py + tests/test_v3_edges.py + tests/t9_chaos_fuzz.py).
 
 ## Immediate next-session TODO (in order)
 
-1. (DONE session-3 close) GitLab synced @72cf468. Next session: only re-push new commits.
-2. Placement hardening next round (candidate): chaos-fuzz — randomly
-   perturb assembled furniture (t8 diorama + t3 jeep), run
-   audit→look→section_pair per perturbation, principal judges; also
-   seat_at edge cases (t3 covers the happy path only).
-3. Core-flow edge cases still open: look.py on degenerate inputs
-   (empty scene, single object off-origin, extreme aspect ratios);
-   motion_study/transient_scan on 1-2 frame timelines.
-4. T3 crowd (LOW priority, owner-excluded from hardening until stable):
-   crowd-kit Rust build is network-gated; `cargo build --release` in
-   blender-crowd-kit, then crowd workflow end-to-end + vision-verify.
-5. Milestone backup: /home/sync copy + both remotes (see backup cmd in
-   PLAN M4). Session-4 close backup was taken at commit 4257b4c+docs.
+1. Dog-food R3 (owner): EEVEE/final-render lane as consumer — the study
+   rounds only exercised workbench. Copy scene_template, --engine
+   BLENDER_EEVEE (warm cache first: `blrun.sh --warm-cache`), still +
+   samples, verify quality presets + readiness headers from the
+   consumer seat. Log frictions to docs/USABILITY_R3.md.
+2. Dog-food R4 (owner): export/previz lane — export_gltf + viewer +
+   export_previz_package + keyframe_contact_sheet on a small animated
+   scene; verify the ship arc end-to-end.
+3. Fix whatever R3/R4 surface; keep the friction-log discipline; run
+   the regression battery after each kit change.
+4. Milestone backup: /home/sync copy + both remotes (commands in PLAN
+   M4). Session-5 close backup taken at cb7b220+docs.
+5. Crowd T3 (LOW, owner-excluded until upstream stabilizes; Rust build
+   network-gated).
 
-## Known-open friction (from waves, triaged, NOT yet fixed)
+## Known-open friction (triaged, NOT yet fixed)
 
-- motion_study filmstrip labels are frame numbers only (fine); suspects
-  strip cells could carry diff magnitudes (NIT, low value).
-- transient_scan on crowd-dense scenes: validator sweep cost grows
-  pairwise — if a crowd wave runs one, measure and consider
-  `--validate-every N` stride (N=1 default).
-- blrun.sh without `--background` hangs on GUI-on-Xvfb (candidate:
-  auto-inject -b with a warning; needs a decision).
+- F3-NIT: look SUBJECT-OVERFLOW hint fires on large ground planes
+  inflating cluster diag — could exclude ground-like planes from the
+  metric.
+- F11-NIT: motion_study auto-pick includes STATIC props (trajectory
+  dots read as noise) — de-prioritize non-animated meshes in the
+  default object pick.
+- place_on auto-widen retries once; a `footprint_autowiden` note is in
+  the report but NOT printed by apply_patch's OK line (only the lib
+  prints) — minor; consider surfacing in the op print.
+- transient_scan 1-frame timeline: clean exit but the message could say
+  WHY (no adjacent pairs) — edges suite asserts no-traceback only.
+- look.py on empty scene: verdict PASS with NEAR-BLACK/NEAR-EMPTY flags
+  — correct, but the readiness line could suggest "scene has 0 objects".
 
 ## Worklog + artifacts
 
-- Multi-agent worklog: /home/z/my-project/worklog.md (harness dir;
-  REPLICATE key entries into repo worklog.md — the harness dir does not
-  survive sandbox resets). Repo worklog.md has session-1 history.
-- Design docs: docs/DESIGN_vision_kit_v1.md (D1–D14 FINAL) + tuning
-  harness scripts (tuning_*.py) from P1/P2.
-- Wave outputs: output/t6_*, output/t7_*, output/w4a_scene/ (not
-  pushed; regenerable from fixtures).
-
-## Doctrine reminders for the next session
-
-- GIT IS THE DISK: push on every micro step (session 3 lost unpushed
-  P3/P4 work to a sandbox wipe; the loss boundary was exactly the last
-  push). Never force push.
-- Every new tool gets an in-Blender regression test before merge.
-- Eyes triage and compose; gates decide geometry (two-column law).
-- Scanner ranks; eyes verdict (L6). A clean keyframe sheet proves
-  nothing about transients (the reason transient_scan exists).
+- Repo worklog.md has the session-5 record (also replicate into
+  /home/z/my-project/worklog.md — harness dir does not survive resets).
+- Design docs: docs/DESIGN_vision_kit_v1.md (D1-D14 FINAL + session-4
+  supersession note). Wave outputs live under output/ (gitignored,
+  regenerable).
+- Multi-agent QA protocol: fresh-context sub-agents do NON-VISUAL review
+  only (wave 5-b pattern; caught 3 real bugs last session).
