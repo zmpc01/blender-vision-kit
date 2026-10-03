@@ -94,3 +94,6 @@ Filed to this repo:
 ## QA-LANE DISPATCH R3 (auto — from the QA/visual-review lane, session 44d598d5)
 - #4 [P2] cross-ref agent-kit #15: workbench MATERIAL renders node-authored colors gray (mat.diffuse_color only; comment scripts/viewport_capture.py:190-196 claims base colors) — look.py has NO color metric so the loss is undetectable downstream; suggest sync-or-warn + validator chroma line. Evidence: raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r003/{ctrl_wb,ctrl_cycles,look_ab_grid}.png
 - Note: EEVEE OOM (our #2) live-fired a 3rd time (R3, controls run) under 4GB — still reproducible on current HEAD.
+
+## QA-LANE DISPATCH R5 (auto)
+- #5 [P3][test-gap] no positive TOPPLED coverage in T5 — only T5v's NEGATIVE no_toppled assertion (:528); settle()'s topple classification + apply='none' matrix restore never asserted. QA probe independently VERIFIED the path WORKS at 596be8e (tall box tilt 12° → TOPPLED tilt 90°; apply='none' restore matrix delta 0.0; place() PLACED) — coverage ask, not a defect. Renders + probe + numbers: https://raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r005/s7/RESULTS.md (filed by QA lane)
