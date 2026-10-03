@@ -177,7 +177,9 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 8. **Forgetting `--python-use-system-env`** — if you must call blender directly (debugging), add this flag.
 9. **Not exercising every gate path** — a gate that only runs at render time passes every dry-run. Always run one full pipeline pass (dry-run + render + encode + export) before shipping.
 10. **Letting advisory gates stay advisory** — a gate that can't abort the build protects nothing. Flip to fail-closed the round you add it.
-11. **Editing a script while it executes in background** — bash reads by byte offset; a mid-run Edit desyncs and kills it silently (an install died this way, session-4). Kill first, edit, re-run.
+12. **The harness REAPS background processes** (session-5): nohup/setsid did NOT keep install.sh alive across tool-call boundaries — the log just stops mid-step and `ps` finds nothing. Long download/extract steps: run in the FOREGROUND with a generous tool timeout. A truncated install log with no error = reaped, not failed.
+13. **Display-layer mangle is recurring and sneaky** (twice now): sed/Read/byte-prints sometimes DROP a `[`+following char, showing impossible syntax in valid files. The truth sequence: char-codes (hex ord) / `od` / `ast.parse` / `tokenize` — if parse OK but the printed line looks broken, BELIEVE the parser; never "fix" a phantom syntax error.
+14. **Dog-food discipline beats code-reading for UX bugs** (session-5, R1+R2): operating strictly as the consumer (docs-only, real scene, honest friction log) surfaced 7 kit defects that five hardening waves missed — the deepest (animated-prop placement needs PATH REBASING, not current-frame re-keying) was only observable end-to-end. Reset-and-repeat rounds also VERIFY the fixes from the consumer seat.
 12. **Inventing API return keys** — asserted `r["state"]` on a report whose real keys are `ok`/`post_contact` (T8). Read the function's return dict BEFORE writing the assert; the kit's own "check the real API first" law applies to tests too.
 
 ## Verification discipline
@@ -277,3 +279,25 @@ For user delivery: copy whole dir to `/home/z/my-project/download/<scene_name>/`
   **Headlines**: PHANTOM OFFSETS law (anchor captures must be SAME-FRAME
   snapshots); capture_anchor/anchor_local/carry_keys API; held-state actions
   key the full timeline (law 106); every carry gets a sanity radius check.
+
+
+## Session-5 meta: the usability-study pattern (owner-directed)
+
+When the kit's mechanical quality saturates (all suites green), the
+highest-yield pass is DOG-FOODING: pick a demo scenario, use the kit
+strictly as a consumer (AGENTS.md docs only — no source peeking), log
+every friction with an id, fix small things immediately, verify each
+fix end-to-end FROM THE CONSUMER SEAT, then RESET (fresh scenario,
+fresh outputs) and run another round with a different exercise profile
+(R1 = static composition + animation; R2 = physics lane). Artifacts:
+docs/USABILITY_R{N}.md. The friction log IS the study's deliverable —
+"What worked flawlessly" is equally important (protects against
+regression-by-refactor).
+
+Key measured laws from session-5 (also in AGENTS.md):
+- audit pair `state` = exact vocabulary; `verdict` = human string, WILL drift
+- validator intersection threshold must be RELATIVE (pct of smaller object)
+  OR absolute — absolute-only is scale-biased (10cm mug sunk 20% was invisible)
+- placement of animated props: override='keyframe' rebases ALL location keys
+  by the placement delta (_rebase_location_keys) — a current-frame re-key
+  leaves later keys at the pre-placement pose (measured 20mm drift by f24)
