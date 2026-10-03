@@ -84,3 +84,9 @@
   regenerable).
 - Multi-agent QA protocol: fresh-context sub-agents do NON-VISUAL review
   only (wave 5-b pattern; caught 3 real bugs last session).
+
+## QA-LANE DISPATCH R1 (auto — from the QA/visual-review lane, session 44d598d5)
+Filed to this repo:
+- #1 [P2] README quickstart: examples/ scenes rejected by look.py --scene (only scripts/t0_smoke.py works)
+- #2 [P2] install.sh EEVEE warm-cache SIGKILL (OOM) under 4GB sandboxes — unhandled, scary crash
+- #3 [P3] Cycles verify false negative + no BLENDER_BIN reuse path (sibling-symlink trick: 57s→13s)
