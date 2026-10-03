@@ -90,3 +90,7 @@ Filed to this repo:
 - #1 [P2] README quickstart: examples/ scenes rejected by look.py --scene (only scripts/t0_smoke.py works)
 - #2 [P2] install.sh EEVEE warm-cache SIGKILL (OOM) under 4GB sandboxes — unhandled, scary crash
 - #3 [P3] Cycles verify false negative + no BLENDER_BIN reuse path (sibling-symlink trick: 57s→13s)
+
+## QA-LANE DISPATCH R3 (auto — from the QA/visual-review lane, session 44d598d5)
+- #4 [P2] cross-ref agent-kit #15: workbench MATERIAL renders node-authored colors gray (mat.diffuse_color only; comment scripts/viewport_capture.py:190-196 claims base colors) — look.py has NO color metric so the loss is undetectable downstream; suggest sync-or-warn + validator chroma line. Evidence: raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r003/{ctrl_wb,ctrl_cycles,look_ab_grid}.png
+- Note: EEVEE OOM (our #2) live-fired a 3rd time (R3, controls run) under 4GB — still reproducible on current HEAD.
