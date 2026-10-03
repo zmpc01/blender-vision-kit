@@ -109,15 +109,21 @@ def _require(mut, key, op, *, expected_type=None, expected_len=None):
     return val
 
 
-def _get_obj(obj_id: str) -> bpy.types.Object:
+def _get_obj(obj_id: str, op: str = "?") -> bpy.types.Object:
     obj = bpy.data.objects.get(obj_id)
     if obj is None:
-        raise RuntimeError(f"Object not found: {obj_id}")
+        avail = sorted(o.name for o in bpy.data.objects)
+        hint = ""
+        if avail:
+            shown = ", ".join(avail[:15])
+            hint = f"; scene objects: {shown}" + (" …" if len(avail) > 15 else "")
+        raise RuntimeError(
+            f"op '{op}': object '{obj_id}' not found in scene{hint}")
     return obj
 
 
 def _apply_set_location(obj, params):
-    rep = {}
+    rep = {}  # noqa (anchor for _get_obj placement)
     _PL._origin_centroid_warn(obj, rep)
     if "origin_offset_warning" in rep:
         print("[apply_patch] set_location WARNING:", rep["origin_offset_warning"])
@@ -342,7 +348,7 @@ def _apply_move_to(obj, params):
 
 
 def _apply_place_on(obj, params):
-    supports = [bpy.data.objects[s] for s in params["supports"]]
+    supports = [_get_obj(s, "place_on") for s in params["supports"]]
     rep = _PL.place_on(
         obj, *supports,
         clearance=params.get("clearance", 0.0),
@@ -364,7 +370,7 @@ def _apply_place_on(obj, params):
 
 
 def _apply_seat_at(obj, params):
-    seat = bpy.data.objects[params["seat"]]
+    seat = _get_obj(params["seat"], "seat_at")
     rep = _PL.seat_at(
         obj, seat,
         reference=params.get("reference", "bottom"),
@@ -431,9 +437,9 @@ def _apply_audit(obj, params):
         raise RuntimeError("audit: penetration detected — patch chain aborted")
 
 
-def _resolve_objlist(names):
+def _resolve_objlist(names, op="?"):
     import bpy as _bpy
-    return [_bpy.data.objects[n] for n in names] if names else None
+    return [_get_obj(n, op) for n in names] if names else None
 
 
 def _physics_warn(rep):
@@ -453,7 +459,7 @@ def _physics_warn(rep):
 
 
 def _apply_physics_settle(obj, params):
-    rep = _PP.settle(objs=_resolve_objlist(params.get("objs")) or None,
+    rep = _PP.settle(objs=_resolve_objlist(params.get("objs"), "physics_settle") or None,
                      environment=_resolve_objlist(
                          params.get("environment")) or [],
                      frames=params.get("frames", 45),
@@ -478,7 +484,7 @@ def _apply_physics_settle(obj, params):
 
 def _apply_physics_place(obj, params):
     import bpy as _bpy
-    target = _bpy.data.objects[params["id"]]
+    target = _get_obj(params["id"], "physics_place")
     rep = _PP.place(target,
                     drop_mm=params.get("drop_mm", 30.0),
                     frames=params.get("frames", 45),
@@ -497,7 +503,7 @@ def _apply_physics_place(obj, params):
 
 def _apply_physics_oracle(obj, params):
     import bpy as _bpy
-    target = _bpy.data.objects[params["id"]]
+    target = _get_obj(params["id"], "physics_oracle")
     rep = _PP.oracle(target,
                      target_z=params.get("target_z"),
                      target=params.get("target"),
@@ -532,8 +538,8 @@ def _apply_physics_gate(obj, params):
 
 
 def _apply_seam_views(obj, params):
-    a = bpy.data.objects[params["a"]]
-    b = bpy.data.objects[params["b"]]
+    a = _get_obj(params["a"], "seam_views")
+    b = _get_obj(params["b"], "seam_views")
     rep = _PL.seam_views(a, b, out_dir=params["out_dir"],
                          res=tuple(params.get("res", (640, 360))),
                          engine=params.get("engine", "workbench"),
@@ -544,7 +550,7 @@ def _apply_seam_views(obj, params):
 
 
 def _apply_heat_bake(obj, params):
-    others = [bpy.data.objects[n] for n in params["others"]]
+    others = [_get_obj(n, "heat_bake") for n in params["others"]]
     rep = _PL.heat_bake(obj, others,
                         yellow_mm=params.get("yellow_mm", 10.0),
                         green_mm=params.get("green_mm", 50.0))
