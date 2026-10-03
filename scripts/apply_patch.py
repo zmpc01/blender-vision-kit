@@ -917,8 +917,8 @@ PARAM_DOCS = {
     "set_exposure":       "exposure:float (EV shift)",
     "set_frame":          "frame:int",
     "render_viewport":    "output:path, angle?(persp|front|side|top|back|right|active|custom), engine?(workbench|eevee|cycles), width?, height?, samples?, target?, custom_loc?",
-    "place_on":           "id, supports:[names..] (name the TOPMOST surface!), clearance?, footprint?, mode?, keep_xy?, align_to_surface?, output?",
-    "seat_at":            "id, seat:anchor-empty-name, reference?(bottom), offset?, align?(bool), seat_mesh?, output?",
+    "place_on":           "id, supports:[names..] (name the TOPMOST surface!), clearance?, footprint?, mode?, keep_xy?, align_to_surface?, override?(keyframe=REBASE animation path), output?",
+    "seat_at":            "id, seat:anchor-empty-name, reference?(bottom), offset?, align?(bool), seat_mesh?, override?(keyframe=REBASE animation path), output?",
     "snap_z":             "id, target_z:float, reference?(bottom|origin|centroid), override?, output?",
     "heat_bake":          "id",
     "audit":              "pairs?:['A,B',..], id?(scope report to this object), exclude?:[names], fail_on_penetration?(bool, default true), output?",
@@ -934,7 +934,7 @@ PARAM_DOCS = {
     "add_cone":           "id, radius1, radius2?, depth, location?(CENTER!), color?",
     "add_torus":          "id, radius_major, radius_minor, location?(CENTER!), color?",
     "add_plane":          "id, size, location?(CENTER!), color?",
-    "add_empty":          "id, location, empty_type?, size?",
+    "add_empty":          "id, location, empty_type?, size?, rotation_deg?",
 }
 
 

@@ -193,12 +193,17 @@ def validate_scene(*, ground_z: float = 0.0,
             if not _bounds_overlap(a, b):
                 continue
             overlap_v = _bounds_overlap_volume(a, b)
-            if overlap_v < overlap_volume_threshold:
+            if overlap_v <= 0:
                 continue
-            # Compute overlap as % of the smaller object's volume
+            # Compute overlap as % of the smaller object's volume.
+            # F12 (usability R1): the ABSOLUTE threshold alone gates out
+            # scale-honest findings — a 10cm mug sunk 2cm into a tabletop
+            # (20% of the mug!) passed silently under 0.001m³. Flag when
+            # EITHER the relative pct is significant OR the absolute
+            # volume is large (huge-object pairs).
             smaller_v = min(_object_volume(a), _object_volume(b))
             pct = (overlap_v / smaller_v * 100) if smaller_v > 0 else 0
-            if pct < 5:  # <5% overlap is likely just edge contact
+            if pct < 5 and overlap_v < overlap_volume_threshold:
                 continue
             issues.append({
                 "type": "intersection",

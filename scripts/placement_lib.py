@@ -674,9 +674,45 @@ def _guard_anim(obj, override):
             f"'{obj.name}' has location animation ({', '.join(chans[:4])}). "
             f"Placement writes would be clobbered at the next frame_set/"
             f"render. Run placement BEFORE animate(); or pass "
-            f"override='keyframe' (insert a visible key at the current "
-            f"frame) or override='ignore' (at your own risk).")
+            f"override='keyframe' (REBASES the whole animation path by "
+            f"the placement delta so EVERY keyframe keeps its relative "
+            f"placement — the right choice for moving an animated prop) "
+            f"or override='ignore' (at your own risk).")
     return chans
+
+
+def _rebase_location_keys(obj, delta):
+    """Shift ALL location fcurve keyframes channel-wise by `delta` (K4).
+
+    The naive 'insert a key at the current frame' override left LATER
+    keys holding the pre-placement pose — measured in usability R1:
+    a mug re-keyed at f1 drifted 20mm INTO the tabletop by f24. Rebasing
+    the path preserves the animation's shape relative to its support.
+    Returns (n_keys_shifted, channels_touched)."""
+    ad = getattr(obj, "animation_data", None)
+    if ad is None or ad.action is None:
+        return 0, []
+    touched = set()
+    n = 0
+    for fc in iter_fcurves(ad.action):
+        if fc.data_path != "location" or fc.array_index not in (0, 1, 2):
+            continue
+        d = delta[fc.array_index]
+        if abs(d) < 1e-12:
+            continue
+        for kp in fc.keyframe_points:
+            kp.co.y += d
+            n += 1
+        touched.add(fc.array_index)
+        try:
+            fc.update()
+        except AttributeError:
+            pass
+    if touched:
+        f = bpy.context.scene.frame_current
+        bpy.context.scene.frame_set(f)  # re-evaluate at the same frame
+        bpy.context.view_layer.update()
+    return n, [f"location[{'xyz'[i]}]" for i in sorted(touched)]
 
 
 def _apply_translation(obj, dz, override, report):
@@ -685,21 +721,30 @@ def _apply_translation(obj, dz, override, report):
     obj.location.z += dz
     report["applied_dz_m"] = round(dz, 6)
     if override == "keyframe":
-        # key ALL THREE channels (round-2/U5): keying only Z left the
-        # x/y fcurves holding the OLD position — the in-memory audit
-        # passed, but on reload the un-keyed x/y snapped back and the
-        # object teleported. A keyframe override must capture the FULL
-        # current location so the saved curve == the final transform.
-        f = bpy.context.scene.frame_current
-        for i in range(3):
-            obj.keyframe_insert(data_path="location", index=i, frame=f)
-        report["keyframe_inserted"] = True
-        report["keyframed_channels"] = ["location[x]", "location[y]",
-                                        "location[z]"]
+        ad = getattr(obj, "animation_data", None)
+        has_anim = (ad is not None and ad.action is not None)
+        if has_anim:
+            # K4: rebase the WHOLE path (later keys must not keep the
+            # pre-placement pose — usability R1 measured the drift)
+            n, chans = _rebase_location_keys(obj, (0.0, 0.0, dz))
+            report["keyframes_rebased"] = n
+            report["rebased_channels"] = chans
+        else:
+            # key ALL THREE channels (round-2/U5): keying only Z left the
+            # x/y fcurves holding the OLD position — the in-memory audit
+            # passed, but on reload the un-keyed x/y snapped back and the
+            # object teleported. A keyframe override must capture the FULL
+            # current location so the saved curve == the final transform.
+            f = bpy.context.scene.frame_current
+            for i in range(3):
+                obj.keyframe_insert(data_path="location", index=i, frame=f)
+            report["keyframe_inserted"] = True
+            report["keyframed_channels"] = ["location[x]", "location[y]",
+                                            "location[z]"]
         ad = getattr(obj, "animation_data", None)
         if ad is not None and list(ad.nla_tracks):
             report["nla_warning"] = (
-                "object has NLA strips — keyframe_insert writes the active "
+                "object has NLA strips — keyframe edits write the active "
                 "action only; playing strips evaluate ON TOP and can still "
                 "snap the object back. Mute/consolidate the strips or use "
                 "override='ignore' deliberately (code-review gate P1).")
@@ -1072,9 +1117,15 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
             "asymmetric meshes (legs forward) the origin ends up offset "
             "from the anchor. Use reference='origin' to land the origin.")
     if override == "keyframe":
-        obj.keyframe_insert(data_path="location",
-                            frame=bpy.context.scene.frame_current)
-        report["keyframe_inserted"] = True
+        ad = getattr(obj, "animation_data", None)
+        if ad is not None and ad.action is not None:
+            n, chans = _rebase_location_keys(obj, delta)
+            report["keyframes_rebased"] = n
+            report["rebased_channels"] = chans
+        else:
+            obj.keyframe_insert(data_path="location",
+                                frame=bpy.context.scene.frame_current)
+            report["keyframe_inserted"] = True
     bpy.context.view_layer.update()
     clear_bvh_cache()
     if seat_mesh is not None:
@@ -1136,11 +1187,18 @@ def move_to(obj, target, *, reference='bottom-center', override=None,
     obj.matrix_world = Matrix.Translation(delta) @ obj.matrix_world
     report["applied_translation_m"] = [round(v, 5) for v in delta]
     if override == "keyframe":
-        f = bpy.context.scene.frame_current
-        for i in range(3):
-            obj.keyframe_insert(data_path="location", index=i, frame=f)
-        report["keyframed_channels"] = ["location[x]", "location[y]",
-                                        "location[z]"]
+        ad = getattr(obj, "animation_data", None)
+        if ad is not None and ad.action is not None:
+            n, chans = _rebase_location_keys(obj, delta)
+            report["keyframes_rebased"] = n
+            report["rebased_channels"] = chans
+        else:
+            f = bpy.context.scene.frame_current
+            for i in range(3):
+                obj.keyframe_insert(data_path="location", index=i, frame=f)
+            report["keyframe_inserted"] = True
+            report["keyframed_channels"] = ["location[x]", "location[y]",
+                                            "location[z]"]
     bpy.context.view_layer.update()
     post = _aabb(obj)
     report["post_bbox_min_m"] = [round(v, 4) for v in post[0]]

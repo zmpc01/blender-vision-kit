@@ -286,7 +286,8 @@ def main():
         for (sev, typ, who), frames in persistent[:4]:
             span = (f"f{frames[0]}..f{frames[-1]}" if frames[-1] > frames[0]
                     else f"f{frames[0]}")
-            print(f"  {sev} {typ} ({who}) {span} — present in most frames")
+            print(f"  {sev} {typ} ({who}) {span} — present in most frames "
+                  f"(bbox-proxy; confirm with audit mesh numbers)")
 
     print("[scan] EVENT-TABLE (ranked by peak pixel-diff; floor = "
           "median+2*MAD)")
@@ -304,7 +305,8 @@ def main():
             span = (f"f{frames[0]}..f{frames[-1]}" if frames[-1] > frames[0]
                     else f"f{frames[0]}")
             print(f"      TRANSIENT {sev} {typ} ({who}) {span} "
-                  "<-- short-window wrong state")
+                  f"<-- short-window wrong state (bbox-proxy; confirm "
+                  f"with audit mesh numbers)")
 
     strip = None
     if evs:
