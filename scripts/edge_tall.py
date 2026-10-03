@@ -25,7 +25,7 @@ def build_scene():
     return {"tower": tower.name}
 
 
-def animate(ctx):
+def animate(ctx, *, start_frame=1, n_frames=24):
     pass
 
 

@@ -89,8 +89,12 @@ def main():
     rc, out = _blrun("look.py", "--scene", "edge_tall",
                      "--output", os.path.join(out_root, "look_tall"))
     _check("C4 no traceback", _no_traceback(out), out[-400:])
-    _check("C4 exit 0", rc == 0, f"rc={rc}")
+    # a lone tower with NOTHING below it is correctly flagged P1 floating
+    # (validator law) and look exits 3 on P1 — the suite verifies the LAW
+    _check("C4 exit 0-or-3 (P1 floating is correct)", rc in (0, 3), f"rc={rc}")
     _check("C4 manifest sees Tower", "Tower" in out)
+    _check("C4 floating law enforced",
+           "P1=1" in out and "floating" in out)
 
     print("== D1: motion_study --frames 1 ==")
     rc, out = _blrun("motion_study.py", "--scene", "edge_anim", "--frames", "1",

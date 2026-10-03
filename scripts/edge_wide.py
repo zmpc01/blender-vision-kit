@@ -29,7 +29,7 @@ def build_scene():
     return {"ids": ids}
 
 
-def animate(ctx):
+def animate(ctx, *, start_frame=1, n_frames=24):
     pass
 
 
