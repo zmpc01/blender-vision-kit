@@ -31,6 +31,6 @@ def animate(ctx, *, start_frame=1, n_frames=24):
 
 if __name__ == "__main__":
     argv = script_argv()
-    parser = common_parser("edge_tall — extreme tall-aspect fixture")
+    parser = common_parser()
     args = parser.parse_args(argv)
     build_scene()

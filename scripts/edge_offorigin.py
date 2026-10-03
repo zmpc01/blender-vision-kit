@@ -32,6 +32,6 @@ def animate(ctx, *, start_frame=1, n_frames=24):
 
 if __name__ == "__main__":
     argv = script_argv()
-    parser = common_parser("edge_offorigin — single off-origin object fixture")
+    parser = common_parser()
     args = parser.parse_args(argv)
     build_scene()

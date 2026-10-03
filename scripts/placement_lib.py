@@ -1108,15 +1108,22 @@ def move_to(obj, target, *, reference='bottom-center', override=None,
     bpy.context.view_layer.update()
     _clear = clear_bvh_cache()
     mw = obj.matrix_world
-    vs = obj.data.vertices
+    # empties/other non-mesh objects have obj.data=None (F10: move_to on a
+    # seat_at ANCHOR is a legitimate operation — the anchor is the target)
+    vs = obj.data.vertices if getattr(obj, 'data', None) is not None else None
     if reference == 'centroid':
-        step = max(1, len(vs) // 500)
-        cx = cy = cz = 0.0
-        m = 0
-        for i in range(0, len(vs), step):
-            w = mw @ vs[i].co
-            cx += w.x; cy += w.y; cz += w.z; m += 1
-        ref_pt = Vector((cx / m, cy / m, cz / m))
+        if vs is None:
+            report["reference_fallback"] = (
+                "centroid requested on non-mesh object — used origin")
+            ref_pt = mw.translation.copy()
+        else:
+            step = max(1, len(vs) // 500)
+            cx = cy = cz = 0.0
+            m = 0
+            for i in range(0, len(vs), step):
+                w = mw @ vs[i].co
+                cx += w.x; cy += w.y; cz += w.z; m += 1
+            ref_pt = Vector((cx / m, cy / m, cz / m))
     elif reference == 'origin':
         ref_pt = mw.translation.copy()
     else:  # bottom-center
