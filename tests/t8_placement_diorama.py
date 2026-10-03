@@ -158,7 +158,7 @@ def main():
     print("[T8] == C1: audit the placed state ==")
     audit = PL.audit_scene()
     bad = [p for p in audit.get("pairs", [])
-           if p.get("verdict") == "PENETRATING"]
+           if p.get("state") == "PENETRATING"]
     RESULTS["audit_verdict"] = audit.get("verdict", audit.get("state"))
     RESULTS["audit_bad_pairs"] = [f"{p['a']}x{p['b']}" for p in bad]
     check("C1.no_penetration", len(bad), 0)

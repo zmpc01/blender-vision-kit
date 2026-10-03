@@ -50,8 +50,8 @@ RNG = random.Random(5202)  # fixed seed: reproducible chaos
 
 
 def _note(kind, tag, ok, detail):
-    row = {"kind": kind, "tag": tag, "ok": ok, "detail": detail}
-    RESULTS[f"{kind}s" if kind.endswith("t") else kind + "s"].append(row)
+    store = "rounds" if kind == "round" else "seat_checks"
+    RESULTS[store].append({"tag": tag, "ok": ok, "detail": detail})
     print(f"  [{'PASS' if ok else 'FAIL'}] {tag}: {detail}")
     return ok
 
@@ -112,8 +112,8 @@ def _run_round(tag, mover, support, do_transform, expect):
         _note("round", f"{tag}.section_no_crash", False, repr(e))
 
     _scene_render(tag, mover.name)
-    RESULTS["rounds"].append({"tag": tag})
-    # restore: rebuild is cheaper than undo (placement ops are absolute)
+    # audit pair `state` is the EXACT vocabulary (PENETRATING/TOUCHING/
+    # NESTED/CLEAR); `verdict` is the human string — never exact-match it.
     return audit
 
 
@@ -189,23 +189,28 @@ def seat_checks(S):
     _note("seat_check", "S1b.align_true_copies_yaw", copied,
           f"yaw={math.degrees(mover.rotation_euler.z):.1f}deg")
 
-    # S2: offset in empty LOCAL space (anchor yawed 35deg: +0.1 local x)
+    # S2: offset in empty LOCAL space (anchor yawed 35deg: +0.1 local x).
+    # reference='bottom' semantics: the mover's bbox BOTTOM-CENTER lands at
+    # anchor+offset — compare bbox bottoms, not origins.
     PL.seat_at(mover, a1, align=True, offset=(0.1, 0, 0))
     bpy.context.view_layer.update()
     mw = a1.matrix_world
     want = mw @ Vector((0.1, 0, 0))
-    got = mover.matrix_world.translation
+    mn, mx = PL._aabb(mover)
+    got = Vector(((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mn.z))
     dz = abs(want.z - got.z)
-    _note("seat_check", "S2.offset_local", dz < 1e-3,
-          f"dz={dz*1000:.2f}mm")
+    dxy = (Vector((want.x, want.y)) - Vector((got.x, got.y))).length
+    _note("seat_check", "S2.offset_local_bbox_bottom", dz < 1e-3 and dxy < 1e-3,
+          f"dz={dz*1000:.2f}mm dxy={dxy*1000:.2f}mm")
 
-    # S3: re-seat to AnchorB — mover leaves anchor A entirely
+    # S3: re-seat to AnchorB — mover's bbox bottom lands ON the anchor
     PL.seat_at(mover, a2, align=True)
     bpy.context.view_layer.update()
-    at_b = (mover.matrix_world.translation - a2.matrix_world.translation
-            ).length < 1e-3
-    _note("seat_check", "S3.reseat_moves", at_b,
-          f"dist={(mover.matrix_world.translation - a2.matrix_world.translation).length:.4f}m")
+    mn, mx = PL._aabb(mover)
+    bottom = Vector(((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mn.z))
+    d = (bottom - a2.matrix_world.translation).length
+    _note("seat_check", "S3.reseat_moves", d < 1e-3,
+          f"bottom->anchor dist={d:.4f}m")
 
 
 def main():
@@ -249,8 +254,8 @@ def main():
         bpy.context.view_layer.update()
     _run_round("R3_sink", crate, stool, t3,
                lambda pairs: (
-                   any(p.get("verdict") == "PENETRATING" for p in pairs),
-                   f"{[p.get('verdict') for p in pairs]}"))
+                   any(p.get("state") == "PENETRATING" for p in pairs),
+                   f"{[p.get('state') for p in pairs]}"))
 
     # R4 lift: mug 200mm up -> NO touching pair (floating)
     def t4():
@@ -259,14 +264,13 @@ def main():
         bpy.context.view_layer.update()
     _run_round("R4_lift", mug, table, t4,
                lambda pairs: (len(pairs) == 0, f"{len(pairs)} pairs"))
-
     # R5 offset-xy: crate half off the stool
     def t5():
         crate.location.z = 0.50 + 0.025 + 0.15
         crate.location.x += 0.18
         bpy.context.view_layer.update()
     _run_round("R5_offset", crate, stool, t5,
-               lambda pairs: (True, f"{[p.get('verdict') for p in pairs]}"))
+               lambda pairs: (True, f"{[p.get('state') for p in pairs]}"))
 
     # R6 yaw-90 the MUG on the table (round footprint: contact unchanged)
     def t6():
@@ -276,7 +280,7 @@ def main():
         mug.rotation_euler = Euler((0, 0, math.radians(90)), 'XYZ')
         bpy.context.view_layer.update()
     _run_round("R6_yaw90", mug, table, t6,
-               lambda pairs: (True, f"{[p.get('verdict') for p in pairs]}"))
+               lambda pairs: (True, f"{[p.get('state') for p in pairs]}"))
 
     # R7 teleport the crate 5m away -> in NO pair (audit pad law)
     def t7():
@@ -288,9 +292,9 @@ def main():
     print("[T9] == seat_at edge checks ==")
     seat_checks(S)
 
-    n_rounds = len([r for r in RESULTS.get("rounds", [])])
+    n_rounds = len(RESULTS["rounds"])
     fails = [r for r in RESULTS["rounds"] + RESULTS["seat_checks"]
-             if not r.get("ok")]
+             if r.get("ok") is False]
     print(f"\nCHAOS: {len(fails)} hard failures across {n_rounds} rounds "
           f"+ {len(RESULTS['seat_checks'])} seat checks")
     if fails:

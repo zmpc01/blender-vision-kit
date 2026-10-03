@@ -257,7 +257,9 @@ Full details: `/kb/placement_and_physics.md`. Headlines:
 - `audit` pair states: PENETRATING (penetration_mm) / TOUCHING / NESTED /
   CLEAR (clearance_mm); audit only sees pairs within 100mm pad — floaters
   >300mm appear in NO pair; use `physics_gate` or `look` verdict for
-  scene-wide floating
+  scene-wide floating. **LAW: exact-match the pair's `state` field
+  (PENETRATING/TOUCHING/NESTED/CLEAR) — never `verdict`, which is the
+  human string ("PENETRATING 7.8 mm — fix") and WILL drift**
 - **reference tokens**: `move_to` reference = `bottom-center` (default) |
   `centroid` | `origin`; `snap_z`/`seat_at` reference = `bottom`
   (default) | `origin` | `centroid`. `bottom` anchors the object's bbox
