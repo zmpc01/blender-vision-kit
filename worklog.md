@@ -3076,3 +3076,23 @@ Stage Summary:
 - Placement core flow hardened end-to-end with principal eyes; crowd excluded per owner
 - Full battery at close: scope OK + t1-t6 ALL PASS + v1 27/27 + v2 27/27 + t8 8/8
 - Gotchas 125 (near-plane bbox cull), 126 (no mid-run edits), 127 (images=WHERE, verdicts=HOW-MUCH)
+
+---
+Task ID: 5 (session 5)
+Agent: vision-agent (orchestrator)
+Task: address remaining gaps (HANDOFF 2+3) then kit-refinement usability studies (dog-food, reset, repeat)
+
+Work Log:
+- Env rebuild: fresh clone @2d77678; Blender 5.2.2 provisioned (learned: harness REAPS background processes — setsid insufficient for long steps; run big download/extract steps in FOREGROUND)
+- Gap C+D closed: tests/test_v3_edges.py (20/20) — look on EMPTY scene (graceful PASS+NEAR-EMPTY flags), single off-origin object, extreme WIDE 35:1 / TALL 40:1, motion_study+transient_scan at --frames 1 and 2 (no traceback, clean exits); animate(ctx,*,start_frame,n_frames) contract enforced in edge fixtures
+- Gap A+B closed: tests/t9_chaos_fuzz.py ALL PASS — 7 perturbation classes (tilt/steep/sink/lift/offset/yaw90/teleport) with audit-state consistency + section_no_crash + per-round principal renders (visual pass R3/R4/R6: states read as numbers said); seat_at edge checks (align false/true, offset local-space bbox-bottom semantics, reseat)
+- Laws codified: audit pair `state` vs `verdict` (t8 checker latent bug fixed; AGENTS.md law added); display-mangle artifact strikes again — trust ast.parse/char-codes over sed/Read eyeballs
+- apply_patch UX: _get_obj available-ids hint routed through ALL raw lookups (seat_at/seam_views/heat_bake/place_on supports/physics_*)
+- USABILITY R1 (docs/USABILITY_R1.md): reading-nook consumer loop, 13 frictions; KIT FIXES: place_on override='keyframe' accepted + _rebase_location_keys (REBASE whole animation path — measured drift 20mm@f24 killed; verified 0.00mm f1/f12/f24); move_to non-mesh guard (crash on anchor EMPTY); validator intersection RELATIVE threshold (pct>=5 OR absolute) — sunk-mug 20% now fires (was invisible under 0.001m³); PARAM_DOCS sync (add_empty rotation_deg, place_on/seat_at override); transient_scan bbox-proxy hint; place_on footprint AUTO-WIDEN bottom->grid (R1 F4 bit 3x: tabletop-on-leg, book-on-yawed-book, lampshade-on-pole) — all verified end-to-end + regression green (v1 27, v2 27, edges 20, t8 8, t9 ALL PASS)
+- USABILITY R2 (docs/USABILITY_R2.md): physics lane (settle/place/oracle/gate) clean FIRST TRY; K5 caught real pallet runner flaw on first run; oracle TOPPLED witness exercised; scene_schema export; no new physics-lane bugs
+- Session-5 commits: 8b554fb..cb7b220 (see git log)
+
+Stage Summary:
+- HANDOFF gaps C/D/A/B all closed; core flows hardened by honest consumer dog-fooding (2 full reset-restart cycles)
+- The round's deepest insight: placement ops on ANIMATED props need PATH REBASING (all keys shifted by placement delta), not current-frame re-keying — found, implemented, verified in one loop
+- Next-session scope: see HANDOFF.md (R3+ dog-food rounds, upstream PR, optional crowd)
