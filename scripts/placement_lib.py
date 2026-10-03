@@ -826,6 +826,45 @@ def place_on(obj, *supports, clearance=0.0, footprint='bottom', mode='rest',
              grid_n=12, inset=0.0, keep_xy=True, override=None,
              contact_band_mm=0.1, output=None, force=False,
              align_to_surface=False):
+    """One-shot 'object rests on support surface' solver with FOOTPRINT
+    AUTO-WIDEN (usability R1/F4, three bites: tabletop-on-leg,
+    book-on-yawed-book, lampshade-on-pole): the default 'bottom'
+    footprint raycasts only downward-facing verts — a small/pedestal
+    support misses every ray. On 'no support found' with footprint=
+    'bottom', the solve RETRIES with footprint='grid' (whole-bbox
+    sampling) and the report records footprint_autowiden. Pass
+    footprint explicitly to opt out."""
+    try:
+        rep = _place_on_impl(obj, *supports, clearance=clearance,
+                             footprint=footprint, mode=mode, grid_n=grid_n,
+                             inset=inset, keep_xy=keep_xy, override=override,
+                             contact_band_mm=contact_band_mm, output=None,
+                             force=force, align_to_surface=align_to_surface)
+    except RuntimeError as e:
+        if footprint == 'bottom' and 'no support surface found' in str(e):
+            rep = _place_on_impl(obj, *supports, clearance=clearance,
+                                 footprint='grid', mode=mode, grid_n=grid_n,
+                                 inset=inset, keep_xy=keep_xy,
+                                 override=override,
+                                 contact_band_mm=contact_band_mm,
+                                 output=None, force=force,
+                                 align_to_surface=align_to_surface)
+            rep["footprint_autowiden"] = (
+                "bottom found no support — retried with footprint='grid' "
+                "(pedestal/overhang support); pass footprint explicitly "
+                "to opt out")
+            print(f"[place_on] {obj.name}: footprint auto-widened "
+                  f"bottom->grid (support missed by downward-facing-vert "
+                  f"rays)")
+        else:
+            raise
+    return _maybe_write(rep, output)
+
+
+def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
+                   mode='rest', grid_n=12, inset=0.0, keep_xy=True,
+                   override=None, contact_band_mm=0.1, output=None,
+                   force=False, align_to_surface=False):
     """One-shot 'object rests on support surface' solver.
 
     Single-contact-plane solver (design review #1): all footprint points
