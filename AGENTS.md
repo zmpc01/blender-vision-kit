@@ -267,6 +267,14 @@ Full details: `/kb/placement_and_physics.md`. Headlines:
 - **place_on: name the TOPMOST surface** the mover should rest on. The
   single-contact solver ignores interposed supports — `supports:["Floor"]`
   under a rug rests the object THROUGH the rug; name the `Rug`.
+  Footprint AUTO-WIDEN: default `bottom` misses pedestal supports
+  (tabletop-on-leg, lampshade-on-pole) — on no-support it retries
+  `grid` automatically (report records `footprint_autowiden`).
+- **Animated prop + placement**: pass `override:"keyframe"` — the op
+  REBASES the whole animation path by the placement delta (every
+  keyframe keeps its relative placement; a current-frame re-key leaves
+  later keys at the pre-placement pose and the prop drifts into its
+  support — measured 20mm by f24)
 - **seat_at facing**: `align:true` (default) copies the anchor empty's
   rotation to the seated object — face a chair by rotating its anchor.
 - **Furnished/set-dressed scenes**: a scene-wide `audit` fails on any
