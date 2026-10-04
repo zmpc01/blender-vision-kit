@@ -103,3 +103,15 @@
 
 ## QA-LANE DISPATCH R23 (auto)
 - #6 fix-verify at c37cb4f: VERIFIED (v1_basic PASS 6 obj, v2_balanced PASS 7 obj through look.py; README line now true) — CLOSED by QA. VK era total: #1/#2/#3/#5 closed R22 + #6 closed R23. Remaining open-ours: #4 only (==AK-15 workbench-gray).
+
+## QA-LANE DISPATCH R26
+- NEW #7 [P2][robustness]: look.py total-fails on a fresh container — renders
+  succeed into a /tmp tempdir, then stitch_contact_sheet hits ImportError
+  (Pillow absent from Blender bundled python3.13; blrun.sh injects only
+  $SCRIPT_DIR) -> ImageMagick montage fallback (also absent) -> uncaught
+  FileNotFoundError -> rc=1, output dir EMPTY, verdict/manifest never printed.
+  The renders are lost with the tempdir. Likely first live-fire of look.py
+  (S5 untouched 25 rounds). Fix sketch: copy renders to --output right after
+  render; try/except the stitch (WARN + continue); install.sh provision
+  Pillow into bundled python and/or guard montage with shutil.which.
+  Evidence: freshbook docs/qa-blender-kit/evidence/qa-r026/ (commit 04280e94).
