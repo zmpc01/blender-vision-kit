@@ -70,7 +70,41 @@ code-level finding (--frames BLOCKER) remains valid.
 - [x] Hardening wave 5-b: fresh-context NON-VISUAL code review of the full session diff (0 blockers, 3 bugs, 6 nits) → fix batch 4 (image_metrics stdev label, _slice try/finally, section_side camera-standout, docstrings, t8 truth_state assert); full battery green (scope + t1-t6 + v1 27/27 + v2 27/27)
 - [x] SESSION-5 GAPS CLOSED (2026-10-03): test_v3_edges 20/20 (empty/off-origin/wide/tall look + 1-2-frame motion/scan); t9_chaos_fuzz ALL PASS (7 perturbation classes + seat_at edge checks); apply_patch _get_obj available-ids hint on ALL raw lookups; state-vs-verdict law (t8 checker fixed + AGENTS.md)
 - [x] SESSION-5 USABILITY R1+R2 (dog-food, reset-restart): docs/USABILITY_R1.md + R2 — 15 frictions, 7 kit fixes verified end-to-end: place_on override='keyframe' PATH REBASING (_rebase_location_keys; killed measured 20mm@f24 drift), move_to non-mesh guard, validator RELATIVE intersection threshold, PARAM_DOCS sync, scan bbox-proxy hint, place_on footprint AUTO-WIDEN bottom->grid, _get_obj hints; R2 physics lane clean first-try; regressions green (v1 27, v2 27, edges 20, t8 8, t9)
-- [ ] Candidate next: R3+ dog-food rounds (EEVEE-lane consumer loop is untested by the study; polyhaven lane; export/previz lane), crowd T3 (upstream-gated), upstream PR for D11 install fallback
+- [x] SESSION-6 QA-LANE FIX WAVE (2026-10-04, commits 50261a5..d342831):
+  #1 path-tolerant safe_import_scene (examples/ work bare or as path,
+  README example verified) + #5 T5z positive TOPPLED coverage (t5 ALL
+  PASS) + #2 MemAvailable pre-check for EEVEE warm-cache (install.sh +
+  blrun.sh; guard verified live by QA R22 at 2245 MB) + #3 honest Cycles
+  verify (engine-assign probe; subclass-enum false negative killed) +
+  BLENDER_BIN override (zero-download path) + #4/D15 display-color sync
+  (workbench MATERIAL shows node-authored Base Colors; standalone
+  sync/restore outside the annotation layer, per-material dedupe,
+  default-gray skip, manifest color_source; test_v4_colorsync 29 checks;
+  RGB cubes visually verified 4 angles) + #6 examples migrated to the
+  driver convention (v2 NISHITA→version-safe sky; v1 floating cube fixed)
+- [x] SESSION-6 DOG-FOOD R3 (EEVEE lane) + R4 (export/previz lane)
+  (commits ed14b7d..6d41cd9): docs/USABILITY_R3.md + R4. Kit fixes:
+  normalize_engine bridge (ALL CLIs accept ALL engine spellings — three
+  vocabularies had disagreed), animated-first motion_study pick
+  (static-props-crowd-out-mover, second consumer hit), template sky
+  strength note + gotcha 128 (sky×EEVEE overexposure invisible to
+  workbench), export_previz_package dual-lane (animate bridge +
+  ctx-scene fallback + lane-aware gates) + pre-existing `blob`
+  NameError BLOCKER (gate 14 crashed EVERY run), keyframe_contact_sheet
+  MATERIAL+D15 sync (was OBJECT gray). Battery green: scope+v1 27+v2
+  27+edges 20+v4 29+t1-t6+t8 8/8+t9.
+- [x] D16 SEMANTIC MESH LABELING design + audit round 1 (c37cb4f):
+  user-directed use case (reverse an opaque import into
+  semantically-labeled objects for non-vision consumers). Design +
+  amendments adopted (kit_label lowercase, idempotent two-phase rename,
+  validator de-name-dependence, split_mesh preconditions).
+- [ ] M6 (NEXT): implement D16 per docs/DESIGN_D16_semantic_labeling.md
+  first-session scope (label_objects op → manifest field → validator
+  de-name-dependence → split_mesh → dogfood import pass + blind
+  sub-agent address test)
+- [ ] Candidate next: R5+ dog-food rounds (polyhaven import lane; a
+  t10 export-package regression suite per R4 F10b lesson), crowd T3
+  (upstream-gated), upstream PR for D11 install fallback
 - [ ] T6 scene ships in kit (t6_transient.py) as the transient/label regression vehicle; consider --frames interplay doc (look --frames N vs animate n_frames)
 - Note: blrun.sh without --background hangs silently (GUI-on-Xvfb startup) — FIXED session-4 (auto-inject --background guard)
 

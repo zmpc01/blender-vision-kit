@@ -3096,3 +3096,26 @@ Stage Summary:
 - HANDOFF gaps C/D/A/B all closed; core flows hardened by honest consumer dog-fooding (2 full reset-restart cycles)
 - The round's deepest insight: placement ops on ANIMATED props need PATH REBASING (all keys shifted by placement delta), not current-frame re-keying — found, implemented, verified in one loop
 - Next-session scope: see HANDOFF.md (R3+ dog-food rounds, upstream PR, optional crowd)
+
+---
+Task ID: session-6
+Agent: vision agent (principal, orchestrator + worker)
+Task: QA-lane fix wave (#1-#6) → dog-food R3 (EEVEE lane) + R4 (export/previz lane) → D16 semantic-labeling design+audit (user-directed use case)
+
+Work Log:
+- Bootstrap: sandbox wiped; fresh clone @ 67621da (QA dispatches had moved remote past session-5's 21ebc67); install.sh in FOREGROUND (background reaped twice); battery baseline green.
+- QA #1: safe_import_scene path-tolerant (bare/PYTHONPATH, ./examples fallback, explicit paths; distinguishes internal-import failures); README examples line.
+- QA #5: T5z positive TOPPLED (tower starts CLEAR — 15° tilt at rest-height self-penetrated and tripped refuse pre-check; op verdict FAIL is the correct contract).
+- QA #2: MemAvailable pre-check (<2400MB → named skip) in install.sh + blrun.sh --warm-cache.
+- QA #3: honest Cycles verify (engine-assign probe; subclass-enum false negative killed — reproduced live); BLENDER_BIN override (zero-download).
+- QA #4 → D15: display-color sync/restore standalone in annotate.py; look.py wired (sync pre-render, restore in finally, manifest color_source); test_v4_colorsync 29 checks; VISUAL PASS (RGB cubes true-color in all 4 angles). Design critiqued by fresh sub-agent first (adopted amendments 2-6).
+- R3 EEVEE lane (docs/USABILITY_R3.md): F1/F5 engine-vocabulary unification (normalize_engine + common_parser normalize_engine_id; all CLIs accept all spellings); F4 template docstring; F6 sky×EEVEE overexposure trap (template strength 0.5 + gotcha 128); F7 motion_study animated-first pick (verified: Slider tracked, POP-FRAMES fire); F8 authoring error caught by scan→audit→fix→rescan loop (96.9% overlap measured, path arc fixed, timeline clean).
+- R4 export/previz lane (docs/USABILITY_R4.md): F10 export_previz_package dual-lane (inspect animate bridge, ctx.get("scene"), lane-aware shots/characters gates); F10b pre-existing `blob` NameError BLOCKER (gate 14 crashed every run of any scene); F11 contact sheet MATERIAL+D15 sync (was OBJECT gray — visual verify: true colors + shadows + orbit).
+- QA #6 (arrived mid-session via R22): examples migrated to driver convention; v1 floating cube fixed; both examples PASS through look driver. Also: mid-session remote push race handled by fetch+rebase (their diff HANDOFF-only).
+- Full battery green at close: scope + v1 27 + v2 27 + edges 20 + v4 29 + t1-t6 + t8 8/8 + t9 (14 rounds).
+- D16 semantic mesh labeling: design doc + fresh-agent audit round 1 (amendments adopted: kit_label lowercase, idempotent two-phase rename, validator de-name-dependence, split_mesh preconditions) → M6 next session.
+
+Stage Summary:
+- Kit fixes this session: 12 (3 QA-wave, 5 R3/R4 friction, 2 infra, 2 example/docs) — all regression-green, visual claims eye-verified.
+- Remotes: GitHub + /home/sync + GitLab mirror at session-6 close; QA-lane R22 race resolved without force.
+- Next session: M6 implement D16 (first-session scope in DESIGN_D16 doc + HANDOFF), optional R5 polyhaven/import lane + t10 previz-package suite.

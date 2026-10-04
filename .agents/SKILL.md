@@ -177,10 +177,15 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 8. **Forgetting `--python-use-system-env`** — if you must call blender directly (debugging), add this flag.
 9. **Not exercising every gate path** — a gate that only runs at render time passes every dry-run. Always run one full pipeline pass (dry-run + render + encode + export) before shipping.
 10. **Letting advisory gates stay advisory** — a gate that can't abort the build protects nothing. Flip to fail-closed the round you add it.
-12. **The harness REAPS background processes** (session-5): nohup/setsid did NOT keep install.sh alive across tool-call boundaries — the log just stops mid-step and `ps` finds nothing. Long download/extract steps: run in the FOREGROUND with a generous tool timeout. A truncated install log with no error = reaped, not failed.
-13. **Display-layer mangle is recurring and sneaky** (twice now): sed/Read/byte-prints sometimes DROP a `[`+following char, showing impossible syntax in valid files. The truth sequence: char-codes (hex ord) / `od` / `ast.parse` / `tokenize` — if parse OK but the printed line looks broken, BELIEVE the parser; never "fix" a phantom syntax error.
-14. **Dog-food discipline beats code-reading for UX bugs** (session-5, R1+R2): operating strictly as the consumer (docs-only, real scene, honest friction log) surfaced 7 kit defects that five hardening waves missed — the deepest (animated-prop placement needs PATH REBASING, not current-frame re-keying) was only observable end-to-end. Reset-and-repeat rounds also VERIFY the fixes from the consumer seat.
 12. **Inventing API return keys** — asserted `r["state"]` on a report whose real keys are `ok`/`post_contact` (T8). Read the function's return dict BEFORE writing the assert; the kit's own "check the real API first" law applies to tests too.
+15. **The harness REAPS background processes** (session-5): nohup/setsid did NOT keep install.sh alive across tool-call boundaries — the log just stops mid-step and `ps` finds nothing. Long download/extract steps: run in the FOREGROUND with a generous tool timeout. A truncated install log with no error = reaped, not failed.
+16. **Display-layer mangle is recurring and sneaky** (twice now): sed/Read/byte-prints sometimes DROP a `[`+following char, showing impossible syntax in valid files. The truth sequence: char-codes (hex ord) / `od` / `ast.parse` / `tokenize` — if parse OK but the printed line looks broken, BELIEVE the parser; never "fix" a phantom syntax error.
+17. **Dog-food discipline beats code-reading for UX bugs** (session-5, R1+R2): operating strictly as the consumer (docs-only, real scene, honest friction log) surfaced 7 kit defects that five hardening waves missed — the deepest (animated-prop placement needs PATH REBASING, not current-frame re-keying) was only observable end-to-end. Reset-and-repeat rounds also VERIFY the fixes from the consumer seat.
+18. **One CLI vocabulary, many accepted spellings** (session-6 R3 F1/F5): three engine vocabularies had evolved (docs raw enums, look-family short names, ship-family raw enums) and the docs' literal command crashed. When layers of one surface must speak different conventions (dispatch names vs Blender ids), bridge at the argparse `type=` layer with ONE normalizer per convention — never let a `choices=` list reject spellings the docs themselves teach. Note argparse DEFAULTS bypass `type=` (keep defaults in the family's native convention).
+19. **A tool with zero test coverage is presumed broken** (session-6 R4 F10b): export_previz_package carried a rename-leftover NameError that crashed EVERY run of ANY scene — it simply had never been run since the refactor. Every refactor leftover is a live landmine in an unexercised path; a lane the docs ship is a lane a suite must walk.
+20. **Crowd-convention tools must be lane-aware** (session-6 R4 F10): gates that index `shots[0]` or demand `ctx["scene"]` crash template-family scenes. Fail-closed gates should fire when the scene DECLARES the concept (SHOTS table, BOARD/RUN_PARAMS) and pass vacuously otherwise.
+21. **Workbench looks cannot see world lighting** (session-6 R3 F6, gotcha 128): workbench ignores world/sky entirely, so sky-driven EEVEE overexposure is invisible in every previz look — only the ship-preview lane (EEVEE, 0.0 EV on purpose) tells the truth. Cross-lane blindness is a design fact: know what each render mode CANNOT reveal.
+22. **Remote can move mid-session** (session-6): a parallel QA lane pushed while I worked and my push rejected non-fast-forward. Protocol held: fetch, verify their diff is non-overlapping, rebase, push. Never force; the remote is the shared disk now.
 
 ## Verification discipline
 
@@ -301,3 +306,29 @@ Key measured laws from session-5 (also in AGENTS.md):
 - placement of animated props: override='keyframe' rebases ALL location keys
   by the placement delta (_rebase_location_keys) — a current-frame re-key
   leaves later keys at the pre-placement pose (measured 20mm drift by f24)
+
+## Session-6 meta: lane dog-fooding + the D15 color law
+
+- **D15 display-color sync**: workbench MATERIAL reads `mat.diffuse_color`,
+  so node-authored (imported) scenes render ALL-GRAY and nothing detects it.
+  `annotate.sync_display_colors()/restore_display_colors()` are STANDALONE
+  (not part of the annotation layer) so `--no-annotate` looks stay honest;
+  sync pre-render + restore in `finally`; per-MATERIAL dedupe (not per-slot);
+  skip untouched default-gray; manifest rows carry `color_source`. Any new
+  render surface must call the same pair — keyframe_contact_sheet rendered
+  gray sheets until wired (R4 F11).
+- **EEVEE warm-cache needs MemAvailable >= ~2.4 GB** (QA #2 kernel
+  forensics: shader compile peaks ~2.07 GB RSS independent of resolution;
+  4 SIGKILLs recorded). install.sh + blrun.sh --warm-cache guard now skip
+  with a named note below 2400 MB. Cycles verify = engine-ASSIGN probe
+  (`scene.render.engine = 'CYCLES'`), never RenderEngine subclass
+  enumeration (false negative on 5.x built-ins).
+- **Scene driver convention is a contract**: `build_scene()` → ctx dict,
+  `animate(ctx, *, start_frame=1, n_frames=<int>)`. Tools that mean "module
+  decides its timeline" (previz package) pass `n_frames=None` — which
+  CRASHES the documented int-default signature. Bridge with
+  `inspect.signature`: int default → call bare; else pass the sentinel.
+- **D16 (semantic labeling of opaque imports)**: design + audit DONE
+  (docs/DESIGN_D16_semantic_labeling.md, amendments adopted: lowercase
+  `kit_label` prop, idempotent two-phase rename, validator
+  de-name-dependence, split_mesh preconditions). Implementation = M6.

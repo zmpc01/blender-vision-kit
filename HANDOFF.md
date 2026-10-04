@@ -1,107 +1,102 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session close: 2026-10-03 (session 5: HANDOFF gaps C/D/A/B closed via
-> test_v3_edges 20/20 + t9_chaos_fuzz; then TWO full dog-food usability
-> rounds (R1 reading-nook, R2 crate-stack) producing 7 kit fixes all
-> verified end-to-end. PLAN.md = long-horizon tracker. Upstream snapshot
-> preserved at docs/UPSTREAM_HANDOFF_snapshot.md.
+> Session close: 2026-10-04 (session 6). QA-lane fix wave #1–#6 →
+> dog-food R3 (EEVEE lane) + R4 (export/previz lane) → D16 semantic
+> mesh labeling DESIGN+AUDIT (implementation = M6, next session).
+> PLAN.md = long-horizon tracker. Upstream snapshot preserved at
+> docs/UPSTREAM_HANDOFF_snapshot.md.
 
 ## State at handoff
 
-- Repo: https://github.com/zmpc01/blender-vision-kit (main; session-5
-  head = cb7b220 + docs commits). GitLab mirror
+- Repo: https://github.com/zmpc01/blender-vision-kit (main; session-6
+  head = c37cb4f + wrap-up commits). GitLab mirror
   gitlab.com/ansgareutychisO/blender-vision-kit (PAT namespace is
   ansgareutychisO; WAF 403s probabilistic — retry). GitHub = source of
   truth. NEVER force push.
 - SCOPE DOCTRINE (binding, owner-ruled): this kit is FOR vision-native
   agents ONLY. No VLM bridges, no ascii packs. Sub-agents: NON-VISUAL
   QA only. The principal makes every visual verdict.
-- Toolchain: NOT committed. Fresh sandbox: `./install.sh` (run the big
-  download/extract steps in FOREGROUND — the harness reaps background
-  processes; setsid/nohup did NOT survive).
-- Regression battery (all green at close): test_kit_scope, test_v1_look
-  27/27, test_v2_motion 27/27, test_v3_edges 20/20, t1-t6 placement
-  suites, t8 8/8, t9_chaos_fuzz ALL PASS.
-- Session-5 kit changes (see docs/USABILITY_R1.md + R2 for the evidence):
-  1. place_on override='keyframe' + _rebase_location_keys — placement of
-     ANIMATED props rebases the whole keyframe path by the delta
-     (replaces current-frame re-key; killed measured 20mm@f24 drift)
-  2. place_on footprint AUTO-WIDEN bottom->grid (pedestal supports)
-  3. move_to works on EMPTY/non-mesh (was AttributeError)
-  4. validate_scene intersection: relative pct>=5 OR absolute —
-     small-object sinks now visible (mug 20% fires; was invisible)
-  5. PARAM_DOCS sync (add_empty rotation_deg; place_on/seat_at override)
-  6. apply_patch _get_obj available-ids hint on every raw lookup
-  7. transient_scan finding lines carry "(bbox-proxy; confirm with
-     audit mesh numbers)"
-- Laws added: audit pairs match `state` (PENETRATING/TOUCHING/NESTED/
-  CLEAR), never `verdict`; AGENTS.md placement headlines carry auto-widen
-  + animation-rebase.
-- Study artifacts: docs/USABILITY_R1.md, docs/USABILITY_R2.md (friction
-  logs + what-worked lists); study scenes shipped as scripts/
-  reading_nook.py + scripts/crate_stack.py (also edge fixtures
-  scripts/edge_*.py + tests/test_v3_edges.py + tests/t9_chaos_fuzz.py).
+- Toolchain: NOT committed. Fresh sandbox: `bash install.sh` in
+  FOREGROUND (the harness reaps background processes — setsid/nohup
+  do NOT survive; burned two bootstraps this way). install.sh now
+  honors BLENDER_BIN (zero-download reuse) and skips EEVEE warm-cache
+  below 2400 MB MemAvailable (QA #2, verified live at 2245 MB).
+- Regression battery (ALL GREEN at close): test_kit_scope, test_v1_look
+  27/27, test_v2_motion 27/27, test_v3_edges 20/20, test_v4_colorsync
+  29 checks (NEW), t1-t6 placement suites (T5z positive TOPPLED added),
+  t8 8/8, t9_chaos_fuzz ALL PASS. t8/t9 need `-- --output output/tests/<t>`.
+- Multi-remote hygiene: QA lane pushed MID-SESSION (R22 dispatch) and
+  my push was rejected non-fast-forward — fetched, verified theirs was
+  HANDOFF-only, rebased, pushed. Expect this to recur; never force.
+
+## Session-6 kit changes (evidence: docs/USABILITY_R3.md + R4 + D16 doc)
+
+1. D15 display-color sync (QA #4): `annotate.sync_display_colors()` /
+   `restore_display_colors()` standalone (outside the annotation layer);
+   look.py calls sync pre-render + restore in finally; manifest rows
+   carry `color_source`. Workbench MATERIAL now shows node-authored
+   colors (visually verified RGB cubes, 4 angles).
+2. Engine-vocabulary bridge: `blender_kit.normalize_engine()` (short
+   names for perception CLIs) + common_parser normalizes through
+   `normalize_engine_id` (raw ids for the ship family). Every CLI
+   accepts every spelling; defaults unchanged (argparse bypasses type).
+3. motion_study animated-first pick (R3 F7: statics crowded out the
+   only mover — second consumer hit).
+4. keyframe_contact_sheet: MATERIAL + D15 sync (was OBJECT color mode —
+   all-gray sheets).
+5. export_previz_package dual-lane (template-family scenes now work:
+   inspect-based animate bridge, ctx.get("scene") fallback, shots/
+   characters gates lane-aware) + FIXED pre-existing `blob` NameError
+   blocker at gate 14 (crashed EVERY run of ANY scene — R4 F10b).
+6. safe_import_scene path-tolerant (QA #1): bare names, ./examples/
+   fallback, explicit paths — examples/ + README verified working.
+7. install.sh/blrun.sh: MemAvailable guard + honest Cycles verify +
+   BLENDER_BIN override (QA #2/#3, closed by QA R22).
+8. Examples migrated to driver convention (QA #6): build_scene()->ctx,
+   animate(ctx,*), version-safe sky; v1's floating cube fixed.
 
 ## Immediate next-session TODO (in order)
 
-1. Dog-food R3 (owner): EEVEE/final-render lane as consumer — the study
-   rounds only exercised workbench. Copy scene_template, --engine
-   BLENDER_EEVEE (warm cache first: `blrun.sh --warm-cache`), still +
-   samples, verify quality presets + readiness headers from the
-   consumer seat. Log frictions to docs/USABILITY_R3.md.
-2. Dog-food R4 (owner): export/previz lane — export_gltf + viewer +
-   export_previz_package + keyframe_contact_sheet on a small animated
-   scene; verify the ship arc end-to-end.
-3. Fix whatever R3/R4 surface; keep the friction-log discipline; run
-   the regression battery after each kit change.
-4. Milestone backup: /home/sync copy + both remotes (commands in PLAN
-   M4). Session-5 close backup taken at cb7b220+docs.
-5. Crowd T3 (LOW, owner-excluded until upstream stabilizes; Rust build
-   network-gated).
+1. **M6: implement D16** — semantic mesh labeling per
+   docs/DESIGN_D16_semantic_labeling.md (amendments ADOPTED, first-
+   session scope listed there): `label_objects` apply_patch op
+   (additive `kit_label` + opt-in two-phase rename, idempotent,
+   all-or-nothing) → look.py manifest `kit_label` field → validator
+   de-name-dependence (CEILING_NAMES → kit_semantic prop) → split_mesh
+   dry-run/mutate pair → dogfood pass on an opaque fixture (build a
+   nameless "city block": pillars/pipes/stairs as Mesh.001…) →
+   blind sub-agent addresses 3 labeled objects (success criterion).
+   Doc duties: PARAM_DOCS + --list + AGENTS.md op table.
+2. R5 dog-food candidate: polyhaven/import lane (pairs with M6's
+   dogfood — one pass can serve both).
+3. Candidate t10: export_previz_package regression suite (R4 F10b
+   lesson: the tool had ZERO coverage and shipped a total blocker).
+4. Keep the friction-log discipline (docs/USABILITY_R5.md); run the
+   regression battery after each kit change.
+5. Milestone backup: /home/sync copy + both remotes (commands in PLAN
+   M4). Session-6 close backup taken at c37cb4f+wrap-up.
 
 ## Known-open friction (triaged, NOT yet fixed)
 
-- F3-NIT: look SUBJECT-OVERFLOW hint fires on large ground planes
-  inflating cluster diag — could exclude ground-like planes from the
-  metric.
-- F11-NIT: motion_study auto-pick includes STATIC props (trajectory
-  dots read as noise) — de-prioritize non-animated meshes in the
-  default object pick.
-- place_on auto-widen retries once; a `footprint_autowiden` note is in
-  the report but NOT printed by apply_patch's OK line (only the lib
-  prints) — minor; consider surfacing in the op print.
-- transient_scan 1-frame timeline: clean exit but the message could say
-  WHY (no adjacent pairs) — edges suite asserts no-traceback only.
-- look.py on empty scene: verdict PASS with NEAR-BLACK/NEAR-EMPTY flags
-  — correct, but the readiness line could suggest "scene has 0 objects".
+- F6 residue: `add_sky_world()` DEFAULT strength (1.0) still blows out
+  EEVEE studio stills — template now passes 0.5 + gotcha 128 written;
+  changing the library default would alter every existing scene (needs
+  an owner ruling).
+- look SUBJECT-OVERFLOW hint fires on large ground planes inflating
+  cluster diag (R1 carry-over).
+- export_previz_package "0 shots" path prints crowd-flavored gate
+  summary lines (cosmetic once lane-aware gates pass vacuously).
+- transient_scan 1-frame timeline message could say WHY (no adjacent
+  pairs) (edges carry-over).
+- AGENTS.md documents the previz-package lane nowhere (R4 F9 doc gap).
 
 ## Worklog + artifacts
 
-- Repo worklog.md has the session-5 record (also replicate into
+- Repo worklog.md has the session-6 record (also replicate into
   /home/z/my-project/worklog.md — harness dir does not survive resets).
-- Design docs: docs/DESIGN_vision_kit_v1.md (D1-D14 FINAL + session-4
-  supersession note). Wave outputs live under output/ (gitignored,
-  regenerable).
-- Multi-agent QA protocol: fresh-context sub-agents do NON-VISUAL review
-  only (wave 5-b pattern; caught 3 real bugs last session).
-
-## QA-LANE DISPATCH R1 (auto — from the QA/visual-review lane, session 44d598d5)
-Filed to this repo:
-- #1 [P2] README quickstart: examples/ scenes rejected by look.py --scene (only scripts/t0_smoke.py works)
-- #2 [P2] install.sh EEVEE warm-cache SIGKILL (OOM) under 4GB sandboxes — unhandled, scary crash
-- #3 [P3] Cycles verify false negative + no BLENDER_BIN reuse path (sibling-symlink trick: 57s→13s)
-
-## QA-LANE DISPATCH R3 (auto — from the QA/visual-review lane, session 44d598d5)
-- #4 [P2] cross-ref agent-kit #15: workbench MATERIAL renders node-authored colors gray (mat.diffuse_color only; comment scripts/viewport_capture.py:190-196 claims base colors) — look.py has NO color metric so the loss is undetectable downstream; suggest sync-or-warn + validator chroma line. Evidence: raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r003/{ctrl_wb,ctrl_cycles,look_ab_grid}.png
-- Note: EEVEE OOM (our #2) live-fired a 3rd time (R3, controls run) under 4GB — still reproducible on current HEAD.
-
-## QA-LANE DISPATCH R5 (auto)
-- #5 [P3][test-gap] no positive TOPPLED coverage in T5 — only T5v's NEGATIVE no_toppled assertion (:528); settle()'s topple classification + apply='none' matrix restore never asserted. QA probe independently VERIFIED the path WORKS at 596be8e (tall box tilt 12° → TOPPLED tilt 90°; apply='none' restore matrix delta 0.0; place() PLACED) — coverage ask, not a defect. Renders + probe + numbers: https://raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r005/s7/RESULTS.md (filed by QA lane)
-
-## QA-LANE DISPATCH R18 (auto)
-- #2 [P2] 4th occurrence CAPTURED with kernel forensics (comment 5975620788): EEVEE shader-compilation working set = ~2.07 GB RSS INDEPENDENT of resolution (64×64 warm-up probe peaks 2,115,100 kB; CYCLES 800×300 same-box control 0.45 GB); OOM trigger = MemAvailable < ~2.1-2.3 GB at warm-up start (kill @1.46 GB, survive @2.56 GB); dmesg `Killed process (blender) total-vm:3338876kB anon-rss:1461000kB` cgroup-attributed to this container. Sharpened fix ask: MemAvailable pre-check at install.sh:102 (< 2.4 GB -> named teacher-grade skip note). Evidence: raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r018/REPORT-VK2.md (filed by QA lane)
-
-## QA-LANE DISPATCH R22 (auto)
-- Fix-verify wave @ 0f8f9b36: #2 VERIFIED live-fire (named SKIP at 2245 MB MemAvailable, inside the historical kill band; install clean; blrun guard OK; first-EEVEE-render residual survived @2287 MB — documented edge, receipt on #2). #3 VERIFIED both halves (probe True + BOGUS->False negative control; BLENDER_BIN override = zero-download) — CLOSED by QA. #5 VERIFIED (T5 ALL PASS incl 7 T5z checks) — CLOSED by QA.
-- #1 import mechanism VERIFIED (path/bare/examples-fallback + t0_smoke regression PASS) — but NEW #6: shipped examples content broken (v1_basic animate-signature vs look.py:158-160 driver ctx convention; v2_balanced NISHITA enum dead in 5.2; README "examples work" line names v1_basic = FAIL-CLOSED). Suggest: migrate examples to driver convention or point README at scene_subagent_test.
-- Receipts: raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r022/REPORT-VK-FIXVERIFY.md (filed by QA lane)
+- Study artifacts: docs/USABILITY_R1..R4.md; study scenes
+  scripts/r3_turntable.py + reading_nook.py + crate_stack.py; design
+  docs/DESIGN_D16_semantic_labeling.md (amendments adopted).
+- Multi-agent QA protocol: fresh-context sub-agents do NON-VISUAL
+  review only; the D16 audit (round 1) is the pattern to reuse for the
+  implementation review.
