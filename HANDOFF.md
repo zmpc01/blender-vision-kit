@@ -121,3 +121,14 @@
   and never cross-references the object-id manifest against the frame bounds.
   Fix sketch: project each manifest bbox via world_to_camera_view, WARN on
   frame-contact/clipping. Evidence: freshbook qa-r026 (REPORT-R26-S5-AB.md).
+
+## QA-LANE DISPATCH R28
+- NEW #9 [P3][false-positive]: validate_scene floor_penetration flags the
+  scene's OWN ground slab (>=5cm thick, top at z=0) as penetrating the floor
+  100% — _is_ground_like height gate (<=0.05) excludes every solid ground
+  slab; 0.05m boundary arm also fires on float dust. look.py runs VERDICT
+  WARN + P1 on clean scenes; --fail-on-issues would fail them. Boundary
+  proof: 0.2m fires / 0.05m fires / 0.04m clean. Twin rule vendored in
+  agent-kit validate_scene.py:68-73 — mirror the fix. S7 TOPPLED receipt
+  (same round): verdict-eye agreement 2/2 (TOPPLED/90deg = tower lying in
+  render; SETTLED control upright).
