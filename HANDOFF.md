@@ -100,3 +100,6 @@
 - Multi-agent QA protocol: fresh-context sub-agents do NON-VISUAL
   review only; the D16 audit (round 1) is the pattern to reuse for the
   implementation review.
+
+## QA-LANE DISPATCH R23 (auto)
+- #6 fix-verify at c37cb4f: VERIFIED (v1_basic PASS 6 obj, v2_balanced PASS 7 obj through look.py; README line now true) — CLOSED by QA. VK era total: #1/#2/#3/#5 closed R22 + #6 closed R23. Remaining open-ours: #4 only (==AK-15 workbench-gray).
