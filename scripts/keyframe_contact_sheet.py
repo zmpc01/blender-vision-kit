@@ -99,7 +99,11 @@ def main():
     if args.engine == "workbench":
         scene.render.engine = 'BLENDER_WORKBENCH'
         scene.display.shading.light = 'STUDIO'
-        scene.display.shading.color_type = 'OBJECT'
+        # R4 usability F11: this sheet used OBJECT color mode — that shows
+        # obj.color (default white-gray), so node-authored materials were
+        # INVISIBLE and every prop rendered the same gray. The kit
+        # doctrine (P2/D15) is workbench MATERIAL + display-color sync.
+        scene.display.shading.color_type = 'MATERIAL'
         scene.display.shading.show_shadows = True
         scene.display.shading.show_cavity = True
     elif args.engine == "eevee":
@@ -111,6 +115,11 @@ def main():
         scene.cycles.device = 'CPU'
         scene.cycles.samples = args.samples
         scene.cycles.use_denoising = True
+
+    # D15: honest workbench MATERIAL colors for the sheet (node-authored
+    # base colors are invisible to workbench otherwise); restore after.
+    import annotate
+    color_sync = annotate.sync_display_colors()
 
     scene.render.resolution_x = args.w
     scene.render.resolution_y = args.h
@@ -217,6 +226,8 @@ def main():
         bpy.data.objects.remove(orbit_cam, do_unlink=True)
         bpy.data.objects.remove(orbit_target_empty, do_unlink=True)
         scene.camera = orig_camera
+    # D15 zero-residue half: restore pre-sync display colors
+    annotate.restore_display_colors(color_sync)
 
 
 if __name__ == "__main__":

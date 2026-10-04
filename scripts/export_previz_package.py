@@ -1038,8 +1038,22 @@ def main() -> None:
 
     ctx = mod.build_scene()
     if hasattr(mod, "animate"):
-        mod.animate(ctx, start_frame=1, n_frames=None)
-    scene = ctx["scene"]
+        # R4 usability F10: this tool was written against crowd-module
+        # animate() conventions (n_frames=None = "module decides its own
+        # timeline") and crashed template-family scenes (n_frames=24
+        # default → TypeError on an explicit None). Bridge BOTH: when the
+        # module's animate has an integer n_frames default, call it bare
+        # (its default timeline wins — we read frame_start/end after);
+        # otherwise pass the crowd sentinel.
+        import inspect as _inspect
+        _p = _inspect.signature(mod.animate).parameters
+        if "n_frames" in _p and isinstance(_p["n_frames"].default, int):
+            mod.animate(ctx)
+        else:
+            mod.animate(ctx, start_frame=1, n_frames=None)
+    # Template-family ctx dicts carry object refs only; crowd modules add
+    # "scene". Fall back to the live scene for the former (F10, same wave).
+    scene = ctx.get("scene") or bpy.context.scene
     fps = scene.render.fps
     f_start, f_end = scene.frame_start, scene.frame_end
 
@@ -1263,14 +1277,17 @@ def main() -> None:
     if missing_aims:
         problems.append(f"aim target nodes missing from GLB: {missing_aims}")
 
-    # gate 3: shot table contiguity + full span
-    if shots[0]["f0"] != f_start or shots[-1]["f1"] != f_end:
-        problems.append(f"shot table does not span f{f_start}–{f_end}")
-    for i in range(1, len(shots)):
-        if shots[i]["f0"] != shots[i - 1]["f1"] + 1:
-            problems.append(f"shots not contiguous at {shots[i]['id']} "
-                            f"(f{shots[i]['f0']} after "
-                            f"f{shots[i-1]['f1']})")
+    # gate 3: shot table contiguity + full span. Scenes that declare no
+    # SHOTS table (template-family) have no shot markers either — the
+    # gate is vacuous there (R4 F10 wave: crashed IndexError on shots[0])
+    if shots:
+        if shots[0]["f0"] != f_start or shots[-1]["f1"] != f_end:
+            problems.append(f"shot table does not span f{f_start}–{f_end}")
+        for i in range(1, len(shots)):
+            if shots[i]["f0"] != shots[i - 1]["f1"] + 1:
+                problems.append(f"shots not contiguous at {shots[i]['id']} "
+                                f"(f{shots[i]['f0']} after "
+                                f"f{shots[i-1]['f1']})")
 
     # gate 4: every DECLARED story constant landed in the JSON
     for attr, key in STORY_SOURCES:
@@ -1281,8 +1298,15 @@ def main() -> None:
             problems.append(f"module declares {attr} but JSON story is "
                             f"missing '{k}'")
 
-    # gate 5: characters + root objects
-    if not characters:
+    # gate 5: characters + root objects. The characters registry is a
+    # CROWD concept (BOARD/RUN_PARAMS actors); a scene that declares no
+    # crowd attrs legitimately has zero characters (template family,
+    # R4 F10 wave). Only flag a registry that SHOULD exist: the module
+    # declares crowd sources but none resolved.
+    _crowd_declared = any(
+        isinstance(getattr(mod, a, None), dict)
+        for a in ("BOARD", "RUN_PARAMS"))
+    if not characters and _crowd_declared:
         problems.append("characters registry is empty")
     for ch in characters:
         if ch["root_object"] and ch["root_object"] not in scene.objects:
@@ -1407,7 +1431,7 @@ def main() -> None:
     # (rifle 1.32+ m from all joints through the carry window — this
     # gate fires; the fixed export reads <= 0.7 m).
     problems.extend(
-        _glb_prop_proximity_audit(gltf, blob, fps))
+        _glb_prop_proximity_audit(gltf, glb_blob, fps))
 
     print(f"[pkg] GLB check: cameras={len(gltf.get('cameras', []))} "
           f"cam_nodes={len(glb_cam_nodes)} "
