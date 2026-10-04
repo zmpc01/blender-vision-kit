@@ -115,3 +115,9 @@
   render; try/except the stitch (WARN + continue); install.sh provision
   Pillow into bundled python and/or guard montage with shutil.which.
   Evidence: freshbook docs/qa-blender-kit/evidence/qa-r026/ (commit 04280e94).
+- R26 follow-up #8 [P3][design-gap]: look.py default framing clips off-center
+  objects (S5 fixture: cone/cube reduced to edge slivers in front+persp) while
+  readiness prints subject_pct=93.7 flags=[] — image adequacy is exposure-only
+  and never cross-references the object-id manifest against the frame bounds.
+  Fix sketch: project each manifest bbox via world_to_camera_view, WARN on
+  frame-contact/clipping. Evidence: freshbook qa-r026 (REPORT-R26-S5-AB.md).
