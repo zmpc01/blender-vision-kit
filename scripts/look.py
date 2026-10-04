@@ -93,6 +93,12 @@ def _camera_loc_for_angle(label: str, target) -> tuple:
     return tuple(target)
 
 
+def _normalize_engine_arg(v):
+    """Argparse type: bridge raw Blender enum spellings to dispatch names."""
+    from blender_kit import normalize_engine
+    return normalize_engine(v)
+
+
 def _default_exposure(args) -> float:
     """M5 tuning: workbench STUDIO renders ~98% of pixels in the darkest
     third of the range (docs/TUNING_perception_v1.md). Lift workbench by
@@ -116,7 +122,9 @@ def main():
                    help="Comma list, or 'none' to skip grid renders "
                         "(closeup-only look — L1 image budget)")
     p.add_argument("--engine", default="workbench",
-                   choices=["workbench", "eevee", "cycles"])
+                   type=_normalize_engine_arg,
+                   help="Render engine: workbench|eevee|cycles (raw Blender "
+                        "enums like BLENDER_EEVEE_NEXT accepted)")
     p.add_argument("--exposure", type=float, default=None,
                    help="View exposure lift in EV. Default: +1.0 on "
                         "workbench (tuned: docs/TUNING_perception_v1.md), "

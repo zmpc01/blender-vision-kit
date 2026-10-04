@@ -30,6 +30,12 @@ import bpy
 from blender_kit import script_argv, clear_scene
 
 
+def _normalize_engine_arg(v):
+    """Argparse type: bridge raw Blender enum spellings to dispatch names."""
+    from blender_kit import normalize_engine
+    return normalize_engine(v)
+
+
 def main():
     p = argparse.ArgumentParser(
         description="Render N keyframes as a contact sheet for animation verification.")
@@ -44,7 +50,7 @@ def main():
     p.add_argument("--end", type=int, default=None,
                    help="End frame (default: scene's frame_end)")
     p.add_argument("--engine", default="workbench",
-                   choices=["workbench", "eevee", "cycles"])
+                   type=_normalize_engine_arg)
     p.add_argument("--samples", type=int, default=1)
     p.add_argument("--w", type=int, default=480,
                    help="Per-frame width (default: 480)")

@@ -98,6 +98,26 @@ def normalize_engine_id(name):
     return name                     # unknown → pass through; bpy will raise
 
 
+def normalize_engine(name):
+    """Short engine name for viewport_capture.render_angle dispatch.
+
+    render_angle branches on 'workbench' | 'eevee' | 'cycles' (short
+    names), while agents/docs/upper layers speak raw Blender enums
+    ('BLENDER_EEVEE_NEXT', 'CYCLES', ...). R3 usability F1: the CLI used
+    to reject the documented enum spellings outright. This normalizer
+    bridges BOTH spellings to the short dispatch name, reusing
+    normalize_engine_id (so typos are tolerated too). Unknown input is
+    returned unchanged — render_angle raises its clear RuntimeError.
+    """
+    if name is None:
+        return "workbench"
+    eid = normalize_engine_id(name)
+    if eid == EEVEE_ENGINE_ID:
+        return "eevee"
+    return {"CYCLES": "cycles",
+            "BLENDER_WORKBENCH": "workbench"}.get(eid, eid)
+
+
 def _scaffold_5x_action(action):
     """session-24 law: a FRESH 5.x action has no slots/layers/strips/
     channelbag — action.fcurves-equivalent reads return a plain [] with
@@ -391,12 +411,12 @@ def common_parser(*, require_output: bool = True) -> argparse.ArgumentParser:
     p.add_argument("--output", required=require_output,
                    help="Output directory for rendered frames")
     p.add_argument("--engine", default="CYCLES",
-                   choices=["CYCLES", "BLENDER_EEVEE", "BLENDER_EEVEE_NEXT",
-                            "BLENDER_WORKBENCH"],
-                   help="Render engine (CYCLES=photorealistic CPU, "
-                        "BLENDER_EEVEE_NEXT or BLENDER_EEVEE=real-time PBR "
-                        "(both accepted, normalized per Blender version), "
-                        "BLENDER_WORKBENCH=fast solid shading for previz)")
+                   type=normalize_engine_id,
+                   help="Render engine (any spelling: cycles|CYCLES, "
+                        "eevee|BLENDER_EEVEE|BLENDER_EEVEE_NEXT — both "
+                        "EEVEE ids normalized per Blender version, "
+                        "workbench|BLENDER_WORKBENCH; CYCLES=photorealistic "
+                        "CPU, EEVEE=real-time PBR, WORKBENCH=fast previz)")
     p.add_argument("--frames", type=int, default=24,
                    help="Number of frames to render (default: 24)")
     p.add_argument("--start", type=int, default=1,

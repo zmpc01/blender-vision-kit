@@ -6,13 +6,13 @@ Minimal example: a cube on a plane, with a sun light and camera.
 Usage:
     blrun.sh --background --python scripts/scene_template.py -- \\
         --output output/my_scene \\
-        --engine BLENDER_EEVEE_NEXT \\
+        --engine eevee \\
         --still 1 --samples 16
 
     # Full animation + MP4:
     blrun.sh --background --python scripts/scene_template.py -- \\
         --output output/my_scene \\
-        --engine BLENDER_EEVEE_NEXT \\
+        --engine eevee \\
         --frames 24 --encode-mp4
 
     # Export glTF for web preview:
@@ -87,7 +87,11 @@ def build_scene():
     bpy.context.scene.camera = cam
 
     # HDRI-like ambient sky
-    add_sky_world()
+    # R3 usability F6: the default physical sky (strength 1.0) BLOWS OUT
+    # EEVEE stills in typical studio setups (workbench never reveals it —
+    # it ignores world lighting). For studio looks pass strength=0.35;
+    # for outdoor scenes the default is fine.
+    add_sky_world(strength=0.5)
 
     # Return a context dict so animate() can find objects + dimensions
     return {

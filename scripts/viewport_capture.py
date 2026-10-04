@@ -370,6 +370,12 @@ def stitch_contact_sheet(image_paths: List[str], output_path: str,
 # Main
 # ---------------------------------------------------------------------------
 
+def _normalize_engine_arg(v):
+    """Argparse type: bridge raw Blender enum spellings to dispatch names."""
+    from blender_kit import normalize_engine
+    return normalize_engine(v)
+
+
 def main():
     p = argparse.ArgumentParser(
         description="Capture multi-angle viewport screenshots for visual verification.")
@@ -390,8 +396,9 @@ def main():
     p.add_argument("--custom-loc", default=None,
                    help="X,Y,Z location for 'custom' angle")
     p.add_argument("--engine", default="workbench",
-                   choices=["workbench", "eevee", "cycles"],
-                   help="Render engine (default: workbench — fastest, solid shading)")
+                   type=_normalize_engine_arg,
+                   help="Render engine: workbench|eevee|cycles (raw Blender "
+                        "enums like BLENDER_EEVEE_NEXT accepted)")
     p.add_argument("--samples", type=int, default=1,
                    help="Samples for eevee/cycles (default: 1)")
     p.add_argument("--w", type=int, default=640)

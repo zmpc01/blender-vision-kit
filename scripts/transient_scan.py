@@ -57,7 +57,8 @@ def _parse_args():
     p.add_argument("--out", default=None)
     p.add_argument("--res", default="480x270")
     p.add_argument("--peak-res", default="640x480")
-    p.add_argument("--engine", default="workbench")
+    p.add_argument("--engine", default="workbench",
+                   type=_normalize_engine_arg)
     return p.parse_args(argv)
 
 
@@ -251,6 +252,12 @@ def _suspect_strip(evs, outdir, w, h, engine):
         strip = os.path.join(outdir, "suspects.png")
         vc.stitch_contact_sheet(cells, strip, grid_cols=min(len(cells), 4))
     return strip
+
+
+def _normalize_engine_arg(v):
+    """Argparse type: bridge raw Blender enum spellings to dispatch names."""
+    from blender_kit import normalize_engine
+    return normalize_engine(v)
 
 
 def main():

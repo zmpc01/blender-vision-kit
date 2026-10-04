@@ -76,7 +76,8 @@ def _parse_args():
     p.add_argument("--out", default=None)
     p.add_argument("--res", default="640x480")
     p.add_argument("--no-filmstrip", action="store_true")
-    p.add_argument("--engine", default="workbench")
+    p.add_argument("--engine", default="workbench",
+                   type=_normalize_engine_arg)
     return p.parse_args(argv)
 
 
@@ -118,7 +119,17 @@ def _groundlike(o):
 def _pick_objects(n_target):
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH'
               and not o.name.startswith(MOTION_PREFIX) and not _groundlike(o)]
-    return sorted(meshes, key=lambda o: -o.dimensions.length)[:n_target]
+    # R3 usability F7 (second consumer hit after R1's F11-NIT): the pure
+    # size sort filled the cap with STATIC props and excluded the only
+    # ANIMATED object — the study tracked furniture while the mover went
+    # untracked. Animated objects (direct keyframe action) always win the
+    # cap; size breaks ties among the rest.
+    def animated(o):
+        ad = o.animation_data
+        return bool(ad and ad.action)
+    return sorted(meshes,
+                  key=lambda o: (not animated(o), -o.dimensions.length)
+                  )[:n_target]
 
 
 def _sample_positions(objs, frames):
@@ -334,6 +345,12 @@ def filmstrip(frames, outdir, w, h, engine, cols=4):
 
 # ---------------------------------------------------------------------------
 
+def _normalize_engine_arg(v):
+    """Argparse type: bridge raw Blender enum spellings to dispatch names."""
+    from blender_kit import normalize_engine
+    return normalize_engine(v)
+
+
 def main():
     args = _parse_args()
     if args.load_blend:
@@ -368,13 +385,15 @@ def main():
     # Wave-4a friction fix: name the tracked set AND what was dropped
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH'
               and not o.name.startswith(MOTION_PREFIX) and not _groundlike(o)]
-    ranked_all = sorted(meshes, key=lambda o: -o.dimensions.length)
+    ranked_all = sorted(meshes, key=lambda o: (
+        not bool(o.animation_data and o.animation_data.action),
+        -o.dimensions.length))
     dropped = [o.name for o in ranked_all if o not in objs]
     print(f"[motion] tracking {len(objs)} objects over frames {start}..{end} "
           f"(samples {frames})")
     print(f"[motion] tracked: {[o.name for o in objs]}"
-          + (f"  NOT-TRACKED (top-3 cap — pass --objects to override): "
-             f"{dropped}" if dropped else ""))
+          + (f"  NOT-TRACKED (animated-first top-3 cap — pass --objects to "
+             f"override): {dropped}" if dropped else ""))
 
     outdir = args.out or os.path.join(
         "output", args.scene or os.path.basename(args.load_blend or "motion"),

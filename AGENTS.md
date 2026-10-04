@@ -179,7 +179,7 @@ EOF
 
 # 7. Ship: full render + MP4 + glTF + .blend + viewer
 ./scripts/blrun.sh --background --python scripts/my_scene.py -- \
-    --output output/my_scene --engine BLENDER_EEVEE_NEXT --frames 24 \
+    --output output/my_scene --engine eevee --frames 24 \
     --quality preview --encode-mp4
 ./scripts/blrun.sh --background --python scripts/export_gltf.py -- \
     --scene my_scene --output output/my_scene/scene.glb --frames 24
@@ -225,7 +225,8 @@ subject cluster (the ground overflowing the frame is fine).
 Pattern: `build_scene()` → context dict; `animate(ctx, ...)` → keyframes;
 `main()` → `common_parser()` + `configure_render()` + `render()`.
 Shared flags: `--output DIR` (required), `--engine
-CYCLES|BLENDER_EEVEE_NEXT|BLENDER_EEVEE|BLENDER_WORKBENCH`, `--frames N`
+workbench|eevee|cycles` (raw Blender enums like `BLENDER_EEVEE_NEXT` are
+accepted and normalized), `--frames N`
 (24), `--start N`, `--samples N`, `--w W --h H`, `--still N`, `--dry-run`,
 `--quality previz|viewport|draft|preview|final`, `--encode-mp4`, `--aa
 off|fxaa`, `--shade studio|flat`, `--png`, `--fps N`, `--scene-name NAME`.
@@ -513,6 +514,7 @@ cold-start, not pixels).
 125. **ORTHO NEAR-PLANE BBOX CULL (5.2 workbench, measured)** — a near plane that INTERSECTS an object's bbox culls the object's below-plane geometry ENTIRELY (bisection: mug visible at near-z 1.20, vanished at 0.87 = the first plane cutting its bbox). Any 'clip-slice' diagnostic built by parking the near plane on a measured surface is UNRENDERABLE. section_pair/seam_views slices therefore render INTACT geometry (seam-framed plan + elevation); mm truth stays numeric. Never clip through geometry you want to see.
 126. **Never edit a script while it is executing in background** — bash reads scripts incrementally by byte offset; an Edit mid-run desyncs the interpreter and kills it silently (burned an install run this way). Kill the process first, edit, re-run. Also true for any long-running generator script.
 127. **Diagnostic images carry the WHERE; verdicts carry the HOW-MUCH** — after the 5.2 near-cull discovery, every placement diagnostic (section_pair, seam_views) renders intact seam-framed views for the eyes and leaves mm decisions to the numeric report. Don't reintroduce pixel-measured verdicts, and don't trust a flat featureless render as 'nothing there' — it may be the cull (gotcha 125).
+128. **Sky world × EEVEE overexposure (R3 F6)** — `add_sky_world()` default strength 1.0 (physical sky) blows out EEVEE stills in studio setups: red reads pink, highlights clip. Workbench looks NEVER reveal this (workbench ignores world lighting). For studio/product scenes pass `strength=0.35..0.5`; reserve the default for outdoor scenes. Diagnose via look readiness `clipped_pct` on the EEVEE render, not the workbench one.
 
 ### Mechanics laws 104-110 (kept from upstream sessions 25-26)
 104. **Bake-input pools are NOT export payload** — purge unassigned actions before glTF (one-object-one-action contract).
