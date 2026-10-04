@@ -100,3 +100,8 @@ Filed to this repo:
 
 ## QA-LANE DISPATCH R18 (auto)
 - #2 [P2] 4th occurrence CAPTURED with kernel forensics (comment 5975620788): EEVEE shader-compilation working set = ~2.07 GB RSS INDEPENDENT of resolution (64×64 warm-up probe peaks 2,115,100 kB; CYCLES 800×300 same-box control 0.45 GB); OOM trigger = MemAvailable < ~2.1-2.3 GB at warm-up start (kill @1.46 GB, survive @2.56 GB); dmesg `Killed process (blender) total-vm:3338876kB anon-rss:1461000kB` cgroup-attributed to this container. Sharpened fix ask: MemAvailable pre-check at install.sh:102 (< 2.4 GB -> named teacher-grade skip note). Evidence: raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r018/REPORT-VK2.md (filed by QA lane)
+
+## QA-LANE DISPATCH R22 (auto)
+- Fix-verify wave @ 0f8f9b36: #2 VERIFIED live-fire (named SKIP at 2245 MB MemAvailable, inside the historical kill band; install clean; blrun guard OK; first-EEVEE-render residual survived @2287 MB — documented edge, receipt on #2). #3 VERIFIED both halves (probe True + BOGUS->False negative control; BLENDER_BIN override = zero-download) — CLOSED by QA. #5 VERIFIED (T5 ALL PASS incl 7 T5z checks) — CLOSED by QA.
+- #1 import mechanism VERIFIED (path/bare/examples-fallback + t0_smoke regression PASS) — but NEW #6: shipped examples content broken (v1_basic animate-signature vs look.py:158-160 driver ctx convention; v2_balanced NISHITA enum dead in 5.2; README "examples work" line names v1_basic = FAIL-CLOSED). Suggest: migrate examples to driver convention or point README at scene_subagent_test.
+- Receipts: raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r022/REPORT-VK-FIXVERIFY.md (filed by QA lane)
