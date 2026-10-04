@@ -138,3 +138,6 @@
 
 ## QA-LANE DISPATCH R36
 - #10 [P3][example-bug] quickstart examples/scene_v1_basic.py: sphere drift DEAD — first keyframe_insert runs at end_frame (cube section leaves it there), start key overwritten by end key at f24 → fcurve=[(24,−2.0)], evaluated x=−2.0 ALL frames. Probe+one-line-fix control proven (frame_set(start) → keys [(1,+2.0),(24,−2.0)], drift lives). look.py render/manifest CORRECT — example is the defect. Fix: scene.frame_set(start_frame) before first sphere key. Evidence+control: freshbook evidence/qa-r036/REPORT-S10.md. Found via S10 determinism pass (look.py byte-exact, MAD 0.0 — baseline refinement noted in same report).
+
+## QA-LANE DISPATCH R39 (auto)
+- #7 CLOSED-VERIFIED R39 (comment 5984216760): filing condition pre-empted — install.sh:137 now auto-provisions Pillow into the bundled python (landed silently; never commented). Fresh-container receipt: labeled PIL-hidden sim reproduces the exact R26 chain (renders succeed → PIL ImportError → montage FileNotFoundError → empty output dir, rc=1); post-canonical-install look.py rc=0 VERDICT: PASS validator P0=0. Residual hardening note (not re-filed): error-handling chain unchanged (missing-PIL post-install still total-fails uncaught) — optional polish. Evidence: freshbook docs/qa-blender-kit/evidence/qa-r039/VK7_*.txt + REPORT-R39.md. (filed by QA lane)
