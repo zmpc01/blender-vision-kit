@@ -158,6 +158,19 @@ export PYTHONPATH="$SCRIPT_DIR${PYTHONPATH:+:$PYTHONPATH}"
 # ----- Handle --warm-cache subcommand -----
 if [[ "${1:-}" == "--warm-cache" ]]; then
     shift
+    # QA #2 defense-in-depth: standalone warm-cache was THE OOM vector
+    # (EEVEE shader compilation peaks ~2.07 GB RSS independent of
+    # resolution; kernel kills below ~2.3 GB MemAvailable — 4 recorded
+    # SIGKILLs). Skip with a named note instead of a scary mid-render kill.
+    WARM_MEM_KB="$(awk '/MemAvailable/{print $2}' /proc/meminfo 2>/dev/null || echo 0)"
+    WARM_MEM_MB=$((WARM_MEM_KB / 1024))
+    if [[ "$WARM_MEM_MB" -lt 2400 ]]; then
+        echo "[blrun] SKIP --warm-cache: MemAvailable ${WARM_MEM_MB} MB < 2400 MB" \
+             "(EEVEE shader compile peaks ~2.1 GB RSS; OOM-killed 4x on 4 GB" \
+             "boxes — QA #2). Non-fatal: first EEVEE render compiles inline" \
+             "(~30s slower). Free memory and retry to warm the cache." >&2
+        exit 0
+    fi
     echo "[blrun] warming EEVEE shader cache (one-time, ~30s)…"
     WARM_SCRIPT="$(mktemp /tmp/blender_warm_XXXX.py)"
     cat > "$WARM_SCRIPT" <<'PY'

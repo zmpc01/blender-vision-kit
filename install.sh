@@ -41,7 +41,14 @@ mkdir -p "$TOOLS_DIR" "$SCRIPTS_DIR" "$ROOT/output" "$ROOT/download" "$ROOT/.ble
 # ----------------------------------------------------------------------------
 # 1. Blender binary
 # ----------------------------------------------------------------------------
-if [[ -x "$TOOLS_DIR/blender/blender" ]] && \
+# QA #3: honor an explicit BLENDER_BIN — a pre-provisioned binary (sibling
+# checkout, /opt, reuse across sandboxes) makes the 383MB download+extract
+# unnecessary. install.sh does NOT create tools/blender in this case; point
+# blrun.sh at it via the same env var.
+if [[ -n "${BLENDER_BIN:-}" && -x "$BLENDER_BIN" ]] && \
+   "$BLENDER_BIN" --version 2>/dev/null | head -1 | grep -q "$BLENDER_VERSION"; then
+    echo "[install] BLENDER_BIN override: using existing blender $BLENDER_VERSION at $BLENDER_BIN"
+elif [[ -x "$TOOLS_DIR/blender/blender" ]] && \
    "$TOOLS_DIR/blender/blender" --version 2>/dev/null | head -1 | grep -q "$BLENDER_VERSION"; then
     echo "[install] Blender $BLENDER_VERSION already installed at $TOOLS_DIR/blender/blender"
 else
@@ -97,10 +104,25 @@ fi
 # ----------------------------------------------------------------------------
 # 3. Pre-warm EEVEE shader cache (amortizes ~30s first-frame cost)
 # ----------------------------------------------------------------------------
+# QA #2 (4 occurrences, kernel forensics): EEVEE shader compilation peaks
+# ~2.07 GB RSS REGARDLESS of resolution (64x64 warm-up probe peaks
+# 2,115,100 kB); the kernel OOM-kills blender when MemAvailable < ~2.1-2.3
+# GB at warm-up start. A skipped warm-up is non-fatal (first render compiles
+# inline, ~30s slower); a SIGKILL mid-install is scary and can leave
+# install.sh half-done. Guard: skip with a named note below 2.4 GB.
+MEM_AVAIL_KB=$(awk '/MemAvailable/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+MEM_AVAIL_MB=$((MEM_AVAIL_KB / 1024))
 if [[ -x "$SCRIPTS_DIR/blrun.sh" ]]; then
-    echo "[install] Pre-warming EEVEE shader cache (one-time, ~30s)..."
-    "$SCRIPTS_DIR/blrun.sh" --warm-cache 2>&1 | tail -5 || \
-        echo "[install] WARNING: shader cache warm-up failed (non-fatal; first EEVEE render will be slower)"
+    if [[ "$MEM_AVAIL_MB" -lt 2400 ]]; then
+        echo "[install] SKIP: EEVEE shader warm-up needs ~2.4 GB MemAvailable, have ${MEM_AVAIL_MB} MB"
+        echo "[install]       (shader compilation peaks ~2.1 GB RSS; OOM-killed 4x on 4 GB boxes"
+        echo "[install]        — QA #2). Non-fatal: the first EEVEE render compiles shaders"
+        echo "[install]        inline (~30s slower). Free memory and re-run to warm the cache."
+    else
+        echo "[install] Pre-warming EEVEE shader cache (one-time, ~30s, MemAvailable=${MEM_AVAIL_MB} MB)..."
+        "$SCRIPTS_DIR/blrun.sh" --warm-cache 2>&1 | tail -5 || \
+            echo "[install] WARNING: shader cache warm-up failed (non-fatal; first EEVEE render will be slower)"
+    fi
 else
     echo "[install] NOTE: scripts/blrun.sh not found — skipping shader warm-up"
     echo "[install]        (this is expected if you're installing just the toolchain)"
@@ -158,11 +180,20 @@ fi
 # ----------------------------------------------------------------------------
 # 4. Verify
 # ----------------------------------------------------------------------------
+# QA #3: the old probe enumerated bpy.types.RenderEngine.__subclasses__() —
+# in 5.x Cycles is a built-in engine, NOT a Python subclass, so the probe
+# printed 'False' on a fully working build (false negative, burned trust).
+# The honest probe: assign the engine id — Blender raises if unavailable.
 echo "[install] Verifying setup..."
 "$SCRIPTS_DIR/blrun.sh" --background --python-expr "
 import bpy
 print(f'[verify] Blender {bpy.app.version_string}')
-print(f'[verify] Cycles available:', 'CYCLES' in [e.name for e in bpy.types.RenderEngine.__subclasses__() if hasattr(e, \"name\")])
+eng = bpy.context.scene.render
+try:
+    eng.engine = 'CYCLES'; cycles_ok = True
+except TypeError:
+    cycles_ok = False
+print(f'[verify] Cycles available:', cycles_ok)
 " 2>&1 | grep -E '\[verify\]|\[blender\] Blender' | head -5 || true
 
 echo "[install] Done."
