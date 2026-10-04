@@ -57,9 +57,16 @@ def _manifest() -> dict:
                 sum((o.matrix_world @ type(o.location)(cc)).x for cc in o.bound_box) / 8.0,
                 sum((o.matrix_world @ type(o.location)(cc)).y for cc in o.bound_box) / 8.0,
                 sum((o.matrix_world @ type(o.location)(cc)).z for cc in o.bound_box) / 8.0)]
-            out.append({"id": o.name, "type": "MESH",
-                        "dims_m": [round(v, 3) for v in o.dimensions],
-                        "centroid": c})
+            row = {"id": o.name, "type": "MESH",
+                   "dims_m": [round(v, 3) for v in o.dimensions],
+                   "centroid": c}
+            # D15: per-object color identity source (first slot's material;
+            # 'viewport' default when no material or pre-sync run)
+            mats = [s.material for s in o.material_slots if s.material]
+            if mats:
+                row["color_source"] = annotate._COLOR_SOURCE.get(
+                    mats[0].name, "viewport")
+            out.append(row)
         elif o.type == 'LIGHT':
             out.append({"id": o.name, "type": "LIGHT",
                         "light": o.data.type, "energy_W": round(o.data.energy, 1)})
@@ -203,6 +210,18 @@ def main():
         scene.frame_set(args.frame)
     bpy.context.view_layer.update()
     bpy.context.view_layer.update()
+    # D15 (QA #4): honest workbench MATERIAL colors — node-authored
+    # Principled Base Colors are invisible to workbench (it reads
+    # mat.diffuse_color) so imported scenes look ALL-GRAY. Sync for the
+    # render, restore in finally (standalone so --no-annotate looks stay
+    # honest too; annotation materials are dual-set consistent, no-op).
+    color_sync = annotate.sync_display_colors()
+    if color_sync["synced"] or color_sync["nontrivial"] or color_sync["linked"]:
+        print(f"[look] display-color sync: {len(color_sync['synced'])} node-authored"
+              f" -> viewport; {len(color_sync['nontrivial'])} non-trivially-authored"
+              f" (color identity unreliable there)"
+              + (f"; {len(color_sync['linked'])} linked read-only"
+                 if color_sync["linked"] else ""))
     layer = {"objects": [], "labels": []}
     annotated = False
     if not args.no_annotate:
@@ -384,6 +403,11 @@ def main():
         if annotated:
             removed = annotate.delete_annotation_layer(layer)
             print(f"[look] annotation layer deleted ({removed} objects)")
+        # LAW (D15): display-color sync is render-time only — restore
+        # unconditionally, gated on sync having produced originals.
+        restored = annotate.restore_display_colors(color_sync)
+        if restored:
+            print(f"[look] display-color sync restored ({restored} materials)")
 
 
 if __name__ == "__main__":

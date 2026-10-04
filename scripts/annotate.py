@@ -60,6 +60,98 @@ def _make_mat(name: str):
     return mat
 
 
+# ---------------------------------------------------------------------------
+# D15 display-color sync (QA #4): workbench MATERIAL shading shows
+# mat.diffuse_color, so node-authored Principled Base Colors (imported
+# glTF/FBX, procedural authoring) render as default GRAY — the vision
+# agent sees gray where the design intends red/blue and nothing detects
+# the loss. These are STANDALONE functions (not part of the annotation
+# layer) so `--no-annotate` looks stay honest too; look.py calls sync
+# before the render pass and restore in its finally (zero-residue law).
+# ---------------------------------------------------------------------------
+
+# material.name -> color_source, read by look.py's manifest after sync
+_COLOR_SOURCE = {}
+_BSDF_DEFAULT_BASE = (0.8, 0.8, 0.8, 1.0)
+
+
+def sync_display_colors(threshold: float = 0.05) -> dict:
+    """Make workbench MATERIAL renders show node-authored base colors.
+
+    Judges each UNIQUE material used by non-annotation mesh slots:
+      - 'node': use_nodes + UNLINKED Principled 'Base Color' that is not
+        the untouched default gray and differs from diffuse_color by more
+        than `threshold` on any channel -> diffuse_color is overridden
+        (RGB only, alpha forced 1.0); original captured for
+        restore_display_colors().
+      - 'nontrivial': linked/texture-driven or otherwise non-syncable —
+        counted so the agent knows color identity is unreliable there.
+      - 'linked': library-linked material — read-only, counted.
+      - 'viewport': diffuse_color already honest (nothing to do).
+    Returns {"synced": [...], "nontrivial": [...], "linked": [...],
+    "originals": {mat_name: (material, rgba_tuple)}}. Never raises on an
+    individual material (per-material try/except)."""
+    _COLOR_SOURCE.clear()
+    seen, originals = set(), {}
+    synced, nontrivial, linked = [], [], []
+    for o in bpy.context.scene.objects:
+        if o.name.startswith(ANNOT_PREFIX) or o.type != 'MESH':
+            continue
+        for slot in o.material_slots:
+            mat = slot.material
+            if mat is None or mat.name in seen:
+                continue
+            seen.add(mat.name)
+            try:
+                if mat.library is not None:
+                    linked.append(mat.name)
+                    _COLOR_SOURCE[mat.name] = "linked"
+                    continue
+                base = None
+                if mat.use_nodes and mat.node_tree:
+                    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+                    if bsdf is not None and "Base Color" in bsdf.inputs:
+                        inp = bsdf.inputs["Base Color"]
+                        if inp.is_linked:
+                            _COLOR_SOURCE[mat.name] = "nontrivial"
+                            nontrivial.append(mat.name)
+                            continue
+                        base = tuple(inp.default_value)
+                if base is None:
+                    _COLOR_SOURCE[mat.name] = "viewport"
+                    continue
+                dc = tuple(mat.diffuse_color)
+                untouched_default = all(abs(base[i] - _BSDF_DEFAULT_BASE[i]) < 1e-3
+                                        for i in range(4))
+                if untouched_default or all(
+                        abs(base[i] - dc[i]) <= threshold for i in range(3)):
+                    _COLOR_SOURCE[mat.name] = "viewport"
+                    continue  # author never touched it, or already honest
+                originals[mat.name] = (mat, dc)
+                mat.diffuse_color = (base[0], base[1], base[2], 1.0)
+                synced.append(mat.name)
+                _COLOR_SOURCE[mat.name] = "node"
+            except Exception:
+                _COLOR_SOURCE.setdefault(mat.name, "nontrivial")
+                if mat.name not in nontrivial and mat.name not in linked \
+                        and mat.name not in synced:
+                    nontrivial.append(mat.name)
+    return {"synced": synced, "nontrivial": nontrivial, "linked": linked,
+            "originals": originals}
+
+
+def restore_display_colors(state: dict) -> int:
+    """Restore pre-sync diffuse_colors (D15 zero-residue half)."""
+    n = 0
+    for mat_name, (mat, rgba) in (state or {}).get("originals", {}).items():
+        try:
+            mat.diffuse_color = rgba
+            n += 1
+        except Exception:
+            pass
+    return n
+
+
 def _thin_box(name: str, p0, p1, thickness: float, mat) -> bpy.types.Object:
     """Axis-aligned thin box from p0 to p1 (world coords), origin at midpoint."""
     p0 = Vector(p0)
