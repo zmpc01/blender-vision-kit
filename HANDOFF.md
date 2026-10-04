@@ -97,3 +97,6 @@ Filed to this repo:
 
 ## QA-LANE DISPATCH R5 (auto)
 - #5 [P3][test-gap] no positive TOPPLED coverage in T5 — only T5v's NEGATIVE no_toppled assertion (:528); settle()'s topple classification + apply='none' matrix restore never asserted. QA probe independently VERIFIED the path WORKS at 596be8e (tall box tilt 12° → TOPPLED tilt 90°; apply='none' restore matrix delta 0.0; place() PLACED) — coverage ask, not a defect. Renders + probe + numbers: https://raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r005/s7/RESULTS.md (filed by QA lane)
+
+## QA-LANE DISPATCH R18 (auto)
+- #2 [P2] 4th occurrence CAPTURED with kernel forensics (comment 5975620788): EEVEE shader-compilation working set = ~2.07 GB RSS INDEPENDENT of resolution (64×64 warm-up probe peaks 2,115,100 kB; CYCLES 800×300 same-box control 0.45 GB); OOM trigger = MemAvailable < ~2.1-2.3 GB at warm-up start (kill @1.46 GB, survive @2.56 GB); dmesg `Killed process (blender) total-vm:3338876kB anon-rss:1461000kB` cgroup-attributed to this container. Sharpened fix ask: MemAvailable pre-check at install.sh:102 (< 2.4 GB -> named teacher-grade skip note). Evidence: raw.githubusercontent.com/belram448/freshbook-clone/main/docs/qa-blender-kit/evidence/qa-r018/REPORT-VK2.md (filed by QA lane)
