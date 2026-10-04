@@ -613,13 +613,16 @@ def main():
     # this pins it as a regression gate.
     clear()
     floor = box("Floor", (6, 6, 0.2), (0, 0, -0.1))
-    tall = box("Tower", (0.25, 0.25, 1.2), (0, 0, 0.6))
-    tall.matrix_world = Matrix.Translation((0, 0, 0.6)) @ \
+    tall = box("Tower", (0.25, 0.25, 1.2), (0, 0, 0.75))
+    tall.matrix_world = Matrix.Translation((0, 0, 0.75)) @ \
         Matrix.Rotation(math.radians(15), 4, 'Y')
+    # 15-deg tilt dips the low corner to z=0.138 (floor top is z=0) — the
+    # box starts CLEAR (a tilted box at rest-height would self-penetrate
+    # and the refuse-default pre-check would abort before any topple).
     bpy.context.view_layer.update()
     pre_mw = tall.matrix_world.copy()
     r = PP.settle(objs=[tall], environment=[floor], apply='none')
-    check("T5z.verdict", r["verdict"], "PASS")
+    check("T5z.op_verdict_fail", r["verdict"], "FAIL")  # topple = detected failure
     v = next(o for o in r["objects"] if o["obj"] == "Tower")
     check("T5z.toppled_positive", v["verdict"], "TOPPLED")
     check("T5z.tilt_large", v["rotation_tilt_deg"] > 45.0, True)
