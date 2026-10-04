@@ -132,3 +132,6 @@
   agent-kit validate_scene.py:68-73 — mirror the fix. S7 TOPPLED receipt
   (same round): verdict-eye agreement 2/2 (TOPPLED/90deg = tower lying in
   render; SETTLED control upright).
+
+## QA-LANE DISPATCH R32 (auto)
+- #8 evidence comment (5980562329): S5-dense A/B (48-cone 6×8 formation, look.py defaults) — default camera lands INSIDE the crowd on both tiles, yet VERDICT PASS + subject=98.6% (frame-coverage metric inverts truth at density); SUBJECT-OVERFLOW HINT fires via bounds math but does not gate. Ask upgraded: manifest-vs-frame-bounds cross-ref in readiness + surface the hint as a WARN + crowd-aware default camera (auto dolly-out / min height / --topdown). Evidence: freshbook docs/qa-blender-kit/evidence/qa-r032/look_grid.png (filed by QA lane)
