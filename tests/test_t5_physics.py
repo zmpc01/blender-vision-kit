@@ -604,6 +604,32 @@ def main():
     check("T5y.cache_hit_after", PL.world_bvh(rot) is PL.world_bvh(rot), True)
     teardown_invariants("T5y")
 
+    # ------- T5z: positive TOPPLED coverage (QA #5 test-gap) ------------
+    # T5v asserts the NEGATIVE (no TOPPLED in a healthy scene); nothing
+    # asserted the POSITIVE classification: an off-balance tall box must
+    # topple in sim (end tilt > 10 deg -> verdict TOPPLED), and with
+    # apply='none' the pre-sim pose must be EXACTLY restored (pure
+    # verifier contract). QA probe verified the path fires at 12 deg;
+    # this pins it as a regression gate.
+    clear()
+    floor = box("Floor", (6, 6, 0.2), (0, 0, -0.1))
+    tall = box("Tower", (0.25, 0.25, 1.2), (0, 0, 0.6))
+    tall.matrix_world = Matrix.Translation((0, 0, 0.6)) @ \
+        Matrix.Rotation(math.radians(15), 4, 'Y')
+    bpy.context.view_layer.update()
+    pre_mw = tall.matrix_world.copy()
+    r = PP.settle(objs=[tall], environment=[floor], apply='none')
+    check("T5z.verdict", r["verdict"], "PASS")
+    v = next(o for o in r["objects"] if o["obj"] == "Tower")
+    check("T5z.toppled_positive", v["verdict"], "TOPPLED")
+    check("T5z.tilt_large", v["rotation_tilt_deg"] > 45.0, True)
+    d = (tall.matrix_world.translation - pre_mw.translation).length
+    check("T5z.apply_none_restore", d < 1e-6, True)
+    check("T5z.teardown_restored",
+          r["teardown"]["rb_removed"], 2)
+    check("T5z.no_escape", v.get("verdict") != "ESCAPED", True)
+    teardown_invariants("T5z")
+
     # ---------------- summary ----------------
     print(f"[T5] FAILURES: {len(FAIL)}")
     for f in FAIL:

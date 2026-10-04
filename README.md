@@ -29,6 +29,10 @@ cp scripts/scene_template.py scripts/my_scene.py
     --output output/my_scene --dry-run --scene-name my_scene
 ./scripts/blrun.sh --background --python scripts/look.py -- \
     --scene my_scene --output output/my_scene/look   # annotated grid + verdict
+
+# Or look at the shipped examples directly (bare name or path both work):
+./scripts/blrun.sh --background --python scripts/look.py -- \
+    --scene examples/scene_v1_basic --output output/ex1/look
 ```
 
 **Placing objects exactly / checking overlaps**: `place_on` / `seat_at` /

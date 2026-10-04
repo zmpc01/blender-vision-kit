@@ -255,19 +255,79 @@ def script_argv() -> list[str]:
     return argv[argv.index("--") + 1:] if "--" in argv else []
 
 
+def _import_scene_file(py_path: str):
+    """Import a scene module from an explicit file path (QA #1)."""
+    import importlib.util
+    mod_name = os.path.splitext(os.path.basename(py_path))[0]
+    if mod_name in sys.modules:
+        existing = getattr(sys.modules[mod_name], "__file__", None)
+        if existing and os.path.abspath(existing) == os.path.abspath(py_path):
+            return sys.modules[mod_name]
+    spec = importlib.util.spec_from_file_location(mod_name, py_path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[mod_name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _available_scene_files() -> list[str]:
+    """Scene files present in CWD + examples/ + scripts/ (bounded hint)."""
+    names: list[str] = []
+    for d in (".", "examples", "scripts"):
+        if not os.path.isdir(d):
+            continue
+        for f in sorted(os.listdir(d)):
+            if f.endswith(".py") and f != "__init__.py" \
+                    and f.startswith(("scene_", "t", "edge_", "demo")):
+                names.append(os.path.join(d, f))
+    return names[:15]
+
+
 def safe_import_scene(name: str):
-    """Import a scene module by name, with friendly error on failure.
+    """Import a scene module by NAME or PATH, with friendly error on failure.
+
+    Accepts (QA #1 — README quickstart examples now work out of the box):
+      - a bare module name importable from PYTHONPATH (e.g. 'scene_v1_basic',
+        't0_smoke');
+      - the same bare name searched in ./examples/ and ./ when PYTHONPATH
+        lookup fails (examples/ is NOT on blrun's PYTHONPATH by design);
+      - an explicit path with or without the .py suffix (relative to CWD,
+        e.g. 'examples/scene_v1_basic', '/abs/path/my_scene.py').
 
     Catches ModuleNotFoundError, SyntaxError, and ImportError — prints a
-    clean message + lists available scene modules in PYTHONPATH.
+    clean message + lists available scene files when the name can't be
+    resolved. A ModuleNotFoundError for an import INSIDE the scene file is
+    still reported as-is (the fallback only fires when the missing module
+    is the requested name itself).
     """
     import importlib
+    # 1) Explicit path form (separator or .py suffix).
+    if "/" in name or "\\" in name or name.endswith(".py"):
+        py = name[:-3] + ".py" if name.endswith(".py") else name + ".py"
+        if os.path.isfile(py):
+            return _import_scene_file(py)
+        print(f"[blender_kit] ERROR: scene file not found: {py}",
+              file=sys.stderr)
+        print(f"[blender_kit]        scene files present: "
+              f"{_available_scene_files() or '(none found)'}", file=sys.stderr)
+        sys.exit(1)
+    # 2) Bare module name via PYTHONPATH.
     try:
         return importlib.import_module(name)
     except ModuleNotFoundError as e:
+        # Distinguish "the scene module itself is missing" (try the
+        # ./examples + ./ fallback) from "an import inside the scene
+        # failed" (report honestly — path re-exec would hide the bug).
+        if f"No module named '{name}'" in str(e):
+            for d in ("examples", "."):
+                py = os.path.join(d, name + ".py")
+                if os.path.isfile(py):
+                    return _import_scene_file(py)
         print(f"[blender_kit] ERROR: scene module '{name}' not found: {e}",
               file=sys.stderr)
-        print(f"[blender_kit]        PYTHONPATH={sys.path[:5]}", file=sys.stderr)
+        print(f"[blender_kit]        searched PYTHONPATH + ./examples/ + ./;"
+              f" scene files present: "
+              f"{_available_scene_files() or '(none found)'}", file=sys.stderr)
         sys.exit(1)
     except SyntaxError as e:
         print(f"[blender_kit] ERROR: scene module '{name}' has a syntax error: {e}",
