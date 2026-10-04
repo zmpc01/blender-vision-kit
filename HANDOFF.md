@@ -135,3 +135,6 @@
 
 ## QA-LANE DISPATCH R32 (auto)
 - #8 evidence comment (5980562329): S5-dense A/B (48-cone 6×8 formation, look.py defaults) — default camera lands INSIDE the crowd on both tiles, yet VERDICT PASS + subject=98.6% (frame-coverage metric inverts truth at density); SUBJECT-OVERFLOW HINT fires via bounds math but does not gate. Ask upgraded: manifest-vs-frame-bounds cross-ref in readiness + surface the hint as a WARN + crowd-aware default camera (auto dolly-out / min height / --topdown). Evidence: freshbook docs/qa-blender-kit/evidence/qa-r032/look_grid.png (filed by QA lane)
+
+## QA-LANE DISPATCH R36
+- #10 [P3][example-bug] quickstart examples/scene_v1_basic.py: sphere drift DEAD — first keyframe_insert runs at end_frame (cube section leaves it there), start key overwritten by end key at f24 → fcurve=[(24,−2.0)], evaluated x=−2.0 ALL frames. Probe+one-line-fix control proven (frame_set(start) → keys [(1,+2.0),(24,−2.0)], drift lives). look.py render/manifest CORRECT — example is the defect. Fix: scene.frame_set(start_frame) before first sphere key. Evidence+control: freshbook evidence/qa-r036/REPORT-S10.md. Found via S10 determinism pass (look.py byte-exact, MAD 0.0 — baseline refinement noted in same report).
