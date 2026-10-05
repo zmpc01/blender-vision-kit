@@ -315,7 +315,28 @@ state (the LOOK→NAME→LABEL→LOOK→SAVE loop; see `/kb/semantic_labeling.md
   longer silently strips coverage.
 - **LAW — consumers read the manifest's `kit_label` field**: every MESH
   row carries it (`null` when unlabeled). It is the durable identity;
-  names may be disambiguated/suffixed, props never are.
+  names may be disambiguated/suffixed, props never are. Every MESH row
+  also carries `world_bbox` (world-space AABB min/max) — the blind
+  consumer's geometric ground truth; `dims_m` is LOCAL size and is
+  WRONG under rotation (never derive boxes from centroid±dims/2).
+- **LAW — EXECUTION CONTRACT (who may run what)**: delegation across
+  the vision boundary is safe ONLY within these classes:
+  - **VISION-REQUIRED — principal only**: (a) choosing a region cut's
+    world box (reading a box off a render; a non-vision agent holding
+    only the manifest has polygon soup and cannot know where to cut);
+    (b) ASSIGNING labels/names (the identification judgment);
+    (c) every visual verdict; (d) verifying delegated work (see the
+    kb checklist — diff, re-measure, closeups).
+  - **BLIND-SAFE — non-vision consumers, from manifest + docs only**:
+    loose-parts `dry-run`/`split` (pure geometry, dry-run zero-residue);
+    `label_objects` with labels GIVEN to it (mechanical prop-write +
+    rename); all placement ops with manifest-derived numeric targets;
+    audit/measurement tools; running look.py (they consume the
+    manifest/validator JSON — the renders are the principal's).
+  - Anything a blind agent cannot DERIVE from the manifest (what a
+    shape is, where to cut, whether a render is adequate) is
+    vision-required BY DEFINITION — if a task seems to need it, the
+    delegate must STOP and FLAG it back, never guess.
 
 ### viewport_capture.py — multi-angle screenshots (look.py uses this)
 ```bash

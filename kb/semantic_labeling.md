@@ -88,6 +88,45 @@ object:
   On real imports, expect per-feature judgment; measure with the
   dry-run before cutting.
 
+## Delegation contract (who may run what)
+
+Delegation across the vision boundary is the failure mode the kit is
+built to prevent: a non-vision agent holding only a manifest has
+geometry + names, NOTHING else. The classes (AGENTS.md law, restated
+here for the operator's checklist):
+
+- **VISION-REQUIRED (principal only)**: region-cut box selection
+  (a blind agent cannot know where to cut — that box is READ OFF A
+  RENDER); label/naming assignment; every visual verdict; verification
+  of delegated work (below).
+- **BLIND-SAFE (from manifest + docs)**: loose-parts dry-run/split;
+  `label_objects` with labels GIVEN to it; placement ops with
+  manifest-derived numeric targets; audit tools; look.py runs (JSON
+  consumers — renders belong to the principal).
+- The manifest is the WHOLE world of a blind consumer. Everything it
+  needs must be IN the manifest (`kit_label`, `world_bbox`, dims,
+  centroid). Anything not derivable from it → the delegate STOPs and
+  flags back. Guessing is a protocol violation, not a workstyle.
+
+## Verify-delegated-work checklist (the principal runs this)
+
+"Trust but verify" is not enough — VERIFY, with numbers you produced:
+
+1. **Baseline before delegating**: fresh `look.py` run → its
+   `look_manifest.json` is the before-state.
+2. **Diff after return**: re-run look yourself → diff with
+   `python3 scripts/manifest_diff.py before.json after.json`
+   (`--expect-clean` when the task should move nothing). EVERY finding
+   must map 1:1 onto a task the delegate was GIVEN — anything else is
+   unauthorized mutation; reject the work.
+3. **Re-measure yourself**: re-run `audit_contacts`/`validate_scene`
+   on the returned state. The delegate's claimed numbers are a claim,
+   not evidence — even kit-generated JSON in its output dir could be
+   stale or from a pre-final state. Your run is the evidence.
+4. **Closeup every touched object** — not just the hero shot. A
+   delegate can nail the headline while scraping a bystander.
+5. **Verdict only after 1–4.** "It said it did X" is never a verdict.
+
 ## Gate-exclusion law (validator)
 
 A label containing `ceiling` / `sun` / `light` writes `kit_semantic`;
