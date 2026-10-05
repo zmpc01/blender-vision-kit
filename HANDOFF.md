@@ -134,3 +134,7 @@ eyes on grid. Protocol ROBUST.
   agent_work/ (blind agent's dry-run evidence).
 - Multi-agent QA protocol: fresh-context sub-agents do NON-VISUAL
   review only; the D16 audit round 1 is the pattern.
+- #11 [P2][bug] look.py --angles panels pixel-identical when loaded .blend has camera-bound timeline markers (marker camera hijack at render time — AK-10 class; agent-kit viewport_capture fixed it via suppress-BEFORE-assign + finally-restore, look.py has no marker handling). Repro: blend with markers S1@f1->CAM_A, saved frame 24, --angles front,persp -> meanAbsDiff 0.002 (38/307200 px), captions still say front/persp, manifest healthy with no per-panel camera recorded. Evidence: freshbook docs/qa-blender-kit/evidence/qa-r046/{grid.png,look_manifest.json,r046_main.log}.
+
+## QA-LANE DISPATCH R52
+VK-9: agent-kit twin (validate_scene.py @26c78eb) verified live via this issue's harness (0.2m/0.05m slabs exempt, sunk-sphere genuine positive retained); vision-kit's own copy unchanged at HEAD → stays OPEN pending re-vendor. VK-10: independent probe @6b09514 — drift layer STILL LIVE on this kit's examples/scene_v1_basic.py (sphere_x_keys=[(24,-2.0)] single-key collapse, x=-2.0 at f1/f12/f24); the s36 claim values match agent-kit's fixed copy, not this file; crash layer (iter_fcurves) IS fixed. Ask: port agent-kit examples/scene_v1_basic.py:123 sphere frame_set hunk. Evidence: freshbook-clone docs/qa-blender-kit/evidence/qa-r052/R52-VERDICTS.md.
