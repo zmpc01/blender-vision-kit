@@ -41,8 +41,17 @@ def _extent(row):
     return row.get("dims_m")
 
 
+def _rows(doc):
+    """Accept either a bare row list or a full look_manifest.json dict
+    (unwrap its 'manifest' key)."""
+    if isinstance(doc, dict):
+        return doc.get("manifest", [])
+    return doc
+
+
 def diff_manifests(before, after, tol=0.005):
-    """Diff two manifest row-lists. Returns a report dict.
+    """Diff two manifest row-lists (or look_manifest dicts). Returns a
+    report dict.
 
     Categories:
       moved          — same id, bbox center shifted > tol (world_bbox
@@ -59,6 +68,7 @@ def diff_manifests(before, after, tol=0.005):
     The caller maps every finding onto the delegate's task list; the
     tool only surfaces what changed, with numbers.
     """
+    before, after = _rows(before), _rows(after)
     b_rows = {r["id"]: r for r in before if r["type"] == "MESH"}
     a_rows = {r["id"]: r for r in after if r["type"] == "MESH"}
     b_other = {r["id"]: r for r in before if r["type"] != "MESH"}
