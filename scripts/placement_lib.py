@@ -902,16 +902,35 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
     clear_bvh_cache()
 
     # --- footprint points -------------------------------------------------
+    heights = detail = hit_normals = None
     if footprint == 'grid':
         (mn, mx) = _aabb(obj)
-        pts_xy = []
-        for i in range(grid_n):
-            for j in range(grid_n):
-                fx = mn.x + (mx.x - mn.x) * (i + 0.5) / grid_n
-                fy = mn.y + (mx.y - mn.y) * (j + 0.5) / grid_n
-                pts_xy.append((fx, fy))
-        z_ref = mn.z
-        footprint_pts = []
+        # F17: fixed cell centers miss narrow inset supports — a 0.08m
+        # table leg on a 2.4m top falls between 12×12 columns. Refine
+        # density ×4 until rays hit something (cap 192² = 36864 rays,
+        # still sub-second on a BVH). The refine is the fix for the
+        # auto-widen path too: bottom->grid retry now actually finds
+        # inset legs instead of failing at 12×12.
+        n = grid_n
+        while True:
+            pts_xy = []
+            for i in range(n):
+                for j in range(n):
+                    fx = mn.x + (mx.x - mn.x) * (i + 0.5) / n
+                    fy = mn.y + (mx.y - mn.y) * (j + 0.5) / n
+                    pts_xy.append((fx, fy))
+            z_ref = mn.z
+            footprint_pts = []
+            heights, detail, hit_normals = support_heights(supports, pts_xy)
+            if any(h is not None for h in heights) or n >= 192:
+                break
+            n *= 4
+        if n != grid_n:
+            report["footprint_grid_refined"] = (
+                f"{grid_n}x{grid_n} found no support — refined to "
+                f"{n}x{n} (narrow inset support, F17)")
+            print(f"[place_on] {obj.name}: footprint grid refined "
+                  f"{grid_n}->{n} (narrow supports missed at base density)")
     else:
         pts = surface_samples(obj, mode=('bottom' if footprint == 'bottom'
                                          else 'verts'))
@@ -935,7 +954,8 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
         footprint_pts = pts
 
     # --- height field + solve ---------------------------------------------
-    heights, detail, hit_normals = support_heights(supports, pts_xy)
+    if heights is None:  # 'grid' already computed (maybe refined) above
+        heights, detail, hit_normals = support_heights(supports, pts_xy)
     hit_supports = sorted({name for per in detail
                            for name, z in per.items() if z is not None})
     report["support_found"] = hit_supports
