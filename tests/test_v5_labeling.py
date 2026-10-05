@@ -366,6 +366,57 @@ def main():
     check("L21.labelable", bpy.data.objects["pillar"].get("kit_label"),
           "pillar")
 
+    # ---------------- L22: validator v2 containment skip ----------------
+    # Shell-vs-contained-prop intersections are containment, not
+    # collision — skipped ONLY when both sides are labeled (prop-based),
+    # the shell label carries the shell vocabulary, and the prop's
+    # centroid is inside the shell bbox. Skips are VISIBLE in the
+    # summary (contained_pairs_skipped), never silent.
+    clear()
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0.5))
+    bpy.context.active_object.name = "ShellBox"
+    bpy.ops.mesh.primitive_cube_add(size=0.4, location=(0, 0, 0.4))
+    bpy.context.active_object.name = "InnerBox"
+    bpy.ops.mesh.primitive_cube_add(size=0.4, location=(3, 0, 0.2))
+    bpy.context.active_object.name = "OuterBox"
+    SL.label_objects({"ShellBox": "room_shell", "InnerBox": "crate",
+                      "OuterBox": "crate"})
+    import validate_scene as VS
+    summ = VS.validate_scene(ground_z=0.0)
+    types = [i["type"] for i in summ["issues"]]
+    check("L22.contained_skipped",
+          any(s["pair"] == ["ShellBox", "InnerBox"]
+              for s in summ["contained_pairs_skipped"]), True)
+    check("L22.no_shell_intersection_issue",
+          not any(i["type"] == "intersection"
+                  and set(i["objects"]) == {"ShellBox", "InnerBox"}
+                  for i in summ["issues"]), True)
+    # unlabeled overlaps still flag (prop-based guard: no label, no skip)
+    clear()
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0.5))
+    bpy.context.active_object.name = "BigBox"
+    bpy.ops.mesh.primitive_cube_add(size=0.4, location=(0, 0, 0.4))
+    bpy.context.active_object.name = "SmallBox"
+    summ2 = VS.validate_scene(ground_z=0.0)
+    check("L22.unlabeled_still_flags",
+          any(i["type"] == "intersection" for i in summ2["issues"]), True)
+    # shell + labeled prop BESIDE the shell (centroid outside): still flags
+    clear()
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0.5))
+    bpy.context.active_object.name = "ShellA"
+    bpy.ops.mesh.primitive_cube_add(size=0.4, location=(1.6, 0, 0.2))
+    bpy.context.active_object.name = "SideBox"
+    SL.label_objects({"ShellA": "room_shell", "SideBox": "crate"})
+    summ3 = VS.validate_scene(ground_z=0.0)
+    # these two do not even overlap (gap 0.4) — force overlap case:
+    bpy.data.objects["SideBox"].location = (0.6, 0, 0.2)
+    bpy.context.view_layer.update()
+    summ3 = VS.validate_scene(ground_z=0.0)
+    check("L22.beside_shell_still_flags",
+          any(i["type"] == "intersection"
+              and set(i["objects"]) == {"ShellA", "SideBox"}
+              for i in summ3["issues"]), True)
+
     # --------------------------------------------------------------------
     print(f"\n[test_v5] {'ALL PASS' if not FAIL else 'FAILURES:'}")
     for f in FAIL:

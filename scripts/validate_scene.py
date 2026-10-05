@@ -104,6 +104,22 @@ def validate_scene(*, ground_z: float = 0.0,
     excluded = {o.name for o in meshes
                 if o.get("kit_semantic") or o.name.lower() in _legacy}
 
+    # Validator v2 (D16 dogfood follow-up): containment is not collision.
+    # On imported LEVELS the room/shell object's AABB swamps every prop
+    # inside it — the pair flags as a huge intersection (the D16 fixture
+    # read as ONE 27m3 blob) that no transform can fix. When BOTH sides
+    # ran the label op (kit_label present — prop-based, never name-based)
+    # and the shell-side label carries the shell vocabulary while the
+    # other side's centroid sits inside the shell's bbox, the pair is a
+    # CONTAINMENT relation, not a defect — skip with a visible record.
+    _SHELL_TOKENS = ("room", "shell", "wall", "floor", "enclosure",
+                     "interior", "building")
+    _labels = {o.name: (o.get("kit_label") or "") for o in meshes}
+    _both_labeled = {n for n, lb in _labels.items() if lb}
+    _shell = {n for n in _both_labeled
+              if any(t in _labels[n].lower() for t in _SHELL_TOKENS)}
+    skipped_contained = []
+
     # ---- Check 1: floating objects ---------------------------------
     # Skip ceilings (excluded set above: kit_semantic prop or legacy name)
     for name, b in bounds_map.items():
@@ -215,7 +231,26 @@ def validate_scene(*, ground_z: float = 0.0,
             pct = (overlap_v / smaller_v * 100) if smaller_v > 0 else 0
             if pct < 5 and overlap_v < overlap_volume_threshold:
                 continue
-            issues.append({
+            # v2 containment skip (see note above): both labeled, one
+            # shell-like, the other's centroid inside the shell bbox
+            for si, sj in ((names[i], names[j]), (names[j], names[i])):
+                if (si in _shell and sj in _both_labeled
+                        and sj not in _shell):
+                    c = bounds_map[sj]
+                    sb = bounds_map[si]
+                    inside = all(sb["min"][k] <=
+                                 (c["min"][k] + c["max"][k]) / 2 <=
+                                 sb["max"][k] for k in range(3))
+                    if inside:
+                        skipped_contained.append(
+                            {"pair": [si, sj],
+                             "overlap_pct_of_smaller": round(pct, 1),
+                             "reason": f"'{sj}' is labeled and contained "
+                                       f"in shell '{si}' — containment, "
+                                       f"not collision"})
+                        break
+            else:
+                issues.append({
                 "type": "intersection",
                 "severity": "P1" if pct < 30 else "P0",
                 "objects": [names[i], names[j]],
@@ -251,6 +286,7 @@ def validate_scene(*, ground_z: float = 0.0,
         },
         "issues_by_type": {},
         "issues": issues,
+        "contained_pairs_skipped": skipped_contained,
     }
     for issue in issues:
         summary["issues_by_type"].setdefault(issue["type"], 0)
