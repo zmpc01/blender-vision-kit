@@ -287,6 +287,36 @@ Full details: `/kb/placement_and_physics.md`. Headlines:
 - `apply_patch --list` prints every op's param signature — check it
   before guessing key names (a wrong key now errors with the signature).
 
+#### D16: semantic labeling of imported scenes (`label_objects`, `split_mesh`)
+
+Imports from online sources arrive as `Mesh.001/002…` or ONE continuous
+mesh — opaque to every id-addressed op. The VISION agent identifies WHAT
+each part is from renders; these ops make that judgment durable scene
+state (the LOOK→NAME→LABEL→LOOK→SAVE loop; see `/kb/semantic_labeling.md`):
+
+- `label_objects(labels:{id: "pillar" | {label, confidence}})`:
+  writes `kit_label`(+`kit_label_conf`) props on ALL ids — additive,
+  idempotent, crash-safe (report JSON written BEFORE any rename).
+  `rename:true` ALSO renames objects (two-phase, whole-batch collision
+  simulation; charset `[A-Za-z0-9_-]+`, dots/spaces rejected).
+  `on_collision:"suffix"` (default) → deterministic `_2/_3` suffixes;
+  `"fail"` → refuse.
+- `split_mesh(id, mode)`: `dry-run` (default) = connected-components
+  report, ZERO residue (part count, per-part bboxes, co-users, risks);
+  `split` = separate by loose parts. REFUSES on co-user mesh data /
+  modifiers / shape keys / armature without `ack_risks:true`. Source
+  name lands on the LARGEST part; rest = `<id>_pNNN`. Re-look after
+  split — parts need their own vision pass (kit_label NOT propagated).
+- **LAW — gate exclusions are SEMANTIC**: an object whose label matches
+  the ceiling/sun/light vocabulary gets the `kit_semantic` prop and
+  validate_scene excludes it by PROP (floating/below-floor/penetration/
+  above-5m checks). Legacy name matching stays as fallback only — names
+  are NOT load-bearing for gates anymore, so relabeling a ceiling no
+  longer silently strips coverage.
+- **LAW — consumers read the manifest's `kit_label` field**: every MESH
+  row carries it (`null` when unlabeled). It is the durable identity;
+  names may be disambiguated/suffixed, props never are.
+
 ### viewport_capture.py — multi-angle screenshots (look.py uses this)
 ```bash
 ./scripts/blrun.sh --background --python scripts/viewport_capture.py -- \
