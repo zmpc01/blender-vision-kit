@@ -271,6 +271,13 @@ Full details: `/kb/placement_and_physics.md`. Headlines:
   Footprint AUTO-WIDEN: default `bottom` misses pedestal supports
   (tabletop-on-leg, lampshade-on-pole) — on no-support it retries
   `grid` automatically (report records `footprint_autowiden`).
+  GRID REFINEMENT (F17): the grid refines ×4 until rays hit
+  (cap 192×192; report records `footprint_grid_refined`) — narrow
+  inset supports (0.08m legs on a 2.4m top) that every 12×12 cell
+  missed now solve. `origin_offset_warning` in the report is
+  LOAD-BEARING (glTF vendor origins sit far from geometry): the
+  world-space solvers are safe, but set_location-style moves on that
+  object will fling it — recenter the origin first.
 - **Animated prop + placement**: pass `override:"keyframe"` — the op
   REBASES the whole animation path by the placement delta (every
   keyframe keeps its relative placement; a current-frame re-key leaves
@@ -426,6 +433,13 @@ Floating / below-floor / floor-penetration / suspicious intersections
 bbox analysis. Severities: floating = P1, below-floor = P0,
 floor_penetration = P1 (depth > max(5cm, 20% height); ground slabs
 excluded), intersection = P1 (P0 at ≥30%), above-ceiling = P2.
+CONTAINMENT SKIP (validator v2): shell-vs-prop pairs are NOT flagged
+when BOTH sides carry kit_label, the shell label matches the shell
+vocabulary (room/shell/wall/floor/enclosure/interior/building), and
+the prop's centroid is inside the shell bbox — skipped pairs stay
+VISIBLE in `summary.contained_pairs_skipped` (never silent). Unlabeled
+or non-contained overlaps still flag: the skip is prop-based, never
+name-based, and never a blanket carve-out.
 
 ### export_gltf.py / save_blend.py / agent_server.py / polyhaven.py
 - `export_gltf.py --scene S --output scene.glb --frames N` — glTF for the

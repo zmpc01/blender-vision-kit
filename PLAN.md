@@ -110,16 +110,45 @@ code-level finding (--frames BLOCKER) remains valid.
   sheet) → LOOK→SPLIT→REGION-CUT→NAME→LABEL→LOOK→SAVE, 14/14 labeled;
   SUCCESS CRITERION met (non-vision sub-agent assembled table + seated
   ball + lamp head blind from manifest only, audit 0.0mm contacts).
-- [ ] F17 (K1 follow-up, measured in dogfood): place_on footprint
-  auto-widen grid (12×12) misses small inset supports by sampling
-  density — leg spans 0.01m outside sample columns. Fix idea: support-
-  size-adaptive grid density or mover-bottom-perimeter raycast.
-- [ ] Validator v2 idea (dogfood): room-shell AABB contains props → P0
-  intersection spam; skip pairs where one side is shell/room-like AND
-  the other's centroid is inside it (containment ≠ collision).
-- [ ] Candidate next: R5+ dog-food rounds (polyhaven import lane; a
-  t10 export-package regression suite per R4 F10b lesson), crowd T3
-  (upstream-gated), upstream PR for D11 install fallback
+- [x] SESSION 8 — handoff-protocol audit + paydown (docs/USABILITY_R5_polyhaven.md):
+  audit found the vision->blind protocol was real but only implicit, and
+  delegated work was verified by eyes+claims, not by diff. Paydown:
+  EXECUTION CONTRACT law (AGENTS.md + kb: VISION-REQUIRED vs BLIND-SAFE
+  vs STOP-AND-FLAG), verify-delegated-work checklist (kb),
+  manifest world_bbox law + stale-matrix fix (L19), manifest_diff tool
+  (v6 M1-M10, --expect-clean), region-cut report auditability verified.
+  STRESS TEST on a REAL asset: blind agent correctly WITHHELD both
+  vision-required tasks with evidence (floating cloud can't be fixed
+  blind; bucket identity among >=3 candidates not derivable) and did
+  the safe work; principal verified by diff (0 findings) + own
+  re-measure + eyes. Protocol ROBUST now that the contract is written.
+- [x] R5 polyhaven real-asset lane (session 8): fetch script (API gotchas:
+  /files not /download/file; textures under Models/jpg/), import module
+  (measure->scale->ground->center), look, region cut (espresso machine
+  out of props — vision proposes -> dry-run verifies -> scratch cut ->
+  eyes confirm), labels coffee_cart/espresso_machine/cart_props/
+  mug_tray. THE 456-PART LESSON: real assets have hundreds of loose
+  parts — label at vendor-node granularity, never blind loose-split
+  high-part-count meshes (F19). Tests: f17 9 checks, v5 76, v6 18.
+- [x] F17 FIXED (b8ca792): place_on footprint grid refines x4 until rays
+  hit (cap 192x192); top-onto-narrow-legs repro passes; t8 8/8.
+- [x] Validator v2 (5ee3a92): containment != collision — shell-vocabulary
+  + both-labeled + centroid-inside pairs skip, visibly
+  (summary.contained_pairs_skipped). D16 fixture: 2 blob P0s -> 0
+  issues + 2 recorded skips. L22 regression.
+- [ ] F18: place_on/snap_z on glTF vendor origins (origin >> centroid):
+  doc the origin_offset_warning as load-bearing; set_location-style ops
+  unsafe (R5 finding).
+- [ ] F19: loose `split` on high-part-count meshes is blind-legal but
+  semantically destructive — warn gate (dry-run N > 50 ->
+  ack_many_parts:true) + AGENTS.md line.
+- [ ] F20: dispatch prompts must show the apply_patch wrapper shape
+  ({load_blend, mutations}) explicitly — the stress-test agent had to
+  read the script to recover (handled, but don't rely on it).
+- [ ] Candidate next: R6+ dog-food rounds (a WELDED level asset — the
+  region-cut playbook on real level geometry; t10 export-package
+  regression suite), crowd T3 (upstream-gated), upstream PR for D11
+  install fallback
 - [ ] T6 scene ships in kit (t6_transient.py) as the transient/label regression vehicle; consider --frames interplay doc (look --frames N vs animate n_frames)
 - Note: blrun.sh without --background hangs silently (GUI-on-Xvfb startup) — FIXED session-4 (auto-inject --background guard)
 
