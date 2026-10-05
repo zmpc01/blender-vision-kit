@@ -141,3 +141,9 @@ VK-9: agent-kit twin (validate_scene.py @26c78eb) verified live via this issue's
 
 ## QA-LANE DISPATCH R56 (auto)
 - Session-8 deep-verify receipt @3c06e05 (QA-r056-a): validator v2 CONTAINMENT SKIP PASS live (labeled shell + contained prop → 0 issues + contained_pairs_skipped VISIBLE with reason string; unlabeled overlap still flags P1, --fail-on-issues rc=1; renders eye 6/6 PNG) · manifest_diff PASS (owner suite 18/18 M1-M10 + full-dict {"manifest":…} unwrap ≡ bare list, reports equal + --expect-clean rc 0 clean / rc 1 "EXPECT-CLEAN VIOLATED") · F17 PASS (place_on onto 0.08m inset legs → "footprint_grid_refined": "12x12 found no support — refined to 48x48", tabletop zmin 0.7500 vs leg top dz=0.0000, crate dz=0.0000; wide support correctly no-refine) · VK-9 STILL LIVE (own 0.2m slab flags 100% penetration) · VK-10 STILL LIVE (keys=[(24,-2.0)], x=-2.0 at f1/f12/f24) — asks unchanged: re-vendor + example hunk port. MemAvailable guard named-skip @1195MB non-fatal (R22 law holds). — QA-r056-a
+
+## QA-LANE DISPATCH R69 (auto)
+- #12 [P3][polish] install.sh aborts rc=2 (dpkg-deb "failed to chdir") when tools/local-libs is a DANGLING SYMLINK — raw tool error kills the script under set -euo pipefail BEFORE the :95 teacher-grade ERROR line can print. Repro 3/3 (sibling-symlink consolidation flow); fix control: absolute-path symlinks → rc=0 (Blender already installed / libEGL already extracted / Done).
+- Ask: dangling-symlink detect-and-heal guard (rm dangling + mkdir -p) before the extraction loop, or stage-extract to mktemp -d then cp -a; keep :95 teacher line reachable (|| teacher-error wrapper).
+- Narrow trigger but natural workaround (re-run install) re-downloads a duplicate 1.2 GB Blender per sibling kit; QA SOP sibling-symlink law corrected on our side in parallel.
+- Evidence: belram448/freshbook-clone docs/qa-blender-kit/evidence/qa-r069/ (vk_inst.txt, vk_inst2.txt rc=2) — private repo, belram448 PAT required.
