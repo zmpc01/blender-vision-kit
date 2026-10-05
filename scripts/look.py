@@ -48,6 +48,10 @@ import annotate  # noqa: E402
 
 def _manifest() -> dict:
     """Compact object-id manifest: the ids the next patch needs."""
+    # world_bbox law: matrices/bound_box are evaluated lazily — right
+    # after in-process mutation they are STALE (a 45°-yawed cube reads
+    # unrotated). Force the depsgraph so every row reflects true state.
+    bpy.context.view_layer.update()
     out = []
     for o in bpy.context.scene.objects:
         if o.name.startswith(annotate.ANNOT_PREFIX):
@@ -60,6 +64,16 @@ def _manifest() -> dict:
             row = {"id": o.name, "type": "MESH",
                    "dims_m": [round(v, 3) for v in o.dimensions],
                    "centroid": c}
+            # D16 handoff law: world-space AABB per row. dims_m is the
+            # LOCAL bbox size — under rotation, centroid ± dims/2 is the
+            # WRONG box, and a non-vision consumer has no other way to
+            # know. This is the geometric ground truth the blind agent
+            # reasons from (fits/gaps/containment all derive from it).
+            _bb = [o.matrix_world @ type(o.location)(cc)
+                   for cc in o.bound_box]
+            row["world_bbox"] = {
+                "min": [round(min(p[i] for p in _bb), 3) for i in range(3)],
+                "max": [round(max(p[i] for p in _bb), 3) for i in range(3)]}
             # D16: kit_label is a MANDATORY row field (null when
             # unlabeled) — non-vision consumers key on it, so the key
             # must always exist, not appear only when set

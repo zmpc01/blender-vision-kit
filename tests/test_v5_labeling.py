@@ -288,6 +288,32 @@ def main():
     rows2 = {r["id"]: r for r in look._manifest() if r["type"] == "MESH"}
     check("L17.labeled_value", rows2["Mesh.001"]["kit_label"], "pillar")
 
+    # ---------------- L19: manifest world_bbox (handoff law) ------------
+    # A non-vision consumer reasons ONLY from the manifest; dims_m is
+    # local size and goes WRONG under rotation, so every MESH row must
+    # carry the world-space AABB. Rotated fixture proves it.
+    clear()
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(2, 0, 0.5))
+    rot = bpy.context.active_object
+    rot.name = "RotBox"
+    rot.rotation_euler = (0, 0, 3.14159 / 4)  # 45° yaw — AABB ≠ dims
+    rows3 = {r["id"]: r for r in look._manifest() if r["type"] == "MESH"}
+    wb = rows3["RotBox"]["world_bbox"]
+    import math as _math
+    half_diag = 0.5 * _math.sqrt(2)  # 45° yaw AABB half-extent in XY
+    ok_min = all(abs(a - b) < 0.01 for a, b in zip(
+        wb["min"], [2 - half_diag, -half_diag, 0.0]))
+    ok_max = all(abs(a - b) < 0.01 for a, b in zip(
+        wb["max"], [2 + half_diag, half_diag, 1.0]))
+    check("L19.world_bbox_present",
+          all("world_bbox" in r for r in rows3.values()), True)
+    check("L19.world_bbox_rotated_min", ok_min, True)
+    check("L19.world_bbox_rotated_max", ok_max, True)
+    # under 45° yaw the naive centroid±dims/2 box would be 1x1x1 — the
+    # bug class this field kills:
+    naive_wrong = (abs((wb["max"][0] - wb["min"][0]) - 1.0) > 0.3)
+    check("L19.world_bbox_not_naive_dims", naive_wrong, True)
+
     # ---------------- L18: op surface end-to-end ------------------------
     clear()
     opaque_pair()
