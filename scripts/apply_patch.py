@@ -881,26 +881,57 @@ def _apply_label_objects(_obj, params):
 
 
 def _apply_split_mesh(obj, params):
-    """D16: break a continuous mesh into labelable parts. mode=dry-run
-    (default) analyzes connected components with ZERO residue; mode=split
-    separates by loose parts (refuses on unacknowledged risks)."""
+    """D16: break a mesh into labelable parts. Loose-parts path:
+    mode=dry-run (default) / split. WELDED continuous geometry (no
+    loose parts — typical level/interior imports): vision-driven REGION
+    cut, mode=dry-run-region / split-region with a world-space
+    {min,max} box the principal reads off the render."""
     import semantic_lib as _SL
     mode = params.get("mode", "dry-run")
+    region = params.get("region")
+    if region is not None and not isinstance(region, dict):
+        raise RuntimeError("split_mesh: region must be "
+                           "{'min':[x,y,z], 'max':[x,y,z]}")
     if mode == "dry-run":
-        rep = _SL.analyze_split(obj)
+        if region is not None:
+            rep = _SL.analyze_region(obj, region)
+            rep["mode"] = "dry-run-region"
+        else:
+            rep = _SL.analyze_split(obj)
     elif mode == "split":
+        if region is not None:
+            raise RuntimeError("split_mesh: loose-parts split takes no "
+                               "region — use mode split-region")
         rep = _SL.split_object(obj, ack_risks=bool(params.get("ack_risks",
                                                               False)))
+    elif mode == "split-region":
+        if region is None:
+            raise RuntimeError("split_mesh: split-region requires the "
+                               "region param (run a dry-run first)")
+        rep = _SL.split_region(obj, region, new_id=params.get("new_id"),
+                               ack_risks=bool(params.get("ack_risks",
+                                                         False)))
     else:
-        raise RuntimeError(f"split_mesh: mode must be dry-run|split, "
-                           f"got {mode!r}")
+        raise RuntimeError(f"split_mesh: mode must be dry-run|split|"
+                           f"split-region (region implies its own "
+                           f"dry-run), got {mode!r}")
     out = params.get("output")
     if out:
         d = os.path.dirname(os.path.abspath(out))
         os.makedirs(d, exist_ok=True)
         with open(out, "w") as f:
             json.dump(rep, f, indent=2)
-    if mode == "dry-run":
+    if mode in ("dry-run", "dry-run-region"):
+        if region is not None:
+            print(f"[apply_patch] split_mesh REGION DRY-RUN "
+                  f"'{obj.name}': verts_in_region={rep['verts_in_region']}, "
+                  f"faces_to_cut={rep['faces_to_cut']}, "
+                  f"captured_bbox={rep['captured_bbox']}, "
+                  f"risks={rep['risks'] or 'none'}")
+            if rep["faces_to_cut"]:
+                print("[apply_patch]   re-run with \"mode\":\"split-region\" "
+                      "to cut it out")
+            return
         print(f"[apply_patch] split_mesh DRY-RUN '{obj.name}': "
               f"{rep['part_count']} component(s), co_users={rep['co_users']}, "
               f"risks={rep['risks'] or 'none'}")
@@ -909,7 +940,15 @@ def _apply_split_mesh(obj, params):
                   f"dims={p['dims']}")
         if rep["part_count"] > 1:
             print("[apply_patch]   re-run with \"mode\":\"split\" to "
-                  "separate (read the risks first)")
+                  "separate (read the risks first); welded geometry with "
+                  "part_count=1 needs a REGION cut instead")
+    elif mode == "split-region":
+        print(f"[apply_patch] split_mesh REGION CUT '{rep['source']}': "
+              f"{rep['faces_cut']} faces -> '{rep['new_object']}' "
+              f"bbox={rep['new_object_bbox']}")
+        print(f"[apply_patch]   next: {rep['next']}")
+        for w in rep["warnings"]:
+            print(f"[apply_patch]   WARNING {w}")
     else:
         print(f"[apply_patch] split_mesh SPLIT '{rep['source']}': "
               f"{rep['part_count']} parts "
@@ -1003,7 +1042,7 @@ PARAM_DOCS = {
     "add_plane":          "id, size, location?(CENTER!), color?",
     "add_empty":          "id, location, empty_type?, size?, rotation_deg?",
     "label_objects":      "labels:{id: label|{label,confidence}}, rename?(bool, default false — additive kit_label is the v1 identity), on_collision?(suffix|fail), output?(report json; default output/labels_report.json)",
-    "split_mesh":         "id, mode?(dry-run|split, default dry-run), ack_risks?(bool — required when co-users/modifiers/shape-keys/armature present), output?(report json)",
+    "split_mesh":         "id, mode?(dry-run|split|split-region, default dry-run; region param implies region dry-run), region?({min:[x,y,z],max:[x,y,z]} world box — vision-driven cut for WELDED geometry), new_id?(region-cut name), ack_risks?(bool — required when co-users/modifiers/shape-keys/armature present), output?(report json)",
 }
 
 

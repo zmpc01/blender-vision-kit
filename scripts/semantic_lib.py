@@ -248,6 +248,147 @@ def label_objects(labels_map, rename=False, on_collision="suffix",
 # split_mesh — dry-run / split pair for continuous meshes
 # ---------------------------------------------------------------------------
 
+def _region_mask(obj, region):
+    """Faces fully inside a world-space box. Returns (face_indices,
+    verts_in_box, captured_bbox). 'Fully inside' is the honest cut unit:
+    a face straddling the box belongs to BOTH visual parts conceptually
+    — giving it to either side silently deforms one of them, so we leave
+    it with the source and report the count instead (the principal
+    narrows the box). Indices (not BMFace refs) so they survive the
+    internal bmesh being freed."""
+    rmin = region["min"]
+    rmax = region["max"]
+    if len(rmin) != 3 or len(rmax) != 3:
+        raise RuntimeError(
+            f"split_mesh: region needs min:[x,y,z] max:[x,y,z], got {region!r}")
+    lo = [min(a, b) for a, b in zip(rmin, rmax)]
+    hi = [max(a, b) for a, b in zip(rmin, rmax)]
+    me = obj.data
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    mw = obj.matrix_world
+    in_box = [all(lo[i] - 1e-6 <= (mw @ v.co)[i] <= hi[i] + 1e-6
+                  for i in range(3)) for v in bm.verts]
+    face_idx = [f.index for f in bm.faces
+                if all(in_box[v.index] for v in f.verts)]
+    n_in = sum(in_box)
+    pts = [mw @ v.co for v, ok in zip(bm.verts, in_box) if ok]
+    bm.free()
+    captured = None
+    if pts:
+        captured = {"min": [round(min(p[i] for p in pts), 4) for i in range(3)],
+                    "max": [round(max(p[i] for p in pts), 4) for i in range(3)]}
+    return face_idx, n_in, captured
+
+
+def analyze_region(obj, region) -> dict:
+    """Vision-driven region dry-run: what WOULD a world-box cut capture?
+    ZERO residue. The principal reads the render, boxes what they
+    identified (pillar, pipe…), and this reports the capture BEFORE any
+    mutation — the way to break apart WELDED/continuous level geometry
+    that has no loose parts at all."""
+    if obj.type != "MESH":
+        raise RuntimeError(f"split_mesh: '{obj.name}' is {obj.type}, "
+                           f"not MESH")
+    faces, n_in, captured = _region_mask(obj, region)
+    return {
+        "tool": "split_mesh", "mode": "dry-run-region",
+        "source": obj.name,
+        "region": {"min": list(region["min"]), "max": list(region["max"])},
+        "verts_in_region": n_in,
+        "faces_to_cut": len(faces),
+        "captured_bbox": captured,
+        "cut_unit": "faces fully inside the box (straddling faces stay "
+                    "with the source — narrow the box to capture them)",
+        "risks": _split_risks(obj),
+    }
+
+
+def split_region(obj, region, new_id=None, ack_risks=False) -> dict:
+    """Cut the region OUT as a new object (bpy separate by selected
+    faces). The source keeps its identity; the new object is ready for
+    label_objects. Preconditions identical to loose-parts split."""
+    if obj.type != "MESH":
+        raise RuntimeError(f"split_mesh: '{obj.name}' is {obj.type}, "
+                           f"not MESH")
+    risks = _split_risks(obj)
+    fatal = [r for r in risks if r.startswith("library-linked")]
+    if fatal:
+        raise RuntimeError(f"split_mesh: REFUSED — {fatal[0]}")
+    if risks and not ack_risks:
+        raise RuntimeError(
+            f"split_mesh: REFUSED on unacknowledged risks {risks} — "
+            f"re-run with \"ack_risks\": true after reading the dry-run")
+    dry = analyze_region(obj, region)
+    if dry["faces_to_cut"] == 0:
+        raise RuntimeError(
+            f"split_mesh: region captures 0 fully-inside faces — nothing "
+            f"to cut (adjust the box; run mode dry-run again)")
+    if new_id is None:
+        new_id = f"{obj.name}_cut"
+    if not LABEL_RE.fullmatch(new_id):
+        raise RuntimeError(
+            f"split_mesh: new_id {new_id!r} violates charset law "
+            f"[A-Za-z0-9_-]+")
+    warnings = [f"ack: {r}" for r in risks] if ack_risks else []
+    if obj.data.users > 1:
+        obj.data = obj.data.copy()
+        warnings.append("data made single-user (copy) before cut")
+
+    source_name = obj.name
+    pre_names = {o.name for o in bpy.context.scene.objects}
+    if bpy.context.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode="EDIT")
+    bm = bmesh.from_edit_mesh(obj.data)
+    face_idx, _, _ = _region_mask(obj, region)
+    for f in bm.faces:
+        f.select_set(False)
+    for v in bm.verts:
+        v.select_set(False)
+    for f in bm.faces:
+        if f.index in face_idx:
+            f.select_set(True)
+    bmesh.update_edit_mesh(obj.data)
+    bpy.ops.mesh.separate(type="SELECTED")
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    new_names = [o.name for o in bpy.context.scene.objects
+                 if o.name not in pre_names]
+    if len(new_names) != 1:
+        raise RuntimeError(
+            f"split_mesh: expected exactly 1 new object after region cut, "
+            f"got {new_names} — aborting (scene may need manual check)")
+    new_obj = bpy.data.objects[new_names[0]]
+    occupied = {o.name for o in bpy.context.scene.objects} - {new_obj.name}
+    final = _unique_name(new_id, occupied)
+    new_obj.name = final
+    chk = bpy.data.objects.get(final)
+    if chk is None:
+        raise RuntimeError(f"split_mesh: rename verify FAILED for "
+                           f"'{new_id}' (report source {source_name})")
+    mw = chk.matrix_world
+    pts = [mw @ type(chk.location)(c) for c in chk.bound_box]
+    return {
+        "tool": "split_mesh", "mode": "split-region", "ok": True,
+        "source": source_name,
+        "region": dry["region"],
+        "faces_cut": dry["faces_to_cut"],
+        "verts_cut": dry["verts_in_region"],
+        "new_object": chk.name,
+        "new_object_bbox": {"min": [round(min(p[i] for p in pts), 4)
+                                    for i in range(3)],
+                            "max": [round(max(p[i] for p in pts), 4)
+                                    for i in range(3)]},
+        "remaining_object": source_name,
+        "warnings": warnings,
+        "next": f"label_objects {{{final!r}: <your-label>}}",
+    }
+
+
 def _components(bm):
     """Connected components of a bmesh (verts joined by edges; loose
     verts count as singleton components). Returns list of vert-sets."""

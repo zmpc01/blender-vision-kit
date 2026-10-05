@@ -301,6 +301,45 @@ def main():
                        "mode": "dry-run"})  # Mesh.002 was renamed 'ball'
     check("L18.dry_no_residue", len(bpy.context.scene.objects), 2)
 
+    # ---------------- L19-21: region cut (welded geometry) --------------
+    clear()
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions=10, y_subdivisions=10,
+                                    size=6, location=(0, 0, 0))
+    floor = bpy.context.active_object
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.3, depth=2.4,
+                                        location=(1.5, 0, 1.2),
+                                        vertices=12)
+    pil = bpy.context.active_object
+    bpy.ops.object.select_all(action="DESELECT")
+    floor.select_set(True)
+    pil.select_set(True)
+    bpy.context.view_layer.objects.active = floor
+    bpy.ops.object.join()
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.remove_doubles(threshold=0.001)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    floor.name = "LevelWelded"
+    w = bpy.data.objects["LevelWelded"]
+    check("L19.welded_one_component", SL.analyze_split(w)["part_count"], 1)
+    region = {"min": [1.1, -0.45, -0.01], "max": [1.9, 0.45, 2.5]}
+    rdry = SL.analyze_region(w, region)
+    check("L20.region_faces", rdry["faces_to_cut"] > 0, True)
+    check("L20.zero_residue", len(bpy.context.scene.objects), 1)
+    check("L20.new_id_charset",
+          raises(lambda: SL.split_region(
+              w, region, new_id="bad.id")), True)
+    rep = SL.split_region(w, region, new_id="pillar")
+    check("L21.cut_object", bpy.data.objects.get("pillar") is not None,
+          True)
+    check("L21.source_kept",
+          bpy.data.objects.get("LevelWelded") is not None, True)
+    check("L21.new_bbox",
+          rep["new_object_bbox"]["min"][2] >= -0.01, True)
+    SL.label_objects({"pillar": "pillar"})
+    check("L21.labelable", bpy.data.objects["pillar"].get("kit_label"),
+          "pillar")
+
     # --------------------------------------------------------------------
     print(f"\n[test_v5] {'ALL PASS' if not FAIL else 'FAILURES:'}")
     for f in FAIL:

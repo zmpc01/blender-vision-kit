@@ -87,4 +87,58 @@ def main():
     print("[smoke] ALL SMOKE CHECKS PASS")
 
 
+def welded_fixture():
+    """The user's hard case: floor + pillar WELDED into one connected
+    mesh (level/interior style). Loose-parts split must report 1 part;
+    the REGION cut is the way out."""
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions=10, y_subdivisions=10,
+                                    size=6, location=(0, 0, 0))
+    floor = bpy.context.active_object
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.3, depth=2.4,
+                                        location=(1.5, 0, 1.2),
+                                        vertices=12)
+    pil = bpy.context.active_object
+    # weld: join + merge-by-distance at the shared ring (pillar base
+    # touches floor at z=0) -> one truly continuous component
+    bpy.ops.object.select_all(action="DESELECT")
+    floor.select_set(True)
+    pil.select_set(True)
+    bpy.context.view_layer.objects.active = floor
+    bpy.ops.object.join()
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.remove_doubles(threshold=0.001)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    floor.name = "LevelWelded"
+    return floor
+
+
+def welded_checks():
+    src = welded_fixture()
+    dry = SL.analyze_split(src)
+    assert dry["part_count"] == 1, f"welded mesh found {dry['part_count']} parts"
+    print("[smoke] welded mesh: loose-parts dry-run reports part_count=1 "
+          "(correct — nothing loose)")
+    # vision-driven region cut: I 'looked' — the pillar sits at x=1.5,y=0
+    region = {"min": [1.1, -0.45, -0.01], "max": [1.9, 0.45, 2.5]}
+    rdry = SL.analyze_region(src, region)
+    print(f"[smoke] region dry-run: verts={rdry['verts_in_region']} "
+          f"faces_to_cut={rdry['faces_to_cut']} "
+          f"bbox={rdry['captured_bbox']}")
+    assert rdry["faces_to_cut"] > 0
+    rep = SL.split_region(src, region, new_id="pillar")
+    print(f"[smoke] region cut -> '{rep['new_object']}' "
+          f"({rep['faces_cut']} faces cut)")
+    assert bpy.data.objects.get("pillar") is not None
+    assert bpy.data.objects.get("LevelWelded") is not None
+    # the cut object is now labelable like any other
+    SL.label_objects({"pillar": {"label": "pillar", "confidence": "high"}})
+    assert bpy.data.objects["pillar"].get("kit_label") == "pillar"
+    print("[smoke] welded-interior region cut: PASS (continuous geometry "
+          "is now breakable + labelable)")
+
+
+welded_checks()
+
 main()
