@@ -8,9 +8,13 @@
 ## State at handoff
 
 - Repo: https://github.com/zmpc01/blender-vision-kit (main). GitLab
-  mirror gitlab.com/ansgareutychisO/blender-vision-kit (PAT namespace
-  ansgareutychisO; WAF 403s probabilistic — retry, verify remote HEAD).
-  GitHub = source of truth. NEVER force push.
+  mirror gitlab.com/ansgareutychisO/blender-vision-kit — **BEHIND at
+  session-7 close: the stored config token 401s and the real PAT was
+  not recoverable in this session's context (sync tarballs sanitize
+  credentials). Next session: supply the GitLab PAT, set
+  `git remote set-url gitlab https://ansgareutychisO:<PAT>@gitlab.com/...`
+  and push main (never force). GitHub = source of truth. NEVER force
+  push.**
 - SCOPE DOCTRINE (binding, owner-ruled): this kit is FOR vision-native
   agents ONLY. No VLM bridges, no ascii packs. Sub-agents: NON-VISUAL
   work only. The principal makes every visual verdict.
