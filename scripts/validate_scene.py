@@ -93,11 +93,21 @@ def validate_scene(*, ground_z: float = 0.0,
     bounds_map = {o.name: _object_bounds(o) for o in meshes}
     bounds_map = {k: v for k, v in bounds_map.items() if v is not None}
 
-    # ---- Check 1: floating objects ---------------------------------
-    # Skip ceilings (they're supposed to be up high) and known "high" objects
+    # D16 (audit HIGH #1): gate exclusions are SEMANTIC, not lexical.
+    # An object carrying the kit_semantic prop (written by label_objects
+    # when the vision label matches the ceiling/sun/light vocabulary) is
+    # excluded by PROP — a vision rename can no longer silently strip
+    # gate coverage. Legacy NAME match stays as fallback for unlabeled
+    # scenes (imports/authors that never ran the label op).
     CEILING_NAMES = {"ceiling", "CeilingLight", "sun", "SunLight"}
+    _legacy = {n.lower() for n in CEILING_NAMES}
+    excluded = {o.name for o in meshes
+                if o.get("kit_semantic") or o.name.lower() in _legacy}
+
+    # ---- Check 1: floating objects ---------------------------------
+    # Skip ceilings (excluded set above: kit_semantic prop or legacy name)
     for name, b in bounds_map.items():
-        if name.lower() in [n.lower() for n in CEILING_NAMES]:
+        if name in excluded:
             continue
         bottom_z = b["min"][2]
         if bottom_z > ground_z + floating_threshold:
@@ -144,7 +154,7 @@ def validate_scene(*, ground_z: float = 0.0,
 
     # ---- Check 2: below-floor objects ------------------------------
     for name, b in bounds_map.items():
-        if name.lower() in [n.lower() for n in CEILING_NAMES]:
+        if name in excluded:
             continue
         top_z = b["max"][2]
         if top_z < ground_z - 0.001:
@@ -164,7 +174,7 @@ def validate_scene(*, ground_z: float = 0.0,
     # 20% of height) so intentional shallow embeds (posts, rugs) stay
     # silent but sunk-through-floor bugs surface as P1.
     for name, b in bounds_map.items():
-        if name.lower() in [n.lower() for n in CEILING_NAMES]:
+        if name in excluded:
             continue
         if _is_ground_like(b):
             continue
@@ -217,7 +227,7 @@ def validate_scene(*, ground_z: float = 0.0,
 
     # ---- Check 4: ceiling check ------------------------------------
     for name, b in bounds_map.items():
-        if name.lower() in [n.lower() for n in CEILING_NAMES]:
+        if name in excluded:
             continue
         if b["max"][2] > 5.0:
             issues.append({

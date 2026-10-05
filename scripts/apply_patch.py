@@ -856,6 +856,71 @@ def _apply_add_empty(obj, params):
           f"(no mesh — use as seat_at anchor, not as a mover)")
 
 
+def _apply_label_objects(_obj, params):
+    """D16: turn a VISION agent's identification into durable scene
+    state. Additive kit_label/kit_label_conf props on every id; optional
+    two-phase rename (whole-batch collision simulation, charset law
+    [A-Za-z0-9_-]+); kit_semantic marker when the label is
+    gate-relevant; report JSON written BEFORE any rename."""
+    import semantic_lib as _SL
+    labels = _require(params, "labels", "label_objects", expected_type=dict)
+    rep = _SL.label_objects(
+        labels,
+        rename=bool(params.get("rename", False)),
+        on_collision=params.get("on_collision", "suffix"),
+        report_path=params.get("output"))
+    print(f"[apply_patch] label_objects: {len(rep['rows'])} ids | "
+          f"renamed {len(rep['renamed'])} | kept {len(rep['kept'])} | "
+          f"unchanged {len(rep['unchanged'])} | semantic-marked "
+          f"{len(rep['semantic_marked'])}")
+    for rn in rep["renamed"][:8]:
+        print(f"[apply_patch]   rename: {rn['from']} -> {rn['to']}")
+    if len(rep["renamed"]) > 8:
+        print(f"[apply_patch]   ... {len(rep['renamed']) - 8} more "
+              f"(full JSON: {params.get('output') or 'output/labels_report.json'})")
+
+
+def _apply_split_mesh(obj, params):
+    """D16: break a continuous mesh into labelable parts. mode=dry-run
+    (default) analyzes connected components with ZERO residue; mode=split
+    separates by loose parts (refuses on unacknowledged risks)."""
+    import semantic_lib as _SL
+    mode = params.get("mode", "dry-run")
+    if mode == "dry-run":
+        rep = _SL.analyze_split(obj)
+    elif mode == "split":
+        rep = _SL.split_object(obj, ack_risks=bool(params.get("ack_risks",
+                                                              False)))
+    else:
+        raise RuntimeError(f"split_mesh: mode must be dry-run|split, "
+                           f"got {mode!r}")
+    out = params.get("output")
+    if out:
+        d = os.path.dirname(os.path.abspath(out))
+        os.makedirs(d, exist_ok=True)
+        with open(out, "w") as f:
+            json.dump(rep, f, indent=2)
+    if mode == "dry-run":
+        print(f"[apply_patch] split_mesh DRY-RUN '{obj.name}': "
+              f"{rep['part_count']} component(s), co_users={rep['co_users']}, "
+              f"risks={rep['risks'] or 'none'}")
+        for i, p in enumerate(rep["parts"][:6], 1):
+            print(f"[apply_patch]   part{i}: faces={p['n_faces']} "
+                  f"dims={p['dims']}")
+        if rep["part_count"] > 1:
+            print("[apply_patch]   re-run with \"mode\":\"split\" to "
+                  "separate (read the risks first)")
+    else:
+        print(f"[apply_patch] split_mesh SPLIT '{rep['source']}': "
+              f"{rep['part_count']} parts "
+              f"(materials inherited: {rep['materials_inherited']})")
+        for p in rep["parts"][:8]:
+            print(f"[apply_patch]   {p['old_name']} -> {p['name']} "
+                  f"(faces={p['n_faces']})")
+        for w in rep["warnings"]:
+            print(f"[apply_patch]   WARNING {w}")
+
+
 MUTATIONS = {
     "set_location":             (_apply_set_location, True),
     "move_to":                  (_apply_move_to, True),
@@ -893,6 +958,8 @@ MUTATIONS = {
     "add_torus":                (_apply_add_torus, False),
     "add_plane":                (_apply_add_plane, False),
     "add_empty":                (_apply_add_empty, False),
+    "label_objects":            (_apply_label_objects, False),
+    "split_mesh":               (_apply_split_mesh, True),
 }
 
 # wave-1 friction #2/#11: param schemas were only discoverable by
@@ -935,6 +1002,8 @@ PARAM_DOCS = {
     "add_torus":          "id, radius_major, radius_minor, location?(CENTER!), color?",
     "add_plane":          "id, size, location?(CENTER!), color?",
     "add_empty":          "id, location, empty_type?, size?, rotation_deg?",
+    "label_objects":      "labels:{id: label|{label,confidence}}, rename?(bool, default false — additive kit_label is the v1 identity), on_collision?(suffix|fail), output?(report json; default output/labels_report.json)",
+    "split_mesh":         "id, mode?(dry-run|split, default dry-run), ack_risks?(bool — required when co-users/modifiers/shape-keys/armature present), output?(report json)",
 }
 
 

@@ -60,6 +60,10 @@ def _manifest() -> dict:
             row = {"id": o.name, "type": "MESH",
                    "dims_m": [round(v, 3) for v in o.dimensions],
                    "centroid": c}
+            # D16: kit_label is a MANDATORY row field (null when
+            # unlabeled) — non-vision consumers key on it, so the key
+            # must always exist, not appear only when set
+            row["kit_label"] = o.get("kit_label")
             # D15: per-object color identity source (first slot's material;
             # 'viewport' default when no material or pre-sync run)
             mats = [s.material for s in o.material_slots if s.material]
