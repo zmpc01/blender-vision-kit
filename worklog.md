@@ -3119,3 +3119,23 @@ Stage Summary:
 - Kit fixes this session: 12 (3 QA-wave, 5 R3/R4 friction, 2 infra, 2 example/docs) — all regression-green, visual claims eye-verified.
 - Remotes: GitHub + /home/sync + GitLab mirror at session-6 close; QA-lane R22 race resolved without force.
 - Next session: M6 implement D16 (first-session scope in DESIGN_D16 doc + HANDOFF), optional R5 polyhaven/import lane + t10 previz-package suite.
+
+---
+Task ID: 7 (session 7 principal)
+Agent: vision principal (GLM)
+Task: implement M6 — D16 semantic mesh labeling (label_objects, split_mesh incl. welded-geometry path, validator de-name-dependence, manifest field) + dogfood the imported-asset use case end-to-end + blind non-vision consumer test.
+
+Work Log:
+- Bootstrap: /home/sync repo.tar was STALE (mid-session-6 QA state) → fetched authoritative GitHub HEAD (722225f; QA lanes had closed #6–#10 past my b84ce5c) → reset → install.sh foreground (Blender 5.2.2, Cycles True).
+- Implemented scripts/semantic_lib.py: label_objects (all-or-nothing validation, charset law [A-Za-z0-9_-]+, KIT_ANNOT* reject, idempotent props, opt-in two-phase rename with whole-batch collision sim + _N suffixes, report-before-rename) + split_mesh (bmesh connected-components dry-run, loose-parts split, risk refusal w/ ack_risks) + region cut (analyze_region/split_region: world-box, faces-fully-inside, straddlers stay with source).
+- Wired ops into apply_patch.py (MUTATIONS + PARAM_DOCS + region modes + report printing); look.py manifest kit_label mandatory field; validate_scene.py exclusion set = kit_semantic prop OR legacy names (4 gate sites).
+- Fixed live: semantic_marked KeyError (plan rows), bmesh BMFace-after-free (indices), Vector(bound_box) prop-array, split_region pre-names capture.
+- Tests: tests/test_v5_labeling.py 58 checks ALL PASS (L1–L21: all-or-nothing, charset, props, idempotency, rename sim, kit_semantic write/remove, validator hazard regression, report artifacts, welded region cut, op surface). Full battery green (scope + v1 27 + v2 27 + v3 20 + v4 29 + v5 + t1–t6 + t8 8/8 + t9).
+- Dogfood (docs/USABILITY_D16_dogfood.md): fixture d16_interior_fixture.py (welded shell 1 component + props sheet 10 islands + lamp 2; all Mesh.NNN). First look caught fixture bug (cube size=2 double-size walls) — validator honest. Split: shell=1 (welded) → region cut pillar (6 faces, bbox exact); props 10; lamp 2; largest keeps source id. Closeups (barrel/cone/pillar) + dims/face-count agreement → label_objects rename:true 14 ids (table_leg_2..4 suffix law live) → re-look 14/14 kit_label → saved interior_labeled.blend.
+- Blind test (Task 10, general-purpose sub-agent, zero renders): manifest + docs only → grounded 4 table legs (snap_z bottom), seated table_top, ball (predicted keep_xy trap, move_to first), lamp_head; place_on place_on-auto-widen refused on inset legs → documented snap_z fallback (F17 filed). Audit: 18 pairs, 15 TOUCHING/3 CLEAR, 0 penetrating, goal contacts 0.0mm. Principal eyes-verified the assembled scene.
+- Docs: kb/semantic_labeling.md (region-cut + box-isolatability law), AGENTS.md D16 ops + 2 laws, PLAN M6 done + F17 + validator-v2 ideas, HANDOFF rewritten, SKILL.md session-7 distill.
+
+Stage Summary:
+- M6 CLOSED: D16 implemented + dogfooded; success criterion MET (blind sub-agent addressed 8 labeled objects, audit clean).
+- Commits this session: e800fc2 (core), d1039d1 (v5 suite+docs), c4d508e (region cut), 521328e (dogfood fixture), + wrap-up docs.
+- Open: F17 (place_on auto-widen density), validator v2 (shell containment pairs), R5 polyhaven REAL-asset lane.

@@ -61,6 +61,33 @@ mesh, evaluated geometry differs), shape keys, armature binding.
 Library-linked data is refused outright. Read the dry-run FIRST: a bad
 split wrecks the asset. `dry-run` runs anywhere — it never mutates.
 
+## WELDED geometry: the region cut (mode=split-region)
+
+Loose-parts split finds NOTHING on welded/continuous level geometry
+(floor+walls sharing verts — one component). The way out is the
+VISION-driven region cut: the principal looks at the render, boxes the
+feature they identified, and the kit cuts those faces out as a new
+object:
+
+```json
+{"op":"split_mesh","id":"Mesh.000","mode":"split-region",
+ "region":{"min":[1.15,3.75,-0.01],"max":[1.85,4.85,2.6]},
+ "new_id":"pillar"}
+```
+- Passing `region` with the default mode = REGION DRY-RUN (verts in
+  box, faces-to-cut, captured bbox — zero residue). Run it first.
+- Cut unit = faces FULLY inside the box; straddling faces stay with the
+  source (narrow the box to capture them). Report says exactly what
+  will move before anything mutates.
+- Preconditions identical to loose split (ack_risks on co-users etc.).
+- The cut object is labelable immediately: `label_objects
+  {"pillar": {...}}`.
+- Box-isolatability law: a welded feature is only box-cutable if its
+  footprint PROTRUDES from its host (engaged pillar: yes; lintel flush
+  with wall tops: no — the wall-top faces fall inside any lintel box).
+  On real imports, expect per-feature judgment; measure with the
+  dry-run before cutting.
+
 ## Gate-exclusion law (validator)
 
 A label containing `ceiling` / `sun` / `light` writes `kit_semantic`;

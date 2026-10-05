@@ -332,3 +332,41 @@ Key measured laws from session-5 (also in AGENTS.md):
   (docs/DESIGN_D16_semantic_labeling.md, amendments adopted: lowercase
   `kit_label` prop, idempotent two-phase rename, validator
   de-name-dependence, split_mesh preconditions). Implementation = M6.
+
+## Session-7 meta: semantic labeling of opaque imports (D16 shipped)
+
+- **The labeling loop is a kit surface, not a convention**: LOOK (manifest,
+  kit_label null) → SPLIT (loose parts if islands exist; WELDED geometry
+  needs the vision-driven `split-region` world-box cut) → NAME (principal's
+  eyes; closeups + dims + face-count agreement) → LABEL (label_objects,
+  report-before-rename) → LOOK verify (manifest JSON is the artifact) →
+  SAVE. A non-vision agent then works the labeled ids blind (proven:
+  assembled a table + seated props, audit 0.0mm).
+- **Prop laws**: `kit_label` is the durable identity — names may be
+  suffixed/disambiguated, props never change meaning. Every MESH manifest
+  row carries kit_label (null when unlabeled) so consumers can KEY on it.
+  Gate exclusions moved to the `kit_semantic` PROP (labels containing
+  ceiling/sun/light); names are fallback only — vision renames can no
+  longer strip validator coverage.
+- **Rename safety pattern (reusable)**: all-or-nothing validation, simulate
+  the whole-batch rename against scene occupancy BEFORE mutating, two-phase
+  (everything → guaranteed-fresh temps → finals), re-read to verify, report
+  JSON written BEFORE mutation as the crash-resume artifact. Blender's
+  silent `.001` auto-suffix is a lie in a patch context — pre-unique
+  instead.
+- **bmesh hygiene**: connected-components over vert/edge adjacency;
+  return INDICES not BMFace refs (refs die with bm.free()); edit-mode
+  selection via bmesh.from_edit_mesh + update_edit_mesh, then
+  bpy.ops.mesh.separate(type='SELECTED'); bound_box corners are prop
+  arrays — wrap Vector() before matrix multiply.
+- **Welded-import cutting law**: "faces fully inside the box" is the honest
+  cut unit (straddlers stay with the source — a straddler belongs to both
+  visual parts; handing it to either silently deforms one). A welded
+  feature is box-cutable only if its footprint PROTRUDES from its host.
+- **Fixture authoring**: primitive_cube_add defaults size=2 (scale-span
+  helpers MUST pass size=1 — the validator catches the 2× bug instantly);
+  coplanar-welded features are NOT box-isolatable; --closeup is
+  single-object per invocation.
+- **place_on auto-widen blind spot (F17, open)**: 12×12 grid sampling
+  misses small inset supports by 0.01m on large tops — the documented
+  snap_z(bottom) fallback is the consumer escape hatch.

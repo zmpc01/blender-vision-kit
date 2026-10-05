@@ -98,10 +98,25 @@ code-level finding (--frames BLOCKER) remains valid.
   semantically-labeled objects for non-vision consumers). Design +
   amendments adopted (kit_label lowercase, idempotent two-phase rename,
   validator de-name-dependence, split_mesh preconditions).
-- [ ] M6 (NEXT): implement D16 per docs/DESIGN_D16_semantic_labeling.md
-  first-session scope (label_objects op → manifest field → validator
-  de-name-dependence → split_mesh → dogfood import pass + blind
-  sub-agent address test)
+- [x] M6 D16 IMPLEMENTED + DOGFOOD (session 7, docs/USABILITY_D16_dogfood.md):
+  `label_objects` (kit_label/conf props, opt-in two-phase rename with
+  whole-batch collision sim, charset law, report-before-rename),
+  `split_mesh` (loose-parts dry-run/split + WELDED-geometry region cut
+  mode=split-region with vision-driven world-box), validator
+  de-name-dependence (kit_semantic prop; names = fallback only),
+  manifest kit_label mandatory field, kb/semantic_labeling.md +
+  AGENTS.md D16 ops. Tests: v5_labeling 58 checks ALL PASS, full battery
+  green. Dogfood: imported-interior fixture (welded shell + props
+  sheet) → LOOK→SPLIT→REGION-CUT→NAME→LABEL→LOOK→SAVE, 14/14 labeled;
+  SUCCESS CRITERION met (non-vision sub-agent assembled table + seated
+  ball + lamp head blind from manifest only, audit 0.0mm contacts).
+- [ ] F17 (K1 follow-up, measured in dogfood): place_on footprint
+  auto-widen grid (12×12) misses small inset supports by sampling
+  density — leg spans 0.01m outside sample columns. Fix idea: support-
+  size-adaptive grid density or mover-bottom-perimeter raycast.
+- [ ] Validator v2 idea (dogfood): room-shell AABB contains props → P0
+  intersection spam; skip pairs where one side is shell/room-like AND
+  the other's centroid is inside it (containment ≠ collision).
 - [ ] Candidate next: R5+ dog-food rounds (polyhaven import lane; a
   t10 export-package regression suite per R4 F10b lesson), crowd T3
   (upstream-gated), upstream PR for D11 install fallback
