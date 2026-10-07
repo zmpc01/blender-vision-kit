@@ -370,3 +370,25 @@ Key measured laws from session-5 (also in AGENTS.md):
 - **place_on auto-widen blind spot (F17, open)**: 12×12 grid sampling
   misses small inset supports by 0.01m on large tops — the documented
   snap_z(bottom) fallback is the consumer escape hatch.
+- **F17 CLOSED (grid refinement)**: place_on support sampling now
+  refines 12→48→192 cells until rays hit (cap 192, "footprint_grid_refined"
+  in the report); the snap_z fallback stays as the escape hatch. Edge
+  law from R6: even a refined grid fails when the placed object's
+  footprint overhangs the support bbox — center placements on the
+  support, ≥10cm from every edge.
+- **R6 real-level law (loft demo)**: huge imports need look.py's
+  flag-wireframe CAP (60; 12k annotation objects OOM a 4GB box) and a
+  look-lite .blend (strip packed images — workbench colors don't need
+  pixels). Survey 20m interiors with aimed camera→target shots + frustum
+  raycasts ("which object is that pixel"), never preset 5m offsets.
+- **Fused-face signature**: region dry-run with verts_in_region > 0 but
+  faces_to_cut = 0 at any box = floor/wall fused into wrapped faces →
+  mesh_prepare (triangulate) then re-dry-run; and consider that the
+  surface you want may live in a DIFFERENT object entirely (the real
+  floor was a separate full-extent plane; survey before cutting).
+- **Label at family granularity, verify per family**: 1155/1200 meshes
+  in ONE label_objects patch generated from the manifest; confidence
+  honest (high=render-verified, medium=name/bbox-derived); ~4% null is
+  correct. Blind agents DO catch principal label errors via manifest
+  consistency checks (the pendant-light catch) — ask them to report
+  spatial anomalies against the task description.

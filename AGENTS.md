@@ -311,9 +311,25 @@ state (the LOOK→NAME→LABEL→LOOK→SAVE loop; see `/kb/semantic_labeling.md
 - `split_mesh(id, mode)`: `dry-run` (default) = connected-components
   report, ZERO residue (part count, per-part bboxes, co-users, risks);
   `split` = separate by loose parts. REFUSES on co-user mesh data /
-  modifiers / shape keys / armature without `ack_risks:true`. Source
-  name lands on the LARGEST part; rest = `<id>_pNNN`. Re-look after
-  split — parts need their own vision pass (kit_label NOT propagated).
+  modifiers / shape keys / armature without `ack_risks:true`; source
+  name lands on the LARGEST part, rest = `<id>_pNNN`, re-look after
+  (kit_label NOT propagated to parts). WELDED level geometry (no loose
+  parts — typical interior imports): `mode:"dry-run"` with a
+  `region:{min:[x,y,z],max:[x,y,z]}` world box = REGION dry-run (faces
+  fully inside, captured bbox, zero residue); `mode:"split-region"` +
+  `new_id` cuts that region OUT as a new object ready for labeling.
+  Re-look after every cut.
+- `mesh_prepare(id, mode:"triangulate")`: pre-process for region cuts.
+  The fused-level pathology (measured on a real loft import): floor and
+  wall fused into wrapped faces — a dry-run then reports verts_in_region
+  > 0 but faces_to_cut = 0 (THE signature), and no box can ever capture
+  them. Triangulating n-gons makes the floor band cuttable. Run BEFORE
+  split_mesh when the dry-run shows that signature.
+- **LAW — huge imported scenes need annotation caps**: look.py caps red
+  validator flag wireframes at 60 (a 1200-mesh real level flagged ~1198
+  objects → 12k annotation objects OOMed a 4GB box and rendered as
+  unreadable red spaghetti; the cap is printed and the full flagged set
+  stays in look_manifest.json).
 - **LAW — gate exclusions are SEMANTIC**: an object whose label matches
   the ceiling/sun/light vocabulary gets the `kit_semantic` prop and
   validate_scene excludes it by PROP (floating/below-floor/penetration/

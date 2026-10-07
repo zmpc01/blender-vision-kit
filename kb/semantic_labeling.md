@@ -144,3 +144,88 @@ set `kit_semantic`, to keep the exclusion).
 `kit_semantic` (set/removed by the op; presence = gate exclusion).
 `KIT_*` uppercase remains RESERVED for disposable objects — cleanup
 sweeps hunt that prefix; never write props named `KIT_*`.
+
+## R6 — the playbook on a REAL stitched interior level (loft demo)
+
+The Blender Foundation "Loft" demo (download.blender.org/demo/cycles,
+CC demo file) is the first REAL level run through the full pipeline:
+6.5 x 20 x 6.7 m two-level apartment, 1200 mesh objects, 3.97M polys.
+Lane scripts `r6_loft_*.py`, state chain output/r6/loft_import →
+loft_look → loft_cut_arch → loft_labeled → loft_props → loft_compose →
+loft_final.blend. Everything below was measured, not assumed.
+
+### What a real level actually looks like
+- NOT one welded blob: 1200 SEPARATE vendor objects (kitchen.* x841,
+  Panel_* x145, beds, sofa modules...) at fine granularity — the R5
+  "vendor-node granularity" lesson holds. The welding is SELECTIVE:
+  the architectural shell `Cube` (floor band + walls + mezzanine slab +
+  ceiling in ONE 193-face mesh) and, per the manifest, the real walkable
+  floor `Cube.001` is its OWN full-extent zero-thickness plane. Never
+  assume where the floor lives — read it from the render + bbox.
+- Vendor quirks are the norm: 45 texture refs pointing at the AUTHOR's
+  disk (2010-era paths, 3ds-max "Map #..." names) + 9 missing addon
+  libraries. Honest normalization = detach broken refs, record, move on.
+
+### Huge-scene LOOK economics
+- look.py flag-wireframe CAP at 60 (was: ~1198 flagged x 12 boxes =
+  12k annotation objects → OOM + red spaghetti). Full flagged set stays
+  in the manifest JSON.
+- Packed textures are dead weight for workbench LOOK: strip images +
+  orphans_purge into a look-lite .blend (561MB → 99MB) — materials keep
+  basecolor identity via the D15 sync.
+- Preset 5m angle offsets land INSIDE walls on 20m interiors. The
+  region-identification pass = aimed survey shots (camera→target pairs
+  through vc.render_angle custom) + frustum RAYCASTS from a survey
+  camera to answer "which object is that pixel" without more renders.
+
+### Region cuts on the welded shell (the flagship)
+4 cuts, each dry-run → split-region → render-verified:
+floor band (5 faces), ceiling (18), mezzanine slab (42), stairs (14 —
+a 68-degree space-saver run hiding inside the shell, found by frustum
+raycast, confirmed by pre/post cut renders). Cut order matters when
+boxes overlap: cut the unambiguous slabs first, the ambiguous one last.
+
+### mesh_prepare — the fused-face pathology and its signature
+Symptom: region dry-run reports verts_in_region > 0 but faces_to_cut
+= 0 no matter how the box is drawn. Cause: floor+wall fused into
+wrapped faces (verts shared across a 90-degree fold) — "faces fully
+inside" is unsatisfiable. Fix: `mesh_prepare(id, mode:"triangulate")`
+(n-gons → tris; 19 n-gons on the loft shell made the front floor band
+cuttable... and revealed the front floor was never IN the shell: the
+real floor was the separate Cube.001 plane all along). Lesson: when a
+cut refuses, ASK whether the geometry is fused or simply elsewhere —
+one more survey shot is cheaper than a wrong cut.
+
+### Labeling 1200 objects (schema at scale)
+One label_objects patch, 1155 rows, generated programmatically from
+the manifest: architecture from the cuts (floor/wall/ceiling/mezzanine/
+stairs) + name-family batches verified per FAMILY by closeup
+(kitchen_unit x841, partition_panel x145, bed x12, sofa_module,
+shelf_unit, rug, table, plant, deco x63...) + geometry-derived labels
+(exterior_window = tall glazing on the -x wall, railing = the z 2.9-3.9
+band). Confidence is HONEST: high = render-verified, medium =
+name-pattern/bbox-derived. ~4% left null (truly unresolved) — an
+honest null beats a wrong label; the blind handoff proves it.
+
+### The handoff catches YOUR label errors (measured)
+The R6 blind agent, reasoning ONLY from the manifest, flagged that the
+`lounge_chair`/`floor_lamp` labels sat at y≈0, z 2.7-5.1 — nowhere near
+the mezzanine chair the task described. Closeup confirmed: that cluster
+is a pendant light (three glass globes on cables); the labels were
+wrong, and were corrected (pendant_light x23, floor_lamp → the real arc
+lamp, chair x2 = the dining chairs the blind agent had flagged as
+"unlabeled pedestals"). A blind agent cannot see, but it CAN do
+consistency checks the principal's eyes skip — encourage it to report
+spatial anomalies against the task description.
+
+### Blind stress test on the level (protocol v2, all green)
+T1 place a book on the upstairs bed: the bed is 12 stacked shells
+(differing tops 3.415..3.82) — two honest failed attempts (support
+occluded by interposed shells; corner-first rest on a 13.6-deg slope),
+resolved by topmost-surface law + align_to_surface, audit CLEAR 0.27mm.
+T2 cushion on the mezzanine: TOUCHING, 2.36m from the standing actor.
+T3 BAIT "place a mug on the dining table": correctly WITHHELD — the
+manifest shows exactly one table-labeled object at y≈2 (not the dining
+zone y≈8-12) and the real dining chairs UNLABELED; the agent refused to
+guess identity (vision-required) and returned the zone evidence instead.
+manifest_diff: 2 findings (the two additions), 1209 rows unchanged.

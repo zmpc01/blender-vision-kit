@@ -147,3 +147,39 @@ VK-9: agent-kit twin (validate_scene.py @26c78eb) verified live via this issue's
 - Ask: dangling-symlink detect-and-heal guard (rm dangling + mkdir -p) before the extraction loop, or stage-extract to mktemp -d then cp -a; keep :95 teacher line reachable (|| teacher-error wrapper).
 - Narrow trigger but natural workaround (re-run install) re-downloads a duplicate 1.2 GB Blender per sibling kit; QA SOP sibling-symlink law corrected on our side in parallel.
 - Evidence: belram448/freshbook-clone docs/qa-blender-kit/evidence/qa-r069/ (vk_inst.txt, vk_inst2.txt rc=2) — private repo, belram448 PAT required.
+
+## SESSION 9 — R6 CLOSE (real level: cut → label → compose → blind handoff)
+State: GitHub HEAD = R6 wrap commit (verify with git log -1). Sandbox
+wiped between sessions; bootstrap = clone + `./install.sh` foreground
+(Blender 5.2.2, Cycles OK). The asset re-downloads via
+`scripts/r6_loft_fetch.sh` into /home/z/vision-work/polyhaven_cache/loft/.
+
+What exists now (state chain output/r6/, all reproducible):
+loft_import → loft_look (lite) → loft_cut_arch (4 shell cuts) →
+loft_labeled (1155/1200 kit_label) → loft_props (4 placed) →
+loft_compose (2 UAL actors: Driver walking, Girl on mezzanine) →
+loft_blind_work (agent additions) → loft_final (label fixes).
+Manifests: handoff/ (pre-work), blind_work_manifest/ (post-work).
+
+Verified end state (my eyes + tools):
+- region cuts render-verified (stairs pre/post pair in look_cuts/)
+- placements audit-clean (book TOUCHING, ball 0.0mm, lantern TOUCHING,
+  mug CLEAR 5.95mm on the recessed ottoman top)
+- blind agent: T1/T2 DONE audit-clean; T3 bait WITHHELD with zone
+  evidence; manifest_diff independently re-run: 2 findings (additions
+  only), 1209 unchanged
+- pendant_light/arc-lamp/chair label corrections applied after the
+  agent's spatial-anomaly report (the handoff caught MY errors)
+
+Read FIRST for context: docs/USABILITY_R6.md (full record incl. limits
+hit: OOM ×2, annotation explosion, honest validator noise on real
+levels), kb/semantic_labeling.md R6 section, AGENTS.md D16 section
+(mesh_prepare + FLAG_CAP law). Friction queue: F20/F21/F22 + VK-9/VK-10.
+Blind-agent lessons live in .agents/SKILL.md (center-placement law,
+fused-face signature, family-granularity labeling).
+
+Delegation protocol for the next session: unchanged (AGENTS.md
+EXECUTION CONTRACT) — vision-required: cut boxes, label assignment,
+verdicts, delegate verification; blind-safe: placement/measurement ops
+from the manifest; STOP-AND-FLAG anything underivable. The R6 run is
+the reference execution of that contract on a real interior.

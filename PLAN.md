@@ -170,3 +170,29 @@ code-level finding (--frames BLOCKER) remains valid.
 3. Every new tool gets an in-Blender regression test in tests/ (suite convention: ALL PASS marker).
 4. Vision claims about mm-class geometry require gate numbers (L-law discipline applies to the meta-agent too).
 5. tools/ is a symlink to the shared provisioned toolchain — beware git rewrites it (scope-check warns).
+
+## Session 9 — R6 (real stitched-interior level) SHIPPED
+- Real level: Blender loft demo (561MB, 1200 meshes, 3.97M polys) —
+  polyhaven has NO room-scale interiors (verified: 521 models surveyed).
+- Region-cut playbook on the welded shell: floor/ceiling/mezzanine/
+  stairs cuts, dry-run → split-region → render-verified; stairs (a 68°
+  space-saver run) found by frustum raycast, extracted from the shell.
+- NEW op `mesh_prepare` (triangulate) for the fused-face pathology
+  (signature: verts_in_region>0, faces_to_cut=0 at any box).
+- look.py FLAG_CAP=60 (12k annotation objects OOMed 4GB box) + look-lite
+  .blend lane (strip packed images).
+- 1155/1200 meshes kit_labeled (one programmatic patch, honest conf).
+- Compose: 4 place_on on labeled supports + 2 rigged UAL actors (walk +
+  mezzanine). Blind stress test: T1/T2 done (audit-clean), T3 bait
+  withheld with evidence, manifest_diff 2/1209 — AND the handoff caught
+  two wrong principal labels (pendant light, arc lamp) → fixed + chair x2.
+- Full R6 record: docs/USABILITY_R6.md. New friction: F20 (place_on
+  occluded-support hint), F21 (audit room-shell gap numbers), F22
+  (level-aware validator thresholds).
+
+### Queue (next)
+1. R7: walking actor NAVIGATES the level (stairs between floors) — the
+   space-saver run at 68° is the gait challenge; OR schema-reuse test on
+   a second interior asset.
+2. F20/F21/F22 fixes. 3. t10 export suite. 4. VK-9 re-vendor + VK-10
+   example hunk port (QA asks). 5. GitLab mirror catch-up (PAT still 401).

@@ -3165,3 +3165,23 @@ Stage Summary:
 - F17 closed; validator v2 shipped; manifest is now geometric ground truth (world_bbox).
 - Commits this session: c6c49ff, ae6d7e7, 29f6036, e94a6bf, b6b31fc, 60184c2, b8ca792, 5ee3a92, 387a8ef (+ wrap).
 - Open: F18 (origin warning doc — DONE in AGENTS.md; recenter-origin tooling idea), F19 (split part-count warn gate), F20 (dispatch prompt wrapper), R6 welded-level dogfood, t10, upstream D11 PR.
+
+---
+Task ID: 1-7 (session 9, single-agent round)
+Agent: Super Z (vision principal)
+Task: R6 — download a real stitched interior level, run the cut/label workflow to refinement, compose it usable (placement + humanoid + camera), blind-handoff stress test, wrap.
+
+Work Log:
+- Bootstrap: clone (HEAD 132e8f4, QA receipts only), Blender 5.2.2 foreground install.
+- Asset survey: polyhaven 521 models = furniture only; picked Blender loft demo (561MB) from the demo CDN; fetched + integrity-checked.
+- Import lane: r6_loft_import.py (2 bpy gotchas fixed); 45 broken texture refs detached; look-lite prep (561→99MB).
+- LOOK limits hit + fixed: annotation explosion (1198 flagged × 12 boxes) → look.py FLAG_CAP=60; preset angles inside walls → aimed survey shots ×9 + frustum raycasts.
+- Region cuts on shell Cube: floor/ceiling/mezzanine/stairs (dry-run → split-region → render-verified; 68° space-saver stairs found via raycast).
+- NEW op mesh_prepare (triangulate) for the fused-face signature (verts>0, faces 0).
+- Labeling: 1155/1200 via one programmatic patch (18 label classes, honest confidence).
+- Compose: 4 place_on (one F17 refine + clearance recovery) + 2 UAL actors (Driver walk, Girl mezzanine); 3 verification renders.
+- Blind stress test: T1 done (2 honest failures → topmost law + align_to_surface, audit CLEAR 0.27mm), T2 done (TOUCHING; flagged my pendant-light mislabel), T3 bait WITHHELD with evidence; manifest_diff 2/1209 verified independently; label corrections applied (pendant_light ×23, floor_lamp, chair ×2).
+- Regression: scope, v1, v5, v6, f17 all green. Docs: USABILITY_R6.md, kb, AGENTS.md, PLAN, HANDOFF, SKILL.
+
+Stage Summary:
+- The user's mission executed end-to-end on a REAL interior level: downloaded → cut → labeled (96%) → placed → populated → handed to a blind agent → verified by diff + eyes. Commits: 3ef38a5 (lane), 05f36f1 (compose), + docs/wrap. Open: F20-F22, VK-9/VK-10, R7 nav-across-stairs.
