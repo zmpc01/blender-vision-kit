@@ -389,6 +389,49 @@ def split_region(obj, region, new_id=None, ack_risks=False) -> dict:
     }
 
 
+def prepare_mesh(obj, mode="triangulate") -> dict:
+    """R6: pre-process WELDED level imports so region cuts become possible.
+
+    The classic pathology (measured on the loft demo): floor and wall are
+    FUSED into single wrapped n-gons — verts of the floor plane belong to
+    faces that climb the walls. No region box can capture such a face
+    ("faces fully inside" is unsatisfiable), so the floor stays welded to
+    the shell no matter how the box is drawn. mode='triangulate' converts
+    n-gons to triangles (quads kept: they rarely fuse across planes and
+    tri-noise hurts readability), making the floor band cuttable. Idempotent
+    for already-triangulated meshes."""
+    if obj.type != "MESH":
+        raise RuntimeError(f"mesh_prepare: '{obj.name}' is {obj.type}, "
+                           f"not MESH")
+    if mode != "triangulate":
+        raise RuntimeError(f"mesh_prepare: mode must be 'triangulate', "
+                           f"got {mode!r}")
+    risks = _split_risks(obj)
+    fatal = [r for r in risks if r.startswith("library-linked")]
+    if fatal:
+        raise RuntimeError(f"mesh_prepare: REFUSED — {fatal[0]}")
+    me = obj.data
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    ngons = [f for f in bm.faces if len(f.verts) > 4]
+    n_before = len(bm.faces)
+    if ngons:
+        bmesh.ops.triangulate(bm, faces=ngons)
+        bm.to_mesh(me)
+        me.update()
+    bm.free()
+    return {
+        "tool": "mesh_prepare", "mode": mode, "ok": True,
+        "source": obj.name,
+        "faces_before": n_before,
+        "faces_after": len(me.polygons),
+        "ngons_triangulated": len(ngons),
+        "warnings": [f"ack: {r}" for r in risks] if risks else [],
+        "next": (f"split_mesh {{'{obj.name}', mode=dry-run, region=...}} — "
+                 f"fused faces are now cuttable"),
+    }
+
+
 def _components(bm):
     """Connected components of a bmesh (verts joined by edges; loose
     verts count as singleton components). Returns list of vert-sets."""

@@ -218,6 +218,20 @@ def main():
             elif "objects" in issue:
                 flagged.extend(issue["objects"])
     flagged = sorted(set(flagged))
+    # R6 (huge-scene robustness, measured on the 1200-mesh loft import):
+    # ~1000 flagged objects × 12 wireframe boxes each = 12k+ annotation
+    # objects — depsgraph re-evaluation per angle OOMs a 4GB box AND the
+    # render degrades to unreadable red spaghetti. Cap the outlines to the
+    # most significant (issue order: P0 first, then largest overlap);
+    # the full flagged set stays in look_manifest.json.
+    FLAG_CAP = 60
+    flag_note = ""
+    if len(flagged) > FLAG_CAP:
+        sev0 = {i.get("object") for i in report["issues"]
+                if i["severity"] == "P0" and "object" in i}
+        ordered = sorted(flagged, key=lambda n: n not in sev0)
+        flagged = ordered[:FLAG_CAP]
+        flag_note = f" (capped {FLAG_CAP} of {len(ordered)} flagged — full set in manifest)"
 
     # ---- output location -------------------------------------------------
     if args.output:
@@ -398,6 +412,7 @@ def main():
             print(f"[look]   ... {len(man) - 24} more (manifest JSON: "
                   f"{os.path.join(outdir, 'look_manifest.json')})")
         print(f"[look] annotations: {'grid+gnomon+labels(top-%d)+flags(%s)' % (args.labels, len(flagged)) if annotated else 'OFF'}"
+              f"{flag_note}"
               "  [render-time only, never saved]")
         if annotated and label_ids:
             lbl_map = [{"index": i, "id": name} for name, i in label_ids]

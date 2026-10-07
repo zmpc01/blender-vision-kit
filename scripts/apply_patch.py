@@ -960,6 +960,23 @@ def _apply_split_mesh(obj, params):
             print(f"[apply_patch]   WARNING {w}")
 
 
+def _apply_mesh_prepare(obj, params):
+    """R6: pre-welded-import geometry for region cuts (triangulate fused
+    n-gons). Run BEFORE split_mesh when a dry-run reports verts_in_region
+    but 0 faces_to_cut — the fused-face signature."""
+    import semantic_lib as _SL
+    rep = _SL.prepare_mesh(obj, mode=params.get("mode", "triangulate"))
+    out = params.get("output")
+    if out:
+        d = os.path.dirname(os.path.abspath(out))
+        os.makedirs(d, exist_ok=True)
+        with open(out, "w") as f:
+            json.dump(rep, f, indent=2)
+    print(f"[apply_patch] mesh_prepare '{obj.name}': "
+          f"{rep['ngons_triangulated']} n-gons triangulated "
+          f"({rep['faces_before']} -> {rep['faces_after']} faces)")
+
+
 MUTATIONS = {
     "set_location":             (_apply_set_location, True),
     "move_to":                  (_apply_move_to, True),
@@ -999,6 +1016,7 @@ MUTATIONS = {
     "add_empty":                (_apply_add_empty, False),
     "label_objects":            (_apply_label_objects, False),
     "split_mesh":               (_apply_split_mesh, True),
+    "mesh_prepare":             (_apply_mesh_prepare, True),
 }
 
 # wave-1 friction #2/#11: param schemas were only discoverable by
@@ -1043,6 +1061,7 @@ PARAM_DOCS = {
     "add_empty":          "id, location, empty_type?, size?, rotation_deg?",
     "label_objects":      "labels:{id: label|{label,confidence}}, rename?(bool, default false — additive kit_label is the v1 identity), on_collision?(suffix|fail), output?(report json; default output/labels_report.json)",
     "split_mesh":         "id, mode?(dry-run|split|split-region, default dry-run; region param implies region dry-run), region?({min:[x,y,z],max:[x,y,z]} world box — vision-driven cut for WELDED geometry), new_id?(region-cut name), ack_risks?(bool — required when co-users/modifiers/shape-keys/armature present), output?(report json)",
+    "mesh_prepare":       "id, mode?(triangulate — the only mode; pre-welded-import n-gon triangulation so region cuts can capture fused floor/wall faces), output?(report json)",
 }
 
 
