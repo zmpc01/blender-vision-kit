@@ -142,7 +142,10 @@ def build_commuter_mesh(name, height=BRIDGE_HEIGHT_M, mat_body=None):
         dx, dy, dz = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])
         ln = math.sqrt(dx * dx + dy * dy + dz * dz)
         rot_x = math.acos(max(-1.0, min(1.0, dz / ln)))       # from +Z
-        rot_z = math.atan2(dy, dx) - math.pi / 2              # from +X
+        # CR-TD2 P2: the Rz tilt maps (0,-1,0) to -(dx,dy)/|dxy| -- the
+        # old -pi/2 MIRRORED the horizontal lean (both arms leaned
+        # inward, <=3.6 deg). +pi/2 lands the axis on p0->p1 exactly.
+        rot_z = math.atan2(dy, dx) + math.pi / 2              # from +X
         arm = _prim("cyl", (0.065 * s, ln), mid,
                     rot=(rot_x, 0.0, rot_z), verts=10)
         parts.append(arm)

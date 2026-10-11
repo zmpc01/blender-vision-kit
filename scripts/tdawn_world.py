@@ -180,23 +180,34 @@ def build_world(scene):
     gate["tun_top"] = _box("TD.GateTunnelTop", 6.80, 0.95, 0.18,
                            (0.0, -0.975, 3.51), mats["gate_dark"])
     gate["tun_floor"] = _box("TD.GateTunnelFloor", 6.74, 1.12, 0.06,
-                             (0.0, -0.81, 0.05), mats["gate_dark"])
-    gate["throat"] = _box("TD.GateThroat", 6.74, 0.08, 3.60,
-                          (0.0, -1.41, 1.80), mats["throat"])
+                             (0.0, -0.80, 0.05), mats["gate_dark"])
+    gate["throat"] = _box("TD.GateThroat", 6.20, 0.08, 3.20,
+                          (0.0, -1.41, 1.60), mats["throat"])
     # seal doors: two panels sliding from the jambs (S9 animation keys
     # them across the opening f730-780); the leading edges carry the
     # emissive TD.SealEdge strips so the narrowing slit stays HOT and
-    # the dive reads against it (parented: they ride the door keys)
+    # the dive reads against it.
+    # CR-TD2 P0 fix: author the strips AT THE CLOSED-SEAM world x
+    # (∓0.035) and parent with matrix_parent_inverse = door.world⁻¹
+    # while the doors still sit CLOSED (the parking loop runs after) —
+    # a raw .parent reinterprets the child basis in the door's SCALED
+    # space (scale 3.4,0.22,3.6) and the strips became 13 m glowing
+    # needles sweeping OUTWARD. The M(t)·M(t0)⁻¹ relative motion
+    # cancels the door scale, so the strips ride the inner edge
+    # (parked ∓3.435 → f750 ∓2.075 → closed ∓0.035) undistorted.
     gate["door_l"] = _box("TD.GateDoorL", gw, 0.22, gh,
                           (-gw / 2, 0.0, gh / 2), mats["gate_dark"])
     gate["door_r"] = _box("TD.GateDoorR", gw, 0.22, gh,
                           (gw / 2, 0.0, gh / 2), mats["gate_dark"])
     edge_l = _box("TD.GateSealEdgeL", 0.07, 0.20, gh,
-                  (gw / 2 - 0.035, 0.0, gh / 2), mats["seal_edge"])
+                  (-0.035, 0.0, gh / 2), mats["seal_edge"])
     edge_r = _box("TD.GateSealEdgeR", 0.07, 0.20, gh,
-                  (-gw / 2 + 0.035, 0.0, gh / 2), mats["seal_edge"])
-    edge_l.parent = gate["door_l"]
-    edge_r.parent = gate["door_r"]
+                  (0.035, 0.0, gh / 2), mats["seal_edge"])
+    bpy.context.view_layer.update()      # L19: fresh matrix_world
+    for edge, door in ((edge_l, gate["door_l"]),
+                       (edge_r, gate["door_r"])):
+        edge.parent = door
+        edge.matrix_parent_inverse = door.matrix_world.inverted()
     gate["seal_edges"] = (edge_l, edge_r)
     # doors START open (parked in the jambs' pocket; the parked slabs
     # protrude as free-standing wings -- ACCEPTED set dressing, the

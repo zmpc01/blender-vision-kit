@@ -90,8 +90,8 @@ CAMS_V3 = [
      (0.0, 1.2, 1.35), False, 0.018),
     ("CAM_S7",  (-9.2, 9.8, 2.6), (-9.2, 9.8, 2.6), 35,
      (0.0, 5.2, 1.15), False, 0.034),
-    ("CAM_S8",  (3.4, 5.6, 2.35), (3.4, 5.6, 2.35), 38,
-     (0.3, 1.2, 1.15), False, 0.012),
+    ("CAM_S8",  (-4.5, 4.0, 2.5), (-4.5, 4.0, 2.5), 32,
+     (0.7, 1.1, 1.2), False, 0.012),
     ("CAM_S9",  (0.4, -7.2, 3.4), (0.4, -7.2, 3.4), 24,
      (0.0, 0.5, 1.3), False, 0.022),
     ("CAM_S10", (-8.0, -4.0, 3.1), (-8.0, -4.0, 3.1), 30,
@@ -255,8 +255,10 @@ def _title_card(scene):
     not export to glTF) -- the stills are authoritative for the
     sting."""
     from tdawn_actors import make_material
-    size = 0.55                    # 13 chars * ~0.55 em ~ 3.9 m wide =
-                                   # 63% of CAM_S12's frame at 6.1 m
+    # 0.40: the Bfont advance is ~0.91 em/char (measured in probe-1:
+    # 0.55 gave a 6.5 m line that clipped "TE" off CAM_S12's 6.3 m
+    # frame) -- 0.40 -> ~4.7 m = 75% of frame width
+    size = 0.40
     tx, ty, tz = 2.9, 11.4, 3.1
     mat = make_material("TD.TitleCard", (1.0, 0.88, 0.70), 0.4)
     crv = bpy.data.curves.new("TD.TitleCard", type="FONT")
@@ -268,10 +270,10 @@ def _title_card(scene):
     ob = bpy.data.objects.new("TD.TitleCard", crv)
     ob.location = (tx, ty, tz)
     scene.collection.objects.link(ob)
-    # face CAM_S12 (its dolly END pose -- the title still frame):
-    cam = bpy.data.objects.get("CAM_S12")
-    cx, cy = (7.4, 15.5) if cam is None else (
-        cam.location.x, cam.location.y)
+    # face CAM_S12's dolly END pose (the still frame). CR-TD2 P2: a
+    # live lookup reads build-time loc0 (8.0,18.0) — the dolly keys
+    # don't exist yet — and mis-aims the card ~9-10°; pin the end pose.
+    cx, cy = 7.4, 15.5
     nx, ny = cx - tx, cy - ty
     # rx=90 maps the text normal (+Z) to -Y; rz then aims it at the
     # cam: Rz*(0,-1,0) = (sin rz, -cos rz) = n/|n|  =>  rz = atan2(nx,-ny)
@@ -485,9 +487,12 @@ def _kf_set_pieces(ctx):
               (900, 1.1), (1009, 0.7), (1080, 0.7)])
 
     # departure board rows: TWO alternating amber flickers (A/B) so
-    # the shimmer is not a uniform strobe; both die at the surge
+    # the shimmer is not a uniform strobe; both die at the surge.
+    # CR-TD2 P1: the range step is 7, so phase 3 never crossed a block
+    # boundary ((f+3)//7 == f//7 for every key) — the A/B sets were
+    # IDENTICAL. Phase 7 = exactly one block: always anti-phase.
     f_a, f_b, die = _board_flick
-    for nm, phase in (("TD.BoardRowA", 0), ("TD.BoardRowB", 3)):
+    for nm, phase in (("TD.BoardRowA", 0), ("TD.BoardRowB", 7)):
         keys = [(f, 1.7 if ((f + phase) // 7) % 3 else 0.55)
                 for f in range(f_a, f_b, 7)]
         _em_keys(bpy.data.materials.get(nm),
