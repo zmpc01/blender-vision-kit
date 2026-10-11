@@ -78,13 +78,13 @@ SHOTS_V3 = [
 CAMS_V3 = [
     ("CAM_S1",  (7.5, -6.0, 7.6), (6.0, -4.2, 7.0), 24,
      (0.0, 12.0, 1.2), False, 0.0),
-    ("CAM_S2",  (3.2, 12.0, 2.6), (3.2, 12.0, 2.6), 38,
-     (-0.5, 30.8, 5.4), False, 0.012),
+    ("CAM_S2",  (3.2, 20.0, 3.0), (3.2, 20.0, 3.0), 38,
+     (-0.3, 30.8, 5.4), False, 0.012),
     ("CAM_S3",  (0.0, -5.5, 8.4), (0.0, -4.8, 8.0), 28,
      (0.0, 15.0, 1.3), False, 0.0),
     ("CAM_S4",  (-2.5, 29.5, 2.6), (-2.5, 29.5, 2.6), 34,
      (1.5, 20.0, 1.0), False, 0.02),
-    ("CAM_S5",  (9.8, 16.5, 1.8), (9.8, 16.5, 1.8), 34,
+    ("CAM_S5",  (-9.8, 16.5, 1.8), (-9.8, 16.5, 1.8), 34,
      (1.2, 18.0, 1.2), False, 0.025),
     ("CAM_S6",  (-5.2, 7.0, 2.6), (-5.2, 7.0, 2.6), 45,
      (0.0, 1.2, 1.35), False, 0.018),
@@ -92,8 +92,8 @@ CAMS_V3 = [
      (0.0, 5.2, 1.15), False, 0.034),
     ("CAM_S8",  (-4.5, 4.0, 2.5), (-4.5, 4.0, 2.5), 32,
      (0.7, 1.1, 1.2), False, 0.012),
-    ("CAM_S9",  (0.4, 7.0, 3.0), (0.4, 7.0, 3.0), 35,
-     (0.0, 0.6, 1.4), False, 0.022),
+    ("CAM_S9",  (1.6, 7.0, 3.0), (1.6, 7.0, 3.0), 35,
+     (0.2, 0.6, 1.3), False, 0.022),
     ("CAM_S10", (-8.0, -4.0, 3.1), (-8.0, -4.0, 3.1), 30,
      (0.5, 2.0, 1.6), False, 0.0),
     ("CAM_S11", (2.0, 10.0, 2.2), (6.0, 2.0, 9.0), 30,
@@ -258,8 +258,8 @@ def _title_card(scene):
     # 0.40: the Bfont advance is ~0.91 em/char (measured in probe-1:
     # 0.55 gave a 6.5 m line that clipped "TE" off CAM_S12's 6.3 m
     # frame) -- 0.40 -> ~4.7 m = 75% of frame width
-    size = 0.40
-    tx, ty, tz = 2.9, 11.4, 3.1
+    size = 0.34
+    tx, ty, tz = 3.2, 11.4, 3.1
     mat = make_material("TD.TitleCard", (1.0, 0.88, 0.70), 0.4)
     crv = bpy.data.curves.new("TD.TitleCard", type="FONT")
     crv.body = "TERMINAL DAWN"
@@ -501,15 +501,15 @@ def _kf_set_pieces(ctx):
     # IDENTICAL. Phase 7 = exactly one block: always anti-phase.
     f_a, f_b, die = _board_flick
     for nm, phase in (("TD.BoardRowA", 0), ("TD.BoardRowB", 7)):
-        keys = [(f, 1.7 if ((f + phase) // 7) % 3 else 0.55)
+        keys = [(f, 2.1 if ((f + phase) // 7) % 3 else 0.35)
                 for f in range(f_a, f_b, 7)]
         _em_keys(bpy.data.materials.get(nm),
                  keys + [(die, 0.0), (1080, 0.0)])
 
     # the throat glow (the tunnel's back wall): rises with the seal
     _em_keys(bpy.data.materials.get("TD.ThroatGlow"),
-             [(1, 0.55), (625, 0.75), (_seal_f0, 0.9), (_seal_f1, 0.95),
-              (912, 0.6), (1009, 0.45), (1080, 0.45)])
+             [(1, 0.35), (625, 0.5), (_seal_f0, 0.7), (_seal_f1, 0.8),
+              (912, 0.5), (1009, 0.4), (1080, 0.4)])
 
     # gate surround: capped at the AgX warm law 0.95 (the old 1.4 key
     # white-clipped the jambs -- the S6 projection-screen read)

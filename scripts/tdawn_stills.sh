@@ -17,7 +17,7 @@ for SID in S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12; do
   ./scripts/blrun.sh --background --factory-startup \
     --python scripts/scene_terminal_dawn.py -- \
     --output output/tdawn/stillwork --engine eevee --w 640 --h 360 \
-    --still $F --samples 32 > /tmp/still_$SID.log 2>&1
+    --still $F --samples ${SAMPLES:-32} > /tmp/still_$SID.log 2>&1
   rc=$?
   if [ $rc -ne 0 ] || [ ! -s output/tdawn/stillwork/still_$(printf %05d $F).png ]; then
     echo "[stills] $SID FAILED rc=$rc (see /tmp/still_$SID.log)"; continue

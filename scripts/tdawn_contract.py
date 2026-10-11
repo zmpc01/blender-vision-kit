@@ -51,13 +51,13 @@ SPAWN_ZONES_V5 = [
 # S10 moved; S5/S7/S10 became STATIC pans so the r=1.3 circle covers
 # the whole shot -- a dolly exits its own circle, review).
 CAM_KEEPOUTS_V3 = [
-    ("CAM_S2", 3.2, 12.0, 3.5, 7.0),
+    ("CAM_S2", 3.2, 20.0, 3.5, 7.0),
     ("CAM_S4", -2.5, 29.5, 11.0, 14.5),
-    ("CAM_S5", 9.8, 16.5, 14.5, 18.5),
+    ("CAM_S5", -9.8, 16.5, 14.5, 18.5),
     ("CAM_S6", -5.2, 7.0, 18.5, 22.0),
     ("CAM_S7", -9.2, 9.8, 22.0, 26.0),
     ("CAM_S8", -4.5, 4.0, 26.0, 30.0),
-    ("CAM_S9", 0.4, 7.0, 30.0, 34.0),
+    ("CAM_S9", 1.6, 7.0, 30.0, 34.0),
     ("CAM_S10", -8.0, -4.0, 34.0, 38.0),
 ]
 

@@ -297,8 +297,8 @@ def build_world(scene):
                  (0.0, HALL_Y1 - 1.2, 5.6), mats["board"])
     strips = []
     for i in range(4):
-        strips.append(_box(f"TD.BoardRow{i + 1}", 5.6, 0.06, 0.20,
-                           (0.0, HALL_Y1 - 1.08, 6.35 - i * 0.5),
+        strips.append(_box(f"TD.BoardRow{i + 1}", 5.6, 0.06, 0.36,
+                           (0.0, HALL_Y1 - 1.08, 6.30 - i * 0.5),
                            mats["board_row_a" if i % 2 == 0
                                 else "board_row_b"]))
     parts["board"] = board
@@ -323,7 +323,7 @@ def build_world(scene):
     # 2000 W -- the old 3000 W co-owned the S6 white-out with the
     # surround emission)
     gate_light = bpy.data.lights.new("TD.GateLight", type="AREA")
-    gate_light.energy = 2000.0
+    gate_light.energy = 1100.0
     gate_light.size = 5.0
     gate_light.color = (1.0, 0.80, 0.58)
     gate_lo = bpy.data.objects.new("TD.GateLight", gate_light)
