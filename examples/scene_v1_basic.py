@@ -118,7 +118,11 @@ def animate(ctx, *, start_frame=1, n_frames=24):
                 kp.interpolation = 'BEZIER'
                 kp.easing = 'EASE_OUT'
 
-    # Sphere drifts left
+    # Sphere drifts left (VK-10 port, agent-kit hunk: the cube block
+    # above leaves the frame at end_frame — without an explicit
+    # frame_set(start) here BOTH sphere keys collapse onto end_frame
+    # and x reads -2.0 at every frame)
+    scene.frame_set(start_frame)
     sphere.keyframe_insert("location", index=0)
     scene.frame_set(end_frame)
     sphere.location.x = -2.0
