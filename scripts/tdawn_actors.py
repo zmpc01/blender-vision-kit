@@ -115,7 +115,7 @@ def build_commuter_mesh(name, height=BRIDGE_HEIGHT_M, mat_body=None):
     Proportions (scaled by height/1.75):
       torso cylinder r 0.24 z 0.80..1.35 + hip cylinder r 0.20 z 0.42
       + leg block + head sphere r 0.145 c z 1.53
-      arms: r 0.065 cylinders shoulder->hand, angled forward-down
+      arms: r 0.065 cylinders shoulder->hand, constant-y walking carry
     """
     s = height / 1.75
     parts = [
@@ -124,15 +124,20 @@ def build_commuter_mesh(name, height=BRIDGE_HEIGHT_M, mat_body=None):
         _prim("cyl", (0.165 * s, 0.42 * s), (0.0, 0.0, 0.22 * s)),
         _prim("cyl", (0.24 * s, 0.58 * s), (0.0, 0.0, 1.06 * s)),   # torso
         _prim("cyl", (0.20 * s, 0.42 * s), (0.0, 0.0, 0.60 * s)),   # hips
-        _prim("sph", 0.235 * s, (0.0, 0.0, 1.36 * s), verts=14),    # shoulders
+        _prim("sph", 0.205 * s, (0.0, 0.0, 1.345 * s), verts=14),   # shoulders
         _prim("sph", 0.148 * s, (0.0, 0.01 * s, 1.53 * s), verts=14),  # head
     ]
     for sx in (-1.0, 1.0):
-        # arm: shoulder (x .27, z 1.30) -> hand (x .28, y .17, z .78)
-        # -- a walking carry, not a zombie reach (the shape keys add
-        # the +/-0.28 swing; the REST pose stays close to the body)
-        p0 = (0.265 * s * sx, 0.02 * s, 1.29 * s)
-        p1 = (0.285 * s * sx, 0.17 * s, 0.78 * s)
+        # arm: shoulder (x .265, z 1.29) -> hand (x .30, y .12, z .74)
+        # -- CONSTANT-y at 0.12: the whole arm keeps y > 0.05 (min
+        # surface y = 0.12 - 0.065 radius = 0.055), so the gait's
+        # rigid +/-0.28 Y-translation selects the WHOLE arm (a tapered
+        # forward reach left 43% of the arm below the selection line
+        # and tore a visible seam every step -- measured in review).
+        # The pose reads "walking carry", not a zombie reach and not
+        # the old backpack hunch.
+        p0 = (0.265 * s * sx, 0.12 * s, 1.29 * s)
+        p1 = (0.300 * s * sx, 0.12 * s, 0.74 * s)
         mid = ((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2)
         dx, dy, dz = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])
         ln = math.sqrt(dx * dx + dy * dy + dz * dz)

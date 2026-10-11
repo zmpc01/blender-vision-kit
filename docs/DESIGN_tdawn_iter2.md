@@ -81,3 +81,49 @@
   validator flag is accepted noise (documented F-TD2 class).
 - D-i2-6: keepout rows follow the cameras exactly (S2 added; S5/S6/S7/
   S8/S10 moved); the aerial/high cams stay keepout-free (the D6 law).
+
+## REV-2 folds (peer review TD-REVIEW-2 — all adopted, with corrections)
+
+1. **D-i2-1 retime corrected**: hold at (1.1, 1.3) not (0.4, 1.5) — the
+   old hold sat behind the Master from CAM_S8 (the occlusion it was
+   meant to fix); dive-arc peak (31.21, 0.4, **-0.35**, 0.38) — inside
+   the portal, not 0.6 m short of it; doors **f730-780** (gap 4.08 m at
+   f750, 1.77 m at f767 through; the 730-800 draft read "not closing");
+   through/hold keys at y **-1.85** (the -1.6 draft chest-clips the new
+   glow wall 0.08 m from f767 on). Stumble MOVED INTO S7 (t 22.3-22.95;
+   the old dip keyed at f476-490 = S6 while every signal pointed at S7).
+2. **Keepouts**: S7 row corrected to (−9.2, 9.8) — the draft row was
+   2.24 m from its own camera; S5/S7/S10 made STATIC pans (a dolly
+   exits its r=1.3 keepout circle — pre-existing flaw); S10 row
+   (−8.0, −4.0); S2 (3.2, 12.0) verified out-of-frustum hole; out-of-
+   walkable disc overlap on S5/S7 accepted (wall-side squeeze, 4 s).
+3. **Tunnel exact dims** (all TD.GateDark, void+old throat deleted):
+   sides (0.18, 0.95, 3.60) @ (±3.49, −0.975, 1.80); top (6.80, 0.95,
+   0.18) @ (0, −0.975, 3.51) — 5 mm clear of the header; floor
+   (6.74, 1.12, 0.06) @ (0, −0.81, 0.05) — z 0.02 base (no coplanar
+   floor fight); back/glow (6.74, 0.08, 3.60) @ (0, −1.41, 1.80).
+   SealEdge strips PARENTED to the doors (x-keys alone leave them
+   parked). Parked-door wings (±3.4..6.8, no pocket) ACCEPTED as set
+   dressing — the dim seal-edge bars telegraph the seal.
+4. **Palette**: lands post-bake_tier2 (per-agent users==1 copies
+   verified in crowd_v6/bake2.py:278-281; RB carts users>1 → copy
+   first); mesh.copy() preserves the Key datablock; the lib keeps
+   palette[0]; _anchors' shared-mesh writes REMOVED.
+5. **Rest pose**: arms CONSTANT-y 0.12 (min surface y 0.055 > 0.05 →
+   the whole arm selects; the tapered draft left 43% frozen and would
+   tear at every swing); shoulder sphere r 0.205 @ 1.345.
+6. **Title**: size 0.55 (the 1.55 draft was 2× frame width), z 3.1,
+   emission keyed 0.15 → 0.55 at f1009, hide_render keyed False at
+   f1009 (it photobombs S5 AND S11 at emission 0 otherwise — base
+   color renders); stills-authoritative (glTF carries no material
+   emission animation; gate 9 drops nothing — keyed hide is kept with
+   a NOTE).
+7. **Emission caps**: GateGlow seal key 1.4 → 0.95; GateLight 3000 →
+   2000 W; board rows 2.4 → 1.7 peak / 0.55 low (A/B phase-offset);
+   SealEdge peak 1.3 (tiny-area accent, look-verify); windows left at
+   1.6; throat keys single-sourced from _seal_f0/_seal_f1.
+8. **Missed-items batch**: S3 aim z 0.6 → 1.3; S8 aim (0.3, 1.2, 1.15)
+   (the old aim pointed NORTH — the empty-hall still); S5 aim-track
+   lead 0.35 s @ x 1.2; sfx stumble 560 → 539, vault_seal 790 → 730;
+   board rebuild decision (D-i2-7) recorded; pylon restyle (G3)
+   recorded: steel_light + TD.PylonFace ≤ 0.7 both Y sides.

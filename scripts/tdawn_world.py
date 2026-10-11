@@ -78,16 +78,28 @@ def _build_materials():
     m = {}
     m["floor"] = make_material("TD.Stone", (0.230, 0.205, 0.182), 0.88)
     m["floor2"] = make_material("TD.StoneDark", (0.145, 0.132, 0.120), 0.9)
+    m["floor_line"] = make_material("TD.StoneLine", (0.55, 0.50, 0.42),
+                                    0.85)
     m["wall"] = make_material("TD.Wall", (0.196, 0.180, 0.164), 0.85)
     m["steel"] = make_material("TD.Steel", (0.088, 0.092, 0.100), 0.45,
                                metallic=0.7)
+    # pylons read as black monolith glitches in the old palette (the
+    # eyes-on QA: S4/S7 monoliths) -- lighter warm steel for them
+    m["steel_light"] = make_material("TD.SteelLight", (0.16, 0.165, 0.175),
+                                     0.5, metallic=0.55)
     m["gate_glow"] = make_material("TD.GateGlow", (1.0, 0.88, 0.70), 0.4)
-    # emission strength keyed by the scene (S1 calm ~0.9 -> seal 4.2)
+    # emission strength keyed by the scene (S1 calm ~0.35 -> seal 0.95,
+    # the AgX warm cap -- the old 1.4 key white-clipped the surround)
     m["gate_dark"] = make_material("TD.GateDark", (0.050, 0.036, 0.026),
                                    0.9)
-    m["board"] = make_material("TD.Board", (0.55, 0.28, 0.05), 0.5)
+    m["seal_edge"] = make_material("TD.SealEdge", (1.0, 0.72, 0.40), 0.4)
+    m["board"] = make_material("TD.Board", (0.03, 0.032, 0.036), 0.55)
+    m["board_row_a"] = make_material("TD.BoardRowA", (1.0, 0.62, 0.25), 0.4)
+    m["board_row_b"] = make_material("TD.BoardRowB", (1.0, 0.62, 0.25), 0.4)
+    m["pylon_face"] = make_material("TD.PylonFace", (0.95, 0.78, 0.50),
+                                    0.4)
     m["wood"] = make_material("TD.Wood", (0.145, 0.098, 0.062), 0.8)
-    m["window"] = make_material("TD.WindowGlow", (0.85, 0.62, 0.38), 0.5)
+    m["window"] = make_material("TD.WindowGlow", (0.72, 0.42, 0.20), 0.5)
     return m
 
 
@@ -111,6 +123,10 @@ def build_world(scene):
         ring.data.materials.clear()
         ring.data.materials.append(mats["floor2"])
         parts[f"ring_{r}"] = ring
+    # the keep-clear stop line before the gate (checkpoint semantics;
+    # flat cream stone -- no emission, no AgX risk)
+    parts["stop_line"] = _box("TD.StopLine", 7.2, 0.30, 0.012,
+                              (0.0, 2.4, 0.012), mats["floor_line"])
 
     # --- side walls + far wall ----------------------------------------
     hall_len = HALL_Y1 - HALL_Y0
@@ -151,24 +167,40 @@ def build_world(scene):
                           mats["gate_glow"])
     gate["header"] = _box("TD.GateHeader", gw * 2 + 1.5, 0.9, 0.55,
                           (0.0, 0.0, gh + 0.28), mats["gate_glow"])
-    # dark threshold (the depth beyond the gate)
-    gate["void"] = _box("TD.GateVoid", gw * 2, 1.2, gh,
-                        (0.0, -0.85, gh / 2), mats["gate_dark"])
-    # the glowing throat: a warm emissive plane deep in the portal --
-    # the "exit = light" read (the goal must be the brightest surface
-    # in frame from S6 on; the dark void box alone read as dead black)
+    # the portal TUNNEL (iter-2 redesign, review dims): the old solid
+    # void box + a glow plane proud of its face made the gate read as
+    # a flat bright screen. An open 4-wall tunnel + the glow as the
+    # BACK wall gives the opening real depth; the recessed glow is
+    # progressively eaten by the sealing doors (S9's slit read).
     mats["throat"] = make_material("TD.ThroatGlow", (1.0, 0.80, 0.55), 0.6)
-    # y = -0.15: PROUD of the void's south face (-0.25) so the crowd
-    # side sees the glow through the opening (the void box occluded it)
-    gate["throat"] = _box("TD.GateThroat", gw * 2 - 0.1, 0.06, gh - 0.1,
-                          (0.0, -0.15, (gh - 0.1) / 2), mats["throat"])
-    # seal doors: two panels sliding from the jambs (S9-S10 animation
-    # keys them across the opening)
+    gate["tun_l"] = _box("TD.GateTunnelL", 0.18, 0.95, 3.60,
+                         (-gw - 0.09, -0.975, 1.80), mats["gate_dark"])
+    gate["tun_r"] = _box("TD.GateTunnelR", 0.18, 0.95, 3.60,
+                         (gw + 0.09, -0.975, 1.80), mats["gate_dark"])
+    gate["tun_top"] = _box("TD.GateTunnelTop", 6.80, 0.95, 0.18,
+                           (0.0, -0.975, 3.51), mats["gate_dark"])
+    gate["tun_floor"] = _box("TD.GateTunnelFloor", 6.74, 1.12, 0.06,
+                             (0.0, -0.81, 0.05), mats["gate_dark"])
+    gate["throat"] = _box("TD.GateThroat", 6.74, 0.08, 3.60,
+                          (0.0, -1.41, 1.80), mats["throat"])
+    # seal doors: two panels sliding from the jambs (S9 animation keys
+    # them across the opening f730-780); the leading edges carry the
+    # emissive TD.SealEdge strips so the narrowing slit stays HOT and
+    # the dive reads against it (parented: they ride the door keys)
     gate["door_l"] = _box("TD.GateDoorL", gw, 0.22, gh,
                           (-gw / 2, 0.0, gh / 2), mats["gate_dark"])
     gate["door_r"] = _box("TD.GateDoorR", gw, 0.22, gh,
                           (gw / 2, 0.0, gh / 2), mats["gate_dark"])
-    # doors START open (parked inside the jambs, hidden in the wall)
+    edge_l = _box("TD.GateSealEdgeL", 0.07, 0.20, gh,
+                  (gw / 2 - 0.035, 0.0, gh / 2), mats["seal_edge"])
+    edge_r = _box("TD.GateSealEdgeR", 0.07, 0.20, gh,
+                  (-gw / 2 + 0.035, 0.0, gh / 2), mats["seal_edge"])
+    edge_l.parent = gate["door_l"]
+    edge_r.parent = gate["door_r"]
+    gate["seal_edges"] = (edge_l, edge_r)
+    # doors START open (parked in the jambs' pocket; the parked slabs
+    # protrude as free-standing wings -- ACCEPTED set dressing, the
+    # dim seal-edge bars telegraph the seal)
     for d, sx in ((gate["door_l"], -1.0), (gate["door_r"], 1.0)):
         d.location.x = sx * (gw + gw / 2)
         d.keyframe_insert(data_path="location", index=0, frame=1)
@@ -225,7 +257,12 @@ def build_world(scene):
     pylons = []
     for i, (px, py) in enumerate(((-3.2, 8.6), (3.2, 8.6), (0.0, 24.0))):
         pylons.append(_box(f"TD.Pylon{i + 1}", 0.5, 0.24, 2.6,
-                           (px, py, 1.3), mats["steel"]))
+                           (px, py, 1.3), mats["steel_light"]))
+        # warm sign faces on BOTH y sides (cams look from either end;
+        # the old bare dark slabs read as glitches in 5 stills)
+        for sgn, tag in ((1.0, "N"), (-1.0, "S")):
+            _box(f"TD.PylonFace{i + 1}{tag}", 0.42, 0.06, 0.9,
+                 (px, py + sgn * 0.15, 1.75), mats["pylon_face"])
     parts["pylons"] = pylons
 
     # the 3 RB-placeholder luggage carts (grounded, static, plaza edge)
@@ -240,15 +277,19 @@ def build_world(scene):
         carts.append((cart, handle))
     parts["carts"] = carts
 
-    # --- the departure board (S2's subject; TD.Board emission is
-    # keyed by the scene's flicker) -------------------------------------
+    # --- the departure board (S2's subject; rebuilt iter-2: the old
+    # flat orange slab + window-material rows read as nothing. Dark
+    # panel + 4 amber emissive rows; TWO row materials alternate so
+    # the flicker shimmers instead of strobing uniformly; the scene
+    # keys TD.BoardRowA/B) ------------------------------------------------
     board = _box("TD.DepartureBoard", 6.4, 0.18, 2.2,
                  (0.0, HALL_Y1 - 1.2, 5.6), mats["board"])
     strips = []
     for i in range(4):
-        strips.append(_box(f"TD.BoardStrip{i + 1}", 5.6, 0.06, 0.22,
+        strips.append(_box(f"TD.BoardRow{i + 1}", 5.6, 0.06, 0.20,
                            (0.0, HALL_Y1 - 1.08, 6.35 - i * 0.5),
-                           mats["window"]))
+                           mats["board_row_a" if i % 2 == 0
+                                else "board_row_b"]))
     parts["board"] = board
     parts["board_strips"] = strips
 
@@ -267,9 +308,11 @@ def build_world(scene):
     sun_ob.location = (10.0, -6.0, 12.0)
     parts["sun"] = sun_ob
 
-    # gate fill: an area light inside the portal (the goal is lit)
+    # gate fill: an area light inside the portal (the goal is lit;
+    # 2000 W -- the old 3000 W co-owned the S6 white-out with the
+    # surround emission)
     gate_light = bpy.data.lights.new("TD.GateLight", type="AREA")
-    gate_light.energy = 3000.0
+    gate_light.energy = 2000.0
     gate_light.size = 5.0
     gate_light.color = (1.0, 0.80, 0.58)
     gate_lo = bpy.data.objects.new("TD.GateLight", gate_light)

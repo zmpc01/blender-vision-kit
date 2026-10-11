@@ -47,14 +47,18 @@ SPAWN_ZONES_V5 = [
 # camera keepouts: (name, px, py, f0_s, f1_s) -- GROUND-LEVEL cams only
 # (the D6 clamp is 2D-xy: a keepout under the aerial punches a hole in
 # the crowd exactly where the aerial looks). Times are SECONDS.
+# iter-2: follows the reframed cameras exactly (S2 added; S5/S6/S7/S8/
+# S10 moved; S5/S7/S10 became STATIC pans so the r=1.3 circle covers
+# the whole shot -- a dolly exits its own circle, review).
 CAM_KEEPOUTS_V3 = [
+    ("CAM_S2", 3.2, 12.0, 3.5, 7.0),
     ("CAM_S4", -2.5, 29.5, 11.0, 14.5),
-    ("CAM_S5", 8.4, 16.5, 14.5, 18.5),
-    ("CAM_S6", -5.6, 7.6, 18.5, 22.0),
-    ("CAM_S7", -8.8, 11.5, 22.0, 26.0),
-    ("CAM_S8", 0.0, 3.2, 26.0, 30.0),
+    ("CAM_S5", 9.8, 16.5, 14.5, 18.5),
+    ("CAM_S6", -5.2, 7.0, 18.5, 22.0),
+    ("CAM_S7", -9.2, 9.8, 22.0, 26.0),
+    ("CAM_S8", 3.4, 5.6, 26.0, 30.0),
     ("CAM_S9", 0.4, -7.2, 30.0, 34.0),
-    ("CAM_S10", -6.5, -2.6, 34.0, 38.0),
+    ("CAM_S10", -8.0, -4.0, 34.0, 38.0),
 ]
 
 CAM_KEEPOUT_R = 1.3

@@ -70,27 +70,32 @@ SHOTS_V3 = [
 # (name, loc0, loc1, lens_mm, aim, parent_jeep, shake_amp)
 # parent_jeep is the escape-film vocabulary (no jeep here -- always
 # False; the mover stays False so TRACK_TO aiming is live on every cam).
+# iter-2: S5/S7/S10 became STATIC pans (a dolly exits its own keepout
+# circle -- review), S1 cleared the y=-4 roof arch off the lens, S3
+# aim lifted off the floor smear, S6 raised above crowd heads, S8
+# re-aimed at the Master/gate (the old north aim showed an empty hall),
+# S9 aim centered on the throat, S10 pulled back to frame the seal.
 CAMS_V3 = [
-    ("CAM_S1",  (6.5, -6.5, 8.2), (5.0, -4.0, 7.4), 24,
+    ("CAM_S1",  (7.5, -6.0, 7.6), (6.0, -4.2, 7.0), 24,
      (0.0, 12.0, 1.2), False, 0.0),
     ("CAM_S2",  (3.2, 12.0, 2.6), (3.2, 12.0, 2.6), 38,
      (-0.5, 30.8, 5.4), False, 0.012),
     ("CAM_S3",  (0.0, -5.5, 8.4), (0.0, -4.8, 8.0), 28,
-     (0.0, 15.0, 0.6), False, 0.0),
+     (0.0, 15.0, 1.3), False, 0.0),
     ("CAM_S4",  (-2.5, 29.5, 2.6), (-2.5, 29.5, 2.6), 34,
      (1.5, 20.0, 1.0), False, 0.02),
-    ("CAM_S5",  (8.4, 19.5, 1.8), (8.4, 13.0, 1.8), 38,
-     (1.0, 18.0, 1.2), False, 0.025),
-    ("CAM_S6",  (-5.6, 7.6, 1.65), (-5.6, 7.6, 1.65), 45,
-     (0.0, 1.6, 1.4), False, 0.018),
-    ("CAM_S7",  (-8.8, 11.5, 2.6), (-8.4, 9.5, 2.6), 35,
-     (0.0, 6.5, 1.1), False, 0.034),
-    ("CAM_S8",  (0.0, 3.2, 2.4), (0.0, 3.2, 2.4), 40,
-     (0.0, 12.0, 1.1), False, 0.012),
+    ("CAM_S5",  (9.8, 16.5, 1.8), (9.8, 16.5, 1.8), 34,
+     (1.2, 18.0, 1.2), False, 0.025),
+    ("CAM_S6",  (-5.2, 7.0, 2.6), (-5.2, 7.0, 2.6), 45,
+     (0.0, 1.2, 1.35), False, 0.018),
+    ("CAM_S7",  (-9.2, 9.8, 2.6), (-9.2, 9.8, 2.6), 35,
+     (0.0, 5.2, 1.15), False, 0.034),
+    ("CAM_S8",  (3.4, 5.6, 2.35), (3.4, 5.6, 2.35), 38,
+     (0.3, 1.2, 1.15), False, 0.012),
     ("CAM_S9",  (0.4, -7.2, 3.4), (0.4, -7.2, 3.4), 24,
-     (0.0, 2.0, 1.0), False, 0.022),
-    ("CAM_S10", (-6.5, -2.6, 2.0), (-6.0, -2.0, 2.0), 35,
-     (0.0, 4.0, 1.5), False, 0.0),
+     (0.0, 0.5, 1.3), False, 0.022),
+    ("CAM_S10", (-8.0, -4.0, 3.1), (-8.0, -4.0, 3.1), 30,
+     (0.5, 2.0, 1.6), False, 0.0),
     ("CAM_S11", (2.0, 10.0, 2.2), (6.0, 2.0, 9.0), 30,
      (0.0, 8.0, 2.0), False, 0.0),
     ("CAM_S12", (8.0, 18.0, 3.4), (7.4, 15.5, 3.1), 35,
@@ -111,9 +116,9 @@ BEATS = [
     ("runner_in",  8.8,  "the Runner enters at the far end, turns back"),
     ("against",    12.3, "the Runner pushes against the flow"),
     ("the_line",   16.5, "the Master holds the gate line under pressure"),
-    ("stumble",    19.8, "the Runner is driven to a knee, nearly lost"),
+    ("stumble",    22.4, "the Runner is driven to a knee, nearly lost"),
     ("seen",       23.0, "the Master sees the Runner; holds the vault"),
-    ("the_dive",   30.2, "the Runner dives through the sealing vault"),
+    ("the_dive",   31.2, "the Runner dives through the sealing vault"),
     ("seal",       33.8, "the vault seals; the crowd is held"),
     ("dawn",       38.0, "the light turns; the hall empties into silence"),
     ("title",      42.0, "TERMINAL DAWN"),
@@ -130,14 +135,20 @@ _hero_path = [  # (t_seconds, x, y, dz, yaw_deg) -- the Runner's authored run
     (14.30, -1.2, 15.5, 0.0, 168.0),
     (16.30, 1.0, 11.5, 0.0, 176.0),   # weaving the stream
     (19.60, -0.8, 7.6, 0.0, 170.0),
-    (19.80, -0.9, 7.2, -0.18, 170.0),  # the stumble dips
-    (20.40, -0.8, 6.2, -0.02, 168.0),
     (21.20, -0.4, 5.4, 0.0, 160.0),
+    (22.30, -0.5, 4.7, -0.18, 166.0),  # the stumble dips (S7's window)
+    (22.95, -0.4, 4.3, -0.02, 163.0),
     (23.80, 0.2, 3.6, 0.0, 150.0),
-    (27.00, 0.4, 1.8, 0.0, 120.0),
-    (30.20, 0.4, 0.2, 0.35, 100.0),   # the dive arc (vault throat)
-    (31.00, 0.2, -1.6, 0.0, 90.0),    # through; doors seal behind
-    (45.00, 0.2, -1.6, 0.0, 90.0),
+    (28.00, 1.1, 1.3, 0.0, 118.0),    # holds at the line, screen-left
+                                      # of the Master (S8 reads both)
+    (30.40, 1.1, 1.3, 0.0, 108.0),
+    (31.21, 0.4, -0.35, 0.38, 95.0),  # the dive arc peak EXACTLY f750
+                                      # (the S9 still frame; inside the
+                                      # portal throat)
+    (31.90, 0.2, -1.85, 0.0, 90.0),   # through; doors seal behind
+                                      # (y -1.85 clears the new glow
+                                      # wall at -1.41)
+    (45.00, 0.2, -1.85, 0.0, 90.0),
 ]
 
 _master_path = [
@@ -145,16 +156,20 @@ _master_path = [
     (21.0, -1.9, 1.7, 0.0, 96.0),
     (23.0, -0.9, 1.2, 0.0, 80.0),     # steps out to read the surge
     (27.0, 0.4, 0.9, 0.0, 60.0),      # to the throat, arm to the crowd
-    (31.5, 0.4, 0.9, 0.0, 60.0),
+    (32.6, 0.4, 0.9, 0.0, 60.0),      # holds it through the dive
     (34.5, -0.6, 0.9, 0.0, 75.0),     # back as the doors close
     (45.0, -0.6, 0.9, 0.0, 75.0),
 ]
 
 # the vault seal: doors slide from parked (x +/-5.1) to closed (x +/-1.7)
+# iter-2: f730-780 -- the Runner crosses the door plane ~f746 through a
+# ~4.6 m gap and the f750 still reads a VISIBLY closing portal (the old
+# 760/812 sealed too late: the representative frames showed a wall)
 _door_open_x = 5.1
 _door_closed_x = 1.7
-_seal_f0 = 760          # doors start closing (t 31.58 s, S9 mid-dive)
-_seal_f1 = 812          # sealed
+_seal_f0 = 730          # doors start closing (t 30.4 s, the dive commit)
+_seal_f1 = 780          # sealed
+_title_f0 = 1009        # the title sting: the card lights up here
 
 # the far-window incident glow rises from the S3 ignition
 _glow_f0 = 169
@@ -204,30 +219,75 @@ def _anchors(scene):
     ONE library mesh shared by all (bake2 copies per-instance before
     adding shape keys). Spawn poses approximate the contract zones;
     bake2 overwrites them with the sim keys from f1.
+
+    iter-2 (G1 fix): the per-agent PALETTE lands POST-LOAD (see
+    _crowd_kit_branch) -- writing materials here mutated the SHARED
+    library datablock (every anchor links the same mesh), collapsing
+    all 132 agents to one color. The lib carries palette[0] so
+    pre-bake looks still see a commuter material.
     """
     from tdawn_actors import (build_commuter_mesh, commuter_material,
                               new_anchored_obj, BRIDGE_HEIGHT_M)
-    lib = build_commuter_mesh("TD.CommuteLib", BRIDGE_HEIGHT_M)
+    lib = build_commuter_mesh("TD.CommuteLib", BRIDGE_HEIGHT_M,
+                              mat_body=commuter_material(0))
     lib.location = (0.0, -40.0, 0.0)     # park the library mesh off-set
     crowd = []
     for i in range(120):
-        ob = new_anchored_obj(
+        crowd.append(new_anchored_obj(
             f"Zed.{i + 1:04d}", lib,
             (((i % 12) - 5.5) * 1.5, 8.0 + (i // 12) * 1.45, 0.0),
-            yaw=math.radians(180.0))
-        ob.data.materials.clear()
-        ob.data.materials.append(commuter_material(i))
-        crowd.append(ob)
+            yaw=math.radians(180.0)))
     chase = []
     for i in range(12):
-        ob = new_anchored_obj(
+        chase.append(new_anchored_obj(
             f"Zed.ChaseP{i + 1:02d}", lib,
             (((i % 6) - 2.5) * 1.2, 21.0 + (i // 6) * 2.0, 0.0),
-            yaw=math.radians(180.0))
-        ob.data.materials.clear()
-        ob.data.materials.append(commuter_material(i + 5))
-        chase.append(ob)
+            yaw=math.radians(180.0)))
     return {"crowd": crowd, "chase": chase}
+
+
+def _title_card(scene):
+    """The TERMINAL DAWN title card (S12): text converted to mesh
+    (curves do not export to glTF), warm cream emissive keyed 0 ->
+    0.55 at the sting (f1009), hide_render keyed False there too so
+    it photobombs no earlier shot (S5/S11 both have it in frustum).
+    The GLB keeps the card visible-but-dark (material emission does
+    not export to glTF) -- the stills are authoritative for the
+    sting."""
+    from tdawn_actors import make_material
+    size = 0.55                    # 13 chars * ~0.55 em ~ 3.9 m wide =
+                                   # 63% of CAM_S12's frame at 6.1 m
+    tx, ty, tz = 2.9, 11.4, 3.1
+    mat = make_material("TD.TitleCard", (1.0, 0.88, 0.70), 0.4)
+    crv = bpy.data.curves.new("TD.TitleCard", type="FONT")
+    crv.body = "TERMINAL DAWN"
+    crv.size = size
+    crv.align_x = "CENTER"
+    crv.align_y = "CENTER"
+    crv.extrude = 0.02
+    ob = bpy.data.objects.new("TD.TitleCard", crv)
+    ob.location = (tx, ty, tz)
+    scene.collection.objects.link(ob)
+    # face CAM_S12 (its dolly END pose -- the title still frame):
+    cam = bpy.data.objects.get("CAM_S12")
+    cx, cy = (7.4, 15.5) if cam is None else (
+        cam.location.x, cam.location.y)
+    nx, ny = cx - tx, cy - ty
+    # rx=90 maps the text normal (+Z) to -Y; rz then aims it at the
+    # cam: Rz*(0,-1,0) = (sin rz, -cos rz) = n/|n|  =>  rz = atan2(nx,-ny)
+    ob.rotation_euler = (math.pi / 2, 0.0, math.atan2(nx, -ny))
+    # convert text -> mesh ALONE (convert bakes every selected object)
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = ob
+    ob.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    ob.data.materials.append(mat)
+    # the sting: hidden until f1009 (stills), dim base color otherwise
+    ob.hide_render = True
+    ob.keyframe_insert(data_path="hide_render", frame=1)
+    ob.hide_render = False
+    ob.keyframe_insert(data_path="hide_render", frame=_title_f0)
+    return ob
 
 
 def _heroes(scene):
@@ -258,6 +318,7 @@ def build_scene():
     cams = _cameras(scene)
     chars = {"zombies": _anchors(scene)}
     heroes = _heroes(scene)
+    title = _title_card(scene)
 
     # view-layer SYNC duty (L19 law family): the last-linked objects
     # (Runner.Root measured) can lag the view-layer object list -- the
@@ -267,7 +328,7 @@ def build_scene():
     # belongs in render_hidden_objects -- see the frictions doc).
     bpy.context.view_layer.update()
     return {"scene": scene, "world": world, "cams": cams,
-            "chars": chars, "humans": heroes}
+            "chars": chars, "humans": heroes, "title": title}
 
 
 # ---------------------------------------------------------------------------
@@ -367,12 +428,14 @@ def _kf_cameras(ctx):
             c.location = l1
             c.keyframe_insert(data_path="location", frame=row[2])
         _linear(c)
-    # S5: the aim target tracks the Runner laterally
+    # S5: the aim target tracks the Runner with a 0.35 s LEAD (the
+    # pan frames where he is GOING, not where he was; x 1.2 keeps the
+    # stream mass on the lens)
     t5 = cams["CAM_S5"]["tgt"]
     for f in range(349, 445, 6):
         t = (f - 1) / FPS
-        y = _hero_y_at(t)
-        t5.location = (0.6, y, 1.2)
+        y = _hero_y_at(t + 0.35)
+        t5.location = (1.2, y, 1.2)
         t5.keyframe_insert(data_path="location", frame=f)
     _linear(t5)
 
@@ -386,71 +449,71 @@ def _hero_y_at(t):
     return _hero_path[-1][2]
 
 
+def _em_keys(mat, keys):
+    """Keyframe a material's Emission Strength through (frame, value)
+    pairs (the single-source pattern: every seal-anchored glow key is
+    derived from _seal_f0/_seal_f1 so the retimes cannot drift)."""
+    if not (mat and mat.use_nodes):
+        return
+    bsdf = next(n for n in mat.node_tree.nodes
+                if n.type == "BSDF_PRINCIPLED")
+    em = bsdf.inputs["Emission Strength"]
+    for f, v in keys:
+        em.default_value = v
+        em.keyframe_insert(data_path="default_value", frame=f)
+
+
 def _kf_set_pieces(ctx):
-    """Gate seal + window glow + board flicker."""
-    scene = ctx["scene"]
-    gate = ctx["world"]["gate"]
-    for d, sx in ((gate["door_l"], -1.0), (gate["door_r"], 1.0)):
+    """Gate seal + window glow + board flicker + seal edges + title
+    sting (iter-2: all seal-anchored keys single-sourced from
+    _seal_f0/_seal_f1)."""
+    for d, sx in ((ctx["world"]["gate"]["door_l"], -1.0),
+                  (ctx["world"]["gate"]["door_r"], 1.0)):
         d.location.x = sx * _door_closed_x
         d.keyframe_insert(data_path="location", index=0, frame=_seal_f1)
         d.location.x = sx * _door_open_x
         d.keyframe_insert(data_path="location", index=0, frame=_seal_f0)
         d.keyframe_insert(data_path="location", index=0, frame=1)
-    _linear(gate["door_l"])
-    _linear(gate["door_r"])
+        _linear(d)
 
-    # far-window incident glow: strength 0 -> 3.2 across the ignition
-    glow_mat = bpy.data.materials.get("TD.WindowGlow")
-    if glow_mat and glow_mat.use_nodes:
-        bsdf = next(n for n in glow_mat.node_tree.nodes
-                    if n.type == "BSDF_PRINCIPLED")
-        em = bsdf.inputs["Emission Strength"]
-        em.default_value = 0.0
-        em.keyframe_insert(data_path="default_value", frame=_glow_f0)
-        for f, v in ((_glow_f0 + 20, 0.8), (_glow_f1, 1.6),
-                     (900, 1.1), (1009, 0.7), (1080, 0.7)):
-            em.default_value = v
-            em.keyframe_insert(data_path="default_value", frame=f)
+    # far-window incident glow: dawn warmth from f1, the S2 "wrong"
+    # pulse (the old keys started at f169 -- the S2 windows sat dead),
+    # then the ignition surge
+    _em_keys(bpy.data.materials.get("TD.WindowGlow"),
+             [(1, 0.35), (85, 0.5), (120, 0.95), (150, 1.15),
+              (168, 0.9), (200, 1.3), (_glow_f1, 1.6),
+              (900, 1.1), (1009, 0.7), (1080, 0.7)])
 
-    # departure board: flicker through S2 then dies at the surge
-    board_mat = bpy.data.materials.get("TD.Board")
-    if board_mat and board_mat.use_nodes:
-        bsdf = next(n for n in board_mat.node_tree.nodes
-                    if n.type == "BSDF_PRINCIPLED")
-        em = bsdf.inputs["Emission Strength"]
-        f_a, f_b, die = _board_flick
-        for f in range(f_a, f_b, 7):
-            em.default_value = 2.4 if (f // 7) % 3 else 0.7
-            em.keyframe_insert(data_path="default_value", frame=f)
-        for f, v in ((die, 0.0), (1080, 0.0)):
-            em.default_value = v
-            em.keyframe_insert(data_path="default_value", frame=f)
+    # departure board rows: TWO alternating amber flickers (A/B) so
+    # the shimmer is not a uniform strobe; both die at the surge
+    f_a, f_b, die = _board_flick
+    for nm, phase in (("TD.BoardRowA", 0), ("TD.BoardRowB", 3)):
+        keys = [(f, 1.7 if ((f + phase) // 7) % 3 else 0.55)
+                for f in range(f_a, f_b, 7)]
+        _em_keys(bpy.data.materials.get(nm),
+                 keys + [(die, 0.0), (1080, 0.0)])
 
-    # the throat glow rises as the seal approaches
-    throat_mat = bpy.data.materials.get("TD.ThroatGlow")
-    if throat_mat and throat_mat.use_nodes:
-        bsdf = next(n for n in throat_mat.node_tree.nodes
-                    if n.type == "BSDF_PRINCIPLED")
-        em = bsdf.inputs["Emission Strength"]
-        em.default_value = 0.0
-        bsdf.inputs["Base Color"].default_value = (1.0, 0.80, 0.55, 1.0)
-        # AgX desaturates hot emission to tan — keep <= ~1.7 so the
-        # throat reads warm-golden, never crushed brown (measured)
-        for f, v in ((1, 0.55), (625, 0.75), (760, 0.9), (816, 0.95),
-                     (912, 0.6), (1009, 0.45), (1080, 0.45)):
-            em.default_value = v
-            em.keyframe_insert(data_path="default_value", frame=f)
+    # the throat glow (the tunnel's back wall): rises with the seal
+    _em_keys(bpy.data.materials.get("TD.ThroatGlow"),
+             [(1, 0.55), (625, 0.75), (_seal_f0, 0.9), (_seal_f1, 0.95),
+              (912, 0.6), (1009, 0.45), (1080, 0.45)])
 
-    # gate glow brightens as the story reaches the seal
-    gate_mat = bpy.data.materials.get("TD.GateGlow")
-    if gate_mat and gate_mat.use_nodes:
-        bsdf = next(n for n in gate_mat.node_tree.nodes
-                    if n.type == "BSDF_PRINCIPLED")
-        em = bsdf.inputs["Emission Strength"]
-        for f, v in ((1, 0.35), (625, 0.7), (816, 1.4), (912, 0.8),
-                     (1080, 0.6)):
-            em.default_value = v
-            em.keyframe_insert(data_path="default_value", frame=f)
+    # gate surround: capped at the AgX warm law 0.95 (the old 1.4 key
+    # white-clipped the jambs -- the S6 projection-screen read)
+    _em_keys(bpy.data.materials.get("TD.GateGlow"),
+             [(1, 0.35), (625, 0.7), (_seal_f1, 0.95), (912, 0.8),
+              (1080, 0.6)])
+
+    # the seal edges (door leading edges): dim telegraph while parked,
+    # HOT through the close (tiny area + brief: 1.3 is inside the
+    # measured small-accent tolerance; look-verify the slit)
+    _em_keys(bpy.data.materials.get("TD.SealEdge"),
+             [(1, 0.25), (700, 0.35), (_seal_f0, 0.9), (_seal_f1, 1.3),
+              (830, 0.8), (912, 0.45), (1080, 0.45)])
+
+    # the title sting (the card's hide keys live in _title_card)
+    _em_keys(bpy.data.materials.get("TD.TitleCard"),
+             [(1, 0.15), (_title_f0, 0.55), (1080, 0.55)])
 
 
 def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
@@ -479,6 +542,13 @@ def _crowd_kit_branch(ctx):
 
     The bake itself runs EARLIER, headless (tdawn_bake.py, venv);
     this branch loads the converted cache + materializes keys.
+
+    iter-2 (G1): the commuter PALETTE lands HERE, post-materialize:
+    bake_tier2 gives every sim agent a private mesh copy (users==1,
+    shape-keyed); the 3 RB-placeholder carts keep the shared lib mesh
+    (users>1) and get a copy first. Assigning before this point
+    mutated the SHARED library datablock and collapsed the crowd to
+    one color (the clone-army read in every tdawn_1 still).
     """
     ctx["crowd_shots"] = _shot_table(SHOTS_V3, CAMS_V3)
     ctx["crowd_tier_pins"] = CROWD_TIER_PINS
@@ -486,7 +556,28 @@ def _crowd_kit_branch(ctx):
     _CK.loader.load_kit_cache(ctx)
     import crowd_v6 as CV6
     CV6.bake_tier2(ctx)
+    _crowd_palette(ctx)
     return ctx["crowd_cache"]
+
+
+def _crowd_palette(ctx):
+    """Per-agent palette assignment (varied muted commuters -- D-TD5).
+
+    mesh.copy() preserves the shape-key Key datablock (verified in
+    review); materials.clear() never touches shape keys.
+    """
+    from tdawn_actors import commuter_material
+    chars = ctx["chars"]["zombies"]
+    groups = ((chars["crowd"], 0), (chars["chase"], 5))
+    n = 0
+    for group, base in groups:
+        for i, ob in enumerate(group):
+            if ob.data.users > 1:
+                ob.data = ob.data.copy()
+            ob.data.materials.clear()
+            ob.data.materials.append(commuter_material(base + i))
+            n += 1
+    print(f"[tdawn] crowd palette: {n} agents varied")
 
 
 def _shot_table(shots, cams):
@@ -524,9 +615,9 @@ def emit_sfx_events(ctx, out_dir):
         {"name": "surge_swell", "frame": 220, "strength": 1.0},
         {"name": "jostle", "frame": 352, "n": 10},
         {"name": "jostle", "frame": 470, "n": 14},
-        {"name": "stumble", "frame": 560},
+        {"name": "stumble", "frame": 539},
         {"name": "gate_hold", "frame": 625},
-        {"name": "vault_seal", "frame": 790, "dur": 2.4},
+        {"name": "vault_seal", "frame": 730, "dur": 2.1},
         {"name": "quiet", "frame": 860},
         {"name": "dawn_swell", "frame": 913},
         {"name": "title_sting", "frame": 1009},
