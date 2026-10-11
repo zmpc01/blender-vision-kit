@@ -240,6 +240,18 @@ def build_world(scene):
         carts.append((cart, handle))
     parts["carts"] = carts
 
+    # --- the departure board (S2's subject; TD.Board emission is
+    # keyed by the scene's flicker) -------------------------------------
+    board = _box("TD.DepartureBoard", 6.4, 0.18, 2.2,
+                 (0.0, HALL_Y1 - 1.2, 5.6), mats["board"])
+    strips = []
+    for i in range(4):
+        strips.append(_box(f"TD.BoardStrip{i + 1}", 5.6, 0.06, 0.22,
+                           (0.0, HALL_Y1 - 1.08, 6.35 - i * 0.5),
+                           mats["window"]))
+    parts["board"] = board
+    parts["board_strips"] = strips
+
     # --- lights --------------------------------------------------------
     sun = bpy.data.lights.new("TD.Sun", type="SUN")
     sun.energy = SUN_ENERGY

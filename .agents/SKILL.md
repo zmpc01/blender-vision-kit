@@ -246,141 +246,81 @@ For user delivery: copy whole dir to `/home/z/my-project/download/<scene_name>/`
 - **Background processes die between tool calls** — long ops must run inside one Bash call with timeout, or use `render_daemon.py` (double-fork to PID 1).
 - **Watchdog** reverts `/home/z/my-project/` every ~20s — work in `/home/z/blender-kit/`.
 
-## KB entries (niche but valuable, linked from AGENTS.md)
+## KB entries (linked from AGENTS.md; each carries its own headlines)
 
-- `/kb/placement_and_physics.md` — full placement_lib + physics_place reference
-  **Headlines**: 7 placement ops (move_to/place_on/seat_at/snap_z/physics_settle/
-  physics_place/physics_oracle/physics_gate); audit pair states (PENETRATING/
-  TOUCHING/NESTED/CLEAR); audit only sees pairs within 100mm pad (use physics_gate
-  for scene-wide floating); physics hard limits (concave receivers need compound
-  shapes, BOX collision centered on ORIGIN not bbox, hull-hull rest ≈Σmargins,
-  RB point cache survives teardown → always frame_set(1)).
-- `/kb/rigged_characters.md` — capsule vs rigged, UAL hero-swap, rig debugging
-  **Headlines**: capsule actors are the previz standard (v2 rigged attempt
-  failed: skin weights broken, action slots, NLA stashes, basis-matrix collapse);
-  10 rig gotchas if you go rigged (bind pose ≠ standing, quaternion axis
-  conventions, action-slot law `ad.action_slot = act.slots[0]`); UAL (Quaternius
-  CC0) vetted hero-swap: 42/46 actions animate, drift 0.000m.
-- `/kb/vision_loop.md` — look.py protocol, annotation rules, readiness scores,
-  measured timings, M5 P1–P4 perception doctrine (color / exposure / animation
-  representation / transient scan)
-- `/kb/render_speed.md` — engine benchmarks, AA/cavity tradeoffs, cold-start cost
-  **Headlines**: AA = 92% of Workbench wall time (OFF is 5-6× faster); cold
-  start ~2.5 min dominates batch renders; EEVEE peaks 1.6GB for 273 objects
-  (Cycles stable ~355MB); JPEG q85 15× smaller than PNG; re-profile after
-  every speedup (bottleneck moves).
-- `/kb/glTF_export.md` — export flags, three.js loader quirks, USD decision
-  **Headlines**: `export_cameras` defaults False (kit sets it); ACTIONS mode
-  doesn't bake constraints (TRACK_TO exports raw euler); three.js sanitizes
-  node names (dots removed); `mixer.setTime` breaks LoopOnce+clamp (use
-  LoopRepeat with pre-padded tracks); glTF keys are TIMELINE-ABSOLUTE at
-  `t=frame/fps`; three.js physical lights divide by π + glTF punctuals are
-  683× Blender watts; USD rejected (USDC crashes three.js, customData invisible).
-- `/kb/crowd_fields.md` — influence fields, relax PBD, gait phase engine
-  **Headlines**: scene-agnostic crowd primitives (FieldSpec, relax(), gait
-  phase law); field tables + lane specs are DATA only (nothing project-specific
-  in the engine); deterministic vectorized PBD via grouped-join expansion.
-- `/kb/prop_carry.md` — generalized prop anchoring & clamped carry
-  **Headlines**: PHANTOM OFFSETS law (anchor captures must be SAME-FRAME
-  snapshots); capture_anchor/anchor_local/carry_keys API; held-state actions
-  key the full timeline (law 106); every carry gets a sanity radius check.
-
+- /kb/placement_and_physics.md — 7 placement ops, audit pair states,
+  physics hard limits (BOX collision centered on ORIGIN; RB cache
+  survives teardown → frame_set(1); audit pad 100mm).
+- /kb/rigged_characters.md — capsule actors are the standard; 10 rig
+  gotchas; UAL hero-swap vetted (42/46 actions, 0.000m drift).
+- /kb/vision_loop.md — look.py protocol, annotations, readiness, M5
+  perception doctrine (color/exposure/animation-representation/transients).
+- /kb/render_speed.md — AA = 92% of Workbench wall time; cold start
+  ~2.5 min; EEVEE 1.6GB @ 273 objects; JPEG q85 15× smaller.
+- /kb/glTF_export.md — export_cameras defaults False; ACTIONS mode does
+  not bake constraints; three.js strips dots; LoopRepeat + pre-padded
+  tracks; glTF keys timeline-absolute; USD rejected.
+- /kb/crowd_fields.md — FieldSpec, relax PBD, gait phase engine; field
+  tables are DATA only; deterministic vectorized PBD.
+- /kb/prop_carry.md — PHANTOM OFFSETS law (same-frame anchor captures);
+  held-state actions key the full timeline; carry sanity radius.
+- /kb/tdawn_vision_film.md — the from-scratch FILM recipe: contract →
+  bake driver (keepouts!) → vision-first build order → the kit-mode
+  export command verbatim → the export-contract checklist → staging.
+  The session-12 friction ledger lives in docs/USABILITY_TD1_vision_film.md.
 
 ## Session-5 meta: the usability-study pattern (owner-directed)
 
-When the kit's mechanical quality saturates (all suites green), the
-highest-yield pass is DOG-FOODING: pick a demo scenario, use the kit
-strictly as a consumer (AGENTS.md docs only — no source peeking), log
-every friction with an id, fix small things immediately, verify each
-fix end-to-end FROM THE CONSUMER SEAT, then RESET (fresh scenario,
-fresh outputs) and run another round with a different exercise profile
-(R1 = static composition + animation; R2 = physics lane). Artifacts:
-docs/USABILITY_R{N}.md. The friction log IS the study's deliverable —
-"What worked flawlessly" is equally important (protects against
-regression-by-refactor).
+When mechanical quality saturates, DOG-FOOD: consume via AGENTS.md only,
+log every friction with an id, fix small things from the consumer seat,
+then RESET with a different exercise profile. docs/USABILITY_R{N}.md is
+the deliverable; "what worked flawlessly" protects against
+regression-by-refactor. Laws (details in AGENTS.md): audit pair `state`
+is the exact vocabulary (verdict drifts); intersection thresholds must
+be RELATIVE (absolute-only is scale-biased); animated-prop placement
+needs override='keyframe' (rebase ALL location keys, else drift).
 
-Key measured laws from session-5 (also in AGENTS.md):
-- audit pair `state` = exact vocabulary; `verdict` = human string, WILL drift
-- validator intersection threshold must be RELATIVE (pct of smaller object)
-  OR absolute — absolute-only is scale-biased (10cm mug sunk 20% was invisible)
-- placement of animated props: override='keyframe' rebases ALL location keys
-  by the placement delta (_rebase_location_keys) — a current-frame re-key
-  leaves later keys at the pre-placement pose (measured 20mm drift by f24)
+## Session-6 meta: lane dog-fooding + D15
 
-## Session-6 meta: lane dog-fooding + the D15 color law
-
-- **D15 display-color sync**: workbench MATERIAL reads `mat.diffuse_color`,
-  so node-authored (imported) scenes render ALL-GRAY and nothing detects it.
-  `annotate.sync_display_colors()/restore_display_colors()` are STANDALONE
-  (not part of the annotation layer) so `--no-annotate` looks stay honest;
-  sync pre-render + restore in `finally`; per-MATERIAL dedupe (not per-slot);
-  skip untouched default-gray; manifest rows carry `color_source`. Any new
-  render surface must call the same pair — keyframe_contact_sheet rendered
-  gray sheets until wired (R4 F11).
-- **EEVEE warm-cache needs MemAvailable >= ~2.4 GB** (QA #2 kernel
-  forensics: shader compile peaks ~2.07 GB RSS independent of resolution;
-  4 SIGKILLs recorded). install.sh + blrun.sh --warm-cache guard now skip
-  with a named note below 2400 MB. Cycles verify = engine-ASSIGN probe
-  (`scene.render.engine = 'CYCLES'`), never RenderEngine subclass
-  enumeration (false negative on 5.x built-ins).
-- **Scene driver convention is a contract**: `build_scene()` → ctx dict,
-  `animate(ctx, *, start_frame=1, n_frames=<int>)`. Tools that mean "module
-  decides its timeline" (previz package) pass `n_frames=None` — which
-  CRASHES the documented int-default signature. Bridge with
-  `inspect.signature`: int default → call bare; else pass the sentinel.
-- **D16 (semantic labeling of opaque imports)**: design + audit DONE
-  (docs/DESIGN_D16_semantic_labeling.md, amendments adopted: lowercase
-  `kit_label` prop, idempotent two-phase rename, validator
-  de-name-dependence, split_mesh preconditions). Implementation = M6.
+- **D15 display-color sync**: workbench MATERIAL reads diffuse_color —
+  node-authored scenes render ALL-GRAY undetected. sync/restore pair is
+  STANDALONE of the annotation layer (--no-annotate looks stay honest);
+  every new render surface must call it (keyframe_contact_sheet shipped
+  gray until wired).
+- **EEVEE warm-cache needs MemAvailable >= ~2.4 GB** (compile peaks
+  ~2.07 GB RSS; 4 SIGKILLs recorded). Cycles verify = engine-ASSIGN
+  probe, never subclass enumeration.
+- **Scene driver contract**: build_scene() -> ctx;
+  animate(ctx, *, start_frame=1, n_frames=<int>) — tools pass n_frames
+  only when the module opts in; BRIDGE with inspect.signature.
+- **D16 semantic labeling**: design + audit done (see
+  docs/DESIGN_D16_semantic_labeling.md + Session-7 below).
 
 ## Session-7 meta: semantic labeling of opaque imports (D16 shipped)
 
-- **The labeling loop is a kit surface, not a convention**: LOOK (manifest,
-  kit_label null) → SPLIT (loose parts if islands exist; WELDED geometry
-  needs the vision-driven `split-region` world-box cut) → NAME (principal's
-  eyes; closeups + dims + face-count agreement) → LABEL (label_objects,
-  report-before-rename) → LOOK verify (manifest JSON is the artifact) →
-  SAVE. A non-vision agent then works the labeled ids blind (proven:
-  assembled a table + seated props, audit 0.0mm).
-- **Prop laws**: `kit_label` is the durable identity — names may be
-  suffixed/disambiguated, props never change meaning. Every MESH manifest
-  row carries kit_label (null when unlabeled) so consumers can KEY on it.
-  Gate exclusions moved to the `kit_semantic` PROP (labels containing
-  ceiling/sun/light); names are fallback only — vision renames can no
-  longer strip validator coverage.
-- **Rename safety pattern (reusable)**: all-or-nothing validation, simulate
-  the whole-batch rename against scene occupancy BEFORE mutating, two-phase
-  (everything → guaranteed-fresh temps → finals), re-read to verify, report
-  JSON written BEFORE mutation as the crash-resume artifact. Blender's
-  silent `.001` auto-suffix is a lie in a patch context — pre-unique
-  instead.
-- **bmesh hygiene**: connected-components over vert/edge adjacency;
-  return INDICES not BMFace refs (refs die with bm.free()); edit-mode
-  selection via bmesh.from_edit_mesh + update_edit_mesh, then
-  bpy.ops.mesh.separate(type='SELECTED'); bound_box corners are prop
-  arrays — wrap Vector() before matrix multiply.
-- **Welded-import cutting law**: "faces fully inside the box" is the honest
-  cut unit (straddlers stay with the source — a straddler belongs to both
-  visual parts; handing it to either silently deforms one). A welded
-  feature is box-cutable only if its footprint PROTRUDES from its host.
-- **Fixture authoring**: primitive_cube_add defaults size=2 (scale-span
-  helpers MUST pass size=1 — the validator catches the 2× bug instantly);
-  coplanar-welded features are NOT box-isolatable; --closeup is
-  single-object per invocation.
-- **place_on auto-widen blind spot (F17, open)**: 12×12 grid sampling
-  misses small inset supports by 0.01m on large tops — the documented
-  snap_z(bottom) fallback is the consumer escape hatch.
-- **F17 CLOSED (grid refinement)**: place_on support sampling now
-  refines 12→48→192 cells until rays hit (cap 192, "footprint_grid_refined"
-  in the report); the snap_z fallback stays as the escape hatch. Edge
-  law from R6: even a refined grid fails when the placed object's
-  footprint overhangs the support bbox — center placements on the
-  support, ≥10cm from every edge.
-- **R6 real-level law (loft demo)**: huge imports need look.py's
-  flag-wireframe CAP (60; 12k annotation objects OOM a 4GB box) and a
-  look-lite .blend (strip packed images — workbench colors don't need
-  pixels). Survey 20m interiors with aimed camera→target shots + frustum
-  raycasts ("which object is that pixel"), never preset 5m offsets.
+- **The labeling loop is a kit surface**: LOOK (kit_label null) → SPLIT
+  (loose parts; WELDED needs vision-driven split-region box cuts) →
+  NAME (principal's eyes) → LABEL (report-before-rename) → LOOK verify
+  → SAVE. Blind agents then work labeled ids (proven at 0.0mm audits).
+- **Prop laws**: kit_label = durable identity; gate exclusions live on
+  the kit_semantic PROP. Rename safety: simulate the batch against
+  occupancy BEFORE mutating, two-phase via fresh temps, report JSON
+  before mutation. bmesh: INDICES not BMFace refs; bound_box corners
+  need Vector() wrap. Welded cutting: "faces fully inside the box" is
+  the honest cut unit.
+- **Fused-face signature**: dry-run shows verts_in_region > 0 but
+  faces_to_cut = 0 → mesh_prepare (triangulate) then re-dry-run.
+- **Label at family granularity**: honest confidence; blind agents
+  catch principal label errors via manifest consistency.
+- **F17 (CLOSED, grid refinement)**: place_on refines 12→48→192 cells
+  until rays hit ("footprint_grid_refined"); escape hatch = snap_z.
+  Edge law: a refined grid still fails when the footprint OVERHANGS the
+  support bbox — center placements ≥10cm from every edge. Fixture
+  law: primitive_cube_add defaults size=2 (span helpers pass size=1).
+- **R6 real-level law**: huge imports need the flag-wireframe CAP (60;
+  12k annot objects OOM a 4GB box) + a look-lite .blend (strip packed
+  images). Survey big interiors with aimed camera→target shots +
+  frustum raycasts, never preset 5m offsets.
 - **Fused-face signature**: region dry-run with verts_in_region > 0 but
   faces_to_cut = 0 at any box = floor/wall fused into wrapped faces →
   mesh_prepare (triangulate) then re-dry-run; and consider that the
@@ -394,65 +334,71 @@ Key measured laws from session-5 (also in AGENTS.md):
   spatial anomalies against the task description.
 
 ## R7 addendum — route requests on labeled levels
-- The route planner (scripts/r7_route_planner.py) is PURE PYTHON on the
-  manifest: you may run it blind. It either returns waypoints or
-  STOP-AND-FLAG (exit 4) — never guess past a flag.
-- Stair direction is bbox-decidable only for outside-abut stairs. If
-  the flag names a bbox-ambiguous stair, that is correct behavior —
-  report it and wait for vision_stair_override.json.
-- Waypoint z values are NOMINAL (bbox tops). The executor refines them
-  by tread-hug raycast; trust nav_report.json's audit (true_floats must
-  be 0) rather than the requested z's.
-- Walk-in waypoints are clamped to the mezzanine bbox and bed-avoided
-  from manifest bboxes; objects resting exactly ON the slab count as
-  obstacles.
+
+The route planner (r7_route_planner.py) is PURE PYTHON on the manifest
+(run it blind): waypoints or STOP-AND-FLAG (exit 4), never a guess.
+Stair direction is bbox-decidable only for OUTSIDE-ABUT stairs — a
+bbox-ambiguous flag is correct behavior; resolve with
+vision_stair_override.json. Waypoint z's are NOMINAL (bbox tops); trust
+nav_report.json's audit (true_floats must be 0), not the request.
 
 ## R8 addendum — seat protocol (rigged actors on labeled furniture)
-- **Wrapper yaw law**: forward = R_z(θ)·(0,1) = (−sinθ, cosθ) ⇒
-  θ = atan2(−f.x, f.y). atan2(f.y, f.x) (the math convention) is 90°
-  off; a self-consistent audit will NOT catch it — cross-check facing
-  against an independent geometric reference (backrest direction).
-- **NLA junction semantics (probed)**: strips sharing a frame evaluate
-  to the EARLIER strip's last pose — no blending, clean handoff. A
-  strip whose frame_end exceeds its action length STRETCHES the
-  mapping proportionally (42 strip frames → 30 action frames plays
-  1.4× slower); key wrappers/audits at the strip's TRUE end.
-- **Vendor blends carry their own fps**: the loft runs 30 fps, so UAL
-  clip ranges are the 24fps numbers ×1.25 (Enter 38.75f, Idle 50f).
-  Never hardcode clip lengths; int() them for NlaStrips.new.
-- **Soft furniture needs region-growing, not z-clustering**: cushions
-  dome (0.47 edge → 0.60 center); global z-clusters either fragment
-  them (tight tol) or single-linkage-chain them into the pillows on
-  top (loose tol). Grow regions on the hit grid with LOCAL z-continuity
-  (neighbor cells ≤3 cm) — a dome stays whole, pillow/backrest STEPS
-  split. Then: sat-upon rule (drop a candidate overlapped ≥60% by a
-  higher one), degenerate-axis/area filters, seed-driven selection
-  (the approach point NAMES the spot — global proximity competition
-  loses the seat to nearer clutter on layered furniture).
-- **Seat math by measurement**: hips (H) and xy offset (O) at
+
+- **Wrapper yaw law**: θ = atan2(−f.x, f.y) (the math convention is
+  90° off and a self-consistent audit will NOT catch it — cross-check
+  against an independent geometric reference like the backrest).
+- **NLA junctions (probed)**: strips sharing a frame evaluate the
+  EARLIER strip's last pose (no blending); a strip longer than its
+  action STRETCHES playback — key audits at the strip's TRUE end.
+- **Vendor blends carry their own fps** (loft = 30): scale clip ranges
+  ×1.25 for the 24fps numbers; never hardcode clip lengths.
+- **Soft furniture needs region-growing with LOCAL z-continuity
+  (≤3 cm neighbors)** — global z-clusters fragment domes or chain into
+  pillows; then sat-upon rule (drop candidates overlapped ≥60% by a
+  higher one), degenerate-axis filters, seed-driven selection (the
+  approach point NAMES the spot).
+- **Seat math by measurement**: hips H and xy offset O at
   Sitting_Enter final; flesh offset c = bone-to-mesh (0.076 for the
-  UAL mannequin — NOT 5-10 mm; the bone floats above the skin).
-  Prior gate: H ≈ 0.5415 × scale ±2% catches unapplied poses.
-  wrapper_z = seat_local + c − H (wrapper below floor is legal;
-  audit FOOT BONES, never the wrapper). Edge-sit: walk the first
-  0.4 m inward and sit on the highest spot (duvet edges dip).
-- **measure/probe hygiene**: measurement must restore the wrapper
-  transform (else the actor body shadows later probes); ground probes
-  must ignore the walker's own meshes (fall back to the feet-origin
-  law: wrapper z IS ground z where they stand).
-- **Two-lane seated audit**: sphere proxies on evaluated pose bones vs
-  static per-object BVHs = the numeric truth (no skinned operand);
-  actor-mesh pair_contact stays secondary (`unreliable-skinned`).
-  Soft surfaces compress under load — c is UNLOADED, allow −30 mm on
-  regions gated soft; rigid seats −5 mm. Exit reverse-validation
-  (exit-final hips ≈ local floor + standing hips) is a free end-to-end
-  check of the whole wrapper solve.
-- **Git blob law**: `git ls-tree -r -l <commit> | sort -k4 -nr` BEFORE
-  committing binaries — a >100MB blob makes the commit UNPUSHABLE
-  (GH001) and forces history surgery. Rewriting an UNPUSHED commit
-  whose parent == remote HEAD is a fast-forward, not a force push.
-  Big assets → GitHub Release attachments (2GB), never git.
-- **Parallel sessions are real**: two foreign pushes landed mid-R8.
-  Protocol held (fetch → verify non-overlap → rebase → push); when a
-  mirror raced a rebase, reconcile with an empty merge node — never
-  force.
+  UAL mannequin — NOT 5-10 mm). wrapper_z = seat_local + c − H; audit
+  FOOT BONES, never the wrapper. Edge-sit: walk 0.4 m inward, sit on
+  the highest spot. Restore the wrapper transform after measuring.
+
+## Session-12 meta: the vision-native FILM (TERMINAL DAWN / tdawn_1)
+
+The first FROM-SCRATCH film built with the vision kit + crowd kit +
+the kit-mode exporter — every look READ by the principal. Deep recipe:
+kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1_vision_film.md;
+design folds: docs/DESIGN_terminal_dawn.md (REV-2). The survival laws:
+
+- **F-TD5 (KIT BUG, export-blocking)**: the exporter's #29 sweep
+  (render_hidden_objects) reads a STALE view-layer object list — a
+  freshly-linked object false-positives as view-layer-excluded and
+  gate 24 rejects the package. Scene-side: end build_scene with
+  `bpy.context.view_layer.update()`. Kit-side fix belongs in the
+  OWNER repo (blender_kit.render_hidden_objects) — not landed here.
+- **marker-camera hijack + scene.camera mutation**: bpy render honors
+  the ACTIVE marker camera over scene.camera; clearing marker.camera
+  MUTATES scene.camera (observed: falls back to the last shot cam).
+  Any custom pass: suppress → RE-ASSERT scene.camera → restore.
+- **5.2 AgX emission laws**: Principled Emission COLOR defaults WHITE
+  (pin it to the base rgb); strength >~1.0 desaturates hot emission to
+  TAN under AgX (glow keys <= 0.95); sky strength 1.0 blows interiors
+  (0.35-0.5 + exposure -0.5).
+- **the bridge shape is a FEATURE**: the crowd PURSUES hero_pos (0,0)
+  at 12 Hz/541 ticks/1080 frames with N pinned at 129 (loader honesty
+  assert = anchor arithmetic 120+12/9). A NEW STORY (gate convergence)
+  reused the SAME motion grammar with zero bridge forks — re-author
+  zones/keepouts/speed-plan (dataclasses.replace on frozen DCs), never
+  the bridge. Density is bought with GEOMETRY (24x40 m hall), not N.
+- **vision loop pays for camera work**: 6/12 shot cams were reframed
+  by EYE (wall blocks lens / jamb dead-center / lens inside the crowd
+  / roof arch bisects the aerial) — none validator- or readiness-
+  catchable. Expect 2-3 reframe rounds; render shot-cam checks at
+  REPRESENTATIVE frames (frame N belongs to the marker whose f0 <= N).
+- **the unmapped-constant gate is a feature**: uppercase in the scene
+  module = mapped vocabulary only; internal wiring lowercase. It
+  fail-closed correctly on HERE/PREVIZ_SCRIPTS/TOTAL_FRAMES.
+
+Git races: the remote moved twice mid-session (a parallel session
+lands commits); sync_both.sh (fetch-rebase-push-both, never force)
+absorbed everything — verify tips after every push, expect WAF windows.

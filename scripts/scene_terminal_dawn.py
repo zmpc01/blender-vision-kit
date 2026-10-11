@@ -30,17 +30,17 @@ from pathlib import Path
 
 import bpy
 
-HERE = str(Path(__file__).resolve().parent)
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+_here = str(Path(__file__).resolve().parent)
+if _here not in sys.path:
+    sys.path.insert(0, _here)
 
-PREVIZ_SCRIPTS = os.environ.get(
+_previz_scripts = os.environ.get(
     "TPREVIZ_SCRIPTS", "/home/z/work/blender-escape-previz/scripts")
-if PREVIZ_SCRIPTS not in sys.path:
-    sys.path.insert(0, PREVIZ_SCRIPTS)
+if _previz_scripts not in sys.path:
+    sys.path.insert(0, _previz_scripts)
 
-FPS = 24
-TOTAL_FRAMES = 1080
+FPS = 24                  # mapped vocabulary (known non-story)
+total_frames = 1080
 
 # --- the mapped story vocabulary (exporter-known names) ---------------
 
@@ -73,8 +73,8 @@ SHOTS_V3 = [
 CAMS_V3 = [
     ("CAM_S1",  (6.5, -6.5, 8.2), (5.0, -4.0, 7.4), 24,
      (0.0, 12.0, 1.2), False, 0.0),
-    ("CAM_S2",  (3.6, 13.0, 2.3), (3.6, 13.0, 2.3), 40,
-     (0.0, 30.0, 4.8), False, 0.012),
+    ("CAM_S2",  (3.2, 12.0, 2.6), (3.2, 12.0, 2.6), 38,
+     (-0.5, 30.8, 5.4), False, 0.012),
     ("CAM_S3",  (0.0, -5.5, 8.4), (0.0, -4.8, 8.0), 28,
      (0.0, 15.0, 0.6), False, 0.0),
     ("CAM_S4",  (-2.5, 29.5, 2.6), (-2.5, 29.5, 2.6), 34,
@@ -251,7 +251,7 @@ def build_scene():
     scene = bpy.context.scene
     scene.render.fps = FPS
     scene.frame_start = 1
-    scene.frame_end = TOTAL_FRAMES
+    scene.frame_end = total_frames
 
     import tdawn_world
     world = tdawn_world.build_world(scene)
@@ -259,6 +259,13 @@ def build_scene():
     chars = {"zombies": _anchors(scene)}
     heroes = _heroes(scene)
 
+    # view-layer SYNC duty (L19 law family): the last-linked objects
+    # (Runner.Root measured) can lag the view-layer object list -- the
+    # exporter's #29 sweep then false-positives them as view-layer
+    # excluded and gate 24 rejects the package (refs-without-node).
+    # One forced update closes it scene-side (F-TD5; the kit-side fix
+    # belongs in render_hidden_objects -- see the frictions doc).
+    bpy.context.view_layer.update()
     return {"scene": scene, "world": world, "cams": cams,
             "chars": chars, "humans": heroes}
 
@@ -327,7 +334,7 @@ def _kf_heroes(ctx):
     for t, x, y, _dz, yaw in _master_path:
         _kf(master, frame_at(t), loc=(x, y, 0.0), rot_z=yaw)
     # idle sway keys (subtle life at the gate): tiny z bobs
-    for f in range(1, TOTAL_FRAMES, 12):
+    for f in range(1, total_frames, 12):
         master.location.z = 0.012 * math.sin(f * 0.55)
         master.keyframe_insert(data_path="location", index=2, frame=f)
     _linear(runner)
@@ -551,7 +558,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--output", required=True)
     ap.add_argument("--engine", default="eevee")
-    ap.add_argument("--frames", type=int, default=TOTAL_FRAMES)
+    ap.add_argument("--frames", type=int, default=total_frames)
     ap.add_argument("--start", type=int, default=1)
     ap.add_argument("--samples", type=int, default=16)
     ap.add_argument("--w", type=int, default=640)
@@ -630,7 +637,7 @@ def _render(ctx, args):
         return
 
     for f in range(args.start, min(args.start + args.frames,
-                                   TOTAL_FRAMES + 1)):
+                                   total_frames + 1)):
         scene.frame_set(f)
         scene.render.filepath = os.path.join(
             args.output, f"frame_{f:05d}.png")

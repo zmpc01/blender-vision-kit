@@ -1,5 +1,52 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
+> Session close: 2026-10-11 (session 12, the TERMINAL DAWN build).
+> The user-directed vision-native film: from-scratch previz short
+> built with THIS kit + blender-crowd-kit, exported kit-mode through
+> the agent-kit exporter, staged to previz-review as `tdawn_1` —
+> LIVE and verified in the app. Read kb/tdawn_vision_film.md (the
+> recipe) + docs/USABILITY_TD1_vision_film.md (the friction ledger)
+> + docs/DESIGN_terminal_dawn.md (design + REV-2 review folds).
+
+## Session-12 close state (NEWEST — read this first)
+
+- **DELIVERABLE LIVE**: previz-review `public/packages/tdawn_1/`
+  (12 shots / 45 s / 1080 f, 129-agent crowd via the bridge kit mode,
+  21 MB GLB, 12 EEVEE stills, 96 filmstrips, previz.json schema 2.3
+  with the portable story vocabulary synopsis/beats/cast). The review
+  app serves it newest-first; comments API needs `bunx prisma db push`
+  + dev-server restart on a fresh clone (500-on-fresh-clone class).
+- **THE HEADLINE FIND (F-TD5, KIT BUG, export-blocking)**: the
+  exporter's #29 sweep (blender_kit.render_hidden_objects, owner =
+  blender-agent-kit) reads a STALE view-layer object list — a
+  freshly-linked object (measured: Runner.Root) false-positives as
+  view-layer-excluded and gate 24 rejects the export. Scene-side sync
+  duty landed in my build_scene; THE KIT-SIDE FIX IS UNLANDED (owner
+  repo; do NOT vendor here). Highest-value first action for any kit
+  session: land `view_layer.update()` before the #29 check upstream.
+- **F-TD3**: marker-camera hijack + scene.camera MUTATION on clearing
+  marker bindings — look.py is still vulnerable on marker-bound
+  scenes (matches QA #11 on agent-kit). My passes are marker-safe
+  (tdawn_flowstrip.py / tdawn_filmstrips.py patterns).
+- **AgX emission laws (5.2, measured)**: Principled Emission COLOR
+  defaults WHITE (pin to base rgb — make_material does); glow keys
+  >~1.0 desaturate to TAN under AgX (cap 0.95); sky 1.0 blows
+  interiors (0.35-0.5 + exposure -0.5).
+- **Crowd-kit integration proven end-to-end**: bake driver (venv,
+  keepouts PASS-THROUGH is the driver's duty — F-TD4) → loader honesty
+  asserts → bake2 → exporter kit-mode gates 15/16/17 green at N=129.
+  The bridge shape (pursue-origin) was reused as a different STORY
+  (gate convergence) with zero bridge forks — the pattern to copy.
+- **Parallel-session races**: the remote moved twice mid-session
+  (D17/F22/F20 from a parallel session); GitHub + GitLab converged via
+  sync_both.sh discipline. tools/ (Blender) NOT committed; gitignore
+  holds. /home/sync copy made at close.
+- Open: F-TD1 (cross-kit wheel install), F-TD2 (validator structural
+  noise), F-TD8 (git races — standing), the six kit improvement
+  filings (USABILITY_TD1 final section), the tdawn_1 user review
+  round (comments are ON — the film awaits the user's notes).
+
+
 > Session close: 2026-10-05 (session 8). Handoff-protocol audit +
 > paydown (user-directed: "be extremely rigorous"), R5 real-asset
 > lane, blind-agent STRESS TEST on a real polyhaven asset (protocol
