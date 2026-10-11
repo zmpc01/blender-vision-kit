@@ -1,5 +1,32 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
+> Session close: 2026-10-11 (session 13, the ASSET DURABILITY build).
+> The user-directed D18 lane: the 561MB loft.blend is now IN-GIT as
+> 119 textures + 14 chunks + manifest; fresh-clone rebuild proven
+> (manifest_diff 0 findings, renders pixel-identical). Read
+> docs/USABILITY_R9.md (10 measured Blender laws) +
+> docs/DESIGN_D18_asset_partition.md (REV-3) first.
+
+## Session-13 close state (NEWEST — read this first)
+
+- **The asset is clone-transportable now**: after cloning, run
+  `bash install.sh` then
+  `./run.sh --background --python scripts/r9_rebuild_asset.py` — it
+  builds `assets/loft/loft_master.blend` (gitignored, rebuildable)
+  from the committed chunks + manifest. No Release, no network.
+- Laws that WILL bite again on any .blend-partition work are in
+  docs/USABILITY_R9.md (fake_user/users, scene-anchored compositor
+  trees, save re-relativization, autopack, the Area.001 double-write
+  law, closure gaps, delivery-model expectations). The chunk files in
+  assets/loft/chunks/ are IMMUTABLE — a changed asset means a NEW
+  asset directory, never an in-place rewrite.
+- Regression: tests/test_r9_chunking.py 16/16 (synthetic round-trip,
+  runs the real scripts as subprocesses with --python-exit-code).
+- Open queue: see PLAN.md Queue (R10 candidates, t10, VK-9, upstream
+  PRs, chain-input re-point).
+- Parallel-lane live coordination held all session (6 remote moves,
+  fetch-rebase before every push, zero force pushes).
+
 > Session close: 2026-10-11 (session 12, the TERMINAL DAWN build).
 > The user-directed vision-native film: from-scratch previz short
 > built with THIS kit + blender-crowd-kit, exported kit-mode through

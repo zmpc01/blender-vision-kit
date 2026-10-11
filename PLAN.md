@@ -235,11 +235,25 @@ code-level finding (--frames BLOCKER) remains valid.
   caught up, chain replayed 11/11 from committed scripts.
 - Full record: docs/USABILITY_R8.md.
 
+### Session 13 — R9 (the asset made durable: D18 shipped) COMPLETE
+- Asset partition protocol (D18 REV-3, 2 critique rounds, 27 findings
+  adopted): loft.blend 561MB -> 119 textures (403MB) + 14 chunks
+  (104MB) + manifest, ALL IN-GIT, each blob <100MB. Fresh-clone proof
+  passed (clone -> install -> rebuild -> manifest_diff 0 findings /
+  1200 unchanged; renders pixel-identical). 10 measured Blender laws
+  in docs/USABILITY_R9.md; regression tests/test_r9_chunking 16/16.
+- The GitHub Release "level-asset-loft" + polyhaven re-fetch remain as
+  compact alternatives; chunks are the clone-transport tier now.
+- Kit files untouched this session (all new r9_* scripts + test);
+  scope test clean except the pre-existing foreign-lane flag.
+
 ### Queue (next)
-1. R9 candidates: second-interior schema-reuse test (label ledger as
+1. R10 candidates: second-interior schema-reuse test (label ledger as
    the yardstick); crowd lane on the level; prop CARRY during
    navigation (kb/prop_carry.md meets r7_navigate).
 2. Sitting_Exit->walk-away chaining (full inhabit loop); third seat
    (chair x2) if the probe generalizes free.
 3. t10 export suite. 4. VK-9 re-vendor (QA ask). 5. Upstream PR: D11
-   install fallback + VK-10 hunk.
+   install fallback + VK-10 hunk. 6. Re-point the R6 chain input from
+   the Release/fetch to assets/loft rebuilt master (one-line doc +
+   chain smoke).
