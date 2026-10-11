@@ -406,3 +406,53 @@ Key measured laws from session-5 (also in AGENTS.md):
 - Walk-in waypoints are clamped to the mezzanine bbox and bed-avoided
   from manifest bboxes; objects resting exactly ON the slab count as
   obstacles.
+
+## R8 addendum — seat protocol (rigged actors on labeled furniture)
+- **Wrapper yaw law**: forward = R_z(θ)·(0,1) = (−sinθ, cosθ) ⇒
+  θ = atan2(−f.x, f.y). atan2(f.y, f.x) (the math convention) is 90°
+  off; a self-consistent audit will NOT catch it — cross-check facing
+  against an independent geometric reference (backrest direction).
+- **NLA junction semantics (probed)**: strips sharing a frame evaluate
+  to the EARLIER strip's last pose — no blending, clean handoff. A
+  strip whose frame_end exceeds its action length STRETCHES the
+  mapping proportionally (42 strip frames → 30 action frames plays
+  1.4× slower); key wrappers/audits at the strip's TRUE end.
+- **Vendor blends carry their own fps**: the loft runs 30 fps, so UAL
+  clip ranges are the 24fps numbers ×1.25 (Enter 38.75f, Idle 50f).
+  Never hardcode clip lengths; int() them for NlaStrips.new.
+- **Soft furniture needs region-growing, not z-clustering**: cushions
+  dome (0.47 edge → 0.60 center); global z-clusters either fragment
+  them (tight tol) or single-linkage-chain them into the pillows on
+  top (loose tol). Grow regions on the hit grid with LOCAL z-continuity
+  (neighbor cells ≤3 cm) — a dome stays whole, pillow/backrest STEPS
+  split. Then: sat-upon rule (drop a candidate overlapped ≥60% by a
+  higher one), degenerate-axis/area filters, seed-driven selection
+  (the approach point NAMES the spot — global proximity competition
+  loses the seat to nearer clutter on layered furniture).
+- **Seat math by measurement**: hips (H) and xy offset (O) at
+  Sitting_Enter final; flesh offset c = bone-to-mesh (0.076 for the
+  UAL mannequin — NOT 5-10 mm; the bone floats above the skin).
+  Prior gate: H ≈ 0.5415 × scale ±2% catches unapplied poses.
+  wrapper_z = seat_local + c − H (wrapper below floor is legal;
+  audit FOOT BONES, never the wrapper). Edge-sit: walk the first
+  0.4 m inward and sit on the highest spot (duvet edges dip).
+- **measure/probe hygiene**: measurement must restore the wrapper
+  transform (else the actor body shadows later probes); ground probes
+  must ignore the walker's own meshes (fall back to the feet-origin
+  law: wrapper z IS ground z where they stand).
+- **Two-lane seated audit**: sphere proxies on evaluated pose bones vs
+  static per-object BVHs = the numeric truth (no skinned operand);
+  actor-mesh pair_contact stays secondary (`unreliable-skinned`).
+  Soft surfaces compress under load — c is UNLOADED, allow −30 mm on
+  regions gated soft; rigid seats −5 mm. Exit reverse-validation
+  (exit-final hips ≈ local floor + standing hips) is a free end-to-end
+  check of the whole wrapper solve.
+- **Git blob law**: `git ls-tree -r -l <commit> | sort -k4 -nr` BEFORE
+  committing binaries — a >100MB blob makes the commit UNPUSHABLE
+  (GH001) and forces history surgery. Rewriting an UNPUSHED commit
+  whose parent == remote HEAD is a fast-forward, not a force push.
+  Big assets → GitHub Release attachments (2GB), never git.
+- **Parallel sessions are real**: two foreign pushes landed mid-R8.
+  Protocol held (fetch → verify non-overlap → rebase → push); when a
+  mirror raced a rebase, reconcile with an empty merge node — never
+  force.
