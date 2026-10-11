@@ -3206,3 +3206,23 @@ Work Log:
 
 Stage Summary:
 - The complete mission chain now stands: download real interior → cut → label → place → populate → NAVIGATE → verify, with the blind/contract protocol exercised at every step. Navigation proved to be the strongest label validator (caught the wall/stairs swap R6 shipped). F23 queued: unexercised-label confidence. Next: R8 (second interior schema reuse / seated actors / crowd) or F-fixes.
+
+---
+Task ID: R8-0
+Agent: principal (orchestrator)
+Task: Session 11 bootstrap + the GitHub push repair
+
+Work Log:
+- New session, sandbox wiped; /home/sync survived. New GitHub PAT provided by user (old one 401-expired since R7); GitLab PAT provided too.
+- Cloned /home/sync/blender-vision-kit -> /home/z/vision-work (f7facd9, loft.blend in working tree).
+- FIRST PUSH ATTEMPT REJECTED: GH001 — polyhaven_cache/loft/loft.blend (535.13MB) exceeds GitHub's 100MB blob limit. Discovered the R7 session's belief "blob tracked since R5" was WRONG: git log proves the blob enters at f7facd9 (the R7 commit itself, which never pushed due to the then-expired PAT).
+- REPAIR (safe, no force push): remote never received f7facd9, so rewriting the unpushed commit is a fast-forward from GitHub's view. git reset --soft aa17782 -> git rm --cached the blob -> .gitignore += polyhaven_cache/ -> recommit. New HEAD 0315ab8.
+- Push VERIFIED on BOTH remotes: GitHub aa17782..0315ab8 (ls-remote match), GitLab mirror 132e8f4..0315ab8 (first attempt, no WAF block). GitLab mirror catch-up item (queued since R5) CLOSED.
+- Durability: created GitHub Release "level-asset-loft" (tag on 0315ab8), uploaded loft.blend (561,122,088 bytes, state=uploaded verified). Asset now durable 3 ways: sync working tree + release asset + scripts/r6_loft_fetch.sh.
+- Sync clone updated to 0315ab8 (blob copied aside during reset --hard, restored untracked+ignored).
+- Blender 5.2.2 LTS provisioned via install.sh foreground (Cycles True, Pillow 12.3.0).
+
+Stage Summary:
+- LAW (new): git ls-tree -r -l <commit> | sort -k4 -nr BEFORE any commit with binaries — a >100MB blob makes the commit UNPUSHABLE and forces history surgery. big assets go to release assets, never git.
+- LAW (refined): "never force push" protects the REMOTE; rewriting a LOCAL-ONLY unpushed commit whose parent == remote HEAD is safe and sometimes required. Check: git ls-remote first, merge-base second.
+- R7 wrap commit on GitHub is 0315ab8 (not f7facd9 — that hash exists only in sync clone/tars, superseded).
