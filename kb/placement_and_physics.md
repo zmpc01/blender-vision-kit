@@ -15,6 +15,8 @@
 
 `{"op":"audit","output":"path.json"}` — exits non-zero on penetration by default. Pair discovery: every mesh pair whose AABBs come within `clearance_pad_mm` (default 100). Per-pair states: PENETRATING (penetration_mm), TOUCHING, NESTED (contained — often intended), CLEAR (clearance_mm). `clearance_mm: null` on PEN/NESTED = read `penetration_mm`.
 
+**F21 law — gap numbers against room shells are NOT contact truths**: when one side of a pair is a room-shell object (labels room/shell/wall/floor/ceiling/mezzanine), the shell's AABB spans the whole room, so `CLEAR gap` / `NESTED` / big `penetration_mm` numbers for that pair are AABB-geometry artifacts (an interior object is always "inside" the wall's box), not surface distances. The mm-class truth vs a shell comes from a raycast to the shell's actual surface (the nav/seat probe pattern), never from the pair audit. Filter shell-side pairs out of "floating/penetration" reasoning; validator v2/F22 skip them for the same reason.
+
 **"Nothing floats" proofs**: audit only sees pairs within the pad — a 300mm floater appears in NO pair. Use `physics_gate` (scene-level) or `scene_schema --with-bounds` for scene-wide floating checks.
 
 ## seam_views / heat_bake / ascii_height_map

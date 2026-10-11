@@ -240,6 +240,15 @@ off|fxaa`, `--shade studio|flat`, `--png`, `--fps N`, `--scene-name NAME`.
 ./scripts/blrun.sh --background --python scripts/apply_patch.py -- --list
 ```
 Patch format: `{"scene":"module"|"load_blend":"file.blend","frames":N,"mutations":[...]}`
+
+> **F20 law (dispatch prompts): when you delegate patch work, SHOW the
+> wrapper shape explicitly** — `{"load_blend": "in.blend",
+> "mutations": [{"op": ..., "id": ..., ...params}]}` — plus the CLI
+> line above. The R5 stress-test consumer had to read apply_patch.py
+> source to recover this shape; never rely on that. `save_blend` is a
+> CLI flag, NOT a patch key; op key is `id`; `mode:"dry-run"` lives
+> INSIDE a mutation op (region ops: presence of `region` implies
+> dry-run planning — read the op's PARAM_DOCS line).
 35 ops: `set_location/rotation/scale`, `set_material_color/roughness/metallic`,
 `delete_object`, `duplicate_object`, `set_camera_location/lens`,
 `set_light_energy/color`, `set_world_strength`, `set_exposure`, `set_frame`,
