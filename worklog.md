@@ -3226,3 +3226,23 @@ Stage Summary:
 - LAW (new): git ls-tree -r -l <commit> | sort -k4 -nr BEFORE any commit with binaries — a >100MB blob makes the commit UNPUSHABLE and forces history surgery. big assets go to release assets, never git.
 - LAW (refined): "never force push" protects the REMOTE; rewriting a LOCAL-ONLY unpushed commit whose parent == remote HEAD is safe and sometimes required. Check: git ls-remote first, merge-base second.
 - R7 wrap commit on GitHub is 0315ab8 (not f7facd9 — that hash exists only in sync clone/tars, superseded).
+
+---
+Task ID: 1 (session 12)
+Agent: Super Z (vision-native principal)
+Task: Session-12 bootstrap — fresh sandbox, full context restore from repos, toolchain provisioning, vision-loop verification.
+
+Work Log:
+- Fresh sandbox (nothing local survived). Cloned 4 repos to /home/z/work/: blender-escape-previz, blender-vision-kit (HEAD 25331dd), blender-crowd-kit, blender-agent-kit (HEAD cca91b3), previz-review. All private repos accessible with the user PAT.
+- ERROTUM (recorded for the lesson): the FIRST worklog write REPLACED this file (18-line session entry over a 3228-line history) — the commit stayed local-unpushed and was amended before push; the push rejection (remote had 00d0afb, the parallel D17 seat-protocol design) caught it. LAW re-learned: worklog is APPEND-ONLY; always `git show <base>:worklog.md > worklog.md` first on a fresh clone, and never assume the remote stood still (a parallel session had landed D17 while this sandbox bootstrapped).
+- Context restored from: previz .agents/SKILL.md (kit meta-laws), previz HANDOFF/PLAN (v6_1 live, s34 export state), vision-kit AGENTS.md (vision loop L1-L6 laws, 456-part lesson, D16 contract), vision-kit HANDOFF (R5-R7 state, VK-9/VK-10 open), previz-review package contract (src/lib/previz.ts — schema tolerant: story optional sub-fields, session-33 portable vocabulary synopsis/beats/cast).
+- Provisioned: vision-kit install.sh FOREGROUND (Blender 5.2.2 LTS, Cycles OK, Pillow 12.3.0); crowd-kit setup_native.sh (venv wheel 1.5.1) + wheel + jsonschema hand-installed into vision-kit's Blender python (setup_native only handles its OWN tools/ tree — friction F-TD1 candidate: cross-kit wheel install is manual).
+- Vision loop VERIFIED LIVE: look.py on examples/scene_v1_basic → 4-angle annotated grid rendered + READ WITH NATIVE VISION (orange cube/blue sphere/labels/gnomon correct). This session's principal is vision-native — the kit's primary-eye path works.
+- Crowd bridge analyzed: previz_bridge.ingest_contract is escape-shaped but spatially parameterizable (duck-typed contract: DT=1/12, N_TICKS=541, FPS=24, TOTAL_FRAMES=1080, SPAWN_ZONES_V5, CAM_KEEPOUTS_V3, CAM_KEEPOUT_R, CROWD_X_RANGE, N_RELEASE; optional BARRICADES). Crowd pursues hero_pos (0,0) capacity ±5m; flee_target = (0, y_hi_all). Zone-proportional spawns, 9-deep chase tail sorts last (Zed.Chase01..09), 3 RB placeholders (Zed.RB.Chase03/06/09).
+- Export path analyzed: agent-kit exporter (schema 2.3, 4744 LOC) = canonical; kit-mode via --crowd-mode kit --crowd-plugin <previz>/scripts/crowd_kit + --scene-dir <vision-kit>/scripts; the wrapper previz_kit_export_wrapper.py anchors the previz superset blender_kit; hero_gates gates 18-21 SKIP (WARN) when hero_gates.py absent from scene-dir.
+- bake2 materialization: TRS + phase shape-keys onto capsule anchors (scene-side creation, frozen crowd_agents.add_shape_keys bases); scene must build crowd capsules (Zed.NNNN) + 12 chase capsules.
+
+Stage Summary:
+- Environment GREEN: Blender 5.2.2 + vision loop + crowd wheel + jsonschema in Blender python.
+- Film concept selected: "TERMINAL DAWN" (own spin — dawn concourse evacuation; crowd = commuter surge toward the gate at origin, matches the bridge's pursue-shape; heroes = Master (holds the gate) + Runner (pushes against the flow); same 45s/1080f/24fps grid as Last Ride Out for A/B).
+- Next: DESIGN doc + peer review, then build.
