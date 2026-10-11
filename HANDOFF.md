@@ -219,3 +219,33 @@ Delegation protocol: unchanged (AGENTS.md EXECUTION CONTRACT). Blind
 agents can now also REQUEST ROUTES (planner is pure Python on the
 manifest) — but executing a route stays kit-side; verify every
 delegated nav with the audit numbers, never self-reports.
+
+
+## SESSION 12 — R8 CLOSE (the level INHABITED: actors SIT)
+State: GitHub HEAD = R8 wrap (verify git log -1; parallel lanes may
+have moved it — fetch first). Bootstrap = clone + ./install.sh
+foreground; the loft asset comes from the GitHub Release
+"level-asset-loft" OR scripts/r6_loft_fetch.sh (NOT in git — 100MB
+blob limit; the R7 wrap commit was rewritten 0315ab8 = f7facd9 minus
+the blob; polyhaven_cache/ is gitignored).
+
+What R8 proves: the kit derives seat surfaces from LABELED furniture
+by probe (region-growing, sat-upon/clutter/contamination guards,
+seed-driven), measures the actor's seated pose (H/O/flesh-c with a
+prior gate), executes walk->sit->idle->exit via a single NLA track,
+and certifies it (sphere-proxy lane + exit reverse-validation).
+Driver->sofa (rigid/high) and Girl->bed (soft/medium) both ok=True;
+renders verified by the principal's eyes (profile shot settles seat
+contact). test_r8_seat.py 18/18 + test_f22_levels.py 14/14 + battery.
+
+Read FIRST: docs/USABILITY_R8.md (7 guarded probe failures = the
+texture of real furniture), docs/DESIGN_R8_seat_protocol.md (D17
+REV-2), .agents/SKILL.md R8 addendum (yaw law, NLA junctions, seat
+math, git blob law). Friction queue: F20/F21/F22/F23 + VK-10 all
+CLOSED this round; VK-9 (re-vendor) still open.
+
+Delegation protocol unchanged (AGENTS.md EXECUTION CONTRACT). New
+blind-safe surface: r8_seat.py probe on a labeled family + approach
+hint (STOP-AND-FLAG exit 4 on contamination/clutter/low-confidence);
+executing a sit stays kit-side; verify delegated sits with the audit
+numbers (ok flag + dz + no_penetration + exit_ok), never self-reports.

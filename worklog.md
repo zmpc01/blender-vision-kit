@@ -3246,3 +3246,22 @@ Stage Summary:
 - Environment GREEN: Blender 5.2.2 + vision loop + crowd wheel + jsonschema in Blender python.
 - Film concept selected: "TERMINAL DAWN" (own spin — dawn concourse evacuation; crowd = commuter surge toward the gate at origin, matches the bridge's pursue-shape; heroes = Master (holds the gate) + Runner (pushes against the flow); same 45s/1080f/24fps grid as Last Ride Out for A/B).
 - Next: DESIGN doc + peer review, then build.
+
+---
+Task ID: R8-3
+Agent: principal (orchestrator)
+Task: R8 execution — the level INHABITED
+
+Work Log:
+- F22 shipped FIRST (measured corpus: 2259/2499 flagged pairs were fam-fam composition): level-aware validator policy — fam-fam AABB adjacency -> visible P2 advisory (1325 on loft), unlabeled full-containment in room-scale shells -> visible unverified skip (1201), gross non-shell overlaps still flag. Loft re-baseline: intersections 1452->77, P0 734->52. test_f22_levels 14/14; battery green.
+- F20 (AGENTS.md wrapper-shape law) + F21 (kb shell-gap law) + VK-10 ported+verified (sphere x read -2.0 at every frame; now interpolates).
+- Seat lane per D17 REV-2: measurement probe (H=0.5686 exact prior match, O, flesh_c=0.0759 — the critique's 7x-constant warning was right), NLA boundary probe (earlier strip wins at shared junctions; no blending), executor (single track, 3 copied strips + Exit tail, wrapper keyed across Enter, law-106 holds).
+- 7 guarded failures en route (pillows won on hit count; cushion DOME fragmented by z-clustering; single-linkage chained dome into pillows; seam chains won proximity; walks climbed sideboard/cushions; throw pillow in the sit zone; yaw convention 90-deg bug that the audit self-agreed with until the independent backrest reference exposed it). All fixed + test-covered.
+- RESULT: Driver->sofa ok=True (dz 0.0, pelvis -3.3mm natural contact, feet flat, drift 0.0, facing 1.0, exit reverse-validation 0.923 vs 0.921) + Girl->bed ok=True (soft duvet, honest medium conf, dome-edge sit, feet clear). Renders: approach/sit/sit-side/exit — profile confirms contact. test_r8_seat 18/18.
+- F23 ledger completed (handoff/label_use_ledger.json): 5 labels use-verified, big families honestly unexercised.
+- Docs: USABILITY_R8.md, SKILL R8 addendum, PLAN, HANDOFF.
+- Infra: two parallel-session pushes reconciled (rebase; one GitLab orphan merged empty, no force).
+
+Stage Summary:
+- The mission chain now stands: download -> cut -> label -> place -> populate -> NAVIGATE -> SIT, all certified numerically and verified visually. F22/F23 make the validator honest on real levels and the label ledger explicit about what a USE has proven.
+- Next: R9 (second interior / crowd / carry), t10, VK-9.

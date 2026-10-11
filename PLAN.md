@@ -206,9 +206,27 @@ code-level finding (--frames BLOCKER) remains valid.
   loft_nav.blend. Tests: test_r7_route.py 17 checks + v1/v5/v6/f17/
   scope battery ALL PASS. Full record: docs/USABILITY_R7.md.
 
+### Session 11 — R8 (the level INHABITED) SHIPPED
+- Seat protocol D17 (design REV-2 + critique round): region-growing
+  probe on labeled furniture (sat-upon/clutter/contamination guards),
+  measured seat math (H/O/flesh-c, prior gate), single-track NLA sit
+  chain (walk/enter/idle/exit, boundary-probed), two-lane audit +
+  exit reverse-validation. Driver->sofa + Girl->bed both ok=True on
+  the real loft; profile-verified renders; test_r8_seat 18/18.
+- F22 shipped FIRST (level-aware validator: fam-fam advisories 1325,
+  unlabeled containment skips 1201, intersections 1452->77, P0
+  734->52) + F20/F21 doc laws + VK-10 ported+verified + F23 ledger
+  (handoff/label_use_ledger.json).
+- Infra: GH blob-limit repair (R7 wrap had been silently unpushable;
+  0315ab8 rewrite, release asset for loft.blend), GitLab mirror
+  caught up, chain replayed 11/11 from committed scripts.
+- Full record: docs/USABILITY_R8.md.
+
 ### Queue (next)
-1. R8 candidates: second-interior schema-reuse test; humanoid SIT/seat
-   on labeled furniture; crowd lane on the level.
-2. F20/F21/F22 + F23 (unexercised-label confidence) fixes. 3. t10
-   export suite. 4. VK-9 re-vendor + VK-10 example hunk port (QA asks).
-5. GitLab mirror catch-up (PAT still 401).
+1. R9 candidates: second-interior schema-reuse test (label ledger as
+   the yardstick); crowd lane on the level; prop CARRY during
+   navigation (kb/prop_carry.md meets r7_navigate).
+2. Sitting_Exit->walk-away chaining (full inhabit loop); third seat
+   (chair x2) if the probe generalizes free.
+3. t10 export suite. 4. VK-9 re-vendor (QA ask). 5. Upstream PR: D11
+   install fallback + VK-10 hunk.
