@@ -386,6 +386,11 @@ def main():
             print(f"[look] scene bounds min={mn} max={mx}")
         print(f"[look] validator: P0={p0} P1={p1} P2={p2}"
               + ("  [validator ran]" if True else ""))
+        _adj = report.get("adjacency_pairs_advisory") or 0
+        if _adj:
+            print(f"[look] level-adjacency advisories: {_adj} "
+                  f"(fam-fam AABB composition — F22, see report "
+                  f"adjacency_worst)")
         for issue in report["issues"][:12]:
             who = issue.get("object", " & ".join(issue.get("objects", [])))
             print(f"[look]   [{issue['severity']}] {issue['type']:14s} {who}: "

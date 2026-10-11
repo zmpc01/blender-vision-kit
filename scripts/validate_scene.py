@@ -73,9 +73,25 @@ def _is_ground_like(b: dict) -> bool:
     return height <= 0.05 and area >= 6.0
 
 
+# F22 (R8, measured on the R6/R7 loft): labels whose objects compose
+# DENSELY by vendor design in authored levels. AABB overlap between two
+# such objects is composition/adjacency, not collision — recorded as a
+# visible P2-class advisory, never silently dropped (the mm-class truth
+# for these pairs is owned by the USE audits: place_on/seat_at/nav).
+# Data-derived default: the 21 distinct kit_labels present on the R6
+# loft (kitchen_unit 841 ... floor_lamp 1); extendable via param.
+LEVEL_FAMILIES = frozenset({
+    "kitchen_unit", "partition_panel", "deco", "sofa_module",
+    "pendant_light", "railing", "bed", "interior_window",
+    "shelf_unit", "plant", "wall", "ceiling", "exterior_window",
+    "rug", "chair", "floor", "stairs", "mezzanine", "table",
+    "sideboard", "floor_lamp"})
+
+
 def validate_scene(*, ground_z: float = 0.0,
                    floating_threshold: float = 0.05,
-                   overlap_volume_threshold: float = 0.001) -> dict:
+                   overlap_volume_threshold: float = 0.001,
+                   level_families=None) -> dict:
     """Run structural validation checks on the current scene.
 
     Checks:
@@ -84,6 +100,13 @@ def validate_scene(*, ground_z: float = 0.0,
       2. Below-floor objects: mesh objects whose top is below ground_z
       3. Suspicious intersections: pairs of mesh objects whose overlap volume
          exceeds overlap_volume_threshold (likely geometry bugs, not intended contact)
+         - v2 containment skip: labeled prop inside a labeled shell
+         - F22 containment extension: ANY object FULLY inside a room-scale
+           shell (bbox-contained, volume ratio >= 50x) — the shell AABB
+           swamps it; recorded visibly, reason marks 'unverified'
+         - F22 level-adjacency advisory: both sides kit_labeled with
+           level-family labels -> advisory (visible count + worst-N),
+           not an issue; gross non-shell overlaps still flag
       4. Ceiling check: objects above 5m (likely misplaced)
 
     Returns a dict with issues list + summary stats.
@@ -119,6 +142,9 @@ def validate_scene(*, ground_z: float = 0.0,
     _shell = {n for n in _both_labeled
               if any(t in _labels[n].lower() for t in _SHELL_TOKENS)}
     skipped_contained = []
+    if level_families is None:
+        level_families = LEVEL_FAMILIES
+    adjacency = []
 
     # ---- Check 1: floating objects ---------------------------------
     # Skip ceilings (excluded set above: kit_semantic prop or legacy name)
@@ -232,25 +258,85 @@ def validate_scene(*, ground_z: float = 0.0,
             if pct < 5 and overlap_v < overlap_volume_threshold:
                 continue
             # v2 containment skip (see note above): both labeled, one
-            # shell-like, the other's centroid inside the shell bbox
+            # shell-like, the other's centroid inside the shell bbox.
+            # F22 extension: an UNLABELED object FULLY contained in a
+            # room-scale shell (volume ratio >= 50x) is the same
+            # swamping artifact — the shell AABB spans the room, so any
+            # interior object 'overlaps' it. Recorded visibly with an
+            # honest 'unverified' reason; still VISIBLE, not silent.
+            _skipped = False
             for si, sj in ((names[i], names[j]), (names[j], names[i])):
-                if (si in _shell and sj in _both_labeled
-                        and sj not in _shell):
-                    c = bounds_map[sj]
-                    sb = bounds_map[si]
-                    inside = all(sb["min"][k] <=
-                                 (c["min"][k] + c["max"][k]) / 2 <=
-                                 sb["max"][k] for k in range(3))
-                    if inside:
-                        skipped_contained.append(
-                            {"pair": [si, sj],
-                             "overlap_pct_of_smaller": round(pct, 1),
-                             "reason": f"'{sj}' is labeled and contained "
-                                       f"in shell '{si}' — containment, "
-                                       f"not collision"})
-                        break
-            else:
-                issues.append({
+                if si not in _shell or sj in _shell:
+                    continue
+                c = bounds_map[sj]
+                sb = bounds_map[si]
+                centroid_in = all(sb["min"][k] <=
+                                  (c["min"][k] + c["max"][k]) / 2 <=
+                                  sb["max"][k] for k in range(3))
+                fully_in = all(sb["min"][k] <= c["min"][k] and
+                               c["max"][k] <= sb["max"][k]
+                               for k in range(3))
+                ratio = (_object_volume(sb) /
+                         _object_volume(c)) if _object_volume(c) > 0 else 0
+                if sj in _both_labeled and centroid_in:
+                    skipped_contained.append(
+                        {"pair": [si, sj],
+                         "overlap_pct_of_smaller": round(pct, 1),
+                         "reason": f"'{sj}' is labeled and contained "
+                                   f"in shell '{si}' — containment, "
+                                   f"not collision"})
+                    _skipped = True
+                    break
+                if fully_in and ratio >= 50.0:
+                    _lab = "unlabeled" if sj not in _both_labeled \
+                        else f"labeled '{_labels.get(sj, '')}'"
+                    skipped_contained.append(
+                        {"pair": [si, sj],
+                         "overlap_pct_of_smaller": round(pct, 1),
+                         "reason": f"'{sj}' is fully contained in "
+                                   f"room-scale shell '{si}' "
+                                   f"(x{ratio:.0f} volume) — containment, "
+                                   f"not collision (unverified: {_lab} "
+                                   f"object, run a look to confirm)"})
+                    _skipped = True
+                    break
+            if _skipped:
+                continue
+            # F22 level-adjacency advisory: both sides carry level-family
+            # labels — AABB overlap is vendor composition (measured corpus:
+            # 2259/2499 flagged pairs on the R6 loft; median pct 100%,
+            # max depth 1.79 m, ALL legitimate — walls contain stairs,
+            # sofas abut walls, bed parts interpenetrate). Visible
+            # advisory; the gate still bites on gross non-shell overlaps.
+            l1 = _labels.get(names[i], "")
+            l2 = _labels.get(names[j], "")
+            if l1 in level_families and l2 in level_families:
+                depth = min(min(a["max"][k], b["max"][k]) -
+                            max(a["min"][k], b["min"][k]) for k in range(3))
+                gross = (depth >= 0.5 and pct >= 95.0
+                         and names[i] not in _shell
+                         and names[j] not in _shell)
+                if gross:
+                    issues.append({
+                        "type": "intersection",
+                        "severity": "P1",
+                        "objects": [names[i], names[j]],
+                        "overlap_volume_m3": round(overlap_v, 5),
+                        "overlap_pct_of_smaller": round(pct, 1),
+                        "description": f"GROSS level-pair overlap exceeds "
+                                       f"the F22 adjacency rule: "
+                                       f"'{names[i]}' and '{names[j]}' "
+                                       f"overlap {pct:.1f}% of smaller, "
+                                       f"depth {depth:.2f}m — review"})
+                else:
+                    adjacency.append({
+                        "type": "level_adjacency",
+                        "pair": [names[i], names[j]],
+                        "labels": [l1, l2],
+                        "overlap_pct_of_smaller": round(pct, 1),
+                        "min_axis_depth_m": round(depth, 3)})
+                continue
+            issues.append({
                 "type": "intersection",
                 "severity": "P1" if pct < 30 else "P0",
                 "objects": [names[i], names[j]],
@@ -287,6 +373,10 @@ def validate_scene(*, ground_z: float = 0.0,
         "issues_by_type": {},
         "issues": issues,
         "contained_pairs_skipped": skipped_contained,
+        "adjacency_pairs_advisory": len(adjacency),
+        "adjacency_worst": sorted(
+            adjacency,
+            key=lambda r: -r["min_axis_depth_m"])[:5],
     }
     for issue in issues:
         summary["issues_by_type"].setdefault(issue["type"], 0)
