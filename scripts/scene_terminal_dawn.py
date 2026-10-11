@@ -71,24 +71,24 @@ SHOTS_V3 = [
 # parent_jeep is the escape-film vocabulary (no jeep here -- always
 # False; the mover stays False so TRACK_TO aiming is live on every cam).
 CAMS_V3 = [
-    ("CAM_S1",  (7.0, -16.0, 17.0), (5.0, -11.0, 13.5), 28,
-     (0.0, 8.0, 0.0), False, 0.0),
+    ("CAM_S1",  (6.5, -6.5, 8.2), (5.0, -4.0, 7.4), 24,
+     (0.0, 12.0, 1.2), False, 0.0),
     ("CAM_S2",  (3.6, 13.0, 2.3), (3.6, 13.0, 2.3), 40,
      (0.0, 30.0, 4.8), False, 0.012),
-    ("CAM_S3",  (-9.0, 4.5, 7.0), (-8.4, 5.5, 6.2), 30,
-     (0.0, 17.0, 1.0), False, 0.0),
-    ("CAM_S4",  (-8.2, 21.0, 2.0), (-8.2, 21.0, 2.0), 42,
-     (2.0, 24.0, 1.2), False, 0.02),
+    ("CAM_S3",  (0.0, -5.5, 8.4), (0.0, -4.8, 8.0), 28,
+     (0.0, 15.0, 0.6), False, 0.0),
+    ("CAM_S4",  (-2.5, 29.5, 2.6), (-2.5, 29.5, 2.6), 34,
+     (1.5, 20.0, 1.0), False, 0.02),
     ("CAM_S5",  (8.4, 19.5, 1.8), (8.4, 13.0, 1.8), 38,
      (1.0, 18.0, 1.2), False, 0.025),
     ("CAM_S6",  (-5.6, 7.6, 1.65), (-5.6, 7.6, 1.65), 45,
      (0.0, 1.6, 1.4), False, 0.018),
-    ("CAM_S7",  (-7.6, 11.0, 0.95), (-7.2, 9.0, 0.95), 40,
-     (0.0, 7.0, 1.0), False, 0.034),
-    ("CAM_S8",  (4.8, -3.4, 1.55), (4.8, -3.4, 1.55), 50,
-     (0.0, 6.0, 1.4), False, 0.012),
-    ("CAM_S9",  (0.7, -4.6, 1.35), (0.7, -4.6, 1.35), 40,
-     (0.0, 2.6, 1.3), False, 0.022),
+    ("CAM_S7",  (-8.8, 11.5, 2.6), (-8.4, 9.5, 2.6), 35,
+     (0.0, 6.5, 1.1), False, 0.034),
+    ("CAM_S8",  (0.0, 3.2, 2.4), (0.0, 3.2, 2.4), 40,
+     (0.0, 12.0, 1.1), False, 0.012),
+    ("CAM_S9",  (0.4, -7.2, 3.4), (0.4, -7.2, 3.4), 24,
+     (0.0, 2.0, 1.0), False, 0.022),
     ("CAM_S10", (-6.5, -2.6, 2.0), (-6.0, -2.0, 2.0), 35,
      (0.0, 4.0, 1.5), False, 0.0),
     ("CAM_S11", (2.0, 10.0, 2.2), (6.0, 2.0, 9.0), 30,
@@ -108,13 +108,13 @@ BEATS = [
     ("calm",       1.0,  "dawn trickle: the early flow moves quietly"),
     ("omen",       3.5,  "the board stutters; the far windows glow wrong"),
     ("surge",      7.0,  "the surge ignites: the hall turns into a stream"),
-    ("runner_in",  11.0, "the Runner enters at the far end, turns back"),
-    ("against",    14.5, "the Runner pushes against the flow"),
-    ("the_line",   18.5, "the Master holds the gate line under pressure"),
-    ("stumble",    22.0, "the Runner is driven to a knee, nearly lost"),
-    ("seen",       26.0, "the Master sees the Runner; holds the vault"),
-    ("the_dive",   30.0, "the Runner dives through the sealing vault"),
-    ("seal",       34.0, "the vault seals; the crowd is held"),
+    ("runner_in",  8.8,  "the Runner enters at the far end, turns back"),
+    ("against",    12.3, "the Runner pushes against the flow"),
+    ("the_line",   16.5, "the Master holds the gate line under pressure"),
+    ("stumble",    19.8, "the Runner is driven to a knee, nearly lost"),
+    ("seen",       23.0, "the Master sees the Runner; holds the vault"),
+    ("the_dive",   30.2, "the Runner dives through the sealing vault"),
+    ("seal",       33.8, "the vault seals; the crowd is held"),
     ("dawn",       38.0, "the light turns; the hall empties into silence"),
     ("title",      42.0, "TERMINAL DAWN"),
 ]
@@ -123,18 +123,18 @@ CROWD_TIER_PINS = []       # kit mode: single tier, no director pins
 
 # --- lowercase scene internals -----------------------------------------
 
-_hero_path = [  # (t_seconds, x, y, z, yaw_deg) -- the Runner's authored run
-    (11.00, 2.5, 27.0, 0.0, 180.0),   # enters at the far end
-    (13.00, 2.0, 23.5, 0.0, 176.0),   # turns against the flow
-    (14.50, 1.2, 19.5, 0.0, 172.0),
-    (16.50, -1.2, 15.5, 0.0, 168.0),
-    (18.50, 1.0, 11.5, 0.0, 176.0),   # weaving the stream
-    (21.80, -0.8, 7.6, 0.0, 170.0),
-    (22.00, -0.9, 7.2, -0.18, 170.0),  # the stumble dips
-    (22.60, -0.8, 6.2, -0.02, 168.0),
-    (23.40, -0.4, 5.4, 0.0, 160.0),
-    (26.00, 0.2, 3.6, 0.0, 150.0),
-    (29.20, 0.4, 1.8, 0.0, 120.0),
+_hero_path = [  # (t_seconds, x, y, dz, yaw_deg) -- the Runner's authored run
+    (8.80, 2.5, 27.0, 0.0, 180.0),    # enters at the far end
+    (10.80, 2.0, 23.5, 0.0, 176.0),   # turns against the flow
+    (12.30, 1.2, 19.5, 0.0, 172.0),
+    (14.30, -1.2, 15.5, 0.0, 168.0),
+    (16.30, 1.0, 11.5, 0.0, 176.0),   # weaving the stream
+    (19.60, -0.8, 7.6, 0.0, 170.0),
+    (19.80, -0.9, 7.2, -0.18, 170.0),  # the stumble dips
+    (20.40, -0.8, 6.2, -0.02, 168.0),
+    (21.20, -0.4, 5.4, 0.0, 160.0),
+    (23.80, 0.2, 3.6, 0.0, 150.0),
+    (27.00, 0.4, 1.8, 0.0, 120.0),
     (30.20, 0.4, 0.2, 0.35, 100.0),   # the dive arc (vault throat)
     (31.00, 0.2, -1.6, 0.0, 90.0),    # through; doors seal behind
     (45.00, 0.2, -1.6, 0.0, 90.0),
@@ -142,9 +142,9 @@ _hero_path = [  # (t_seconds, x, y, z, yaw_deg) -- the Runner's authored run
 
 _master_path = [
     (0.0, -1.9, 1.7, 0.0, 96.0),      # gate-left, watching the hall
-    (24.0, -1.9, 1.7, 0.0, 96.0),
-    (26.0, -0.9, 1.2, 0.0, 80.0),     # steps out to read the surge
-    (29.5, 0.4, 0.9, 0.0, 60.0),      # to the throat, arm to the crowd
+    (21.0, -1.9, 1.7, 0.0, 96.0),
+    (23.0, -0.9, 1.2, 0.0, 80.0),     # steps out to read the surge
+    (27.0, 0.4, 0.9, 0.0, 60.0),      # to the throat, arm to the crowd
     (31.5, 0.4, 0.9, 0.0, 60.0),
     (34.5, -0.6, 0.9, 0.0, 75.0),     # back as the doors close
     (45.0, -0.6, 0.9, 0.0, 75.0),

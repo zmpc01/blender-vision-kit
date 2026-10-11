@@ -35,16 +35,16 @@ BRIDGE_HEIGHT_M = 1.75
 #: sRGB values; the same triple lands in Principled base_color AND
 #: Workbench diffuse_color (gotcha 6).
 COMMUTER_PALETTE = [
-    (0.055, 0.075, 0.125),   # navy coat
-    (0.145, 0.062, 0.049),   # rust jacket
-    (0.082, 0.092, 0.058),   # olive parka
-    (0.043, 0.046, 0.052),   # charcoal
-    (0.238, 0.216, 0.180),   # bone sweater
-    (0.118, 0.086, 0.062),   # brown coat
-    (0.078, 0.094, 0.110),   # slate blue
-    (0.108, 0.049, 0.062),   # wine coat
-    (0.140, 0.120, 0.096),   # taupe
-    (0.058, 0.078, 0.070),   # pine green
+    (0.115, 0.155, 0.265),   # navy coat
+    (0.300, 0.130, 0.100),   # rust jacket
+    (0.170, 0.190, 0.120),   # olive parka
+    (0.090, 0.095, 0.108),   # charcoal
+    (0.480, 0.435, 0.365),   # bone sweater
+    (0.240, 0.175, 0.128),   # brown coat
+    (0.160, 0.192, 0.224),   # slate blue
+    (0.220, 0.100, 0.128),   # wine coat
+    (0.285, 0.245, 0.196),   # taupe
+    (0.120, 0.160, 0.143),   # pine green
 ]
 
 HERO_COLORS = {
@@ -119,9 +119,11 @@ def build_commuter_mesh(name, height=BRIDGE_HEIGHT_M, mat_body=None):
         _prim("sph", 0.148 * s, (0.0, 0.01 * s, 1.53 * s), verts=14),  # head
     ]
     for sx in (-1.0, 1.0):
-        # arm: shoulder (x .27, y .02, z 1.30) -> hand (x .30, y .30, z .84)
+        # arm: shoulder (x .27, z 1.30) -> hand (x .28, y .17, z .78)
+        # -- a walking carry, not a zombie reach (the shape keys add
+        # the +/-0.28 swing; the REST pose stays close to the body)
         p0 = (0.265 * s * sx, 0.02 * s, 1.29 * s)
-        p1 = (0.30 * s * sx, 0.30 * s, 0.84 * s)
+        p1 = (0.285 * s * sx, 0.17 * s, 0.78 * s)
         mid = ((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2)
         dx, dy, dz = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])
         ln = math.sqrt(dx * dx + dy * dy + dz * dz)

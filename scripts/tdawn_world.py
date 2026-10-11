@@ -82,7 +82,7 @@ def _build_materials():
     m["steel"] = make_material("TD.Steel", (0.088, 0.092, 0.100), 0.45,
                                metallic=0.7)
     m["gate_glow"] = make_material("TD.GateGlow", (1.0, 0.88, 0.70), 0.4)
-    m["gate_dark"] = make_material("TD.GateDark", (0.012, 0.012, 0.014),
+    m["gate_dark"] = make_material("TD.GateDark", (0.050, 0.036, 0.026),
                                    0.9)
     m["board"] = make_material("TD.Board", (0.55, 0.28, 0.05), 0.5)
     m["wood"] = make_material("TD.Wood", (0.145, 0.098, 0.062), 0.8)
@@ -248,7 +248,7 @@ def build_world(scene):
 
     # gate fill: an area light inside the portal (the goal is lit)
     gate_light = bpy.data.lights.new("TD.GateLight", type="AREA")
-    gate_light.energy = 900.0
+    gate_light.energy = 1600.0
     gate_light.size = 5.0
     gate_light.color = (1.0, 0.86, 0.66)
     gate_lo = bpy.data.objects.new("TD.GateLight", gate_light)

@@ -48,9 +48,13 @@ SPAWN_ZONES_V5 = [
 # (the D6 clamp is 2D-xy: a keepout under the aerial punches a hole in
 # the crowd exactly where the aerial looks). Times are SECONDS.
 CAM_KEEPOUTS_V3 = [
-    ("CAM_S4", -8.2, 21.0, 11.0, 14.5),
+    ("CAM_S4", -2.5, 29.5, 11.0, 14.5),
     ("CAM_S5", 8.4, 16.5, 14.5, 18.5),
-    ("CAM_S7", -7.6, 11.0, 22.0, 26.0),
+    ("CAM_S6", -5.6, 7.6, 18.5, 22.0),
+    ("CAM_S7", -8.8, 11.5, 22.0, 26.0),
+    ("CAM_S8", 0.0, 3.2, 26.0, 30.0),
+    ("CAM_S9", 0.4, -7.2, 30.0, 34.0),
+    ("CAM_S10", -6.5, -2.6, 34.0, 38.0),
 ]
 
 CAM_KEEPOUT_R = 1.3

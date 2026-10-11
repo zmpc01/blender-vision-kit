@@ -77,7 +77,8 @@ def main():
     import tdawn_contract as C
 
     t0 = time.time()
-    scene = bridge.ingest_contract(C, count=args.count)
+    scene = bridge.ingest_contract(C, count=args.count,
+                                   seed=C.CROWD_SEED)
     print(f"[tdawn_bake] ingest OK: {len(scene.populations)} populations, "
           f"{sum(p.count for p in scene.populations)} agents")
 
@@ -110,15 +111,25 @@ def main():
     print(f"[tdawn_bake] bake OK mode={getattr(res, 'compile_mode', '?')} "
           f"wall={wall:.1f}s")
 
-    npz = bridge.to_previz_cache(
-        res.cache_path, scene, out_path=str(out / "cache_v6.npz"))
-    print(f"[tdawn_bake] npz: {npz}")
+    digest = bridge.to_previz_cache(
+        res.cache_path, scene, out_path=str(out / "cache_v6.npz"),
+        # D6 clamp-THEN-hash lives INSIDE the bridge; the contract's
+        # CAM_KEEPOUTS_V3 / CAM_KEEPOUT_R tables are the keepout
+        # authority (the plugin bake.py:193-198 pattern -- MY first
+        # driver draft skipped them and agents walked through the
+        # low shot cams; F-TD4)
+        keepouts=tuple(C.CAM_KEEPOUTS_V3),
+        keepout_radius=float(C.CAM_KEEPOUT_R),
+        clamp=True,
+        clip_source="speed")
+    print(f"[tdawn_bake] npz pin: {digest['payload_sha256'][:16]}… "
+          f"keepouts_applied={digest.get('keepouts_applied')}")
 
     ctx_json = out / "cache_ctx.json"
-    ctx = bridge.to_previz_ctx(str(out / "cache_v6.npz"), scene)
-    if ctx is not None:
-        ctx_json.write_text(json.dumps(ctx, indent=1, default=str))
-        print(f"[tdawn_bake] ctx json: {ctx_json}")
+    ctx = bridge.to_previz_ctx(str(out / "cache_v6.npz"), scene,
+                               digest=digest)
+    ctx_json.write_text(json.dumps(ctx, indent=1, default=str))
+    print(f"[tdawn_bake] ctx json: {ctx_json}")
 
     meta = {"n_agents": args.count, "wall_s": round(wall, 1),
             "speed_plan": SPEED_PLAN}
