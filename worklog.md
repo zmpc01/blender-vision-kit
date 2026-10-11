@@ -3265,3 +3265,22 @@ Work Log:
 Stage Summary:
 - The mission chain now stands: download -> cut -> label -> place -> populate -> NAVIGATE -> SIT, all certified numerically and verified visually. F22/F23 make the validator honest on real levels and the label ledger explicit about what a USE has proven.
 - Next: R9 (second interior / crowd / carry), t10, VK-9.
+
+---
+Task ID: 2-6 (session 12, the build + wrap)
+Agent: Super Z (vision-native principal)
+Task: TERMINAL DAWN build — design peer review, modules, vision-loop iteration, crowd bake, export, staging, wrap docs.
+
+Work Log:
+- DESIGN_terminal_dawn.md written; TD-REVIEW-1 (fresh-context sub-agent) audited it: N=129 pin (loader fail-close) killed the 200-agent plan — REV-2 folded ALL corrections (density-via-geometry, (mu,sigma)-only speed plan via dataclasses.replace, 3 RB slots, export-contract surface = markers/SHOTS_V3/CAMS_V3 7-tuples/CAST roots/CA.Body.*, no star-imports, EEVEE discipline).
+- Built: tdawn_actors (commuter mesh satisfying the frozen add_shape_keys geometric arm contract + CA.Body.* hero materials), tdawn_world (hall/gate/board/colonnades/BARRICADES), tdawn_contract (bridge-shaped), tdawn_bake (venv driver: ingest → replace distributions → bake_previz → to_previz_cache WITH keepouts → ctx), scene_terminal_dawn (12 shots, 12 marker cams + Aim nodes, kit branch, sfx emitter).
+- Vision loop iterations (all read by me): first-look caught legless commuters (floating P1s) + formation inside the far wall (P0s); flow strip (marker-safe after finding the hijack + scene.camera mutation) retimed the hero path 2.2s; 6 shot-cam reframe rounds (S1 wall-block, S3 roof-plane, S4 ground-level-in-stream, S8 jamb-center then void-block, S9 outside-the-wall then crowd-back burial); EEVEE pass found the AgX emission laws (WHITE default emission color; >1.0 = tan) + the void-box occlusion of the throat glow.
+- Crowd bake: deterministic (identical payload pin across runs, 3.2s), keepouts_applied=7 after the driver fix.
+- EXPORT: attempt 1 fail (unmapped constants — the gate is GOOD); attempt 2 fail gate 24 (Runner.Root dropped — F-TD5 view-layer staleness, scene-side sync fix); attempt 3 ALL GATES GREEN (schema 2.3, 141 actions, crowd block params_sha matches the bake pin, .export_ok stamped).
+- Staged: previz-review (committed c036f76, pushed) + /home/z/my-project (committed); dev server up; app verified with browser screenshots (shot list, beat chips, timeline, S6 money frame, comments API green after prisma push + restart).
+- Wrap docs: kb/tdawn_vision_film.md (recipe), docs/USABILITY_TD1_vision_film.md (frictions F-TD1..8 + 6 kit filings), SKILL.md session-12 section (29,019 chars, under cap, all laws kept), HANDOFF session-12 close state, PLAN Track TD.
+
+Stage Summary:
+- tdawn_1 LIVE in the review app — the full compare-across lane the user asked for (launch_v1/v3_4/v5_x/v6_x/tdawn_1).
+- The vision-native advantage is CONCRETE: framings, retiming, and material laws that no validator/readiness gate could catch were caught by eyes and fixed in-loop.
+- 6 kit improvement filings documented; the export-blocking one (F-TD5 view-layer sync in render_hidden_objects) is owner-repo work for the next kit session.

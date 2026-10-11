@@ -5,6 +5,19 @@
 > plan tracks the VARIANT's long-horizon work across sessions.
 > Companion: HANDOFF.md (immediate next-session scope only).
 
+## Track TD: TERMINAL DAWN (session 12, DELIVERED — the review lane is open)
+
+- [x] tdawn_1 exported (schema 2.3, all gates green) + staged to
+      previz-review (newest-first) + verified in-app
+- [x] vision-native build loop proven at film scale (6 camera
+      reframes + flow-strip retiming + AgX emission laws, all eye-driven)
+- [ ] the USER review round on tdawn_1 (comments on; A/B vs v6_1)
+- [ ] kit improvement filings upstream (F-TD5 view-layer sync is the
+      export-blocking one; see docs/USABILITY_TD1_vision_film.md)
+- [ ] optional polish: S2 board size, S6 gate glow gradient, Cycles
+      keyframes for the 3 hero frames (EEVEE/AgX consistency tradeoff
+      documented in the design)
+
 ## Mission
 
 Carve out a kit optimized for VISION-CAPABLE LLM agents: native image
