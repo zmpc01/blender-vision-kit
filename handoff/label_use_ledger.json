@@ -1,0 +1,39 @@
+{
+  "_comment": "F23 label-use ledger: kit_label -> exercised_by -> outcome. Labels are hypotheses until a USE exercises them (R7 law). Completed at R8 close.",
+  "exercised": {
+    "floor": {
+      "by": ["R7 nav (Driver floor->stairs)", "R8 seat (Driver walk-in)"],
+      "outcome": "verified — 0 true floats / 705 frames; R8 walk path clean",
+      "confidence": "use-verified"
+    },
+    "stairs": {
+      "by": ["R7 nav (9-tread climb)"],
+      "outcome": "verified AND CORRECTED — the label was on a parapet fragment; the real stair (Plane.003) was labeled wall. Navigation caught the R6 defect.",
+      "confidence": "use-verified (post-fix)"
+    },
+    "mezzanine_slab": {
+      "by": ["R7 nav (arrival + walk-in)", "R8 seat (Girl walk-in on slab)"],
+      "outcome": "verified — slab walk clean, L-shaped opening honored",
+      "confidence": "use-verified"
+    },
+    "sofa_module": {
+      "by": ["R8 seat (Driver walk-then-sit)"],
+      "outcome": "verified — probe found the true 0.475 cushion plane (31-part family, throw pillows rejected by sat-upon rule); audit ok=True; profile render confirms contact",
+      "confidence": "use-verified"
+    },
+    "bed": {
+      "by": ["R8 seat (Girl walk-then-edge-sit)"],
+      "outcome": "verified — soft duvet landscape (conf medium, honest); dome-edge sit, feet clear, audit ok=True with soft-surface tolerance",
+      "confidence": "use-verified"
+    }
+  },
+  "unexercised_major_families": {
+    "kitchen_unit": 841,
+    "partition_panel": 145,
+    "deco": 63,
+    "pendant_light": 23,
+    "railing": 12,
+    "shelf_unit": 6,
+    "_note": "these labels are render/bbox-derived hypotheses only — no USE has exercised them yet; treat as medium confidence per F23"
+  }
+}
