@@ -402,3 +402,21 @@ design folds: docs/DESIGN_terminal_dawn.md (REV-2). The survival laws:
 Git races: the remote moved twice mid-session (a parallel session
 lands commits); sync_both.sh (fetch-rebase-push-both, never force)
 absorbed everything — verify tips after every push, expect WAF windows.
+
+## D18 ASSET PARTITION LAWS (session 13 — .blend splitting)
+
+- `libraries.write(path, {ids}, compress=True)` (5.2: SET arg): DOWNWARD
+  closure only (children NOT pulled; collections carry nothing).
+- Append: NO dedup (.001), NO scene linking (users=0 — link yourself),
+  fake_user does NOT survive. `ID.users` counts the fake user:
+  purge-vulnerable = users==0 or (fake_user and users==1).
+- Scene-owned CompositorNodeTree IDs drag the SCENE through write() —
+  dump to JSON + re-create; compositor sockets drift across versions.
+- save_as_mainfile re-relativizes // paths from the OLD location.
+  Vendor files ship autopack ON — disable before any partition save.
+- Double-writing an object into 2 chunks corrupts same-named DATA at
+  rebuild. Write sets: pairwise-disjoint, |union| == census (asserted).
+- Expectations must be DATA-DERIVED (chunk inventories + gap riders at
+  rebuild time), never hand arithmetic (wrong 3× in one session).
+  Request ALL ID classes per chunk at rebuild.
+- Full recipe + 10 laws: docs/USABILITY_R9.md; design D18 REV-3.
