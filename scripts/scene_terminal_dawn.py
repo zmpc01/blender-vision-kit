@@ -400,8 +400,8 @@ def _kf_set_pieces(ctx):
         em = bsdf.inputs["Emission Strength"]
         em.default_value = 0.0
         em.keyframe_insert(data_path="default_value", frame=_glow_f0)
-        for f, v in ((_glow_f0 + 20, 1.1), (_glow_f1, 3.2),
-                     (900, 2.2), (1009, 1.4), (1080, 1.4)):
+        for f, v in ((_glow_f0 + 20, 0.8), (_glow_f1, 1.6),
+                     (900, 1.1), (1009, 0.7), (1080, 0.7)):
             em.default_value = v
             em.keyframe_insert(data_path="default_value", frame=f)
 
@@ -419,14 +419,29 @@ def _kf_set_pieces(ctx):
             em.default_value = v
             em.keyframe_insert(data_path="default_value", frame=f)
 
+    # the throat glow rises as the seal approaches
+    throat_mat = bpy.data.materials.get("TD.ThroatGlow")
+    if throat_mat and throat_mat.use_nodes:
+        bsdf = next(n for n in throat_mat.node_tree.nodes
+                    if n.type == "BSDF_PRINCIPLED")
+        em = bsdf.inputs["Emission Strength"]
+        em.default_value = 0.0
+        bsdf.inputs["Base Color"].default_value = (1.0, 0.80, 0.55, 1.0)
+        # AgX desaturates hot emission to tan — keep <= ~1.7 so the
+        # throat reads warm-golden, never crushed brown (measured)
+        for f, v in ((1, 0.55), (625, 0.75), (760, 0.9), (816, 0.95),
+                     (912, 0.6), (1009, 0.45), (1080, 0.45)):
+            em.default_value = v
+            em.keyframe_insert(data_path="default_value", frame=f)
+
     # gate glow brightens as the story reaches the seal
     gate_mat = bpy.data.materials.get("TD.GateGlow")
     if gate_mat and gate_mat.use_nodes:
         bsdf = next(n for n in gate_mat.node_tree.nodes
                     if n.type == "BSDF_PRINCIPLED")
         em = bsdf.inputs["Emission Strength"]
-        for f, v in ((1, 1.6), (625, 2.6), (816, 4.2), (912, 2.4),
-                     (1080, 2.0)):
+        for f, v in ((1, 0.35), (625, 0.7), (816, 1.4), (912, 0.8),
+                     (1080, 0.6)):
             em.default_value = v
             em.keyframe_insert(data_path="default_value", frame=f)
 

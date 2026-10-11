@@ -54,7 +54,12 @@ HERO_COLORS = {
 
 
 def make_material(name, rgb, rough=0.62, metallic=0.0):
-    """One material serving BOTH engines (Principled + Workbench)."""
+    """One material serving BOTH engines (Principled + Workbench).
+
+    The Emission COLOR is pinned to the base rgb: the 5.x default is
+    WHITE -- any glow material with emission strength > 0 added PURE
+    WHITE and AgX clipped the whole surface to paper-white (measured
+    on S6's throat plane)."""
     mat = bpy.data.materials.get(name)
     if mat is not None:
         return mat
@@ -67,6 +72,10 @@ def make_material(name, rgb, rough=0.62, metallic=0.0):
     bsdf.inputs["Base Color"].default_value = (*rgb, 1.0)
     bsdf.inputs["Roughness"].default_value = rough
     bsdf.inputs["Metallic"].default_value = metallic
+    try:
+        bsdf.inputs["Emission Color"].default_value = (*rgb, 1.0)
+    except KeyError:
+        pass
     mat.diffuse_color = (*rgb, 1.0)
     return mat
 

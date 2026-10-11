@@ -82,6 +82,7 @@ def _build_materials():
     m["steel"] = make_material("TD.Steel", (0.088, 0.092, 0.100), 0.45,
                                metallic=0.7)
     m["gate_glow"] = make_material("TD.GateGlow", (1.0, 0.88, 0.70), 0.4)
+    # emission strength keyed by the scene (S1 calm ~0.9 -> seal 4.2)
     m["gate_dark"] = make_material("TD.GateDark", (0.050, 0.036, 0.026),
                                    0.9)
     m["board"] = make_material("TD.Board", (0.55, 0.28, 0.05), 0.5)
@@ -153,6 +154,14 @@ def build_world(scene):
     # dark threshold (the depth beyond the gate)
     gate["void"] = _box("TD.GateVoid", gw * 2, 1.2, gh,
                         (0.0, -0.85, gh / 2), mats["gate_dark"])
+    # the glowing throat: a warm emissive plane deep in the portal --
+    # the "exit = light" read (the goal must be the brightest surface
+    # in frame from S6 on; the dark void box alone read as dead black)
+    mats["throat"] = make_material("TD.ThroatGlow", (1.0, 0.80, 0.55), 0.6)
+    # y = -0.15: PROUD of the void's south face (-0.25) so the crowd
+    # side sees the glow through the opening (the void box occluded it)
+    gate["throat"] = _box("TD.GateThroat", gw * 2 - 0.1, 0.06, gh - 0.1,
+                          (0.0, -0.15, (gh - 0.1) / 2), mats["throat"])
     # seal doors: two panels sliding from the jambs (S9-S10 animation
     # keys them across the opening)
     gate["door_l"] = _box("TD.GateDoorL", gw, 0.22, gh,
@@ -248,9 +257,9 @@ def build_world(scene):
 
     # gate fill: an area light inside the portal (the goal is lit)
     gate_light = bpy.data.lights.new("TD.GateLight", type="AREA")
-    gate_light.energy = 1600.0
+    gate_light.energy = 3000.0
     gate_light.size = 5.0
-    gate_light.color = (1.0, 0.86, 0.66)
+    gate_light.color = (1.0, 0.80, 0.58)
     gate_lo = bpy.data.objects.new("TD.GateLight", gate_light)
     scene.collection.objects.link(gate_lo)
     gate_lo.location = (0.0, -0.6, 1.9)
