@@ -323,3 +323,52 @@ blind-safe surface: r8_seat.py probe on a labeled family + approach
 hint (STOP-AND-FLAG exit 4 on contamination/clutter/low-confidence);
 executing a sit stays kit-side; verify delegated sits with the audit
 numbers (ok flag + dz + no_penetration + exit_ok), never self-reports.
+
+## Session-13 close state (NEWEST — read this first)
+
+- **DELIVERABLE: `tdawn_2` LIVE** in previz-review (newest-first) and
+  in the served checkout — the user-directed refinement round. Every
+  tdawn_1 eye-finding fixed: the varied commuter palette (G1: the
+  per-agent materials land POST-bake_tier2; the lib mesh is shared so
+  pre-bake assignment collapses to one color), the gate TUNNEL + the
+  seal-edge slit strips (G2: the flat white screen → a receding lit
+  portal), the REAL departure board (the rows were flush-mounted
+  INSIDE the panel silhouette — now proud), the pylons with lit sign
+  faces (G3), 7 camera reframes (S1/S5/S7/S8/S9/S10/S12 — S8's empty
+  hall → the Master/Runner pairing AT the gate line; S9's south vantage
+  → the hall side: the dive reads AWAY from the crowd, silhouetted
+  against the vault glow through the sealing gap), the dive retimed so
+  the arc peak lands EXACTLY on the S9 still frame (f750), the title
+  card (converted FONT mesh, warm cream, hide_render-keyed until the
+  f1009 sting), the white-out tamed (the glow-surface law: dark base +
+  warm Emission Color — make_material's equal-pin design is the white
+  void), the stumble moved INTO S7, the board flicker A/B anti-phase.
+- **F-TD5 LANDED UPSTREAM** (agent-kit e4450a3: view_layer.update()
+  before the #29 sweep; A19f red/green proven; 79/79 tier-A) and
+  VENDORED DOWN (the wrapper's governed-pair guard caught the drift —
+  the vendor flow: kit tools/sync_shared.py --to <consumer>, commit
+  both).
+- **THE SESSION-13 SURVIVAL LAWS** (SKILL.md): the factory-scene purge
+  (--factory-startup loads Cube/Camera/Light into your scene), the
+  glow-surface law, the recession-occlusion class ("invisible subject"
+  → ray-cast through it before doubting animation), "frame-edge clip"
+  can be an occluder, never run two blrun/EEVEE pipelines concurrently
+  (Xvfb :99), Bfont ≈ 0.91-1.1 em/char, the comments db is repo-local
+  (push the schema with the absolute URL; the harness exports a global
+  DATABASE_URL the app ignores), Pillow on 5.2 = python3.13.
+- New kit filings: F-TD9 (factory leak + install.sh Pillow probe),
+  F-TD10 (concurrent blrun), F-TD11 (make_material emission_color
+  param), F-TD12 (shot-cam occlusion probe) — docs/USABILITY_TD1*.
+- Fresh sandbox bootstrap that WORKS (verified end-to-end): clone the
+  4 repos with the CANONICAL dir names (blender-vision-kit,
+  blender-escape-previz — the scene module's TPREVIZ_SCRIPTS default
+  and the bake driver hardcode them), bash install.sh, Pillow by hand
+  (py3.13), wheel into the venv
+  (blender-crowd-kit/vendor/.../wheels/*.whl), bake
+  (tdawn_bake.py --out /tmp/crowdcache_tdawn), stills (SAMPLES=24 for
+  the S10 heavy class), export (the wrapper command in the kb, with
+  KIT_EXPORTER + BLENDER_BIN exported), stage both checkouts,
+  prisma db push (repo-local db!), bun dev.
+- Open: the F-TD9..12 kit filings; the user review round on tdawn_2
+  (comments ON); the six older filings (F-TD1/2/3 + the make_material
+  default) — F-TD6 is now PARTIALLY superseded by the glow-surface law.
