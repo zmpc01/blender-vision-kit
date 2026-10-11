@@ -70,12 +70,17 @@ def main():
     # ALSO record each chunk's inventory — the delivery model the rebuild
     # asserts against is computed from these, not hand arithmetic.
     deliverable = {cls: set() for cls in ("objects", "meshes", "materials",
-                                          "images", "node_groups")}
+                                          "images", "node_groups", "lights",
+                                          "cameras", "textures", "particles")}
     for cf in chunk_files[1:]:
         with bpy.data.libraries.load(cf, link=False) as (src, ctx):
             ctx.objects = list(src.objects)
             ctx.materials = list(src.materials)
             ctx.images = list(src.images)
+            ctx.lights = list(src.lights)
+            ctx.cameras = list(src.cameras)
+            ctx.textures = list(src.textures)
+            ctx.particles = list(src.particles)
             ctx.node_groups = [n for n in src.node_groups
                                if n != man.get("compositor", {}).get("name")]
             for cls in deliverable:
@@ -98,9 +103,12 @@ def main():
         die("manifest lacks id_names (re-split with the current writer)")
     clsmap = {"objects": bpy.data.objects, "meshes": bpy.data.meshes,
               "materials": bpy.data.materials, "images": bpy.data.images,
-              "node_groups": bpy.data.node_groups}
+              "node_groups": bpy.data.node_groups, "lights": bpy.data.lights,
+              "cameras": bpy.data.cameras, "textures": bpy.data.textures,
+              "particles": bpy.data.particles}
     merged = 0
-    for cls in ("objects", "meshes", "materials", "images", "node_groups"):
+    for cls in ("objects", "meshes", "materials", "images", "node_groups",
+                "lights", "cameras", "textures", "particles"):
         coll = clsmap[cls]
         valid = set(id_names[cls])
         for d in list(coll):
@@ -182,6 +190,10 @@ def main():
         "images": {i.name for i in bpy.data.images},
         "node_groups": {n.name for n in bpy.data.node_groups
                         if n.library is None},
+        "lights": {l.name for l in bpy.data.lights},
+        "cameras": {c.name for c in bpy.data.cameras},
+        "textures": {t.name for t in bpy.data.textures},
+        "particles": {p.name for p in bpy.data.particles},
     }
     for cls, got in got_by_cls.items():
         want_present = (deliverable[cls] & set(idn[cls])) | set(gapm.get(cls, []))

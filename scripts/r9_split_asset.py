@@ -98,9 +98,12 @@ def phase_a(src, outdir):
             by_hash[h] = fn
         table[im.name] = {"file": fn, "sha256": h, "bytes": len(data),
                           "colorspace": im.colorspace_settings.name}
-        # flip to FILE-source, //textures/<file> — correct at loft_ext's own
-        # location (assets/loft/) [R2#N5 flip-twice]
-        im.filepath = f"//textures/{fn}"
+        # flip to FILE-source with an ABSOLUTE path: save_as_mainfile
+        # re-relativizes // paths from the OLD file's location (measured:
+        # //textures/ became //../../polyhaven_cache/... — dead). Phase B
+        # re-points to the chunk-baked //../textures/ form anyway, so the
+        # loft_ext intermediate just needs to be self-consistent.
+        im.filepath = os.path.abspath(os.path.join(texdir, fn))
         im.source = 'FILE'
         im.unpack(method='REMOVE')
 
@@ -268,8 +271,25 @@ def phase_b(outdir):
         key = find(rname)
         merged.setdefault(key, []).append(rname)
 
+    # ---------------- chunk_00 scene set (early — packing excludes it) ----
+    cam = [o for o in objs if o.type == 'CAMERA']
+    if len(cam) != 1:
+        die(f"expected exactly 1 camera, got {len(cam)}")
+    scene_set = [o for o in objs if o.name in root_lights] + cam
+
+    # [R2#N3] chunk_00 claims the scene-set objects — they must NOT be
+    # bin-packed (double-write shifts same-named DATA identity at rebuild:
+    # the measured Area.001 light-data corruption)
+    scene_claimed = {o.name for o in scene_set}
+    for rname in list(subtree_objs):
+        if rname in scene_claimed:
+            del subtree_objs[rname]
+            del unit_est[rname]
     bin_units = []
     for key, members in merged.items():
+        members = [m for m in members if m in subtree_objs]
+        if not members:
+            continue
         ol = [o for m in members for o in subtree_objs[m]]
         est = sum(unit_est[m] for m in members)
         bin_units.append({"members": members, "objs": ol, "est": est})
@@ -291,11 +311,19 @@ def phase_b(outdir):
     print(f"[B] packing: {len(roots)} roots -> {len(bin_units)} units -> "
           f"{len(bins)} bins (est total {total_est/1e6:.0f}MB)", flush=True)
 
+    # [R2#N3] pairwise-disjoint write-set assert — a double-enumeration
+    # here shifts same-named DATA identity at rebuild (the Area.001 law)
+    all_write_names = [o.name for o in scene_set]
+    for b in bins:
+        all_write_names.extend(o.name for o in b["objs"])
+    if len(all_write_names) != len(set(all_write_names)):
+        from collections import Counter as _C
+        dupes = [n for n, c in _C(all_write_names).items() if c > 1]
+        die(f"write sets NOT disjoint: {dupes[:5]}")
+    if len(all_write_names) != census["objects"]:
+        die(f"write-set union {len(all_write_names)} != {census['objects']}")
+
     # ---------------- chunk_00 (scene) [R2#N3] ----------------
-    cam = [o for o in objs if o.type == 'CAMERA']
-    if len(cam) != 1:
-        die(f"expected exactly 1 camera, got {len(cam)}")
-    scene_set = [o for o in objs if o.name in root_lights] + cam
     world = sc.world
     if world is None:
         die("scene has no world")
@@ -351,7 +379,8 @@ def phase_b(outdir):
     # unreachable from every chunk (measured: 1 material). Inventory the
     # WRITTEN chunk files, diff against source locals, ship the gap.
     reachable = {cls: set() for cls in ("objects", "meshes", "materials",
-                                        "images", "node_groups")}
+                                        "images", "node_groups", "lights",
+                                        "cameras", "textures", "particles")}
     for c in chunks:
         path = os.path.join(chunkdir, os.path.basename(c["file"]))
         with bpy.data.libraries.load(path, link=False) as (src, _):
@@ -364,6 +393,10 @@ def phase_b(outdir):
         "images": [i for i in bpy.data.images if i.library is None],
         "node_groups": [n for n in bpy.data.node_groups
                         if n.library is None],
+        "lights": [l for l in bpy.data.lights if l.library is None],
+        "cameras": [c for c in bpy.data.cameras if c.library is None],
+        "textures": [t for t in bpy.data.textures if t.library is None],
+        "particles": [p for p in bpy.data.particles if p.library is None],
     }
     gap = {}
     for cls, ids in locals_by_cls.items():
@@ -530,13 +563,18 @@ def phase_b(outdir):
         # must keep source-named IDs rather than treat them as artifacts
         "images": sorted(i.name for i in bpy.data.images),
         "node_groups": sorted(n.name for n in bpy.data.node_groups),
+        "lights": sorted(l.name for l in bpy.data.lights),
+        "cameras": sorted(c.name for c in bpy.data.cameras),
+        "textures": sorted(t.name for t in bpy.data.textures),
+        "particles": sorted(p.name for p in bpy.data.particles),
     }
 
     # [data-derived expectation] what the chunks + gap riders can actually
     # deliver, per class — the rebuild asserts name-set equality against
     # this (stronger and self-consistent, no hand arithmetic)
     expected_ids = {}
-    for cls in ("objects", "meshes", "materials", "images", "node_groups"):
+    for cls in ("objects", "meshes", "materials", "images", "node_groups",
+                "lights", "cameras", "textures", "particles"):
         deliver = set(reachable[cls]) & set(id_names[cls])
         deliver |= set(gap.get(cls, []))
         expected_ids[cls] = sorted(deliver)
