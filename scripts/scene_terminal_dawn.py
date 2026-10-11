@@ -92,8 +92,8 @@ CAMS_V3 = [
      (0.0, 5.2, 1.15), False, 0.034),
     ("CAM_S8",  (-4.5, 4.0, 2.5), (-4.5, 4.0, 2.5), 32,
      (0.7, 1.1, 1.2), False, 0.012),
-    ("CAM_S9",  (0.4, -7.2, 3.4), (0.4, -7.2, 3.4), 24,
-     (0.0, 0.5, 1.3), False, 0.022),
+    ("CAM_S9",  (0.4, 7.0, 3.0), (0.4, 7.0, 3.0), 35,
+     (0.0, 0.6, 1.4), False, 0.022),
     ("CAM_S10", (-8.0, -4.0, 3.1), (-8.0, -4.0, 3.1), 30,
      (0.5, 2.0, 1.6), False, 0.0),
     ("CAM_S11", (2.0, 10.0, 2.2), (6.0, 2.0, 9.0), 30,
@@ -311,6 +311,14 @@ def _heroes(scene):
 
 def build_scene():
     scene = bpy.context.scene
+    # THE FACTORY-SCENE PURGE (the probe-3 law): `--factory-startup`
+    # loads Blender's default Cube + Camera + Light — the cube sat in
+    # the gate mouth in every probe render and the default 1000 W point
+    # light polluted the exposure. Previous sandboxes were masked by a
+    # saved cube-free startup file; a fresh sandbox must purge.
+    for ob in list(scene.objects):
+        if ob.name.split(".")[0] in ("Cube", "Camera", "Light"):
+            bpy.data.objects.remove(ob, do_unlink=True)
     scene.render.fps = FPS
     scene.frame_start = 1
     scene.frame_end = total_frames
