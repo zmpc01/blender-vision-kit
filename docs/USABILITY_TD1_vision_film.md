@@ -125,3 +125,34 @@ programmatic-proxy verdicts for anything visual. Concretely:
   peer-review → adoption trail for a from-scratch export-contract
   surface (markers + SHOTS_V3 + CAMS_V3 7-tuples + CAST roots +
   CA.Body.* + no star-imports).
+
+## Session-13 additions (the iteration round — new frictions + closures)
+
+- **F-TD5 CLOSED upstream** (agent-kit commit e4450a3): the #29 sweep
+  now forces view_layer.update(); regression A19f (freshly-linked-last
+  CAST root must ship) is red/green proven. VENDORED DOWN the same day
+  (the wrapper's governed-pair guard refused the export on the sha
+  drift — the discipline working as designed).
+- **F-TD9 (new): the factory-scene leak.** `--factory-startup` loads
+  the default Cube+Camera+Light into the built scene; a fresh sandbox's
+  startup file is factory while an old one may be cube-free (masked for
+  sessions). Scene-side purge landed (build_scene). install.sh's
+  Pillow loop also probes py3.11 paths — 5.2 bundles 3.13 (manual
+  install needed; a --blender-python-aware fix belongs in install.sh).
+- **F-TD10 (new): concurrent blrun = silent EEVEE death.** Two
+  pipelines both start Xvfb on :99; the second's startup kills the
+  first's display with NO traceback. Serialize Blender work in a
+  sandbox.
+- **F-TD11 (new): the glow-surface white void.** Emission keys were
+  innocent — the near-white ALBEDO (make_material's design) reflected
+  the ambient to paper. The fix is the base/emission DECOUPLE (dark
+  base, warm Emission Color) — make_material should grow a
+  `emission_color` param (both kit copies; filed).
+- **F-TD12 (new): recessions occlude their own cameras.** A depth
+  structure built on the camera's side of an opening hides everything
+  inside it (ray-cast proven). The kit candidate: a shot-cam occlusion
+  probe in the look tooling (cast the camera's center ray, name what it
+  hits).
+- **Stills script**: tdawn_stills.sh gained --factory-startup (its
+  absence was a latent tdawn_1 landmine) + a SAMPLES env override (the
+  S10 heavy-class OOM at 32).
