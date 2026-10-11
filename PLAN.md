@@ -257,3 +257,24 @@ code-level finding (--frames BLOCKER) remains valid.
    install fallback + VK-10 hunk. 6. Re-point the R6 chain input from
    the Release/fetch to assets/loft rebuilt master (one-line doc +
    chain smoke).
+
+## Session-13 receipts (the tdawn iteration round — 2026-10-11)
+
+- tdawn_1 → **tdawn_2** (staged, live, comments on): the eyes-driven
+  refinement round — 12/12 stills re-reviewed twice, 2 look-rounds,
+  8 forensic probes. The eye findings (clone crowd / white-void gate /
+  flat board / empty S8 / pre-dive S9 / blank S10 / missing title /
+  monolith pylons) ALL fixed and re-verified by eyes.
+- **F-TD5 closed upstream + vendored down + red/green proven** (A19f).
+- New filings: F-TD9 (factory leak; install.sh Pillow probe py3.13),
+  F-TD10 (concurrent blrun → Xvfb :99 death), F-TD11 (make_material
+  emission_color decouple — the glow-surface law), F-TD12 (shot-cam
+  occlusion probe).
+- Next-session candidates, in value order: (1) the user review round
+  on tdawn_2 (comments ON — the db is repo-local; the schema push gotcha
+  is in HANDOFF); (2) F-TD11 kit-side (make_material emission_color
+  param, both copies); (3) F-TD12 (a shot-cam occlusion probe in the
+  look tooling — the recession class is a recurring eye-trap);
+  (4) install.sh: the Pillow py3.13 probe + a --blender-python flag
+  (F-TD1/9); (5) the S10-class OOM: a look at EEVEE sample budgets for
+  the heavy framings (SAMPLES override ships in tdawn_stills.sh).
