@@ -41,3 +41,9 @@ tools/*
 
 # Re-fetchable big assets (r6_loft_fetch.sh re-downloads; release-asset copy planned)
 polyhaven_cache/
+
+# D18 asset partition intermediates (rebuildable; chunks + textures ARE committed)
+assets/loft/loft_ext.blend
+assets/loft/loft_ext.blend1
+assets/loft/loft_master.blend
+assets/loft/loft_master.blend1
