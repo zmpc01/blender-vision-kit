@@ -38,3 +38,6 @@ tools/*
 # ... but the kit OWNS its chunked downloader (install.sh D11 fallback
 # depends on it; the tools symlink died with the old upstream checkout)
 !tools/chunked_dl.sh
+
+# Re-fetchable big assets (r6_loft_fetch.sh re-downloads; release-asset copy planned)
+polyhaven_cache/

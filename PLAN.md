@@ -190,9 +190,25 @@ code-level finding (--frames BLOCKER) remains valid.
   occluded-support hint), F21 (audit room-shell gap numbers), F22
   (level-aware validator thresholds).
 
+### Session 10 — R7 (the level NAVIGATED) SHIPPED
+- Blind route planner (pure Python, manifest-only): floor→stairs→
+  mezzanine waypoints from labels+bboxes; direction inference with the
+  outside-abut rule; bbox-ambiguous stair → STOP-AND-FLAG (exit 4);
+  vision_stair_override.json resolves with recorded evidence.
+- Executor: label-driven BVH supports, incremental-ceiling tread-hug,
+  fall-through guard, NLA walk loop (Blender 5.2 API), two-tier audit:
+  0 true floats over 705 frames / 23.7 s, 0 held samples.
+- NAVIGATION CAUGHT A REAL R6 LABEL DEFECT: the `stairs` label sat on a
+  parapet fragment; the real stair (Plane.003, 9 treads +y, 31°, under
+  the slab band) was labeled `wall`. Schema fixed with evidence; chain
+  re-run. Law: labels are hypotheses until a USE exercises them (F23).
+- Tracking cams (south + void, Track-To Driver.Root) persisted in
+  loft_nav.blend. Tests: test_r7_route.py 17 checks + v1/v5/v6/f17/
+  scope battery ALL PASS. Full record: docs/USABILITY_R7.md.
+
 ### Queue (next)
-1. R7: walking actor NAVIGATES the level (stairs between floors) — the
-   space-saver run at 68° is the gait challenge; OR schema-reuse test on
-   a second interior asset.
-2. F20/F21/F22 fixes. 3. t10 export suite. 4. VK-9 re-vendor + VK-10
-   example hunk port (QA asks). 5. GitLab mirror catch-up (PAT still 401).
+1. R8 candidates: second-interior schema-reuse test; humanoid SIT/seat
+   on labeled furniture; crowd lane on the level.
+2. F20/F21/F22 + F23 (unexercised-label confidence) fixes. 3. t10
+   export suite. 4. VK-9 re-vendor + VK-10 example hunk port (QA asks).
+5. GitLab mirror catch-up (PAT still 401).

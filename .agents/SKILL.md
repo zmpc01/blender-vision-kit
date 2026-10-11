@@ -392,3 +392,17 @@ Key measured laws from session-5 (also in AGENTS.md):
   correct. Blind agents DO catch principal label errors via manifest
   consistency checks (the pendant-light catch) — ask them to report
   spatial anomalies against the task description.
+
+## R7 addendum — route requests on labeled levels
+- The route planner (scripts/r7_route_planner.py) is PURE PYTHON on the
+  manifest: you may run it blind. It either returns waypoints or
+  STOP-AND-FLAG (exit 4) — never guess past a flag.
+- Stair direction is bbox-decidable only for outside-abut stairs. If
+  the flag names a bbox-ambiguous stair, that is correct behavior —
+  report it and wait for vision_stair_override.json.
+- Waypoint z values are NOMINAL (bbox tops). The executor refines them
+  by tread-hug raycast; trust nav_report.json's audit (true_floats must
+  be 0) rather than the requested z's.
+- Walk-in waypoints are clamped to the mezzanine bbox and bed-avoided
+  from manifest bboxes; objects resting exactly ON the slab count as
+  obstacles.

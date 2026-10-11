@@ -3185,3 +3185,24 @@ Work Log:
 
 Stage Summary:
 - The user's mission executed end-to-end on a REAL interior level: downloaded → cut → labeled (96%) → placed → populated → handed to a blind agent → verified by diff + eyes. Commits: 3ef38a5 (lane), 05f36f1 (compose), + docs/wrap. Open: F20-F22, VK-9/VK-10, R7 nav-across-stairs.
+
+---
+Task ID: 1 (session 10)
+Agent: Super Z (vision principal)
+Task: R7 — the labeled level NAVIGATED: blind route planning + stair ascent execution + label-defect discovery.
+
+Work Log:
+- Bootstrapped (clone @aa17782 + Blender 5.2.2 foreground; fetch 561MB loft).
+- REBUILT the full R6 chain from committed scripts — matched the R6 record exactly (dry-run 5/18/42/21 faces; placements TOUCHING×3 + CLEAR 5.82mm; 1158/1200 labeled). R6 pipeline reproducibility confirmed.
+- R7 nav attempt on R6 labels FAILED informatively → probe chain (7 probe scripts, committed): the `stairs`-labeled object is a 14-face parapet; the REAL stair is Plane.003 (labeled `wall`): 9 treads, +y, ~31°, under the slab band, arriving at the slab at y 13.8. MESh-verified via face enumeration + under-overhang ray maps.
+- Schema corrected (gen_r6_labels.py w/ evidence comments); chain re-run (labels→props→humanoid→manifest).
+- r7_route_planner.py (pure Python, blind): labels→waypoints; direction rule tightened to outside-abut-only after the live misfire; bbox-ambiguous → STOP-AND-FLAG exit 4; --vision-override resolves with recorded evidence (vision_assisted=true).
+- r7_navigate.py: label-driven BVH supports; tread-hug (incremental ceiling last_z+0.8 after two documented failed designs); fall-through guard; NLA walk loop (Blender 5.2 removed Action.fcurves); per-frame root keying (loc+yaw upright).
+- Audit: 177 samples, 0 true floats, 26 excused one-riser transitions, 0 held. 705 frames / 23.7s @ 30fps.
+- Visuals: n1-n5 statics + south/void tracking cams (Track-To Driver.Root, persisted in loft_nav.blend). OOM discipline: one render per process on the lite copy.
+- manifest_diff handoff→final: 4 findings (2 nav re-key + 2 lite-strip displacement-modifier noise), 1207 unchanged.
+- Tests: tests/test_r7_route.py (17 checks ALL PASS — incl. the live ambiguous-stair fixture) + v1/v5/v6/f17/scope battery ALL PASS.
+- Docs: USABILITY_R7.md, PLAN, HANDOFF, AGENTS (3 new laws), kb, SKILL.
+
+Stage Summary:
+- The complete mission chain now stands: download real interior → cut → label → place → populate → NAVIGATE → verify, with the blind/contract protocol exercised at every step. Navigation proved to be the strongest label validator (caught the wall/stairs swap R6 shipped). F23 queued: unexercised-label confidence. Next: R8 (second interior schema reuse / seated actors / crowd) or F-fixes.

@@ -183,3 +183,39 @@ EXECUTION CONTRACT) — vision-required: cut boxes, label assignment,
 verdicts, delegate verification; blind-safe: placement/measurement ops
 from the manifest; STOP-AND-FLAG anything underivable. The R6 run is
 the reference execution of that contract on a real interior.
+
+## SESSION 10 — R7 CLOSE (the level NAVIGATED: blind route → stair ascent)
+State: GitHub HEAD = R7 wrap commit (verify with git log -1). Bootstrap
+= clone + `./install.sh` foreground. The full R6 chain rebuilds from
+committed scripts (verified live this session — dry-run face counts and
+placement verdicts matched the R6 record exactly).
+
+What R7 proves: a NON-VISION agent can PLAN floor-to-floor navigation
+from the manifest alone (r7_route_planner.py — pure Python), the kit
+EXECUTES it (r7_navigate.py: label-driven supports, tread-hug with
+incremental ceiling + fall-through guard, NLA walk loop for the Blender
+5.2 API), and a two-tier audit certifies it numerically (0 true floats
+/ 705 frames) + renders verify it visually. Where bboxes cannot decide
+(stair running UNDER the slab: abut-direction ambiguous), the blind
+planner STOP-AND-FLAGS and the principal resolves via
+vision_stair_override.json — recorded, not hidden.
+
+THE BIG FIND: navigation caught a real R6 label defect — the `stairs`
+label sat on a 14-face parapet fragment; the actual stair (Plane.003:
+9 flat treads, +y, ~31°, under the mezzanine slab band, arriving at the
+slab at y 13.8) was labeled `wall`. Schema corrected in
+gen_r6_labels.py with the evidence inline; chain re-run end-to-end.
+LAW: a semantic label is a hypothesis until a USE (walk/place/seat)
+exercises it — navigation is the strongest label validator (F23).
+
+Read FIRST: docs/USABILITY_R7.md (probes 3-16 narrative + gotchas:
+BVH local-space rays, Blender 5.2 slotted actions / NLA looping,
+texture-driven displacement vs the lite lane). Tests:
+tests/test_r7_route.py (pure Python) + v1/v5/v6/f17/scope ALL PASS.
+Artifacts: output/r7/{route_request.json,vision_stair_override.json,
+nav_report.json,loft_nav.blend (with 2 tracking cams),look_nav/}.
+
+Delegation protocol: unchanged (AGENTS.md EXECUTION CONTRACT). Blind
+agents can now also REQUEST ROUTES (planner is pure Python on the
+manifest) — but executing a route stays kit-side; verify every
+delegated nav with the audit numbers, never self-reports.

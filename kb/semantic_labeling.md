@@ -229,3 +229,36 @@ manifest shows exactly one table-labeled object at y≈2 (not the dining
 zone y≈8-12) and the real dining chairs UNLABELED; the agent refused to
 guess identity (vision-required) and returned the zone evidence instead.
 manifest_diff: 2 findings (the two additions), 1209 rows unchanged.
+
+## R7 — navigation validates labels (the Plane.003 lesson)
+
+R7 attempted floor-to-floor actor navigation on the labeled loft and
+the attempt IMMEDIATELY exposed a wrong label: the raycast tread-hug
+found no walkable surface under the `stairs`-labeled object. Probes
+(mesh face enumeration, under-overhang ray maps, frustum scans through
+render pixels) established:
+- the `stairs`-labeled object = a 14-face stair-shaft PARAPET (low wall
+  + sloped top piece) — correctly `wall`;
+- the real stair = `Plane.003` (labeled `wall` in the R6 schema): 9
+  flat treads, rise 0.34 / run 0.65 (~31°, NOT 68° — the R6 reading was
+  parallax from the fragment's bbox), climbing +y UNDER the mezzanine
+  slab band with ~1.9 m headroom, arriving directly onto the slab at
+  y 13.8.
+
+Labeling lessons:
+1. Rendering verifies APPEARANCE, not WALKABILITY. The R6 render check
+   ("stair survived the cut perfectly") verified the stair was not
+   DAMAGED, not that the label covered the stair. Only USE exercises
+   adjacency/direction/support. Navigation is the strongest label
+   validator in the kit.
+2. Family/name-pattern labeling stays medium-confidence until used; the
+   corrected schema now records the evidence inline
+   (gen_r6_labels.py comments carry the tread map numbers).
+3. Stair-direction from bboxes: decidable ONLY when the stair abuts
+   the slab from OUTSIDE its span (touch end = top). A stair inside
+   the slab span is ambiguous (it may run under it) — blind STOP-
+   AND-FLAG + vision_stair_override.json (evidence recorded in the
+   route as vision_assisted).
+4. Manifest consumers should treat `kit_label_conf` as "what the
+   principal could verify AT LABEL TIME" — usage may upgrade or
+   overturn it. (F23 queued: unexercised-label confidence reporting.)

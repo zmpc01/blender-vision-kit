@@ -342,6 +342,33 @@ state (the LOOK→NAME→LABEL→LOOK→SAVE loop; see `/kb/semantic_labeling.md
   also carries `world_bbox` (world-space AABB min/max) — the blind
   consumer's geometric ground truth; `dims_m` is LOCAL size and is
   WRONG under rotation (never derive boxes from centroid±dims/2).
+- **LAW — a label is a hypothesis until a USE exercises it** (R7):
+  navigation caught a real mislabel — `stairs` sat on a 14-face parapet
+  fragment while the actual 9-tread stair (`Plane.003`) was labeled
+  `wall` from bbox/name reasoning. Any label never exercised by a USE
+  (walk/place/seat) is unverified confidence; prefer exercising it.
+- **LAW — bbox-ambiguous structure ⇒ STOP-AND-FLAG, vision resolves**:
+  a stair whose run-span lies INSIDE the mezzanine slab span cannot
+  have its top end derived from bboxes (it may start at the slab edge
+  and run under it). The blind planner flags with manifest evidence;
+  the principal supplies `vision_stair_override.json`
+  ({top_at_max_end, evidence}) and the route records `vision_assisted`.
+  Outside-abut stairs (stair span wholly outside the slab span, touching
+  an edge) remain blind-decidable.
+- **R7 navigation lane** (`r7_route_planner.py` pure Python +
+  `r7_navigate.py` executor): route_request.json contract (waypoints +
+  speeds + assumptions + requires_executor); executor builds support
+  BVHs FROM THE ROUTE'S labels_used (never hardcoded ids), tread-hugs
+  with an INCREMENTAL ray ceiling (last_z + 0.8) + fall-through guard
+  (drop >0.4 m below held z = open riser/void → hold), keys the
+  feet-origin wrapper per frame (loc + yaw from tangent, upright),
+  loops the walk via an NLA strip repeat on a COPY of the action
+  (Blender 5.2 removed legacy Action.fcurves), and audits two-tier
+  (fine probe = one-riser lateral support; coarse = edge crossing;
+  else true float). GOTCHAS: BVHTree.FromObject is LOCAL-space
+  (transform rays in, hits out); vendor meshes may carry texture-driven
+  displacement modifiers (the look-lite lane changes EVALUATED geometry
+  — bbox deltas for such objects are lane noise, not mutation).
 - **LAW — EXECUTION CONTRACT (who may run what)**: delegation across
   the vision boundary is safe ONLY within these classes:
   - **VISION-REQUIRED — principal only**: (a) choosing a region cut's
