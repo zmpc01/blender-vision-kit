@@ -298,7 +298,7 @@ def build_world(scene):
     strips = []
     for i in range(4):
         strips.append(_box(f"TD.BoardRow{i + 1}", 5.6, 0.06, 0.36,
-                           (0.0, HALL_Y1 - 1.08, 6.30 - i * 0.5),
+                           (0.0, HALL_Y1 - 1.32, 6.30 - i * 0.5),
                            mats["board_row_a" if i % 2 == 0
                                 else "board_row_b"]))
     parts["board"] = board
@@ -323,7 +323,7 @@ def build_world(scene):
     # 2000 W -- the old 3000 W co-owned the S6 white-out with the
     # surround emission)
     gate_light = bpy.data.lights.new("TD.GateLight", type="AREA")
-    gate_light.energy = 1100.0
+    gate_light.energy = 700.0
     gate_light.size = 5.0
     gate_light.color = (1.0, 0.80, 0.58)
     gate_lo = bpy.data.objects.new("TD.GateLight", gate_light)
@@ -365,5 +365,23 @@ def build_world(scene):
     except (AttributeError, TypeError):
         scene.view_settings.view_transform = "Filmic"
     parts["exposure"] = scene.view_settings.exposure
+
+    # THE GLOW-SURFACE LAW (extends F-TD6): emission on a near-white
+    # ALBEDO turns the whole wall into a bright reflector under any
+    # ambient (measured: S6's gate read as a white void with the
+    # emission fully keyed down). The base goes dark-warm; the
+    # Emission Color carries the warmth independently. Runs HERE (end
+    # of build_world) -- TD.ThroatGlow is created with the gate
+    # geometry, after _build_materials returns.
+    for nm, base, emc in (("TD.GateGlow", (0.30, 0.24, 0.16),
+                           (1.0, 0.88, 0.70)),
+                          ("TD.ThroatGlow", (0.35, 0.24, 0.14),
+                           (1.0, 0.80, 0.55))):
+        gm = bpy.data.materials.get(nm)
+        gb = next(n for n in gm.node_tree.nodes
+                  if n.type == "BSDF_PRINCIPLED")
+        gb.inputs["Base Color"].default_value = (*base, 1.0)
+        gb.inputs["Emission Color"].default_value = (*emc, 1.0)
+        gm.diffuse_color = (*base, 1.0)
 
     return parts

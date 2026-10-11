@@ -258,8 +258,8 @@ def _title_card(scene):
     # 0.40: the Bfont advance is ~0.91 em/char (measured in probe-1:
     # 0.55 gave a 6.5 m line that clipped "TE" off CAM_S12's 6.3 m
     # frame) -- 0.40 -> ~4.7 m = 75% of frame width
-    size = 0.34
-    tx, ty, tz = 3.2, 11.4, 3.1
+    size = 0.30
+    tx, ty, tz = 2.2, 10.6, 3.2
     mat = make_material("TD.TitleCard", (1.0, 0.88, 0.70), 0.4)
     crv = bpy.data.curves.new("TD.TitleCard", type="FONT")
     crv.body = "TERMINAL DAWN"
@@ -508,14 +508,14 @@ def _kf_set_pieces(ctx):
 
     # the throat glow (the tunnel's back wall): rises with the seal
     _em_keys(bpy.data.materials.get("TD.ThroatGlow"),
-             [(1, 0.35), (625, 0.5), (_seal_f0, 0.7), (_seal_f1, 0.8),
-              (912, 0.5), (1009, 0.4), (1080, 0.4)])
+             [(1, 0.28), (625, 0.4), (_seal_f0, 0.6), (_seal_f1, 0.7),
+              (912, 0.45), (1009, 0.35), (1080, 0.35)])
 
     # gate surround: capped at the AgX warm law 0.95 (the old 1.4 key
     # white-clipped the jambs -- the S6 projection-screen read)
     _em_keys(bpy.data.materials.get("TD.GateGlow"),
-             [(1, 0.35), (625, 0.7), (_seal_f1, 0.95), (912, 0.8),
-              (1080, 0.6)])
+             [(1, 0.25), (625, 0.5), (_seal_f1, 0.8), (912, 0.6),
+              (1080, 0.45)])
 
     # the seal edges (door leading edges): dim telegraph while parked,
     # HOT through the close (tiny area + brief: 1.3 is inside the
