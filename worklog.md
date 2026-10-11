@@ -3284,3 +3284,50 @@ Stage Summary:
 - tdawn_1 LIVE in the review app — the full compare-across lane the user asked for (launch_v1/v3_4/v5_x/v6_x/tdawn_1).
 - The vision-native advantage is CONCRETE: framings, retiming, and material laws that no validator/readiness gate could catch were caught by eyes and fixed in-loop.
 - 6 kit improvement filings documented; the export-blocking one (F-TD5 view-layer sync in render_hidden_objects) is owner-repo work for the next kit session.
+
+---
+Task ID: R9 (session 13)
+Agent: orchestrator (principal, vision-native)
+Task: User-directed asset-durability lane — Blender-native sub-packaging
+to beat the GitHub 100MB blob limit; refine everything, vision everywhere.
+
+Work Log:
+- Context restore from /home/sync (fb9cb83) + GitHub (d911af4 — session-12
+  tdawn lane had landed 4 commits on top of R8); fast-forward, no force.
+- D18 research probes (all measured, scripts/r9_*probe*): libraries.write
+  closure semantics (downward-only, SET arg, collections empty, no append
+  dedup, packed pixels DO travel), unpack/relative-path resolution,
+  missing-lib write behavior (stubs dropped), world closure (rides), asset
+  surveys ×3 (1200 roots, 25 parent pairs, 7 mesh co-user groups, 122
+  packed images = 425MB, 35 linked-missing stubs, compositor tree found).
+- DESIGN D18 through 2 critique rounds (15 + N1-N12 findings, all
+  adopted): docs/DESIGN_D18_asset_partition.md REV-3.
+- Implementation: r9_split_asset.py (Run A texture externalization w/
+  autopack-off + sha dedup + sanitizer; Run B pre-flight asserts +
+  subtree bin-packing w/ co-user merge + real-size gate + disjoint-set
+  assert + closure-gap riders) + r9_rebuild_asset.py (empty-session law,
+  full-class appends w/ inventories, suffix-search consolidation, 461
+  remaps, delivery-model gate, parent-inverse restore, manifest-keyed
+  image fixup, compositor re-creation).
+- Debugging round (all STOP-AND-FLAG-guarded): autopack save abort;
+  scene-anchor via compositor group (measured 3 ways); double-write of
+  Area/Area.002 (chunk_00 claim exclusion + disjoint assert — the
+  Area.001 light-data corruption law); save re-relativization of //
+  paths (absolute-path fix); fake_user/users purge-vulnerability law.
+- Certification: master parity 1225/1184/180/poly 3,363,483;
+  manifest_diff 0 findings / 1200 unchanged; renders pixel-identical
+  (meanAbsDiff ≤0.07); fresh-clone proof PASSED (clone → install →
+  rebuild in bvk-proof).
+- Durability: git gc --prune=now (reclaimed the 561MB R7 loose blob,
+  .git 19MB); batched pushes (textures 403MB, chunks+manifest 104MB)
+  to GitHub + GitLab; chunk immutability doctrine in the design.
+- Regression: tests/test_r9_chunking.py 16/16 (synthetic round-trip,
+  subprocess-driven with --python-exit-code).
+- Docs: USABILITY_R9 (10 laws), PLAN/HANDOFF/SKILL updated; scope test
+  clean (only the pre-existing foreign-lane flag remains).
+
+Stage Summary:
+- GitHub + GitLab + /home/sync all at 8dfbf32+ (final push below).
+- The 561MB loft asset is now fully IN-GIT: clone → install → one
+  rebuild command → working master. Release + polyhaven re-fetch
+  remain as compact alternatives.
