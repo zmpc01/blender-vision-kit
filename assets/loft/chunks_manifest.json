@@ -22066,72 +22066,72 @@
  "chunks": [
   {
    "file": "chunks/loft_chunk_00_scene.blend",
-   "bytes": 67947,
+   "bytes": 67944,
    "label": "scene"
   },
   {
    "file": "chunks/loft_chunk_01.blend",
-   "bytes": 31278110,
+   "bytes": 31278066,
    "label": "bins:Bed01"
   },
   {
    "file": "chunks/loft_chunk_02.blend",
-   "bytes": 2249608,
+   "bytes": 2249609,
    "label": "bins:Object003.001,Object003.002,Object003.003\u2026"
   },
   {
    "file": "chunks/loft_chunk_03.blend",
-   "bytes": 10220666,
+   "bytes": 10220656,
    "label": "bins:Object003.011,sub02.001,Object003.006\u2026"
   },
   {
    "file": "chunks/loft_chunk_04.blend",
-   "bytes": 3136088,
+   "bytes": 3136145,
    "label": "bins:Object003.005,Object003.010,Object003.013\u2026"
   },
   {
    "file": "chunks/loft_chunk_05.blend",
-   "bytes": 4359960,
+   "bytes": 4360006,
    "label": "bins:kitchen.561,kitchen.841,kitchen.842\u2026"
   },
   {
    "file": "chunks/loft_chunk_06.blend",
-   "bytes": 8865911,
+   "bytes": 8865909,
    "label": "bins:NurbsPath.005,kitchen.457,kitchen.793\u2026"
   },
   {
    "file": "chunks/loft_chunk_07.blend",
-   "bytes": 5577677,
+   "bytes": 5577532,
    "label": "bins:kitchen.554,kitchen.556,kitchen.588\u2026"
   },
   {
    "file": "chunks/loft_chunk_08.blend",
-   "bytes": 7429513,
+   "bytes": 7429633,
    "label": "bins:Box015.002,Box015.004,Box015.005\u2026"
   },
   {
    "file": "chunks/loft_chunk_09.blend",
-   "bytes": 9766806,
+   "bytes": 9766856,
    "label": "bins:Decor_01.001,kitchen.844,Plant_RedChilli.002\u2026"
   },
   {
    "file": "chunks/loft_chunk_10.blend",
-   "bytes": 8099212,
+   "bytes": 8099236,
    "label": "bins:Object003.014,Object003.004,Plane.008\u2026"
   },
   {
    "file": "chunks/loft_chunk_11.blend",
-   "bytes": 9259901,
+   "bytes": 9259979,
    "label": "bins:kitchen.654,Ball_Decor_02,Ball_Decor_02.001\u2026"
   },
   {
    "file": "chunks/loft_chunk_12.blend",
-   "bytes": 3627772,
+   "bytes": 3627783,
    "label": "bins:kitchen.093,kitchen.140,kitchen.187\u2026"
   },
   {
    "file": "chunks/loft_chunk_13_riders.blend",
-   "bytes": 63450,
+   "bytes": 63452,
    "label": "closure-gap riders"
   }
  ],

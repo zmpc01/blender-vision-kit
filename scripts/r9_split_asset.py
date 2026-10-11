@@ -58,6 +58,22 @@ def phase_a(src, outdir):
     print(f"[MEM] {mem_mb()}MB available before open", flush=True)
     bpy.ops.wm.open_mainfile(filepath=src)
 
+    # census snapshot — Phase B asserts against THIS (no hardcoded numbers;
+    # any drift between Run A and Run B is the failure)
+    census_a = {
+        "objects": len(bpy.data.objects),
+        "meshes": len(bpy.data.meshes),
+        "materials": len(bpy.data.materials),
+        "lights": sum(1 for o in bpy.data.objects if o.type == 'LIGHT'),
+        "cameras": sum(1 for o in bpy.data.objects if o.type == 'CAMERA'),
+        "node_groups_local": sum(1 for n in bpy.data.node_groups
+                                 if n.library is None),
+        "root_orphan_lights": sum(
+            1 for o in bpy.data.objects
+            if o.type == 'LIGHT' and o.parent is None and
+            o.name in {x.name for x in bpy.context.scene.collection.objects}),
+    }
+
     texdir = os.path.join(outdir, "textures")
     os.makedirs(texdir, exist_ok=True)
     loftdir = os.path.join(outdir)  # assets/loft/
@@ -126,14 +142,13 @@ def phase_a(src, outdir):
     report = {
         "source": src, "source_sha256": src_sha,
         "loft_ext": ext_path,
+        "census_a": census_a,
         "texture_table": table,
         "skipped_images": skipped,
         "n_textures": len(table), "n_texture_files": len(by_hash),
         "total_texture_bytes": sum(e["bytes"] for e in table.values()),
     }
-    rp = os.path.join(outdir, "..", "..", "output", "r9", "run_a_report.json")
-    os.makedirs(os.path.dirname(rp), exist_ok=True)
-    with open(rp, "w") as f:
+    with open(os.path.join(loftdir, ".run_a_report.json"), "w") as f:
         json.dump(report, f, indent=1)
     with open(os.path.join(loftdir, "texture_table.json"), "w") as f:
         json.dump(table, f, indent=1)
@@ -146,8 +161,7 @@ def phase_b(outdir):
     ext_path = os.path.join(outdir, "loft_ext.blend")
     with open(os.path.join(outdir, "texture_table.json")) as f:
         table = json.load(f)
-    with open(os.path.join(outdir, "..", "..", "output", "r9",
-                           "run_a_report.json")) as f:
+    with open(os.path.join(outdir, ".run_a_report.json")) as f:
         report_a = json.load(f)
 
     bpy.ops.wm.open_mainfile(filepath=ext_path)
@@ -178,11 +192,14 @@ def phase_b(outdir):
         "cameras": sum(1 for o in objs if o.type == 'CAMERA'),
         "n_parented": sum(1 for o in objs if o.parent is not None),
     }
-    if census["objects"] != 1225:
-        die(f"object census drift: {census['objects']} != 1225")
-    if census["meshes"] != 1184 or census["materials"] != 180:
+    if census["objects"] != report_a["census_a"]["objects"]:
+        die(f"object census drift Run A vs B: {census['objects']} != "
+            f"{report_a['census_a']['objects']}")
+    if census["meshes"] != report_a["census_a"]["meshes"] or \
+            census["materials"] != report_a["census_a"]["materials"]:
         die(f"mesh/material census drift: {census}")
-    if census["lights"] != 4 or census["cameras"] != 1:
+    if census["lights"] != report_a["census_a"]["lights"] or \
+            census["cameras"] != report_a["census_a"]["cameras"]:
         die(f"light/camera census drift: {census}")
     if any(c for o in objs for c in o.constraints):
         die("constraints appeared (survey said none)")
@@ -206,18 +223,30 @@ def phase_b(outdir):
     if n_ext != len(table):
         die(f"externalized image count {n_ext} != table {len(table)}")
 
-    # light census pattern [R2#N3]: 2 scene-root orphan lights + 2 elsewhere
+    # light census [R2#N3]: scene-root orphan lights (data-driven from Run A)
     scene_root = {o.name for o in sc.collection.objects}
     root_lights = [o.name for o in objs
-                   if o.type == 'LIGHT' and o.name in scene_root]
-    if len(root_lights) != 2:
-        die(f"expected 2 scene-root orphan lights, got {root_lights}")
+                   if o.type == 'LIGHT' and o.parent is None
+                   and o.name in scene_root]
+    if len(root_lights) != report_a["census_a"]["root_orphan_lights"]:
+        die(f"scene-root orphan lights {root_lights} != "
+            f"census {report_a['census_a']['root_orphan_lights']}")
 
     # ---------------- user-less riders [R2#N2] ----------------
+    # EVERY local ID with zero users is purge-vulnerable at the rebuild
+    # (fake_user does not survive write+append), regardless of its source
+    # fake_user flag — record and claim them all into chunk_00
     riders = []
     for cls in ("materials", "meshes", "images", "node_groups"):
         for d in getattr(bpy.data, cls):
-            if d.library is not None or d.users > 0 or d.use_fake_user:
+            if d.library is not None:
+                continue
+            # ID.users counts the fake user: users==0 means no users at
+            # all; users==1 with fake_user means the fake user IS the only
+            # user — both arrive at the rebuild with zero real users and
+            # die at the purge unless re-flagged
+            vulnerable = d.users == 0 or (d.use_fake_user and d.users == 1)
+            if not vulnerable:
                 continue
             d.use_fake_user = True
             riders.append({"class": cls, "name": d.name})
@@ -273,8 +302,8 @@ def phase_b(outdir):
 
     # ---------------- chunk_00 scene set (early — packing excludes it) ----
     cam = [o for o in objs if o.type == 'CAMERA']
-    if len(cam) != 1:
-        die(f"expected exactly 1 camera, got {len(cam)}")
+    if len(cam) > 1:
+        die(f"expected 0..1 cameras, got {len(cam)}")
     scene_set = [o for o in objs if o.name in root_lights] + cam
 
     # [R2#N3] chunk_00 claims the scene-set objects — they must NOT be
@@ -322,12 +351,11 @@ def phase_b(outdir):
         die(f"write sets NOT disjoint: {dupes[:5]}")
     if len(all_write_names) != census["objects"]:
         die(f"write-set union {len(all_write_names)} != {census['objects']}")
-
     # ---------------- chunk_00 (scene) [R2#N3] ----------------
     world = sc.world
-    if world is None:
-        die("scene has no world")
-    chunk00_ids = set(scene_set) | {world}
+    chunk00_ids = set(scene_set)
+    if world is not None:
+        chunk00_ids |= {world}
     # [R2#N13] compositor group does NOT ride chunks: scene-owned
     # CompositorNodeTree IDs drag the whole Scene through write()'s
     # closure (measured 3 ways: direct, severed-user, copy). It is
@@ -583,7 +611,8 @@ def phase_b(outdir):
         "design": "D18 REV-3", "source": report_a["source"],
         "source_sha256": report_a["source_sha256"],
         "census": census, "poly": poly, "scene_settings": settings,
-        "world": {"name": world.name, "n_nodes": len(world.node_tree.nodes)},
+        "world": {"name": world.name if world else None,
+                  "n_nodes": len(world.node_tree.nodes) if world else 0},
         "compositor": comp_dump if comp_group is not None else None,
         "texture_table": table,
         "skipped_images": report_a["skipped_images"],

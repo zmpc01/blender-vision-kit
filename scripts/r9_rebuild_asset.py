@@ -49,19 +49,31 @@ def main():
             colmap[k["name"]] = kc
 
     # ---------------- append chunk_00 first, assign world ----------------
+    deliverable = {cls: set() for cls in ("objects", "meshes", "materials",
+                                          "images", "node_groups", "lights",
+                                          "cameras", "textures", "particles")}
     chunkdir = os.path.join(loftdir, "chunks")
     chunk_files = [os.path.join(chunkdir, os.path.basename(c["file"]))
                    for c in man["chunks"]]
     with bpy.data.libraries.load(chunk_files[0], link=False) as (src, ctx):
         ctx.objects = list(src.objects)
         ctx.worlds = list(src.worlds)
+        # chunk_00 also carries the user-less riders (materials/images/...)
+        ctx.materials = list(src.materials)
+        ctx.images = list(src.images)
+        ctx.lights = list(src.lights)
+        ctx.cameras = list(src.cameras)
+        ctx.textures = list(src.textures)
+        ctx.particles = list(src.particles)
+        ctx.node_groups = [n for n in src.node_groups
+                           if n != man.get("compositor", {}).get("name")]
+        for cls in deliverable:
+            deliverable[cls].update(getattr(src, cls))
     if man["world"]["name"]:
         w = bpy.data.worlds.get(man["world"]["name"])
         if w is None:
             die("world missing after chunk_00 append")
         sc.world = w  # live user BEFORE any purge [R2#N2]
-    if man.get("compositor"):
-        pass  # re-created later from the dump [R2#N13]
 
     # ---------------- append remaining chunks ----------------
     # request ALL relevant classes: the closure pulls most IDs, but a
@@ -69,9 +81,6 @@ def main():
     # references — requesting by class is the only way they materialize.
     # ALSO record each chunk's inventory — the delivery model the rebuild
     # asserts against is computed from these, not hand arithmetic.
-    deliverable = {cls: set() for cls in ("objects", "meshes", "materials",
-                                          "images", "node_groups", "lights",
-                                          "cameras", "textures", "particles")}
     for cf in chunk_files[1:]:
         with bpy.data.libraries.load(cf, link=False) as (src, ctx):
             ctx.objects = list(src.objects)
@@ -292,9 +301,11 @@ def main():
           flush=True)
 
     # ---------------- world + scene settings ----------------
-    if bpy.data.worlds.get(man["world"]["name"]) is None:
+    if man["world"]["name"] and bpy.data.worlds.get(
+            man["world"]["name"]) is None:
         die("world lost before settings restore")
-    if len(bpy.context.scene.world.node_tree.nodes) != man["world"]["n_nodes"]:
+    if man["world"]["name"] and len(
+            bpy.context.scene.world.node_tree.nodes) != man["world"]["n_nodes"]:
         die("world node count drift")
     s = man["scene_settings"]
     rnd = sc.render
