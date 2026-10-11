@@ -280,58 +280,18 @@ is the exact vocabulary (verdict drifts); intersection thresholds must
 be RELATIVE (absolute-only is scale-biased); animated-prop placement
 needs override='keyframe' (rebase ALL location keys, else drift).
 
-## Session-6 meta: lane dog-fooding + D15
+## Session-6/7 meta (condensed; full records in docs/USABILITY_R5-R7.md + kb/semantic_labeling.md)
 
 - **D15 display-color sync**: workbench MATERIAL reads diffuse_color —
-  node-authored scenes render ALL-GRAY undetected. sync/restore pair is
-  STANDALONE of the annotation layer (--no-annotate looks stay honest);
-  every new render surface must call it (keyframe_contact_sheet shipped
-  gray until wired).
-- **EEVEE warm-cache needs MemAvailable >= ~2.4 GB** (compile peaks
-  ~2.07 GB RSS; 4 SIGKILLs recorded). Cycles verify = engine-ASSIGN
-  probe, never subclass enumeration.
-- **Scene driver contract**: build_scene() -> ctx;
-  animate(ctx, *, start_frame=1, n_frames=<int>) — tools pass n_frames
-  only when the module opts in; BRIDGE with inspect.signature.
-- **D16 semantic labeling**: design + audit done (see
-  docs/DESIGN_D16_semantic_labeling.md + Session-7 below).
-
-## Session-7 meta: semantic labeling of opaque imports (D16 shipped)
-
-- **The labeling loop is a kit surface**: LOOK (kit_label null) → SPLIT
-  (loose parts; WELDED needs vision-driven split-region box cuts) →
-  NAME (principal's eyes) → LABEL (report-before-rename) → LOOK verify
-  → SAVE. Blind agents then work labeled ids (proven at 0.0mm audits).
-- **Prop laws**: kit_label = durable identity; gate exclusions live on
-  the kit_semantic PROP. Rename safety: simulate the batch against
-  occupancy BEFORE mutating, two-phase via fresh temps, report JSON
-  before mutation. bmesh: INDICES not BMFace refs; bound_box corners
-  need Vector() wrap. Welded cutting: "faces fully inside the box" is
-  the honest cut unit.
-- **Fused-face signature**: dry-run shows verts_in_region > 0 but
-  faces_to_cut = 0 → mesh_prepare (triangulate) then re-dry-run.
-- **Label at family granularity**: honest confidence; blind agents
-  catch principal label errors via manifest consistency.
-- **F17 (CLOSED, grid refinement)**: place_on refines 12→48→192 cells
-  until rays hit ("footprint_grid_refined"); escape hatch = snap_z.
-  Edge law: a refined grid still fails when the footprint OVERHANGS the
-  support bbox — center placements ≥10cm from every edge. Fixture
-  law: primitive_cube_add defaults size=2 (span helpers pass size=1).
-- **R6 real-level law**: huge imports need the flag-wireframe CAP (60;
-  12k annot objects OOM a 4GB box) + a look-lite .blend (strip packed
-  images). Survey big interiors with aimed camera→target shots +
-  frustum raycasts, never preset 5m offsets.
-- **Fused-face signature**: region dry-run with verts_in_region > 0 but
-  faces_to_cut = 0 at any box = floor/wall fused into wrapped faces →
-  mesh_prepare (triangulate) then re-dry-run; and consider that the
-  surface you want may live in a DIFFERENT object entirely (the real
-  floor was a separate full-extent plane; survey before cutting).
-- **Label at family granularity, verify per family**: 1155/1200 meshes
-  in ONE label_objects patch generated from the manifest; confidence
-  honest (high=render-verified, medium=name/bbox-derived); ~4% null is
-  correct. Blind agents DO catch principal label errors via manifest
-  consistency checks (the pendant-light catch) — ask them to report
-  spatial anomalies against the task description.
+  node-authored scenes render ALL-GRAY undetected; every render surface
+  must call the sync/restore pair.
+- **EEVEE warm-cache needs MemAvailable >= ~2.4 GB**; Cycles verify =
+  engine-ASSIGN probe, never subclass enumeration.
+- **Scene driver contract**: build_scene() -> ctx; animate(ctx, *,
+  start_frame=1, n_frames=<int>) — tools BRIDGE with inspect.signature.
+- **D16 labeling**: label at VENDOR-NODE granularity on opaque imports;
+  blind agents STOP-AND-FLAG what the manifest cannot derive (the
+  execution contract lives in AGENTS.md).
 
 ## R7 addendum — route requests on labeled levels
 
@@ -363,45 +323,31 @@ nav_report.json's audit (true_floats must be 0), not the request.
   FOOT BONES, never the wrapper. Edge-sit: walk 0.4 m inward, sit on
   the highest spot. Restore the wrapper transform after measuring.
 
-## Session-12 meta: the vision-native FILM (TERMINAL DAWN / tdawn_1)
+## Session-12 meta: the vision-native FILM (TERMINAL DAWN)
 
-The first FROM-SCRATCH film built with the vision kit + crowd kit +
-the kit-mode exporter — every look READ by the principal. Deep recipe:
-kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1_vision_film.md;
-design folds: docs/DESIGN_terminal_dawn.md (REV-2). The survival laws:
+Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
+; design: docs/DESIGN_terminal_dawn.md. Survival laws:
 
-- **F-TD5 (KIT BUG, export-blocking)**: the exporter's #29 sweep
-  (render_hidden_objects) reads a STALE view-layer object list — a
-  freshly-linked object false-positives as view-layer-excluded and
-  gate 24 rejects the package. Scene-side: end build_scene with
-  `bpy.context.view_layer.update()`. Kit-side fix belongs in the
-  OWNER repo (blender_kit.render_hidden_objects) — not landed here.
-- **marker-camera hijack + scene.camera mutation**: bpy render honors
-  the ACTIVE marker camera over scene.camera; clearing marker.camera
-  MUTATES scene.camera (observed: falls back to the last shot cam).
-  Any custom pass: suppress → RE-ASSERT scene.camera → restore.
-- **5.2 AgX emission laws**: Principled Emission COLOR defaults WHITE
-  (pin it to the base rgb); strength >~1.0 desaturates hot emission to
-  TAN under AgX (glow keys <= 0.95); sky strength 1.0 blows interiors
-  (0.35-0.5 + exposure -0.5).
-- **the bridge shape is a FEATURE**: the crowd PURSUES hero_pos (0,0)
-  at 12 Hz/541 ticks/1080 frames with N pinned at 129 (loader honesty
-  assert = anchor arithmetic 120+12/9). A NEW STORY (gate convergence)
-  reused the SAME motion grammar with zero bridge forks — re-author
-  zones/keepouts/speed-plan (dataclasses.replace on frozen DCs), never
-  the bridge. Density is bought with GEOMETRY (24x40 m hall), not N.
-- **vision loop pays for camera work**: 6/12 shot cams were reframed
-  by EYE (wall blocks lens / jamb dead-center / lens inside the crowd
-  / roof arch bisects the aerial) — none validator- or readiness-
-  catchable. Expect 2-3 reframe rounds; render shot-cam checks at
-  REPRESENTATIVE frames (frame N belongs to the marker whose f0 <= N).
-- **the unmapped-constant gate is a feature**: uppercase in the scene
-  module = mapped vocabulary only; internal wiring lowercase. It
-  fail-closed correctly on HERE/PREVIZ_SCRIPTS/TOTAL_FRAMES.
-
-Git races: the remote moved twice mid-session (a parallel session
-lands commits); sync_both.sh (fetch-rebase-push-both, never force)
-absorbed everything — verify tips after every push, expect WAF windows.
+- **F-TD5 (KIT BUG — LANDED UPSTREAM session 13)**: the exporter's #29
+  sweep read a STALE view-layer list; a freshly-linked object
+  false-positived as excluded and gate 24 rejected legal packages.
+  Fixed in blender_kit.render_hidden_objects (+ regression A19f,
+  red/green proven); scene-side build_scene still ends with the update.
+- **marker-camera hijack + scene.camera mutation**: any custom pass:
+  suppress → RE-ASSERT scene.camera → restore.
+- **5.2 AgX emission laws**: pin Emission COLOR; hot keys <= 0.95 (tan
+  desaturation); sky 0.35-0.5 + exposure -0.5. PLUS the session-13
+  glow-surface law (below) — the pair is the full gate-read fix.
+- **the bridge shape is a FEATURE**: pursue-origin grammar re-authored
+  as gate convergence with zero bridge forks; N pinned 129; density
+  via GEOMETRY (24x40 m hall); re-author zones/keepouts/speed-plan
+  (dataclasses.replace on frozen DCs), never the bridge.
+- **the vision loop pays for camera work**: expect 2-3 reframe rounds;
+  check shot cams at REPRESENTATIVE frames; "invisible subject" =
+  ray-cast through it BEFORE doubting the animation (the session-13
+  recession-occlusion law below).
+- **the unmapped-constant gate is a feature**: uppercase = mapped
+  vocabulary only; internal wiring lowercase.
 
 ## D18 ASSET PARTITION LAWS (session 13 — .blend splitting)
 
@@ -420,3 +366,46 @@ absorbed everything — verify tips after every push, expect WAF windows.
   rebuild time), never hand arithmetic (wrong 3× in one session).
   Request ALL ID classes per chunk at rebuild.
 - Full recipe + 10 laws: docs/USABILITY_R9.md; design D18 REV-3.
+
+## SESSION 13 LAWS (the tdawn iteration round — refined by 12+ eye loops)
+
+- **THE FACTORY-SCENE PURGE LAW**: `--factory-startup` loads Blender's
+  default Cube+Camera+Light INTO YOUR SCENE. A fresh sandbox's startup
+  is factory (the old sandbox's was a saved cube-free file — masked
+  for sessions). PURGE the trio at build_scene start; a stray default
+  cube sat in the gate mouth of every probe render for 2 hours.
+- **THE GLOW-SURFACE LAW (extends F-TD6)**: emission on a near-white
+  ALBEDO = a white void under any ambient (the base color reflects
+  everything). Decouple: dark-warm Base Color + warm Emission Color,
+  set independently (make_material pins them EQUAL by design — glow
+  surfaces need the override AFTER creation).
+- **RECESSION OCCLUSION CLASS**: a recessed "depth" structure built on
+  the CAMERA'S side of an opening occludes everything inside it from
+  that camera (the tunnel receded south; CAM_S9 was south; the dive
+  was invisible — ray-cast proven). When a subject "vanishes": ray-cast
+  THROUGH it before doubting the animation. The fix is a viewpoint
+  move, not a retime.
+- **"FRAME-EDGE CLIP" CAN BE OCCLUSION**: the title's missing "TE" was
+  a column 1m off the sight line, at FOUR different sizes — the clip
+  edge never moved. If resizing doesn't fix an edge clip, find the
+  occluder.
+- **NEVER run two blrun/EEVEE pipelines concurrently**: both grab
+  Xvfb :99 — the second kills the first's display SILENTLY (the stills
+  run died mid-shot, no traceback). Serialize all Blender work.
+- **Bfont advance ≈ 0.91-1.1em/char** (not 0.55): size text from the
+  measured render, and check occluders on the sight line, not just FOV.
+- **The exporter's governed-pair guard catches cross-repo drift
+  LOUDLY** (the wrapper refuses on blender_kit sha mismatch): land the
+  kit fix → run the kit's `tools/sync_shared.py --to <consumer>` →
+  commit BOTH. The guard is the vendor discipline working.
+- **The comments API's db is REPO-LOCAL** (lib/db.ts forces
+  cwd/db/custom.db); the harness exports a global DATABASE_URL that
+  prisma-cli obeys but the app ignores — push the schema with the
+  absolute repo-local URL or the tables land in the wrong file.
+- **Pillow on 5.2 bundles python3.13** (not 3.11): install.sh's probe
+  loop misses it; `tools/blender/5.2/python/bin/python3.13 -m pip
+  install --no-user Pillow` by hand (filed as a kit friction).
+- **Palette per-agent = post-materialize only**: bake2 gives each sim
+  agent a private mesh (users==1); the 3 RB carts stay shared (copy
+  first). Assigning before bake2 mutates the SHARED lib datablock and
+  collapses 132 agents to one color.

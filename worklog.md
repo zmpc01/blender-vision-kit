@@ -3331,3 +3331,74 @@ Stage Summary:
 - The 561MB loft asset is now fully IN-GIT: clone → install → one
   rebuild command → working master. Release + polyhaven re-fetch
   remain as compact alternatives.
+
+---
+Task ID: session-13-tdawn-iter2 (orchestrator)
+Agent: orchestrator (Super Z, session 13 — the user-directed refinement round)
+
+Work Log:
+- Fresh sandbox bootstrap: 4 repos cloned (escape @ aab9e83 — s37 landed
+  since my last session; vision-kit @ d911af4; agent-kit @ cca91b3;
+  previz-review). Context restored per protocol (SKILL → HANDOFF → PLAN
+  → kb/design/frictions).
+- EYES-ON QA of all 12 staged tdawn_1 stills + strips: the clone-army
+  crowd (one color), the gate as a flat white screen, the board as a
+  flat orange slab, the empty S8, the pre-dive S9, the blank-wall S10,
+  NO title in S12, the black-monorail pylons, S5's column, the S1 arch.
+- Design doc + TD-REVIEW-2 (hostile sub-agent, code-level): every
+  decision ADOPT-WITH-CHANGES — hold pos, dive-peak y, door window
+  730-780, through-y −1.85, S7 keepout row (2.24 m off its own cam!),
+  static pans for S5/S7/S10, constant-y arms, title size/hide keys,
+  emission caps, 9 missed items — all folded (DESIGN_tdawn_iter2.md
+  REV-2).
+- Implemented the full set: palette post-load (G1), gate tunnel (G2),
+  board rebuild (D-i2-7), pylons (G3), 6 camera reframes, dive retimed
+  to f750, title card (converted FONT mesh), seal-edge strips, emission
+  single-sourcing, keepout table follows the cams.
+- F-TD5 LANDED UPSTREAM (agent-kit e4450a3): view_layer.update() before
+  the #29 sweep + regression A19f; CR review caught 2 P0s in my test
+  (animate-scope NameError + unsatisfiable name assertion) — fixed;
+  RED→GREEN proven (without the fix: the exact tdawn_1 WARN signature;
+  with: 79/79 PASS).
+- Code review TD-CR round (2 sub-agents): seal-edge parenting P0 (raw
+  .parent + door SCALE = 13 m glowing needles sweeping outward), board
+  A/B phase P1 (identical key sets), title aim P2 (build-time loc0),
+  arm rot_z P2 (mirrored lean), A19f 2×P0 — ALL fixed.
+- THE PROBE SAGA (the session's biggest find, 2 h): "the Runner is
+  invisible at f750" — 8 probes (ray-casts, evaluated bboxes, vertex
+  dumps, marker suppression, camera unconfound). NOT animation, NOT
+  slots, NOT markers: (a) my probe renders omitted --factory-startup →
+  the startup Cube sat in the gate mouth; (b) CAM_S9 (south) looked at
+  the TUNNEL'S CLOSED BACK — the new recession occluded its own dive.
+  Fixed: the factory-scene purge law + CAM_S9 moved to the hall side
+  (the dive now reads AWAY from the crowd, silhouetted against the
+  vault glow through the sealing gap).
+- Look-round 2 (the 12 new stills by eyes): the glow-surface law (the
+  white void = near-white ALBEDO + ambient, emission-zeroed probe
+  proven — base darkened, Emission Color decoupled), the board rows
+  PROUD of the panel (the original flush-mount bug), title cleared of
+  the (7,14) column occluder, GateLight 700 W, throat keys down.
+- Export: the wrapper's governed-pair guard CAUGHT the F-TD5 drift
+  (refused on sha mismatch — the vendor discipline working); vendor
+  round (--to escape, 40/40 IN-SYNC) → re-export **ALL GATES GREEN,
+  tdawn_2 revision 1 stamped** (21 MB GLB, 139 actions, 129 tracks).
+- Staging: stills→jpg, 96 filmstrips + manifest rebuild, staged to
+  previz-review (newest-first) + the served checkout (both committed).
+  The comments-API 500-on-fresh-clone class re-diagnosed: the schema
+  must be pushed to the REPO-LOCAL db (the harness exports a global
+  DATABASE_URL that prisma-cli obeys but lib/db.ts ignores) — green.
+- S10 OOM'd once (the known heavy class) — SAMPLES=24 env override
+  added to tdawn_stills.sh; S10 + S11 + S12 rendered at 24 samples.
+
+Stage Summary:
+- **tdawn_2 LIVE in the review app** (newest-first, audit-ok, comments
+  on): every tdawn_1 eye-finding fixed — the varied commuter crowd, the
+  real departure board, the gate tunnel + the seal-edge slit, the dive
+  ON the still frame, the Master/Runner S8 pairing, the title card, the
+  tamed white-out. The film reads.
+- F-TD5 landed upstream + vendored down + red/green proven.
+- Kit frictions filed: install.sh Pillow probe (py3.13), tdawn_stills
+  factory-startup (fixed), the concurrent-blrun Xvfb law, the
+  glow-surface law, the recession-occlusion law (SKILL.md session-13).
+- Both remotes green throughout (GitHub + GitLab); parallel-session
+  races absorbed by fetch-rebase (never force).
