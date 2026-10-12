@@ -3449,3 +3449,33 @@ Stage Summary:
 - Kit: F-TD10/11/12 closed upstream+ports; F-TD13 filed+fixed scene-side.
 - Next: the NEW different scene (design in docs/DESIGN_last_ferry.md),
   F-TD9 install.sh if time, the S10 heavy-class OOM budget note.
+
+---
+
+## Session 14 (cont.) — the LAST FERRY spin-off (the different scene)
+
+- Design D-TF1 (docs/DESIGN_last_ferry.md) → fresh-context review
+  sub-agent (ADOPT-WITH-CHANGES; it probed the bridge source + the
+  real 5.2 binary) → REV-2 folds → vertical slice SHIPPED:
+  tferry_contract.py / tferry_world.py / scene_last_ferry.py.
+- The slice's measured night laws (all eye-driven):
+  - L-TF4 ladder: sky 0.04 DEAD (nothing reads) → 0.12 + practicals.
+  - THE PRACTICALS LAW: emissive materials glow but do not LIGHT —
+    every neon/lamp/window needs a real light object.
+  - L-TF1 at night: a saturated neon bar OWNS its local radiance —
+    the amber hero under the cyan bar went GREEN (amber × cyan);
+    the fix is a diegetic warm anchor (the Deckhand's checkpoint
+    lantern) + a neutral-cool deck fill (the blue fill made it worse).
+  - The unparked lib mesh stands at the origin as a WHITE figure
+    (tdawn parks it at y=-41; the ferry parks + hide_render).
+  - 5.2 slotted actions: actions have NO .fcurves — the vetted
+    _iter_fcurves helper (channelbags) is mandatory in every new
+    scene module.
+  - `use_ssr` does not exist on 5.2 — `scene.eevee.use_raytracing`
+    is the SSR knob (probed headless).
+- Slice verified by eye at 4 frames (workbench + EEVEE): the aerial
+  strip reads, the choke pairing reads, the night is ALIVE.
+- Next session (HANDOFF): tferry_bake.py (the tdawn driver shape:
+  ingest → dataclasses.replace the SPEED_PLAN → bake → to_previz_ctx)
+  → flow strip → shot-cam reframes → EEVEE pass → stills → export
+  tferry_1 → stage. The contract/world are export-shaped already.
