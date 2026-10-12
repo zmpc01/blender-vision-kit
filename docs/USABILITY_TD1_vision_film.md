@@ -156,3 +156,27 @@ programmatic-proxy verdicts for anything visual. Concretely:
 - **Stills script**: tdawn_stills.sh gained --factory-startup (its
   absence was a latent tdawn_1 landmine) + a SAMPLES env override (the
   S10 heavy-class OOM at 32).
+
+## Session-14 closures (the kit-side trio + the user comment round)
+
+- **F-TD10 CLOSED** (D-TD20): all four blrun.sh copies carry a
+  cooperative per-display flock (exit 90 + `LOCK-HELD` marker on
+  contention; fd 9 closed in the Xvfb/blender children so KEEP_XVFB
+  reuse does not inherit-and-hold; BLRUN_FORCE=1 bypass; agent-kit's
+  --version short-circuit relocated above the lock). Acceptance:
+  contention rc=90+marker, KEEP_XVFB-twice green, --help pre-lock.
+  agent-kit (owner) vendored down to the escape repo — 40/40 IN-SYNC.
+- **F-TD11 CLOSED** (D-TD21): make_material grew `emission_color` +
+  `emission_strength` (both kit copies + the tdawn_actors twin, which
+  now RE-APPLIES emission kwargs on cached materials). Default pins
+  Emission Color to base (the white-void law); strength is a direct
+  write (raises — never a silent no-op). Tests: agent-kit t7 +
+  vision-kit v8, ALL PASS on 5.2.2; twin re-apply probe green.
+- **F-TD12 CLOSED** (D-TD22): look.py `--probe-camera NAME|all` casts
+  the center ray per scene camera (dep.update() ritual for
+  constraint-driven cams; render_hidden flag + bounded re-cast for the
+  Street.Mist class; ANNOT/temp_ filters; unknown name = missing row,
+  never an exit; probe-only = `--angles none`; rows in
+  look_manifest.json `camera_probes`). Tests: test_v7_camprobe 14/14
+  incl. the animated-occluder S9 class (wall keyed off-ray f1→f24:
+  wall named at f1, subject named at f24).

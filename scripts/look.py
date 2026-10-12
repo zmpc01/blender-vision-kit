@@ -27,7 +27,16 @@ Annotations (default ON, render-time only, NEVER saved into any .blend):
   1m ground grid, RGB axis gnomon at origin (confirm handedness — law L2),
   top-N object labels, red bbox wireframes on validator-flagged objects.
 
-Exit codes: 0 = clean/WARN, 3 = validator P0 present, 1 = operational error.
+Exit codes: 0 = clean/WARN, 3 = validator P0 **or P1** present (with
+--fail-on-issues, the default), 1 = operational error.
+
+Camera occlusion probe (F-TD12, D-TD22): --probe-camera NAME[,...] (or
+'all') casts each scene camera's center ray and NAMES what it hits first
+— the recession-occlusion class (a wall/tunnel between the lens and its
+subject) is invisible to every other check. Probe rows go to stdout AND
+look_manifest.json ('camera_probes'). The probe mutates nothing and
+never affects exit codes (an informational tool; exit 3 may co-occur).
+Probe-only invocation: --probe-camera ... --angles none.
 """
 import argparse
 import json
@@ -36,6 +45,7 @@ import os
 import sys
 
 import bpy
+from mathutils import Vector
 
 # Law 107: entry scripts own their sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -44,6 +54,93 @@ from blender_kit import script_argv, validate_output, validate_resolution  # noq
 import viewport_capture as vc  # noqa: E402
 import validate_scene as vs  # noqa: E402
 import annotate  # noqa: E402
+
+
+def _camera_forward(mw) -> Vector:
+    """Camera view direction: world -Z axis, normalized.
+
+    Kit-canonical form (occlusion_gate.py:223). The col[2].xyz*-1
+    spelling elsewhere is the SAME axis with a negation trap — do not
+    mix them per-object."""
+    return (mw.to_3x3() @ Vector((0.0, 0.0, -1.0))).normalized()
+
+
+def _render_hidden(ob) -> bool:
+    """The Street.Mist law (contact_audit.py:158): scene.ray_cast hits
+    render-hidden geometry — an atmosphere box flags every camera.
+    Flag hits that would never render; the caller may re-cast past them
+    but keeps the context (the agent decides)."""
+    try:
+        if ob.hide_render:
+            return True
+        if ob.hide_viewport:
+            return True
+        if getattr(ob, "visible_camera", True) is False:
+            return True
+    except ReferenceError:
+        return True
+    return False
+
+
+def _probe_one_cam(scene, cam, frame) -> dict:
+    """One camera's center-ray probe. Reads only; never raises; never
+    mutates (no camera creation/binding, no scene.camera writes — the
+    AK-10 marker-hijack class cannot fire because nothing renders)."""
+    row = {"camera": cam.name, "frame": frame}
+    try:
+        # The dep.update() ritual (occlusion_gate.py:212-220, measured):
+        # constraint-driven (track-to) cameras return STALE matrix_world
+        # with only view_layer.update() — phantom hits. Order matters:
+        # depsgraph update BEFORE the matrix read.
+        dep = bpy.context.evaluated_depsgraph_get()
+        dep.update()
+        mw = cam.matrix_world.copy()
+        origin = mw.translation.copy()
+        direction = _camera_forward(mw)
+        hit = scene.ray_cast(dep, origin, direction)
+        if not hit[0] or hit[4] is None:
+            row.update({"status": "clear", "object": None,
+                        "distance_m": None, "point": None,
+                        "render_hidden": False, "recasts": 0})
+            return row
+        obj, loc = hit[4], hit[1].copy()
+        hidden = _render_hidden(obj)
+        recasts = 0
+        # Bounded re-cast past render-hidden hits: name the first RENDERED
+        # hit; the hidden one stays as context (never silently dropped).
+        while hidden and recasts < 8:
+            recasts += 1
+            hit2 = scene.ray_cast(dep, loc + direction * 1e-4, direction)
+            if not hit2[0] or hit2[4] is None:
+                break
+            obj, loc = hit2[4], hit2[1].copy()
+            hidden = _render_hidden(obj)
+        dist = (loc - origin).length
+        row.update({"status": "hit", "object": obj.name,
+                    "distance_m": round(dist, 4),
+                    "point": [round(v, 4) for v in loc],
+                    "render_hidden": hidden, "recasts": recasts})
+    except Exception as e:  # noqa: BLE001 — informational tool, never raise
+        row.update({"status": "error", "error": repr(e)})
+    return row
+
+
+def _probe_cam_names(scene, requested_items):
+    """Resolve --probe-camera values (repeatable, comma-split, 'all'
+    sentinel) to camera objects; unknown names map to None (a
+    status:'missing' row, never an exit — the probe is informational)."""
+    names = []
+    for item in requested_items or []:
+        names.extend(s.strip() for s in item.split(",") if s.strip())
+    if not names:
+        return []
+    if "all" in names:
+        cams = [o for o in scene.objects if o.type == 'CAMERA'
+                and not o.name.startswith("temp_")
+                and not o.name.startswith(annotate.ANNOT_PREFIX)]
+        return [(c.name, c) for c in sorted(cams, key=lambda o: o.name)]
+    by_name = {o.name: o for o in scene.objects if o.type == 'CAMERA'}
+    return [(n, by_name.get(n)) for n in names]
 
 
 def _manifest() -> dict:
@@ -172,6 +269,12 @@ def main():
                         "to disable)")
     p.add_argument("--no-fail-on-issues", dest="fail_on_issues",
                    action="store_false")
+    p.add_argument("--probe-camera", action="append", default=None,
+                   help="Camera occlusion probe (F-TD12): name the scene "
+                        "camera(s) whose center ray to cast — repeatable, "
+                        "comma-separated, or 'all'. Rows print to stdout and "
+                        "land in look_manifest.json ('camera_probes'). Use "
+                        "--angles none for a probe-only run.")
     args = p.parse_args(script_argv())
 
     if not args.load_blend and not args.scene:
@@ -250,13 +353,45 @@ def main():
         scene.frame_set(args.frame)
     bpy.context.view_layer.update()
     bpy.context.view_layer.update()
+    # ---- camera occlusion probe (F-TD12, D-TD22) -------------------------
+    # Slot law (peer-review finding 3): AFTER the re-pin double update
+    # (fresh matrices) and BEFORE sync_display_colors / the annotation
+    # build — annotation meshes are real geometry a ray would hit first.
+    angle_labels_probe = [a.strip() for a in (args.angles or "").split(",") if a.strip()]
+    if angle_labels_probe == ["none"]:
+        angle_labels_probe = []
+    probe_requested = bool(args.probe_camera)
+    probe_only = probe_requested and not angle_labels_probe and not args.closeup
+    probe_rows = []
+    if probe_requested:
+        probe_cams = _probe_cam_names(scene, args.probe_camera)
+        for name, cam in probe_cams:
+            if cam is None:
+                probe_rows.append({"camera": name, "frame": args.frame,
+                                   "status": "missing"})
+                continue
+            probe_rows.append(_probe_one_cam(scene, cam, args.frame))
+        for r in probe_rows:
+            if r["status"] == "hit":
+                print(f"[look] PROBE cam={r['camera']} frame={r['frame']} "
+                      f"status=hit object={r['object']} "
+                      f"dist={r['distance_m']}m point={r['point']} "
+                      f"render_hidden={r['render_hidden']} recasts={r['recasts']}")
+            else:
+                print(f"[look] PROBE cam={r['camera']} frame={r['frame']} "
+                      f"status={r['status']}")
+        if probe_only:
+            print("[look] probe-only run (--angles none): skipping renders "
+                  "and annotation")
+
     # D15 (QA #4): honest workbench MATERIAL colors — node-authored
     # Principled Base Colors are invisible to workbench (it reads
     # mat.diffuse_color) so imported scenes look ALL-GRAY. Sync for the
     # render, restore in finally (standalone so --no-annotate looks stay
     # honest too; annotation materials are dual-set consistent, no-op).
-    color_sync = annotate.sync_display_colors()
-    if color_sync["synced"] or color_sync["nontrivial"] or color_sync["linked"]:
+    color_sync = annotate.sync_display_colors() if not probe_only \
+        else {"synced": [], "nontrivial": [], "linked": []}
+    if not probe_only and (color_sync["synced"] or color_sync["nontrivial"] or color_sync["linked"]):
         print(f"[look] display-color sync: {len(color_sync['synced'])} node-authored"
               f" -> viewport; {len(color_sync['nontrivial'])} non-trivially-authored"
               f" (color identity unreliable there)"
@@ -264,7 +399,7 @@ def main():
                  if color_sync["linked"] else ""))
     layer = {"objects": [], "labels": []}
     annotated = False
-    if not args.no_annotate:
+    if not args.no_annotate and not probe_only:
         from viewport_capture import _compute_scene_center
         center = _compute_scene_center()
         meshes = [o for o in scene.objects if o.type == 'MESH'
@@ -440,7 +575,8 @@ def main():
         with open(os.path.join(outdir, "look_manifest.json"), "w") as f:
             json.dump({"engine": args.engine, "frame": args.frame,
                        "validator": report, "images": ready,
-                       "manifest": man, "labels": lbl_map}, f, indent=2)
+                       "manifest": man, "labels": lbl_map,
+                       "camera_probes": probe_rows}, f, indent=2)
 
         if (p0 or p1) and args.fail_on_issues:
             sys.exit(3)
