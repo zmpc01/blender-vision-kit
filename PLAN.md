@@ -278,3 +278,24 @@ code-level finding (--frames BLOCKER) remains valid.
   (4) install.sh: the Pillow py3.13 probe + a --blender-python flag
   (F-TD1/9); (5) the S10-class OOM: a look at EEVEE sample budgets for
   the heavy framings (SAMPLES override ships in tdawn_stills.sh).
+
+## Session-14 receipts (the review round + the trio + the second film)
+
+- tdawn_2 → **tdawn_3** (staged, live, comments ON): the user's five
+  in-flight comments consumed — color discipline (their law: color =
+  call-outs), the S5 north reframe (RCA: near-field capsules + stale
+  aim), the S10 gate-wall 3/4 + dressing, the export-safe title
+  (hide_render → scale keys), F-TD13 (keepout seconds-vs-frames).
+- **F-TD10/11/12 CLOSED** (design REV-2 → implement → tests → vendor
+  round): the blrun flock (4 repos), make_material emission params
+  (both kits + twin), the look.py camera probe (14/14 incl. the
+  animated-occluder class). F-TD13 filed+fixed scene-side.
+- **LAST FERRY designed (REV-2) + sliced**: contract/world/scene
+  modules in-tree, dry-run green, the night look proven at 4 frames;
+  the build order (bake → strips → cams → stills → export) is the
+  next session's first block.
+- Next-session candidates, in value order: (1) finish tferry_1 (the
+  bake driver + pipeline + stage — the contract/world are
+  export-shaped); (2) the user review round on tdawn_3 + tferry_1
+  (comments ON); (3) F-TD9 (install.sh stale-tools probe); (4) the
+  S10-class OOM note for the heavy framings (SAMPLES override law).
