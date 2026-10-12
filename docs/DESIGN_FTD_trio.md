@@ -163,3 +163,80 @@ carries the rows. Runs the real scripts as subprocesses
 1. D-TD20 (protects every subsequent Blender pipeline this session)
 2. D-TD21 (API for the next film's glow surfaces; vendor duty)
 3. D-TD22 (kills the recession forensic class for the next film)
+
+## REV-2 — the peer-review folds (2 fresh-context reviewers, both ADOPT-WITH-CHANGES)
+
+### D-TD20 folds
+- **[P0] fd-9 inheritance**: Xvfb + blender children must CLOSE the lock
+  fd (`exec 9>&-` in a subshell around each spawn) — otherwise
+  KEEP_XVFB=1 leaves the lock held by the persistent Xvfb and the next
+  sequential run deadlocks-by-refusal. Acceptance gate: the
+  KEEP_XVFB-twice test.
+- **[P0] blrun.sh IS on the vendor manifest**
+  (tools/shared_manifest.json:28-32, owner=kit, byte-identical in
+  escape) — the port duty is: patch agent-kit (owner) → sync_shared.py
+  --emit → --to escape → commit both. Vision/crowd edits duty-free.
+- **[P1] insertion point**: immediately after `XSOCKET=…`, before the
+  stale-lock block, ALL repos; agent-kit additionally moves its
+  `--version` short-circuit up beside `--help` (it would otherwise
+  acquire the lock pointlessly).
+- **[P2] exit 90** (verified unused) + greppable marker
+  `[blrun] LOCK-HELD on <display> holder=<stamp>` — exit 3 stays the
+  kit's "gate failed" semantic. Tests assert the MARKER, not just rc.
+- **[P2] contention test uses a real run** (--help exits pre-lock).
+- **[P2] /tmp hygiene**: open failure → distinct error + hard exit
+  (never confuse EBADF with contention); refuse a symlinked lockfile.
+- **[P2] BLRUN_FORCE=1**: skips lock AND stamp (never clobber the real
+  holder's stamp), loud WARN naming both failure modes.
+- crowd-kit patch is verbatim-safe (CWD conventions verified).
+
+### D-TD21 folds
+- **[P1] no existing make_material tests** — new files:
+  agent-kit tests/test_t7_material.py, vision-kit tests/test_v8_material.py
+  (v7 belongs to the camprobe).
+- **[P1] emission_strength is a DIRECT write** (raise if input absent —
+  the 4.0/4.1 window is real per escape assets_characters.py prior art;
+  a swallowed KeyError = silent glow absence, the exact anti-class).
+  try/KeyError stays ONLY for "Emission Color" (genuinely absent pre-4.x).
+- **[P1] drop the impossible 3.x-simulation test** — replace with a
+  5.2.2 precondition assert + test the guarded helper with a plain fake.
+- **[P2] assertion hygiene**: non-white base (0.20,0.55,0.95) so the
+  5.x white default can't fake-pass; existence-before-read; epsilon;
+  diffuse_color stays base even when emission_color differs; strength
+  defaults 0.0.
+- **[P2] film twin**: re-apply emission kwargs when the material
+  ALREADY exists (get-or-create currently silently drops them).
+- **[P2] verified no-render-change** on the default pin (all in-repo
+  strength-raisers already pin/overwrite/override); escape's retired
+  scripts/__init__.py shim keeps the old signature (stated, not synced).
+
+### D-TD22 folds
+- **[P0] the dep.update() ritual**: constraint-driven (track-to) cameras
+  return STALE matrix_world with only view_layer.update() — the kit's
+  own occlusion_gate.py:212-220 measured law. Probe ritual:
+  frame_set → view_layer.update() → evaluated_depsgraph_get() →
+  dep.update() → read matrix_world → scene.ray_cast(dep, …).
+- **[P1] render-hidden hits are carried, not dropped** (Street.Mist
+  law, contact_audit.py:158-167): each row carries render_hidden bool
+  (hide_render/hide_viewport/visible_camera/scale); bounded re-cast
+  (~8) from hit+eps reports the first RENDERED hit, hidden kept as
+  context. The agent decides.
+- **[P1] exact slot**: immediately after look.py:252 (the re-pin
+  double-update), BEFORE sync_display_colors (258) and
+  build_annotation_layer (280) — annotation meshes are real geometry a
+  ray would hit first. Filter ANNOT_PREFIX + temp_ names defensively.
+- **[P1] probe-only = probe flags + `--angles none`** (the real render
+  skip; --no-grid does NOT skip renders) + guard annotation/color-sync
+  on non-probe-only.
+- **[P1] fixture occluder is a GROUND-STANDING wall** (a floating plane
+  trips the validator's floating P1 → exit 3 breaks the test).
+- **[P2] single `--probe-camera` flag, repeatable + comma-split +
+  'all' sentinel** (matches --angles convention); unknown name →
+  status:"missing" row, never an exit; exit codes untouched (exit 3 may
+  co-occur with successful probes — documented + docstring lie fixed).
+- **[P2] ray_cast contract pinned from prior art**: 6-tuple, no-hit
+  sentinel maps to null fields, forward = (mw.to_3x3() @ Vector((0,0,-1))).normalized()
+  (the col[2] negation trap), distance = (loc-origin).length.
+- **[P2] tests**: v-series subprocess convention + --factory-startup +
+  timeout >= 600; manifest schema change verified safe (no strict
+  consumers; "manifest" unwrap unaffected).
