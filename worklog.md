@@ -3402,3 +3402,50 @@ Stage Summary:
   glow-surface law, the recession-occlusion law (SKILL.md session-13).
 - Both remotes green throughout (GitHub + GitLab); parallel-session
   races absorbed by fetch-rebase (never force).
+
+---
+
+## Session 14 (2026-10-12) — the review round + the kit-side trio + tdawn_3
+
+Task: user directive — server up for review first, then exhaust the
+scoped kit items, then a NEW different scene; watch comments in-flight.
+
+Work Log:
+- Fresh sandbox bootstrap: 4 repos + previz-review cloned; dev server
+  daemonized (scripts/daemonize.py double-fork is the ONLY survivor —
+  setsid/nohup die with the tool-call process group); comments db =
+  repo-local custom.db (prisma db push + s33_restore_comments.sh:
+  v6_0 6 rows + v6_1 3 rows back). tdawn_1 + tdawn_2 verified live.
+- Honest .export_ok stamps written for the tdawn packages (manifest
+  sha256 from the staged bytes; gates were green at export).
+- D-TD20/21/22 design doc → 2 fresh-context review sub-agents (both
+  ADOPT-WITH-CHANGES; P0s: fd-9 inheritance breaks KEEP_XVFB reuse;
+  blrun IS on the vendor manifest; dep.update() ritual for
+  constraint-driven cams) → REV-2 fold → implemented + tested:
+  - F-TD10 closed: per-display flock in ALL FOUR blrun.sh copies
+    (exit 90 + LOCK-HELD marker; children close fd 9; agent-kit
+    --version relocated; vendor round 40/40 IN-SYNC).
+  - F-TD11 closed: make_material emission_color/emission_strength
+    (both kit copies + tdawn_actors twin with cached re-apply);
+    tests t7/v8 ALL PASS; twin re-apply probe green.
+  - F-TD12 closed: look.py --probe-camera (dep.update ritual,
+    render_hidden + bounded re-cast, ANNOT/temp filters, probe-only
+    = --angles none, manifest camera_probes); test_v7_camprobe 14/14
+    incl. the animated-occluder S9 class.
+- THE USER'S 5 COMMENTS landed mid-session (escape 8841ee1 + the app
+  db): S1 palette noise / S5 strange model / S10 no wall / S12 title
+  constantly visible / S12 f1080 PRAISE ("beautiful cinematography").
+  All four findings RCA'd by eye + probe, fixed, re-rendered, exported:
+  **tdawn_3 staged and LIVE** (12 stills re-reviewed twice, all pass;
+  export all gates green; title verified absent at S11 in-app).
+- F-TD13 (new, latent): the tdawn camera keepout rows carried SECONDS
+  per their docstring while the bridge's clamp_keepouts int()s FRAMES
+  — every keepout inert outside f3-38 (v6-belt schema seam). Rows now
+  shot-span frames (+ S12's dolly added); 4 gate pilasters declared
+  barricades. Found BY moving a lens (the keepout table is lens-coupled).
+
+Stage Summary:
+- LIVE: tdawn_3 (previz-review newest-first); comments ON.
+- Kit: F-TD10/11/12 closed upstream+ports; F-TD13 filed+fixed scene-side.
+- Next: the NEW different scene (design in docs/DESIGN_last_ferry.md),
+  F-TD9 install.sh if time, the S10 heavy-class OOM budget note.
