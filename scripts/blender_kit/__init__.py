@@ -498,13 +498,44 @@ def clear_scene() -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
+def _safe_socket_set(bsdf, name: str, value) -> bool:
+    """Set a socket input if it exists; return False instead of raising.
+
+    For sockets that are genuinely version-dependent (e.g. Principled
+    'Emission Color' is absent pre-4.x). Do NOT use this for sockets the
+    caller REQUIRES — a swallowed KeyError is the kit's known
+    silent-no-op failure class; direct assignment raises loudly instead.
+    """
+    try:
+        bsdf.inputs[name].default_value = value
+        return True
+    except KeyError:
+        return False
+
+
 def make_material(name: str, color: tuple[float, float, float],
-                  roughness: float = 0.5, metallic: float = 0.0) -> bpy.types.Material:
+                  roughness: float = 0.5, metallic: float = 0.0, *,
+                  emission_color=None, emission_strength=None) -> bpy.types.Material:
     """Create a Principled BSDF material with the given base color.
 
     Uses Blender 4.x input names ('Base Color', 'Roughness', 'Metallic').
     On Blender 3.x you'd need to rename 'Subsurface' -> 'Subsurface Weight'
     etc. — this helper only sets the three inputs that are stable across 3.x/4.x.
+
+    Emission (F-TD11, the glow-surface law, measured on 5.2 + AgX):
+    - Principled 'Emission Color' DEFAULTS TO WHITE in 4.x/5.x — any
+      material that later raises Emission Strength glows paper-white.
+      By default this helper PINS Emission Color to the base color so a
+      strength raised by the caller inherits the material's own hue.
+    - Pass emission_color=(r,g,b) to DECOUPLE — the glow-surface recipe
+      for AgX is a DARK base + a warm emission color (a near-white base
+      reflects ambient to paper even with modest emission strength).
+    - emission_strength sets the strength directly (one-call glow).
+      Direct write: raises if the input is missing (4.0/4.1 window) —
+      never silently no-op.
+    - Workbench diffuse_color stays the BASE color (workbench has no
+      emission; a dark-base glow surface reads dark in workbench —
+      expected; verify glow in EEVEE).
     """
     mat = bpy.data.materials.new(name)
     ensure_use_nodes(mat)
@@ -513,6 +544,14 @@ def make_material(name: str, color: tuple[float, float, float],
     bsdf.inputs["Base Color"].default_value = (*color, 1.0)
     bsdf.inputs["Roughness"].default_value = roughness
     bsdf.inputs["Metallic"].default_value = metallic
+    # F-TD11: pin the emission COLOR to the base rgb unless explicitly
+    # decoupled. Guarded: 'Emission Color' is genuinely absent pre-4.x.
+    _safe_socket_set(bsdf, "Emission Color",
+                     (*(emission_color if emission_color is not None else color), 1.0))
+    if emission_strength is not None:
+        # Deliberately NOT guarded: a missing 'Emission Strength' input
+        # here means the glow the caller asked for cannot exist.
+        bsdf.inputs["Emission Strength"].default_value = float(emission_strength)
     # Workbench (MATERIAL color_type) reads the viewport DISPLAY color,
     # not the Principled Base Color -- without this, workbench renders
     # node materials as flat gray (session-8 gotcha).

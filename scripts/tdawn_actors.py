@@ -53,15 +53,42 @@ HERO_COLORS = {
 }
 
 
-def make_material(name, rgb, rough=0.62, metallic=0.0):
+def make_material(name, rgb, rough=0.62, metallic=0.0,
+                  emission_color=None, emission_strength=None):
     """One material serving BOTH engines (Principled + Workbench).
 
-    The Emission COLOR is pinned to the base rgb: the 5.x default is
-    WHITE -- any glow material with emission strength > 0 added PURE
-    WHITE and AgX clipped the whole surface to paper-white (measured
-    on S6's throat plane)."""
+    Emission handling (F-TD11, the glow-surface law, measured on 5.2
+    + AgX): the 5.x default Emission Color is WHITE — any glow material
+    with strength > 0 added PURE WHITE and AgX clipped the whole surface
+    to paper-white (measured on S6's throat plane, tdawn_1). So:
+
+    - default: Emission Color is PINNED to the base rgb;
+    - emission_color=(r,g,b): DECOUPLE — the glow-surface recipe is a
+      DARK base + a warm emission color (a near-white base reflects
+      ambient to paper even at modest strength, tdawn_2 S6/S8);
+    - emission_strength: direct write (raises if the input is missing —
+      never a silent no-op).
+
+    Get-or-create: a cached material still gets any emission_* kwargs
+    RE-APPLIED (the cached-return path used to silently drop them).
+    Workbench diffuse_color stays the BASE color (no emission in
+    workbench; dark-base glow reads dark there — expected)."""
     mat = bpy.data.materials.get(name)
     if mat is not None:
+        bsdf = next((n for n in mat.node_tree.nodes
+                     if n.type == "BSDF_PRINCIPLED"), None) \
+            if mat.use_nodes else None
+        if bsdf is not None and (emission_color is not None
+                                 or emission_strength is not None):
+            if emission_color is not None:
+                try:
+                    bsdf.inputs["Emission Color"].default_value = \
+                        (*emission_color, 1.0)
+                except KeyError:
+                    pass
+            if emission_strength is not None:
+                bsdf.inputs["Emission Strength"].default_value = \
+                    float(emission_strength)
         return mat
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
@@ -73,9 +100,13 @@ def make_material(name, rgb, rough=0.62, metallic=0.0):
     bsdf.inputs["Roughness"].default_value = rough
     bsdf.inputs["Metallic"].default_value = metallic
     try:
-        bsdf.inputs["Emission Color"].default_value = (*rgb, 1.0)
+        bsdf.inputs["Emission Color"].default_value = \
+            (*(emission_color if emission_color is not None else rgb), 1.0)
     except KeyError:
         pass
+    if emission_strength is not None:
+        bsdf.inputs["Emission Strength"].default_value = \
+            float(emission_strength)
     mat.diffuse_color = (*rgb, 1.0)
     return mat
 
