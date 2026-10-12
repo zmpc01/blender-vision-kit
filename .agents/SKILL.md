@@ -247,81 +247,37 @@ For user delivery: copy whole dir to `/home/z/my-project/download/<scene_name>/`
 - **Watchdog** reverts `/home/z/my-project/` every ~20s — work in `/home/z/blender-kit/`.
 
 ## KB entries (linked from AGENTS.md; each carries its own headlines)
+vision_loop · render_speed · placement_and_physics · semantic_labeling ·
+prop_carry · rigged_characters · glTF_export · tdawn_vision_film (the
+film recipe + export command + crowd bridge contract) · crowd_fields ·
+gait_modifiers.
+## Session-5 meta (condensed — full record docs/USABILITY_R5.md)
 
-- /kb/placement_and_physics.md — 7 placement ops, audit pair states,
-  physics hard limits (BOX collision centered on ORIGIN; RB cache
-  survives teardown → frame_set(1); audit pad 100mm).
-- /kb/rigged_characters.md — capsule actors are the standard; 10 rig
-  gotchas; UAL hero-swap vetted (42/46 actions, 0.000m drift).
-- /kb/vision_loop.md — look.py protocol, annotations, readiness, M5
-  perception doctrine (color/exposure/animation-representation/transients).
-- /kb/render_speed.md — AA = 92% of Workbench wall time; cold start
-  ~2.5 min; EEVEE 1.6GB @ 273 objects; JPEG q85 15× smaller.
-- /kb/glTF_export.md — export_cameras defaults False; ACTIONS mode does
-  not bake constraints; three.js strips dots; LoopRepeat + pre-padded
-  tracks; glTF keys timeline-absolute; USD rejected.
-- /kb/crowd_fields.md — FieldSpec, relax PBD, gait phase engine; field
-  tables are DATA only; deterministic vectorized PBD.
-- /kb/prop_carry.md — PHANTOM OFFSETS law (same-frame anchor captures);
-  held-state actions key the full timeline; carry sanity radius.
-- /kb/tdawn_vision_film.md — the from-scratch FILM recipe: contract →
-  bake driver (keepouts!) → vision-first build order → the kit-mode
-  export command verbatim → the export-contract checklist → staging.
-  The session-12 friction ledger lives in docs/USABILITY_TD1_vision_film.md.
+DOG-FOOD when quality saturates: consume via AGENTS.md only, id every
+friction, fix from the consumer seat. Relative intersection thresholds;
+animated-prop placement rebases ALL keys (override='keyframe').
 
-## Session-5 meta: the usability-study pattern (owner-directed)
-
-When mechanical quality saturates, DOG-FOOD: consume via AGENTS.md only,
-log every friction with an id, fix small things from the consumer seat,
-then RESET with a different exercise profile. docs/USABILITY_R{N}.md is
-the deliverable; "what worked flawlessly" protects against
-regression-by-refactor. Laws (details in AGENTS.md): audit pair `state`
-is the exact vocabulary (verdict drifts); intersection thresholds must
-be RELATIVE (absolute-only is scale-biased); animated-prop placement
-needs override='keyframe' (rebase ALL location keys, else drift).
-
-## Session-6/7 meta (condensed; full records in docs/USABILITY_R5-R7.md + kb/semantic_labeling.md)
+## Session-6/7 meta (condensed; full records docs/USABILITY_R5-R7.md + kb/semantic_labeling.md)
 
 - **D15 display-color sync**: workbench MATERIAL reads diffuse_color —
   node-authored scenes render ALL-GRAY undetected; every render surface
-  must call the sync/restore pair.
+  calls the sync/restore pair.
 - **EEVEE warm-cache needs MemAvailable >= ~2.4 GB**; Cycles verify =
-  engine-ASSIGN probe, never subclass enumeration.
+  engine-ASSIGN probe.
 - **Scene driver contract**: build_scene() -> ctx; animate(ctx, *,
   start_frame=1, n_frames=<int>) — tools BRIDGE with inspect.signature.
-- **D16 labeling**: label at VENDOR-NODE granularity on opaque imports;
-  blind agents STOP-AND-FLAG what the manifest cannot derive (the
-  execution contract lives in AGENTS.md).
+- **D16 labeling**: VENDOR-NODE granularity; blind agents STOP-AND-FLAG
+  what the manifest cannot derive (AGENTS.md execution contract).
 
-## R7 addendum — route requests on labeled levels
+## R7/R8 addenda (condensed — full records docs/USABILITY_R7.md + R8.md + D17)
 
-The route planner (r7_route_planner.py) is PURE PYTHON on the manifest
-(run it blind): waypoints or STOP-AND-FLAG (exit 4), never a guess.
-Stair direction is bbox-decidable only for OUTSIDE-ABUT stairs — a
-bbox-ambiguous flag is correct behavior; resolve with
-vision_stair_override.json. Waypoint z's are NOMINAL (bbox tops); trust
-nav_report.json's audit (true_floats must be 0), not the request.
-
-## R8 addendum — seat protocol (rigged actors on labeled furniture)
-
-- **Wrapper yaw law**: θ = atan2(−f.x, f.y) (the math convention is
-  90° off and a self-consistent audit will NOT catch it — cross-check
-  against an independent geometric reference like the backrest).
-- **NLA junctions (probed)**: strips sharing a frame evaluate the
-  EARLIER strip's last pose (no blending); a strip longer than its
-  action STRETCHES playback — key audits at the strip's TRUE end.
-- **Vendor blends carry their own fps** (loft = 30): scale clip ranges
-  ×1.25 for the 24fps numbers; never hardcode clip lengths.
-- **Soft furniture needs region-growing with LOCAL z-continuity
-  (≤3 cm neighbors)** — global z-clusters fragment domes or chain into
-  pillows; then sat-upon rule (drop candidates overlapped ≥60% by a
-  higher one), degenerate-axis filters, seed-driven selection (the
-  approach point NAMES the spot).
-- **Seat math by measurement**: hips H and xy offset O at
-  Sitting_Enter final; flesh offset c = bone-to-mesh (0.076 for the
-  UAL mannequin — NOT 5-10 mm). wrapper_z = seat_local + c − H; audit
-  FOOT BONES, never the wrapper. Edge-sit: walk 0.4 m inward, sit on
-  the highest spot. Restore the wrapper transform after measuring.
+Route planner = PURE PYTHON on the manifest (waypoints or STOP-AND-FLAG
+exit 4, never a guess); stairs are bbox-decidable only for OUTSIDE-ABUT;
+a label is a hypothesis until a USE exercises it (navigation = the
+strongest label validator). Seat protocol D17: region-growing probe on
+labeled furniture with sat-upon/clutter/contamination guards; NLA
+walk->sit->idle->exit on ONE track; verify delegated sits by the audit
+numbers, never self-reports.
 
 ## Session-12 meta: the vision-native FILM (TERMINAL DAWN)
 
@@ -409,3 +365,50 @@ Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
   agent a private mesh (users==1); the 3 RB carts stay shared (copy
   first). Assigning before bake2 mutates the SHARED lib datablock and
   collapses 132 agents to one color.
+
+## SESSION 14 LAWS (the review round + the trio + the SECOND film)
+
+- **The daemon pattern is `scripts/daemonize.py` (double-fork)** —
+  setsid/nohup/backgrounded jobs die with the harness's tool-call
+  process group. `python3 scripts/daemonize.py <log> bash -c "cd
+  <app> && DATABASE_URL=file:<abs>/db/custom.db bun run dev"`.
+- **blrun now CARRIES A LOCK (F-TD10, all four repos)**: concurrent
+  pipelines fail FAST with exit 90 + `LOCK-HELD`; `BLRUN_FORCE=1`
+  bypasses; `BLENDER_DISPLAY=:98` runs a genuinely parallel pipeline.
+- **make_material carries emission params (F-TD11)**: `make_material(
+  name, rgb, emission_color=(r,g,b), emission_strength=N)` — dark
+  base + saturated Emission Color is the glow recipe; strength is a
+  DIRECT write (raises if absent); the tdawn twin RE-APPLIES kwargs
+  on cached materials.
+- **look.py `--probe-camera NAME|all` (F-TD12)** names what each
+  camera's center ray hits first (render_hidden flag + bounded
+  re-cast; rows in look_manifest `camera_probes`; probe-only =
+  `--angles none`). USE IT ON EVERY REFRAME — it killed the 2-hour
+  forensics class.
+- **The keepout row seam (F-TD13)**: the bridge's clamp_keepouts
+  reads (name, px, py, f0, f1) with FRAMES; a contract that writes
+  seconds is INERT (int(14.5)=f14). Rows are lens-coupled — moving a
+  lens means moving its row. Verify: `keepouts_applied` counts ROWS,
+  not effect.
+- **hide_render keys do not export to glTF** (the s35 round-6 finding,
+  user-visible as the "constantly visible" title): the export-safe
+  visibility pattern is SCALE keys (0.001 → 1.0 at the beat) — TRS
+  survives the exporter and renders as nothing.
+- **The night-light laws (LAST FERRY slice)**: (1) emissive materials
+  glow but do not LIGHT — every neon/lamp/window needs a real light
+  object; (2) the sky ladder: 0.04 DEAD → 0.12 + practicals; (3) a
+  saturated neon bar owns its local radiance — a warm hero under a
+  cyan bar goes GREEN: give him a diegetic warm anchor (checkpoint
+  lantern) and keep the deck fill neutral-cool (a blue fill makes it
+  worse); (4) 5.2 SSR knob = `scene.eevee.use_raytracing` (use_ssr
+  does not exist — probed).
+- **5.2 slotted actions: `.fcurves` is NOT on the Action** — use the
+  vetted `_iter_fcurves` helper (channelbags) in every new scene
+  module; direct `action.fcurves` raises AttributeError.
+- **The unparked lib mesh stands in frame**: build_commuter_mesh
+  leaves a scene-linked source object — PARK it outside every frustum
+  (tdawn: y=-41) or it photobombs as a WHITE figure at the origin.
+- **The second-film pattern (zero-fork reuse)**: converge stories fit
+  the bridge's hardcoded (0,0) target natively — build the choke AT
+  the origin, never move the target. Copy the tdawn module SHAPE
+  (contract/world/actors/scene), change the STORY not the bridge.
