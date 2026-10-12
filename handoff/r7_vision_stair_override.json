@@ -1,0 +1,14 @@
+{
+  "_comment": [
+    "R7 vision override for the bbox-ambiguous stair (recorded, not hidden).",
+    "The climbable stair is Plane.003: 9 treads, runs +y, ~31 degrees,",
+    "under the slab band, arriving at the mezzanine slab at y=13.8.",
+    "Mesh-verified in R7 by face enumeration + under-overhang ray maps",
+    "(docs/USABILITY_R7.md). The planner's bbox rule returns (None, None)",
+    "for this stair (its span overlaps/inside the slab span), so the",
+    "vision resolution rides in this file: top at the +y (max) end.",
+    "Schema consumed by r7_route_planner.py --vision-override."
+  ],
+  "top_at_max_end": true,
+  "evidence": "mesh-verified (R7): Plane.003 has 9 treads climbing +y at ~31deg under the slab band; the top tread meets the mezzanine slab edge at y=13.8 — top is the stair bbox max-y end"
+}

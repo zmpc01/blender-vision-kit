@@ -1,0 +1,57 @@
+{
+  "_comment": [
+    "R6 region cuts on the welded shell, reconstructed session-14 from the",
+    "measured record in docs/USABILITY_R6.md (the original session-state",
+    "patch_cuts.json was never committed — the replay gap this file closes).",
+    "Cuts apply IN ORDER on output/r6/loft_import.blend via",
+    "scripts/r6_apply_cuts.py. Every cut is DRY-RUN VERIFIED against",
+    "expect_faces before it mutates (STOP-AND-FLAG on mismatch): the",
+    "recorded dry-run/actual counts were floor 5, ceiling 18,",
+    "mezzanine 42, stairs 14 (stairs LAST — its box overlaps the",
+    "mezzanine y-range; cutting the slab first removes 7 would-be-stolen",
+    "faces: 21 dry-run vs 14 actual).",
+    "Region semantics: world-box, faces FULLY INSIDE are captured",
+    "(straddling faces stay with the source). 'auto' on an axis = the",
+    "source object's world bbox span on that axis widened by 0.5 m —",
+    "recorded where the R6 doc printed no bound (full-span capture)."
+  ],
+  "blend": "output/r6/loft_import.blend",
+  "cuts": [
+    {
+      "name": "floor_slab",
+      "source": "Cube",
+      "new_id": "floor_slab_dup",
+      "region": {"min": ["auto", 7.20, -0.10], "max": ["auto", 17.20, 0.05]},
+      "expect_faces": 5,
+      "action": "cut_and_delete",
+      "why": "captured a dup band at z 0.002 — the real floor is Cube.001; the cut product was DELETED in R6 (recorded render check: dup band)"
+    },
+    {
+      "name": "ceiling_slab",
+      "source": "Cube",
+      "new_id": "ceiling_slab",
+      "region": {"min": ["auto", "auto", 5.85], "max": ["auto", "auto", 6.01]},
+      "expect_faces": 18,
+      "action": "cut",
+      "why": "recorded captured bbox z 5.86-6.00, 18 faces"
+    },
+    {
+      "name": "mezzanine_slab",
+      "source": "Cube",
+      "new_id": "mezzanine_slab",
+      "region": {"min": ["auto", 8.40, 2.69], "max": ["auto", 16.05, 2.93]},
+      "expect_faces": 42,
+      "action": "cut",
+      "why": "recorded captured bbox z 2.70-2.92 / y 8.47-15.97, 42 faces"
+    },
+    {
+      "name": "stairs",
+      "source": "Cube",
+      "new_id": "stairs",
+      "region": {"min": [3.25, 7.25, -0.10], "max": [3.55, 8.55, 2.95]},
+      "expect_faces": 14,
+      "action": "cut",
+      "why": "recorded captured bbox x 3.30-3.50 / y 7.31-8.48 / z 0-2.91, 14 faces; NOTE (R7 correction): this object is the stair-shaft PARAPET — it must carry label 'wall' (medium); the climbable stair is Plane.003 (gen_r6_labels.py encodes it)"
+    }
+  ]
+}
