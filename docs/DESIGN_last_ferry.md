@@ -145,3 +145,59 @@ next session via HANDOFF. The vertical slice proves the RISKIEST laws
   without wake/sound mass; the recede is better sold by light + framing.
 - **A second film at dawn**: tdawn already owns that light; the dark
   end is the unmeasured regime.
+
+## REV-2 — the peer-review folds (ADOPT-WITH-CHANGES, all adopted)
+
+- **[P0] speed envelope**: tail → **(2.30, 0.10)** = 2.60 ≤ envelope
+  2.65 (populations[0] mu+3σ is a GLOBAL cap — the bridge silently
+  clamps; tdawn passed by equality). All-tail ≥ 1.8 keeps Sprint_Loop.
+  The Latecomer's sprint is AUTHORED (hero), not a sim population.
+- **[P0] the throat is AT (0,0)**: the bridge hardcodes hero_pos
+  (0,0)±5 capacity — the gangway pinch point moves to the origin; the
+  kiosk stays as dressing beside it (y≈2).
+- **[P0] the walkable reaches y=−6** (hardcoded): the deck gains a
+  LANDING APRON y −6..−2 at the choke; the rest of the south edge is
+  barricade-lined; water extends y −10..46 (the hull floats on
+  something; the recede reads).
+- **[P1] crew = the pinned 9-deep tail** (CHASE_TAIL=9, far-band
+  spawn), ONE dark-blue tone, restaged as "crew answering the call
+  from the pier head". No 4-agent fiction.
+- **[P1] zone rows pinned**: (24,34,44,1.4,0.5) / (12,20,40,1.4,0.5) /
+  (6,10,36,1.2,0.5) — sums 120; min_abs_x shapes the spawn strips.
+- **[P1] CROWD_X_RANGE = (−6.0, 6.0)**: the outboard margin is
+  crowd-free BY CONSTRUCTION — the ±6.2 rails need NO barricade rows;
+  the margin carries bollards/lamps/crates/crane track/the low lens.
+- **[P1] gangway-rail barricade centers x=±1.55** (2r-wide square
+  inflation would strangle a ±1.0 declaration → 0.9m channel; ±1.55
+  keeps 2.0m clear). Verify on the first flow strip.
+- **[P1] the crane flies over the outboard margin/water** (x≈−9):
+  zero keepout rows, the "keepout under the aerial" lesson never
+  fires. The z=0.45 water-level lens keeps its row.
+- **[P1] SSR knob measured**: 5.2's `use_ssr` does not exist — the
+  scene sets `scene.eevee.use_raytracing = True` (+ screen_trace
+  quality); roughness 0.10-0.18 < trace_max_roughness 0.5 ✓.
+- **[P1] night sky**: `sun_elevation_deg ≈ −6` (twilight blue —
+  strength alone over a 25° day sky reads dim DAY); sweep strength
+  0.02/0.04/0.08 at exposure +0.3, one variable at a time; silhouette
+  ladder: sky→0.12-0.15, then sodium-pool spot energy on crowd lanes,
+  then exposure +0.5 max.
+- **[P1] ferry window strips**: warm emission sweep 0.45/0.70/0.95,
+  never >0.95 (the tan law is input-curve, night does not relax it);
+  the S11/S12 recede = strength keyed DOWN; emission-key plan: board
+  flip @f85, window recede @f913+.
+- **[P2] neon sweep 0.95/1.9/3.9** (doubling from the warm cap —
+  expect the cyan/magenta ceiling 1.9-3.9; 6 washes to white).
+- **[P2] S1 composes ALONG the 44m axis** (a strip, not a slab);
+  freeboard 1.2-1.8m (0.55 reads from no aerial); "water-level lens"
+  renamed deck-level lens z=0.45 over water z=−0.55; pier head
+  y 35..42 is dressing-only (walkable tops at y_hi_all+1=35).
+- **[P2] SAMPLES law bound in**: tferry_stills.sh clones tdawn_stills
+  verbatim (one EEVEE process per shot + SAMPLES override); S11/S12/
+  deck-level lens pre-tagged reduced-sample.
+- **[P2] slice scope fixed**: 6-10 stand-in capsules at three depths
+  (the L-TF4 silhouette floor needs agents to measure); the
+  Latecomer's authored path keyed in-slice; contract pins (CROWD_X_
+  RANGE, zones, keepouts incl. crane strategy, CROWD_SEED = a NEW
+  identity ≠ 2026) land WITH the slice; BEATS rows spelled; S9's rail
+  gap sits NORTH of the capacity box (y 7-9 east rail, nothing routes
+  there) with the choke-staging fallback.
