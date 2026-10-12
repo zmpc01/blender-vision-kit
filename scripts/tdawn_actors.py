@@ -30,22 +30,30 @@ import bpy
 #: _DEFAULT_HEIGHT_M); bake2 keys shape-key bases at this height.
 BRIDGE_HEIGHT_M = 1.75
 
-#: the commuter palette (muted, varied -- D-TD5: no uniform green;
-#: the crowd reads as people, not a faction). (r, g, b) 0-1 linear-ish
-#: sRGB values; the same triple lands in Principled base_color AND
-#: Workbench diffuse_color (gotcha 6).
+#: the commuter palette (session-14 COLOR DISCIPLINE, user comment on
+#: tdawn_2 S1: "too many colors for the population — color only for
+#: characters we call out"). The crowd is a NEUTRAL register: value
+#: variance only, no hue pop. Identity color is reserved for the heroes
+#: (HERO_COLORS) and the chase group (CHASE_RGB -- one muted rust so
+#: the antagonist pack reads as ONE group, still not a rainbow).
+#: (r, g, b) 0-1 linear-ish sRGB; the same triple lands in Principled
+#: base_color AND Workbench diffuse_color (gotcha 6).
 COMMUTER_PALETTE = [
-    (0.115, 0.155, 0.265),   # navy coat
-    (0.300, 0.130, 0.100),   # rust jacket
-    (0.170, 0.190, 0.120),   # olive parka
-    (0.090, 0.095, 0.108),   # charcoal
-    (0.480, 0.435, 0.365),   # bone sweater
-    (0.240, 0.175, 0.128),   # brown coat
-    (0.160, 0.192, 0.224),   # slate blue
-    (0.220, 0.100, 0.128),   # wine coat
-    (0.285, 0.245, 0.196),   # taupe
-    (0.120, 0.160, 0.143),   # pine green
+    (0.130, 0.130, 0.140),   # charcoal
+    (0.220, 0.210, 0.200),   # dark taupe
+    (0.160, 0.170, 0.190),   # graphite blue-gray
+    (0.270, 0.250, 0.220),   # warm gray
+    (0.100, 0.100, 0.110),   # near-black
+    (0.200, 0.190, 0.180),   # stone
+    (0.150, 0.160, 0.150),   # sage-gray
+    (0.240, 0.230, 0.240),   # gray
+    (0.180, 0.170, 0.160),   # bark
+    (0.140, 0.145, 0.160),   # steel gray
 ]
+
+#: the chase group's callout tone (ONE color for the whole group --
+#: previz semantics: group identity, not fashion). Muted dark rust.
+CHASE_RGB = (0.280, 0.130, 0.090)
 
 HERO_COLORS = {
     "Master": (0.85, 0.42, 0.05),   # amber (the only hot body in frame)
@@ -191,6 +199,12 @@ def commuter_material(idx):
     rgb = COMMUTER_PALETTE[idx % len(COMMUTER_PALETTE)]
     return make_material(f"CA.Commute.{idx % len(COMMUTER_PALETTE):02d}",
                          rgb)
+
+
+def chase_material(_idx=None):
+    """The chase group's ONE callout tone (session-14 color discipline:
+    group identity color, muted; every chase agent shares it)."""
+    return make_material("CA.Commute.Chase", CHASE_RGB)
 
 
 def hero_material(name):

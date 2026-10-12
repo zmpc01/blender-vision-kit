@@ -84,8 +84,15 @@ CAMS_V3 = [
      (0.0, 15.0, 1.3), False, 0.0),
     ("CAM_S4",  (-2.5, 29.5, 2.6), (-2.5, 29.5, 2.6), 34,
      (1.5, 20.0, 1.0), False, 0.02),
-    ("CAM_S5",  (-9.8, 16.5, 1.8), (-9.8, 16.5, 1.8), 34,
-     (1.2, 18.0, 1.2), False, 0.025),
+    # session-14 reframe v2 (user comment on tdawn_2 S5: "the model
+    # looks very strange" — v1's west vantage fought the x=-7 colonnade
+    # line AND missed the Runner (he walks y 15.1→8.9 while S5 spans
+    # f349-444; the v1 aim sat 7m north of his f396 position). v2: a
+    # NORTH vantage straight down the stream axis (x≈0.3, no column
+    # crossing), the far-glow gate as backdrop, the crowd streaming
+    # away below, the teal Runner mid-frame at his f396 (0.91, 11.3).
+    ("CAM_S5",  (0.5, 20.8, 2.9), (0.5, 20.8, 2.9), 30,
+     (0.2, 10.0, 1.0), False, 0.025),
     ("CAM_S6",  (-5.2, 7.0, 2.6), (-5.2, 7.0, 2.6), 45,
      (0.0, 1.2, 1.35), False, 0.018),
     ("CAM_S7",  (-9.2, 9.8, 2.6), (-9.2, 9.8, 2.6), 35,
@@ -94,8 +101,15 @@ CAMS_V3 = [
      (0.7, 1.1, 1.2), False, 0.012),
     ("CAM_S9",  (1.6, 7.0, 3.0), (1.6, 7.0, 3.0), 35,
      (0.2, 0.6, 1.3), False, 0.022),
-    ("CAM_S10", (-8.0, -4.0, 3.1), (-8.0, -4.0, 3.1), 30,
-     (0.5, 2.0, 1.6), False, 0.0),
+    # session-14 reframe (user comment on tdawn_2 S10: "spatial
+    # separation unclear — lack of even a wall"; the probe named the
+    # center ray ON TD.GateTunnelL — the frame was centered on the
+    # tunnel EDGE with the throat glow filling the opening as a blank
+    # screen). New: a shallower 3/4 from the SW so the gate WALL PLANE
+    # reads with the SEALED doors + the hot seal-edge slit in frame;
+    # tdawn_world's new pilasters + exit sign give the wall scale.
+    ("CAM_S10", (-8.5, -3.2, 2.7), (-8.5, -3.2, 2.7), 26,
+     (0.8, 0.6, 1.5), False, 0.0),
     ("CAM_S11", (2.0, 10.0, 2.2), (6.0, 2.0, 9.0), 30,
      (0.0, 8.0, 2.0), False, 0.0),
     ("CAM_S12", (8.0, 18.0, 3.4), (7.4, 15.5, 3.1), 35,
@@ -284,11 +298,18 @@ def _title_card(scene):
     ob.select_set(True)
     bpy.ops.object.convert(target="MESH")
     ob.data.materials.append(mat)
-    # the sting: hidden until f1009 (stills), dim base color otherwise
-    ob.hide_render = True
-    ob.keyframe_insert(data_path="hide_render", frame=1)
-    ob.hide_render = False
-    ob.keyframe_insert(data_path="hide_render", frame=_title_f0)
+    # the sting (session-14, the user's tdawn_2 S12 comment: the card is
+    # "constantly visible" in the app — keyframed hide_render does NOT
+    # export to glTF (the s35 round-6 finding, user-visible now). The
+    # export-safe pattern is SCALE keys: TRS animation survives the
+    # exporter, and a 0.001-scale card renders as nothing in EEVEE too.
+    # The emission keys still drive the still-side glow at the sting.
+    ob.scale = (0.001, 0.001, 0.001)
+    ob.keyframe_insert(data_path="scale", frame=1)
+    ob.keyframe_insert(data_path="scale", frame=_title_f0 - 1)
+    ob.scale = (1.0, 1.0, 1.0)
+    ob.keyframe_insert(data_path="scale", frame=_title_f0)
+    ob.keyframe_insert(data_path="scale", frame=1080)
     return ob
 
 
@@ -574,23 +595,27 @@ def _crowd_kit_branch(ctx):
 
 
 def _crowd_palette(ctx):
-    """Per-agent palette assignment (varied muted commuters -- D-TD5).
+    """Per-agent palette assignment (session-14 COLOR DISCIPLINE, the
+    user's tdawn_2 S1 comment: the population is a NEUTRAL register --
+    value variance only; identity color is for call-outs. The chase
+    group shares ONE muted rust (group identity, previz semantics).
 
     mesh.copy() preserves the shape-key Key datablock (verified in
     review); materials.clear() never touches shape keys.
     """
-    from tdawn_actors import commuter_material
+    from tdawn_actors import commuter_material, chase_material
     chars = ctx["chars"]["zombies"]
-    groups = ((chars["crowd"], 0), (chars["chase"], 5))
+    groups = ((chars["crowd"], commuter_material),
+              (chars["chase"], chase_material))
     n = 0
-    for group, base in groups:
+    for group, mat_fn in groups:
         for i, ob in enumerate(group):
             if ob.data.users > 1:
                 ob.data = ob.data.copy()
             ob.data.materials.clear()
-            ob.data.materials.append(commuter_material(base + i))
+            ob.data.materials.append(mat_fn(i))
             n += 1
-    print(f"[tdawn] crowd palette: {n} agents varied")
+    print(f"[tdawn] crowd palette: {n} agents (neutral crowd + rust chase)")
 
 
 def _shot_table(shots, cams):

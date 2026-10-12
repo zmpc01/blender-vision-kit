@@ -217,6 +217,26 @@ def build_world(scene):
         d.keyframe_insert(data_path="location", index=0, frame=1)
     parts["gate"] = gate
 
+    # --- gate WALL dressing (session-14, the user's tdawn_2 S10 comment:
+    # "spatial separation unclear — lack of even a wall"). The gate was a
+    # free-standing portal; from CAM_S10's 3/4 it read as a floating
+    # screen. Pilasters + a header beam + the lit EXIT gantry build the
+    # WALL PLANE the opening is cut into (scale + separation semantics).
+    wall_dress = []
+    for i, px in enumerate((-8.0, -5.2, 5.2, 8.0)):
+        wall_dress.append(_box(
+            f"TD.GatePilaster{i + 1}", 0.55, 0.5, 4.6,
+            (px, 0.0, 2.3), mats["gate_dark"]))
+    wall_dress.append(_box(
+        "TD.GateBeam", 17.2, 0.45, 0.5,
+        (0.0, 0.0, 4.35), mats["gate_dark"]))
+    # the lit EXIT gantry over the opening (the callout the story needs:
+    # this is the WAY OUT the crowd converges on)
+    wall_dress.append(_box(
+        "TD.GateExitSign", 2.6, 0.18, 0.55,
+        (0.0, 0.32, 4.02), mats["gate_glow"]))
+    parts["gate_wall_dress"] = wall_dress
+
     # --- colonnades (match contract BARRICADES x=+/-7) -----------------
     cols = []
     for sx in (-1.0, 1.0):

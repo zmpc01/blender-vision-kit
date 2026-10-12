@@ -44,21 +44,27 @@ SPAWN_ZONES_V5 = [
     (8.0, 14.0, 40, 1.6, 0.55),    # zone 2 (near)
 ]
 
-# camera keepouts: (name, px, py, f0_s, f1_s) -- GROUND-LEVEL cams only
+# camera keepouts: (name, px, py, f0, f1) in FRAMES -- GROUND-LEVEL cams only
 # (the D6 clamp is 2D-xy: a keepout under the aerial punches a hole in
-# the crowd exactly where the aerial looks). Times are SECONDS.
-# iter-2: follows the reframed cameras exactly (S2 added; S5/S6/S7/S8/
-# S10 moved; S5/S7/S10 became STATIC pans so the r=1.3 circle covers
-# the whole shot -- a dolly exits its own circle, review).
+# the crowd exactly where the aerial looks). Row shape: (name, x, y,
+# f0, f1) -- FRAMES. F-TD13 (session-14): the tdawn_1/2 rows carried
+# SECONDS here per the old docstring while the bridge's clamp_keepouts
+# int()s the fields as FRAME numbers -- every tdawn camera keepout was
+# inert outside f3-38 (the v6-belt schema seam; the values were shot
+# spans in seconds). Now in the bridge's de-facto unit: shot spans.
+# iter-3: follows the reframed cameras (S5's north vantage, S10's 3/4)
+# + S12's dolly (the r=1.65 circle at the dolly midpoint covers both
+# poses; the S12 row is NEW -- the title-shot lens was never kept out).
 CAM_KEEPOUTS_V3 = [
-    ("CAM_S2", 3.2, 20.0, 3.5, 7.0),
-    ("CAM_S4", -2.5, 29.5, 11.0, 14.5),
-    ("CAM_S5", -9.8, 16.5, 14.5, 18.5),
-    ("CAM_S6", -5.2, 7.0, 18.5, 22.0),
-    ("CAM_S7", -9.2, 9.8, 22.0, 26.0),
-    ("CAM_S8", -4.5, 4.0, 26.0, 30.0),
-    ("CAM_S9", 1.6, 7.0, 30.0, 34.0),
-    ("CAM_S10", -8.0, -4.0, 34.0, 38.0),
+    ("CAM_S2", 3.2, 20.0, 85, 168),
+    ("CAM_S4", -2.5, 29.5, 265, 348),
+    ("CAM_S5", 0.5, 20.8, 349, 444),
+    ("CAM_S6", -5.2, 7.0, 445, 528),
+    ("CAM_S7", -9.2, 9.8, 529, 624),
+    ("CAM_S8", -4.5, 4.0, 625, 720),
+    ("CAM_S9", 1.6, 7.0, 721, 816),
+    ("CAM_S10", -8.5, -3.2, 817, 912),
+    ("CAM_S12", 7.7, 16.75, 1009, 1080),
 ]
 
 CAM_KEEPOUT_R = 1.3
@@ -69,4 +75,9 @@ BARRICADES = [
     (x, y, 0.55)
     for x in (-7.0, 7.0)
     for y in (6.0, 10.0, 14.0, 18.0, 22.0, 26.0)
+] + [
+    # session-14: the gate-wall pilasters (tdawn_world gate dressing) sit
+    # ON the converge line at y=0 — undeclared, the crowd clips them
+    (x, 0.0, 0.55)
+    for x in (-8.0, -5.2, 5.2, 8.0)
 ]
