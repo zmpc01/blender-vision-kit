@@ -17,6 +17,8 @@
 #   BLENDER_BIN       Path to blender binary (default: <kit>/tools/blender/blender)
 #   BLENDER_DISPLAY   X display (default: :99)
 #   KEEP_XVFB=1       Don't kill Xvfb on exit (for reuse across runs)
+#   BLRUN_FORCE=1     Skip the F-TD10 display lock (concurrent pipelines
+#                     can silently kill each other's Xvfb — you were warned)
 #   BLENDER_HOME      Where Blender puts caches/config (default: <kit>/.blender-home)
 #   BLENDER_KIT_LIBS  Path to local-libs dir (default: <kit>/tools/local-libs/usr/lib/x86_64-linux-gnu)
 #
@@ -72,6 +74,41 @@ DISPLAY_NUM="$(echo "$BLENDER_DISPLAY" | tr -d ':')"
 XLOCK="/tmp/.X${DISPLAY_NUM}-lock"
 XSOCKET="/tmp/.X11-unix/X${DISPLAY_NUM}"
 
+# ----- Cooperative display lock (F-TD10) -----
+# Two concurrent blrun pipelines on one display silently destroy each
+# other: (a) the loser of the xvfb_running() race removes the WINNER's
+# X socket in cleanup(); (b) a reuse-path pipeline's display dies when
+# the first pipeline exits and its cleanup kills the shared Xvfb.
+# The flock is held on fd 9 for the script's lifetime and auto-releases
+# on process death (crash-safe). Children (Xvfb, blender) MUST close
+# fd 9 or KEEP_XVFB=1 reuse would inherit-and-hold the lock.
+BLRUN_LOCK="/tmp/blrun_xvfb${DISPLAY_NUM}.lock"
+if [[ -L "$BLRUN_LOCK" ]]; then
+    echo "[blrun] ERROR: $BLRUN_LOCK is a symlink — refusing (F-TD10 lock hygiene)." >&2
+    exit 90
+fi
+if [[ -z "${BLRUN_FORCE:-}" ]]; then
+    if ! exec 9>>"$BLRUN_LOCK"; then
+        echo "[blrun] ERROR: cannot open lock file $BLRUN_LOCK for append " \
+             "(F-TD10 lock; /tmp unwritable?)." >&2
+        exit 90
+    fi
+    if ! flock -n 9; then
+        local_holder="$(head -c 200 "$BLRUN_LOCK" 2>/dev/null | head -1)"
+        echo "[blrun] LOCK-HELD on ${BLENDER_DISPLAY} holder=${local_holder:-unknown}" >&2
+        echo "[blrun] ERROR: another blrun pipeline holds display ${BLENDER_DISPLAY}." >&2
+        echo "[blrun]        Concurrent pipelines silently kill each other's Xvfb (F-TD10)." >&2
+        echo "[blrun]        Serialize the runs, or use a different display for true parallelism:" >&2
+        echo "[blrun]          BLENDER_DISPLAY=:98 $0 ..." >&2
+        echo "[blrun]        Bypass at your own risk: BLRUN_FORCE=1" >&2
+        exit 90
+    fi
+    printf '%s %s %s\n' "$$" "$(date -Is)" "$*" > "$BLRUN_LOCK"
+else
+    echo "[blrun] WARN: BLRUN_FORCE=1 — display lock skipped; concurrent pipelines" \
+         "may silently kill each other's Xvfb (F-TD10 failure modes a/b)." >&2
+fi
+
 # ----- Helper: is Xvfb already running on our display? -----
 xvfb_running() {
     pgrep -f "Xvfb $BLENDER_DISPLAY " >/dev/null 2>&1
@@ -96,8 +133,10 @@ XVFB_PID=""
 if ! xvfb_running; then
     mkdir -p /tmp/.X11-unix 2>/dev/null || true
     chmod 1777 /tmp/.X11-unix 2>/dev/null || true
-    Xvfb "$BLENDER_DISPLAY" -screen 0 1280x720x24 -nolisten tcp \
-        +extension GLX +extension RANDR &
+    # Subshell closes the lock fd: a KEEP_XVFB=1 Xvfb outliving blrun must
+    # NOT inherit-and-hold the F-TD10 lock (peer-review finding 1).
+    ( exec 9>&-; exec Xvfb "$BLENDER_DISPLAY" -screen 0 1280x720x24 \
+        -nolisten tcp +extension GLX +extension RANDR ) &
     XVFB_PID=$!
 
     # Wait for the X socket to appear (the real readiness signal), with timeout.
@@ -222,7 +261,9 @@ BLRUN_ERR="$(mktemp /tmp/blrun_err_XXXXXX.log)"
 echo "[blrun] launching: $BLENDER_BIN $* (heartbeat — if this hangs >60s, " \
      "see AGENTS.md gotcha 'EEVEE' or kill and retry; first run may be " \
      "cold-cache)" >&2
-"$BLENDER_BIN" --python-use-system-env "$@" \
+# Subshell closes the lock fd: blender must not hold the F-TD10 lock
+# (e.g. a SIGKILLed blrun leaving a live blender would keep it held).
+( exec 9>&-; exec "$BLENDER_BIN" --python-use-system-env "$@" ) \
     2> >(tee "$BLRUN_ERR" | sed 's/^/[blender] /' >&2) \
     | tee "$BLRUN_OUT" | sed 's/^/[blender] /'
 EXIT_CODE=${PIPESTATUS[0]}
