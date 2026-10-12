@@ -1,6 +1,52 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session close: 2026-10-11 (session 13, the ASSET DURABILITY build).
+> Session close: 2026-10-12 (session 14, the REVIEW ROUND + the kit
+> trio + the SECOND film's slice). The user reviewed tdawn_2 IN-FLIGHT
+> (5 comments, all consumed) → tdawn_3 LIVE. F-TD10/11/12 closed
+> upstream+ports; F-TD13 found+fixed. The NEW film LAST FERRY
+> (tferry_1) has its design (REV-2) + contract/world/scene modules +
+> a LOOK-proven night-light pass. Read docs/DESIGN_last_ferry.md
+> (REV-2) + docs/DESIGN_FTD_trio.md (REV-2) first.
+
+## Session-14 close state (NEWEST — read this first)
+
+- **DELIVERABLE LIVE: tdawn_3** (previz-review newest-first, comments
+  ON): the user's 5 tdawn_2 comments ALL fixed and eye-verified —
+  S1 color discipline (neutral crowd register + ONE rust chase callout;
+  the user's law: color = call-outs, not diversity), S5 reframe (RCA:
+  near-field capsule flood + a 7m-stale aim; new NORTH vantage down the
+  stream axis), S10 gate-wall 3/4 + pilasters/beam/exit gantry (the
+  pilasters are DECLARED barricades), S12 title = export-safe SCALE
+  keys (hide_render keys do not export — the "constantly visible" bug),
+  + F-TD13 (the keepout rows were SECONDS-vs-FRAMES inert — now
+  shot-span frames + S12's dolly row). 12/12 stills re-reviewed twice.
+- **THE KIT TRIO closed** (docs/DESIGN_FTD_trio.md REV-2, 2 review
+  rounds): F-TD10 (the blrun flock, all FOUR repos, exit 90 +
+  LOCK-HELD marker; vendor round 40/40), F-TD11 (make_material
+  emission params, both kits + the twin; tests t7/v8), F-TD12
+  (look.py --probe-camera; test_v7_camprobe 14/14 incl. the animated
+  occluder). agent-kit 8a93e0b; escape vendored 60abd33.
+- **LAST FERRY (tferry_1) slice**: design REV-2 (the reviewer probed
+  the bridge source: speed envelope 2.65 vs tail 4.60 would clamp
+  SILENTLY — retuned; throat AT (0,0) (the bridge hardcodes the
+  target); walkable reaches y=-6 (the apron covers it); CROWD_X_RANGE
+  (−6,6); crane over water = zero keepout rows; use_raytracing is the
+  5.2 SSR knob). Modules: tferry_contract.py / tferry_world.py /
+  scene_last_ferry.py — dry-run green, night look PROVEN at 4 frames
+  (the L-TF1..4 laws are in SKILL.md).
+- **Bootstrap that works (verified twice this session)**: clone the 5
+  repos (CANONICAL names), bash install.sh (Blender 5.2.2 + Pillow OK
+  on fresh single-python bundle), crowd wheel → venv
+  (vendor/blender-crowd/addon/blender_crowd/wheels/*.whl), bake, run.
+  The dev server: scripts/daemonize.py (double-fork) ONLY; comments db
+  = repo-local; s33_restore_comments.sh after db push.
+- **Open**: tferry_1's bake driver + flow strip + shot cams + stills +
+  export + stage (the build order = kb/tdawn_vision_film.md steps 4-8
+  with tferry names); the user review round on tdawn_3 + tferry_1;
+  F-TD9 (install.sh Pillow probe for the stale-4.x-tools case — the
+  fresh case self-healed); the six older filings (F-TD1/2/3 + the
+  make_material default — F-TD6 partially superseded by the glow law).
+
 > The user-directed D18 lane: the 561MB loft.blend is now IN-GIT as
 > 119 textures + 14 chunks + manifest; fresh-clone rebuild proven
 > (manifest_diff 0 findings, renders pixel-identical). Read
