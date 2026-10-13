@@ -6,6 +6,30 @@
 > The user review round on both is THE open item. Read
 > docs/DESIGN_last_ferry.md (REV-2) + the worklog session-15 record.
 
+## Session-15 addendum (the SECOND lane's completion — read with the block below)
+
+- **The app NOW carries the FINAL composition**: the staged tferry_1
+  was re-cut from vision-kit 329a9d8 (previz-review 0008cfa) — the
+  flip BOARD, the gang spot + gate work light, S9 re-aimed onto the
+  crossing @f735, the 420W lane lamp, on top of the east pools/fill/
+  title-emission pass. 12/12 EEVEE stills eye-certified by BOTH
+  lanes' contributions composed as ONE set. The "stage rev 2" note
+  below is DONE.
+- **The fresh-context review round consumed (Task 5-a: zero P0s,
+  5 P1s)**: the count law now pins N_RELEASE (the apportionment
+  tautology), HERO_LANES removed as DEAD DATA (kit mode has NO
+  hero-lane pushout — filed F-TF6 in the ledger), the RB
+  placeholders parked OUTBOARD, render.fps pinned in build_scene,
+  the FLANK WALL at y=-2.7 (the y=-0.5 wall's south face leaked a
+  water-walk band). NEW LAW learned: the native engine REFUSES
+  barricade squares past the walkable edge (E_InvalidRange) — cap
+  centers at walkable−r. Re-bake pin 8b7d4d8e; the contract now
+  evolves AHEAD of the staged package (an honest rev 2 re-export
+  picks up the review fixes + the outboard statics when the user
+  round demands it).
+- **The ledger: docs/USABILITY_TF1_last_ferry.md** (F-TF1..6 + the
+  night laws at shot scale + the two-lane merge-cost lesson).
+
 ## Session-15 close state (NEWEST — read this first)
 
 - **THE APP SURVIVAL KIT (verified this session)**: clone
