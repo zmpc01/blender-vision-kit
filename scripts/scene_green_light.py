@@ -42,10 +42,10 @@ if _previz_scripts not in sys.path:
 FPS = 24
 total_frames = 1080
 _title_f0 = 1009            # the title sting == the light reset (F8)
-TG_EXPOSURE = 0.0           # F10: the day ladder sweeps sun/sky, never
+tg_exposure = 0.0           # F10: the day ladder sweeps sun/sky, never
                             # exposure (the night L-TF4 law inverted)
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+_here = os.path.dirname(os.path.abspath(__file__))
 
 # --- shots (id, f0, f1, intent) -------------------------------------
 SHOTS_V3 = [
@@ -533,7 +533,7 @@ def _set_engine(scene, engine, samples):
     scene.eevee.use_raytracing = True   # the 5.2 SSR knob
     if hasattr(scene.eevee, "taa_render_samples"):
         scene.eevee.taa_render_samples = samples
-    scene.view_settings.exposure = TG_EXPOSURE   # F10: pinned 0
+    scene.view_settings.exposure = tg_exposure   # F10: pinned 0
 
 
 def main():
