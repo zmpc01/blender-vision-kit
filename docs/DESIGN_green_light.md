@@ -217,3 +217,55 @@ text→convert MESH→scale keys f1=0.001/f1009=1.0, charcoal
   hardcode); flow-through crossing (pursue target hardcoded);
   vehicles (no vehicle sim); M5 interaction beat (F16:
   recorded-only); noon sun (F9: 40° WSW wins on composition).
+
+## REV-3 — the round-2 folds (ADOPTED; the story re-scopes on the freeze)
+
+The round-2 source probe (task 3-d) refused the plaza THREE ways and
+the re-scope it forces is a BETTER film — the freeze becomes the act,
+not a defect:
+
+- **F17 (P0, triple refusal)**: (a) the plaza barricade (−5..5)² has
+  max.y 5.0 > walkable 3.2 → E_InvalidRange (project.rs:820-829);
+  (b) the HARDCODED capacity box (−5,−5)..(5,5) demands walkable
+  y_hi ≥ 4.0 — the fallback dies at ingest too (project.rs:869-881);
+  (c) any plaza-scale centered barricade seals a nav pocket →
+  UnreachableDestination at scene compile (scene.rs:335-358). FIX:
+  zone2 y_hi 2.2 → **4.0** (walkable y −6..**5.0**; capacity box
+  5.0 ≤ 5.0 inclusive-legal per contains_bounds) and **ZERO sim
+  barricades** (the freeze line IS the statue's protection; the
+  granite plaza slab is DRESSING only). The two signal-post rows
+  stay (3.15 < 5.0 ✓).
+- **F18 (P0, the story re-scope)**: the source-true behavior is the
+  **two-rank ghost freeze** — agents freeze on first contact with
+  the ±5 box, later agents ghost-walk THROUGH the frozen (arrived
+  agents are steering-ghosts, perceive.rs:94-101). The film's third
+  act: **the crowd stills mid-crossing** — a frozen field of
+  capsule statues around the gold performer, and the keyed runner
+  (immune — heroes are not sim agents) threads the still to reach
+  him. The press/jam language is STRUCK; "the still" replaces it.
+  The nadir S5 signature frame: the freeze completing ON CAMERA.
+- **F19 (P1, the speed map)**: the driver clones with PER-ZONE
+  keys (not the tferry far/near pair): far (1.42, 0.40) → cap
+  **2.62**; near1 (1.30, 0.12); near2 (1.18, 0.10); chase (2.30,
+  0.10) → 2.60 ≤ 2.62 ✓. Zone2 y-band now 0.2..4.0: density
+  22/side in 5m×3.8m = 1.16/m² (the ceiling worry dissolves).
+- **F20 (P1, keepout ledger re-derived)**: the walkable grew to
+  y 5.0 — the N-sidewalk ground cams are now INSIDE it. Rows
+  (FRAMES; r 1.3): S2 (−4.6,4.6, 85,168), S3 (−2.0,4.6, 169,264),
+  S6 (0.0,−5.2, 445,528), S7 (10.0,4.4, 529,624), S9 (6.2,4.2,
+  721,816), S10 (3.0,3.6, 817,912). Aerials row-free (the hole
+  law): S1/S4(z 6.5)/S5/S11/S12. S8 (27,6) outside y ✓.
+- **F21 (P1, the timing ledger)**: first arrivals ~f170 (S3 — the
+  freeze BEGINS on camera), the mass stills through S4-S5, the
+  last by ~f577. The runner breaks f529 into the stilling crowd;
+  his hesitate hold f721-750 sits INSIDE a frozen field; statue
+  flinch pose re-timed to f355 (the still completes).
+- **F22 (P2, the probe recipe)**: ingest IS the F17 test (seconds,
+  no bake): ingest_contract(tgreen, 129, seed 8123) must pass
+  clean; then a 20-agent mini-bake + flow strip certifies the
+  freeze look BEFORE any EEVEE work.
+
+VERDICT HISTORY: REV-1 GO-WITH-CHANGES (2 P0s) → REV-2 folds →
+REV-3: the plaza experiment is closed by source; the freeze film is
+the design of record. Round-3 verification = the ingest probe on
+the real contract (empirical, cheaper than another audit).
