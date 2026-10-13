@@ -18,7 +18,7 @@ for SID in S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12; do
   if [ -s "$OUT/shot_${SID}.png" ]; then echo "[stills] $SID exists, skip"; continue; fi
   echo "[stills] $SID @ f$F ..."
   ./scripts/blrun.sh --background --factory-startup \
-    --python scripts/scene_last_ferry.py -- \
+    --python scripts/scene_green_light.py -- \
     --output output/tgreen/stillwork --engine ${ENGINE:-eevee} --w 640 --h 360 \
     --still $F --samples ${SAMPLES:-32} > /tmp/still_tf_$SID.log 2>&1
   rc=$?
