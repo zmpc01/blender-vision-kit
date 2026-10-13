@@ -121,12 +121,10 @@ tool surface forces the numbers to travel WITH the images.
 
 ## The 5.x compat shim (in `blender_kit/__init__.py`)
 
-- `EEVEE_ENGINE_ID`: auto-resolves to `BLENDER_EEVEE_NEXT` (4.x) or `BLENDER_EEVEE` (5.x)
-- `normalize_engine_id()`: accepts any spelling + typos → correct id
-- `iter_fcurves(action)`: 4.x `action.fcurves` ↔ 5.x `action.layers[0].strips[0].channelbag(slot).fcurves`
-- `ensure_use_nodes()`: 4.x sets True; 5.x no-op (auto-created)
-- `add_sky_world()`: NISHITA (4.x) ↔ MULTIPLE_SCATTERING (5.x)
-- `supports_headless_gpu()`: True if `gpu.init()` available (5.2+) — but crashes on llvmpipe, Xvfb still required
+- `EEVEE_ENGINE_ID`/`normalize_engine_id()` (spelling-tolerant),
+  `iter_fcurves()` (4.x fcurves ↔ 5.x channelbags), `ensure_use_nodes()`,
+  `add_sky_world()` (NISHITA 4.x ↔ MULTIPLE_SCATTERING 5.x),
+  `supports_headless_gpu()` (llvmpipe crashes — Xvfb still required).
 
 A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 
@@ -279,110 +277,70 @@ numbers, never self-reports.
 Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
 ; design: docs/DESIGN_terminal_dawn.md. Survival laws:
 
-- F-TD5 (LANDED UPSTREAM+ported): exporter #29 needs view_layer.update()
-  before the sweep; scene-side build_scene still ends with the update.
-- Marker-camera hijack: custom passes suppress → RE-ASSERT scene.camera
-  → restore.
-- **5.2 AgX emission laws**: pin Emission COLOR; hot keys <= 0.95 (tan
-  desaturation); sky 0.35-0.5 + exposure -0.5. PLUS the session-13
-  glow-surface law (below) — the pair is the full gate-read fix.
-- **the bridge shape is a FEATURE**: pursue-origin grammar re-authored
-  as gate convergence with zero bridge forks; N pinned 129; density
-  via GEOMETRY (24x40 m hall); re-author zones/keepouts/speed-plan
-  (dataclasses.replace on frozen DCs), never the bridge.
+- F-TD5 LANDED UPSTREAM (view_layer.update before the #29 sweep).
+- Marker-camera hijack: custom passes suppress → RE-ASSERT scene.camera.
+- **5.2 AgX emission laws**: pin Emission COLOR; hot keys <= 0.95; sky
+  0.35-0.5 + exposure -0.5 (day films: the session-16 ratio law).
+- **the bridge shape is a FEATURE**: converge stories re-author with
+  ZERO bridge forks; N pinned 129; density via GEOMETRY; re-author
+  zones/keepouts/speed-plan (dataclasses.replace), never the bridge.
 - **the vision loop pays for camera work**: expect 2-3 reframe rounds;
-  check shot cams at REPRESENTATIVE frames; "invisible subject" =
-  ray-cast through it BEFORE doubting the animation (the session-13
-  recession-occlusion law below).
+  check cams at REPRESENTATIVE frames; "invisible subject" = ray-cast
+  through it first.
 - **the unmapped-constant gate is a feature**: uppercase = mapped
   vocabulary only; internal wiring lowercase.
 
-## D18 ASSET PARTITION LAWS (session 13 — .blend splitting)
+## D18 ASSET PARTITION LAWS (session 13; full: docs/USABILITY_R9.md)
 
-- `libraries.write(path, {ids}, compress=True)` (5.2: SET arg): DOWNWARD
-  closure only (children NOT pulled; collections carry nothing).
-- Append: NO dedup (.001), NO scene linking (users=0 — link yourself),
-  fake_user does NOT survive. `ID.users` counts the fake user:
-  purge-vulnerable = users==0 or (fake_user and users==1).
-- Scene-owned CompositorNodeTree IDs drag the SCENE through write() —
-  dump to JSON + re-create; compositor sockets drift across versions.
-- save_as_mainfile re-relativizes // paths from the OLD location.
-  Vendor files ship autopack ON — disable before any partition save.
-- Double-writing an object into 2 chunks corrupts same-named DATA at
-  rebuild. Write sets: pairwise-disjoint, |union| == census (asserted).
-- Expectations must be DATA-DERIVED (chunk inventories + gap riders at
-  rebuild time), never hand arithmetic (wrong 3× in one session).
-  Request ALL ID classes per chunk at rebuild.
-- Full recipe + 10 laws: docs/USABILITY_R9.md; design D18 REV-3.
+- `libraries.write(path, {ids}, compress=True)`: DOWNWARD closure only.
+- Append: NO dedup, NO scene linking (link yourself); fake_user does
+  NOT survive; purge-vulnerable = users==0 or (fake_user and users==1).
+- Scene-owned compositor trees drag the SCENE through write() — dump
+  to JSON + re-create. save_as_mainfile re-relativizes // paths;
+  vendor files ship autopack ON — disable first.
+- Write sets pairwise-disjoint, |union| == census (asserted); a
+  double-write corrupts same-named DATA at rebuild.
+- Expectations must be DATA-DERIVED, never hand arithmetic.
 
 ## SESSION 13 LAWS (the tdawn iteration round — refined by 12+ eye loops)
 
-- **THE FACTORY-SCENE PURGE LAW**: `--factory-startup` loads Blender's
-  default Cube+Camera+Light INTO YOUR SCENE. A fresh sandbox's startup
-  is factory (the old sandbox's was a saved cube-free file — masked
-  for sessions). PURGE the trio at build_scene start; a stray default
-  cube sat in the gate mouth of every probe render for 2 hours.
-- **THE GLOW-SURFACE LAW (extends F-TD6)**: emission on a near-white
-  ALBEDO = a white void under any ambient (the base color reflects
-  everything). Decouple: dark-warm Base Color + warm Emission Color,
-  set independently (make_material pins them EQUAL by design — glow
-  surfaces need the override AFTER creation).
-- **RECESSION OCCLUSION CLASS**: a recessed "depth" structure built on
-  the CAMERA'S side of an opening occludes everything inside it from
-  that camera (the tunnel receded south; CAM_S9 was south; the dive
-  was invisible — ray-cast proven). When a subject "vanishes": ray-cast
-  THROUGH it before doubting the animation. The fix is a viewpoint
-  move, not a retime.
-- **"FRAME-EDGE CLIP" CAN BE OCCLUSION**: if resizing doesn't fix an
-  edge clip (the clip edge never moves), find the occluder on the
-  sight line.
-- **NEVER run two blrun/EEVEE pipelines concurrently**: both grab
-  Xvfb :99 — the second kills the first's display SILENTLY (the stills
-  run died mid-shot, no traceback). Serialize all Blender work.
-- **Bfont advance ≈ 0.91-1.1em/char** (not 0.55): size text from the
-  measured render, and check occluders on the sight line, not just FOV.
-- **The exporter's governed-pair guard catches cross-repo drift
-  LOUDLY** (the wrapper refuses on blender_kit sha mismatch): land the
-  kit fix → run the kit's `tools/sync_shared.py --to <consumer>` →
-  commit BOTH. The guard is the vendor discipline working.
-- **The comments API's db is REPO-LOCAL** (the harness's global
-  DATABASE_URL is obeyed by prisma-cli but IGNORED by the app —
-  push with the absolute repo-local URL; details in session-15).
-- **Pillow on 5.2 bundles python3.13** (not 3.11): install.sh's probe
-  misses it; install by hand with that interpreter (kit friction).
-- **Palette per-agent = post-materialize only**: bake2 gives each sim
-  agent a private mesh (users==1); the 3 RB carts stay shared (copy
-  first). Assigning before bake2 mutates the SHARED lib datablock and
-  collapses 132 agents to one color.
+- **THE FACTORY-SCENE PURGE LAW**: `--factory-startup` loads the
+  default Cube+Camera+Light INTO YOUR SCENE. PURGE the trio at
+  build_scene start (a stray cube sat in the gate mouth for 2h).
+- **GLOW-SURFACE LAW**: emission on near-white ALBEDO = a white void;
+  decouple (dark base + saturated Emission Color, set independently).
+- **RECESSION OCCLUSION**: a recessed structure on the CAMERA'S side
+  occludes everything inside it; when a subject "vanishes" ray-cast
+  THROUGH it first — the fix is a viewpoint, not a retime. "Frame-edge
+  clip" that resists resizing is occlusion too.
+- **NEVER run two blrun/EEVEE pipelines concurrently** (Xvfb :99 —
+  the second kills the first SILENTLY). Serialize all Blender work.
+- **Bfont advance ≈ 0.91-1.1em/char**; check occluders, not just FOV.
+- **The governed-pair guard** catches cross-repo drift LOUDLY: land
+  the kit fix → tools/sync_shared.py --to <consumer> → commit BOTH.
+- **Pillow on 5.2 = python3.13** (install.sh's probe misses it).
+- **Palette per-agent = post-materialize only** (bake2 gives private
+  meshes users==1; RB carts copy-first; earlier assignment mutates
+  the SHARED lib datablock and collapses the crowd to one color).
 
 ## SESSION 14 LAWS (the review round + the trio + the SECOND film)
 
-- **The daemon pattern is `scripts/daemonize.py` (double-fork)** —
-  setsid/nohup/backgrounded jobs die with the harness's tool-call
-  process group. `python3 scripts/daemonize.py <log> bash -c "cd
-  <app> && DATABASE_URL=file:<abs>/db/custom.db bun run dev"`.
-- **blrun now CARRIES A LOCK (F-TD10, all four repos)**: concurrent
-  pipelines fail FAST with exit 90 + `LOCK-HELD`; `BLRUN_FORCE=1`
-  bypasses; `BLENDER_DISPLAY=:98` runs a genuinely parallel pipeline.
-- **make_material carries emission params (F-TD11)**: `make_material(
-  name, rgb, emission_color=(r,g,b), emission_strength=N)` — dark
-  base + saturated Emission Color is the glow recipe; strength is a
-  DIRECT write (raises if absent); the tdawn twin RE-APPLIES kwargs
-  on cached materials.
-- **look.py `--probe-camera NAME|all` (F-TD12)** names what each
-  camera's center ray hits first (render_hidden flag + bounded
-  re-cast; rows in look_manifest `camera_probes`; probe-only =
-  `--angles none`). USE IT ON EVERY REFRAME — it killed the 2-hour
-  forensics class.
-- **The keepout row seam (F-TD13)**: the bridge's clamp_keepouts
-  reads (name, px, py, f0, f1) with FRAMES; a contract that writes
-  seconds is INERT (int(14.5)=f14). Rows are lens-coupled — moving a
-  lens means moving its row. Verify: `keepouts_applied` counts ROWS,
-  not effect.
-- **hide_render keys do not export to glTF** (the s35 round-6 finding,
-  user-visible as the "constantly visible" title): the export-safe
-  visibility pattern is SCALE keys (0.001 → 1.0 at the beat) — TRS
-  survives the exporter and renders as nothing.
+- **daemonize.py (double-fork)** is the ONLY durable background
+  pattern — setsid/nohup/backgrounded jobs die with the harness's
+  tool-call process group. daemonize chdirs to / — absolute log +
+  `bash -c "cd <repo> && cmd"`.
+- **blrun CARRIES A LOCK (F-TD10)**: exit 90 + LOCK-HELD; BLRUN_FORCE=1
+  bypasses; BLENDER_DISPLAY=:98 runs a real second pipeline.
+- **make_material emission params (F-TD11)**: (name, rgb, rough,
+  emission_color=, emission_strength=) — dark base + saturated color;
+  strength is a DIRECT write.
+- **look.py --probe-camera (F-TD12)** names each camera's center-ray
+  hit — USE IT ON EVERY REFRAME.
+- **The keepout seam (F-TD13)**: rows are (name, px, py, f0, f1)
+  FRAMES; seconds are INERT; rows are lens-coupled; keepouts_applied
+  counts ROWS not effect.
+- **hide_render keys do not export** — the export-safe visibility
+  pattern is SCALE keys (0.001 → 1.0 at the beat).
 - **The night-light laws (LAST FERRY slice)**: (1) emissive materials
   glow but do not LIGHT — every neon/lamp/window needs a real light
   object; (2) the sky ladder: 0.04 DEAD → 0.12 + practicals; (3) a
@@ -422,3 +380,45 @@ Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
   Kit mode has NO hero-lane pushout (HERO_LANES dead data).
 - Git discipline held through 3 two-lane collisions: fetch-inspect-
   rebase + eye-arbitration of certified sets; never force.
+
+## SESSION 16 LAWS (the THIRD film: GREEN LIGHT — the daylight regime)
+
+- **THE CAPACITY BOX IS AN ARRIVAL TRIGGER, NOT A CONTAINER**: an
+  agent freezes (velocity 0, GHOST — no neighbor risk) the moment it
+  ENTERS x ±5; the crowd never piles INSIDE. Design converge films
+  FROM the box mechanics; any plaza-scale barricade there seals a
+  nav pocket → UnreachableDestination. Embracing the two-rank ghost
+  freeze AS the story was the trilogy's best design move.
+- **The speed envelope is PER-FILM**: max_speed = populations[0]'s
+  mu+3σ applied to ALL agents (no global cap). The film's zone0 plan
+  IS the cap; the tail must fit it.
+- **NO delayed emission exists**: every population spawns at t0 —
+  "a crowd waits for the light" is unauthorable; open with motion.
+- **AgX-noon laws**: the pastel wash is the SKY AMBIENT (p95−p50
+  0.07), not the sun disc (disc-off changed nothing) and not
+  exposure (no clipping) — tune the direct:ambient RATIO (won
+  sun5/sky0.15/1°). White cards need a DARK field at noon (the
+  night cream-on-dark law INVERTED); glyph emission sweep 1.9/3.9/
+  5.5 (the night ceiling does not transfer).
+- **The x-sign palette split**: the V5 zone row spawns symmetric E+W
+  strips (asymmetric x is inexpressible) — two-stream identity is a
+  SCENE-SIDE palette keying on spawn-x sign at f1; value-split
+  tones (not hue) read at 640×360.
+- **The clone-seam law**: a tool clone that seds names misses the
+  scene-module path — the stills runner rendered the FERRY's shots
+  into the tgreen dir; only the eye gate caught it. Grep the clone
+  for the PARENT'S scene module before running; the review wave is
+  never a substitute for eyes.
+- **The spawn-band vs dressing seam**: set geometry must clear the
+  spawn strips (CROWD_X_RANGE ends) — facades at |x| 28 swallowed
+  the |x| 28..30 strip end (~30 agents inside buildings, walking
+  out through walls in the GLB; invisible at every certified
+  vantage). Dress BEYOND the walkable, not inside its tail.
+- **The seed override must move the CONTRACT attr** (the bridge
+  compares int(contract.CROWD_SEED) == int(seed) at ingest).
+- **Determinism hygiene**: never reuse the default --out across
+  runs (it destroyed the run-1 evidence); uncommitted states leave
+  no git trace; the pin law held when truly same-input (byte-
+  identical reruns, tferry 8b7d4d8e cross-session).
+- Ledger: docs/USABILITY_TG1_green_light.md (F-TG1..8); design
+  REV-4 = built truth.
