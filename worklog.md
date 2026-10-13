@@ -3479,3 +3479,95 @@ Stage Summary:
   ingest → dataclasses.replace the SPEED_PLAN → bake → to_previz_ctx)
   → flow strip → shot-cam reframes → EEVEE pass → stills → export
   tferry_1 → stage. The contract/world are export-shaped already.
+
+---
+
+## Session 15 (2026-10-13) — the app restored + LAST FERRY built end-to-end
+
+Task: user directive — the kit's export/preview flow live for review
+in previz-review FIRST, then the next steps (the HANDOFF value order:
+finish tferry_1). Sandbox was fresh; /home/sync survived.
+
+Work Log:
+- App RESTORED (the review lane reopened): fresh clone of
+  previz-review + bun install + prisma generate + db:push (repo-local
+  custom.db) + daemonize. BOOTSTRAP LAW REFINED: daemonize.py chdirs
+  to "/" — the logfile AND the command must carry absolute paths /
+  their own cd (relative paths fail EACCES or "Script not found").
+- The tdawn_2 user comments were NOT in the mirror journal (they died
+  with the old sandbox db) — RECOVERED from escape 8841ee1
+  (previz_comments_tdawn_2.json, 5 rows) and re-injected via POST;
+  verified rendering in-app with timeline pins. The mirror self-heal
+  now tracks them going forward.
+- tferry_1 built end-to-end (the HANDOFF build order):
+  - F-TF1 (the ingest seam): the contract needed DT + N_RELEASE +
+    the SPAWN_ZONES_V5 alias — ingest fail-closed on all three; the
+    slice's "dry-run green" was scene-side only.
+  - tferry_bake.py (the tdawn shape) + the F-TF1 envelope assert
+    PRE-BAKE (crew 2.60 <= far 2.65 — no silent clamp). BAKE GREEN:
+    129 agents, 4 populations.
+  - F-TF5: the vision-kit VENDOR wheel is 1.0.0 while crowd-kit's is
+    1.5.4 — the bridge needs 1.5.4 (create_session motion_matcher).
+    Re-vendor pending (owner: the vendor sync).
+  - Flow strip: the converge + choke pile reads; the Latecomer's run
+    + boarding by f1000 visible; the crew tail (dark-blue callout)
+    reads as the early stream.
+  - Framing: 3 workbench rounds, 12/12 eye-certified. S2 re-aimed at
+    the kiosk board face (was INSIDE the kiosk); S5 raised outboard
+    (the Latecomer's head reads above the stream); S7 anchored SE on
+    his HOLD pose (the old aim was 4.8m stale — he holds (4.8,8)
+    f444-700); S8 outboard SE (both callouts in ONE frame — the pile
+    occluded the Deckhand from the NW); S9 outboard (inboard cams
+    caught a bollard dome then a rail); S11/S12 aims end ON the ferry
+    (the receding windows; the Latecomer BOARDS by f900).
+  - PARALLEL-LANE CONVERGENCE x2: the lane shipped the same bake
+    driver + the same crowd-path fix + its own reframes + F-TF3 (the
+    south-edge WATER-WALK fix: 8-square wall at y=-0.5 — agents bled
+    onto the water west/east of the apron) + tferry_filmstrips.py.
+    Merged BY EYES: kept their F-TF3 + S2/S4/S6/S10/S11/S12 +
+    title-size fix; re-applied my outboard S5/S7/S8/S9 (theirs buried
+    the subject); keepouts re-derived to 5 rows (outboard lenses need
+    zero rows — the crane law). LESSON: in a rebase, --theirs is the
+    commit being REBASED ONTO... no: --theirs = MY replayed commit;
+    --ours = the base. I had it backwards and silently dropped their
+    F-TF3 for one round — the re-render caught it (the diff vs their
+    commit showed the wall missing). RE-VERIFY AFTER EVERY RESOLUTION.
+  - Night-light pass 2 (eyes): +2 east sodium pools (5.6,17.5 the S5
+    run-lane gap; 5.6,7.0 the S7/S8/S9 south-east read), deck fill
+    40->70W (the S1 aerial pier-shape read), lantern 30->45W, the
+    title card gains F-TD11 emission (cream 0.9 — was a diffuse-only
+    card: made_material's 3rd arg is ROUGHNESS, not emission).
+  - EXPORT: 3 scene-constant fixes (ctx["scene"] load-bearing at
+    exporter:2736; BEATS reshaped to the story contract (id,
+    t_seconds, label); the sfx "id"->"name" key — the app DROPS
+    non-{name|kind,frame} events 3/3, found in-app from the console).
+    ALL GATES GREEN: tferry_1 rev 1, 21.1MB GLB, 135 actions, 129
+    tier-2 tracks, cameras+aims in GLB.
+  - STAGED: public/packages/tferry_1/ (22MB: GLB + 96 strips + 12
+    EEVEE stills + sfx + honest .export_ok stamp) — committed to
+    previz-review 749d0a1; the app serves manifest/strips/stills/GLB
+    all 200; the comment POST/GET/DELETE loop smoke-tested green on
+    tferry_1 itself. 3D playback NOT verifiable in the sandbox's
+    headless software-GL chrome (the tab died on the 21MB GLB twice;
+    the shots rail + stills rendered fine) — same package class as
+    tdawn_3 which the user's real browser played; treat the sandbox
+    viewer crash as a RESOURCE limit, not a package defect.
+- Chain-replay receipt (the aborted session-14 segment, recorded for
+  the durability ledger): the committed chain inputs (fad4f33) were
+  replayed on the rebuilt loft master — cuts (floor 5 / ceiling 18 /
+  mezz 42, stairs 14 post-mezz), props (TOUCHING x3 + CLEAR 5.82mm),
+  route (arrival y 13.76, top z 2.909), walk (705 frames, 26 excused
+  risers), and BOTH SITS GREEN (Driver share 0.182 z-cluster; Girl
+  south-slab approach, sit 0.39m in). The numeric certification
+  matched the R6/R7/R8 records; the eyes-on-sits step and the working
+  files died with the sandbox revert — the chain is reproducible from
+  the committed inputs (that was its purpose).
+
+Stage Summary:
+- LIVE in the review app: tdawn_3 (default) + tdawn_2 (with the
+  user's 5 restored comments) + tferry_1 (NEW, audit-ok) — the
+  user-directed export/preview handover is COMPLETE for both films.
+- Kit: F-TF1/2/3 consumed (theirs+mine), F-TF5 filed (wheel drift),
+  the sfx-contract + daemonize-path + BEATS-shape laws recorded.
+- Remotes: GitHub main bee2845->4ef144b (vision-kit), 80ce2a0->749d0a1
+  (previz-review); fetch-rebase held through 2 parallel collisions.
