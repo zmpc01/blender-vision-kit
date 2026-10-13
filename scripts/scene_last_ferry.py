@@ -3,9 +3,10 @@ converge film. D-TF1 REV-2; the scene module of the tdawn shape
 (mapped vocabulary UPPERCASE only; internal wiring lowercase).
 
 Session-14 slice: world + cameras + heroes + title + emission keys;
-the crowd branch auto-detects the bake cache (absent -> pre-bake
-looks work). The bake driver (tferry_bake.py) is the next session's
-first item per HANDOFF.
+the film is COMPLETE end-to-end (bake driver -> flow strip -> shot
+cams -> EEVEE night pass -> export tferry_1 -> staged). The crowd
+branch auto-detects the bake cache (absent -> pre-bake looks work
+with the anchors at their authored grid).
 """
 import math
 import os
@@ -105,10 +106,17 @@ CAMS_V3 = [
 ]
 
 CAST = {
-    "Deckhand": {"root": "Deckhand.Root", "material": "CA.Body.Deckhand"},
-    "Latecomer": {"root": "Latecomer.Root", "material": "CA.Body.Latecomer"},
+    "Deckhand": {"root": "Deckhand.Root", "material": "CA.Body.Deckhand",
+                 "role": "holds the two-meter throat"},
+    "Latecomer": {"root": "Latecomer.Root",
+                  "material": "CA.Body.Latecomer",
+                  "role": "sprints the pier edge to make the crossing"},
 }
 
+# BEATS rows are (label, shot_id, t_seconds) -- the exporter maps
+# label<-b[0], shot<-b[1], kind<-b[2]... (verified against
+# export_previz_package.py's beat mapping; the tuple ORDER below is
+# (label, shot, frame-at-shot-start))
 BEATS = [
     # the exporter's story shape: (id, t_seconds, label) -- t =
     # (f-1)/24 for the shot's opening frame (the float(b[1]) law)
@@ -143,8 +151,7 @@ def _heroes(scene):
     HERO_COLORS = {
         "Deckhand": (0.85, 0.42, 0.05),
         "Latecomer": (0.62, 0.07, 0.10),   # crimson -- tdawn's Runner
-    }                                       # was teal; different film,
-    scene["HERO_COLORS"] = HERO_COLORS      # different callout
+    }                                       # was teal; different callout
     mesh = build_commuter_mesh("TF.CommuterMesh")
     # PARK the source lib object outside every frustum (the tdawn law:
     # the builder leaves a scene-linked object at the origin — the
@@ -361,6 +368,9 @@ def build_scene():
     """Build the pier set + heroes + cameras + markers. Ends with the
     F-TD5 view-layer sync (cheap insurance even with the kit fix)."""
     scene = bpy.context.scene
+    scene.render.fps = FPS      # the exporter stamps the package
+                                # timeline from render.fps (do not rely
+                                # on the --factory-startup default)
     for o in list(bpy.data.objects):
         if o.name.startswith(("Cube", "Camera", "Light", "Lamp")):
             bpy.data.objects.remove(o, do_unlink=True)
@@ -409,7 +419,10 @@ def _crowd_anchors(scene):
     Pre-bake positions: the zone rows (the crowd grid) and the pier
     head (the crew answering the call). bake2 overwrites all 129
     non-RB anchors with keyed TRS; the 3 RB placeholders stay where
-    they stand (outboard pier head -- dressing-plausible statics)."""
+    they stand -- so they are authored OUTBOARD (x +-7.5, past the
+    rail line: dressing-plausible statics on the margin; a review
+    round caught the first draft parking them mid-grid where agents
+    path, undeclared)."""
     from tdawn_actors import (build_commuter_mesh, new_anchored_obj,
                               commuter_material)
     lib = build_commuter_mesh("TF.CommuteLib",
@@ -419,24 +432,30 @@ def _crowd_anchors(scene):
     lib.location = (0.0, 45.0, -2.5)
     lib.hide_render = True
     crowd = []
-    # 120 anchors in the zone-row shape (24-34 / 12-20 / 6-10), a
-    # 12-wide grid reading as the pre-call drift
+    # 120 anchors, a 12-wide x 10-row grid spanning y 32 -> 11 (rows
+    # 0-4 in the far band, 5-9 in the mid band) -- PRE-BAKE dressing
+    # only (bake2 re-keys every one of them from tick 0)
     for i in range(120):
         row = i // 12
         col = i % 12
         y = 32.0 - row * 2.1 if row < 5 else 20.0 - (row - 5) * 2.1
-        if row >= 10:
-            y = 10.0 - (row - 10) * 1.2
         x = ((col - 5.5) * 0.95)
         crowd.append(new_anchored_obj(
             f"Zed.{i + 1:04d}", lib, (x, y, 0.0),
             yaw=math.pi))       # facing south, toward the throat
     chase = []
     for i in range(12):
+        if i in (2, 5, 8):
+            # the RB slots: parked OUTBOARD (the rail line is at
+            # +-6.2; x 7.5 is crowd-free by construction) -- they stay
+            # motionless post-bake and must never stand mid-crowd
+            x = 7.5 if i == 5 else -7.5
+            y = 30.0 + (i // 6) * 2.0
+        else:
+            x = ((i % 6) - 2.5) * 1.3
+            y = 30.0 + (i // 6) * 2.0
         chase.append(new_anchored_obj(
-            f"Zed.ChaseP{i + 1:02d}", lib,
-            (((i % 6) - 2.5) * 1.3, 30.0 + (i // 6) * 2.0, 0.0),
-            yaw=math.pi))
+            f"Zed.ChaseP{i + 1:02d}", lib, (x, y, 0.0), yaw=math.pi))
     return {"zombies": {"crowd": crowd, "chase": chase}}
 
 

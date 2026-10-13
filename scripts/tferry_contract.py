@@ -87,6 +87,17 @@ BARRICADES = [
     # channel (x -2..2) and the ramp (x +-1.3) clear.
     (x, -0.5, 0.55)
     for x in (-5.45, -4.35, -3.25, -2.35, 2.35, 3.25, 4.35, 5.45)
+] + [
+    # the FLANK WALL at y=-2.7 (the code-review find, P1-5: agents on
+    # the apron could walk east/west PAST the y=-0.5 wall's south face
+    # -- the band y -4.45..-1.05, x beyond the apron was still open
+    # water-walk). Squares cap at |x|=4.9: the native engine REFUSES
+    # blocked bounds outside the walkable (E_InvalidRange -- a 5.9
+    # square spans to 6.45 > 6.0); the residual 5.45..6.0 sliver at
+    # the rail line is sub-agent-width (0.55 < agent diameter) and
+    # impassable in practice.
+    (x, -2.7, 0.55)
+    for x in (-4.9, -3.8, -2.7, 2.7, 3.8, 4.9)
 ]
 
 # camera keepouts: (name, px, py, f0, f1) in FRAMES (the F-TD13 law
@@ -110,11 +121,10 @@ CAM_KEEPOUTS_V3 = [
 
 CAM_KEEPOUT_R = 1.3
 
-# --- hero lane keepouts (the authored heroes sweep through the crowd;
-# agents push out of their lanes -- the tdawn HERO_LANE law) ---
-HERO_LANES = (
-    # the Latecomer's edge run: pier head (x≈4.8) down to the rail gap
-    {"x0": 4.4, "x1": 5.2, "y0": 34.0, "y1": 8.0, "r": 0.9},
-    # the gap crossing + choke approach
-    {"x0": 4.0, "x1": 0.4, "y0": 8.0, "y1": 0.6, "r": 0.9},
-)
+# --- HERO_LANES: REMOVED (the code-review find, P1-2: the table was
+# DEAD DATA -- the kit-mode chain (bridge/loader/bake2) never consumes
+# it; the hero-lane pushout is a v6-ENGINE feature (crowd_v6/sim.py)
+# that kit mode does not deliver. Filed as F-TF6: the tdawn film rode
+# the v6 engine's pushout; kit-mode films get the raw sim's jostle
+# around heroes. The latecomer's lane READS anyway (keepouts + natural
+# flow), eye-certified on the stills.)

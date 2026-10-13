@@ -94,6 +94,13 @@ def main():
     bridge = _bootstrap()
     sys.path.insert(0, str(HERE))
     import tferry_contract as C
+    # the count law against the CONTRACT (ingest apportionment makes
+    # n_agents == count for ANY count -- the assert must pin the film's
+    # verbatim-129 identity, not the apportionment tautology)
+    assert args.count == C.N_RELEASE, (
+        f"--count {args.count} != the verbatim-{C.N_RELEASE} law "
+        "(the loader's honesty assert pins N_RELEASE; a different count "
+        "burns the bake and dies later)")
 
     plan = dict(C.SPEED_PLAN)          # far / near / crew -- the authority
     plan_for_pops = {"far": plan["far"], "near": plan["near"],
@@ -112,13 +119,12 @@ def main():
     # --- REV-2: the authored speed plan, FROM THE CONTRACT (deter-
     # ministic constants; frozen dataclasses -> dataclasses.replace) --
     zone_idx = 0
-    for pop in scene.populations:
+    for zone_i, pop in enumerate(scene.populations):
         if pop.id.endswith("zz_chase"):
             mu, sig = plan_for_pops["chase"]
         else:
-            mu, sig = plan_for_pops["far"] if zone_idx == 0 \
+            mu, sig = plan_for_pops["far"] if zone_i == 0 \
                 else plan_for_pops["near"]
-            zone_idx += 1
         scene.populations[scene.populations.index(pop)] = (
             dataclasses.replace(
                 pop,
