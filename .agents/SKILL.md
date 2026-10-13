@@ -410,10 +410,9 @@ Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
   for the PARENT'S scene module before running; the review wave is
   never a substitute for eyes.
 - **The spawn-band vs dressing seam**: set geometry must clear the
-  spawn strips (CROWD_X_RANGE ends) — facades at |x| 28 swallowed
-  the |x| 28..30 strip end (~30 agents inside buildings, walking
-  out through walls in the GLB; invisible at every certified
-  vantage). Dress BEYOND the walkable, not inside its tail.
+  spawn strips (CROWD_X_RANGE ends) — facades at |x| 28 swallowed the strip end (~30 agents inside
+  buildings, walking out through walls in the GLB). Dress BEYOND the
+  walkable, not inside its tail.
 - **The seed override must move the CONTRACT attr** (the bridge
   compares int(contract.CROWD_SEED) == int(seed) at ingest).
 - **Determinism hygiene**: never reuse the default --out across
