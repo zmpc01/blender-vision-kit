@@ -3657,3 +3657,49 @@ Stage Summary:
 - Kit capture: tferry_camprobe.py (the multi-candidate probe law);
   the flood-class law re-confirmed ("a tight lens in a streaming
   crowd ALWAYS reads as capsule backs -- pull back or go head-on").
+
+## Session 16 (main) — GREEN LIGHT: the third film, end-to-end
+
+Work Log:
+- tferry_1 rev 2 shipped first (the refinement round: the S4/S5
+  reframes via the new camprobe tool, the in-place rev-2 export, the
+  review-round crowd contract finally IN the staged package).
+- GREEN LIGHT designed (docs/DESIGN_green_light.md): 3 research/
+  audit sub-agents before a line of code — 3-a (the bridge source
+  audit: the capacity-box freeze law P0 + the per-film envelope P0),
+  3-b (the film-director audit: the statue+runner hero set + the
+  green/orange signal spine), 3-c (the M5 verdict: recorded-only),
+  3-d (round 2: the plaza refused three ways — the freeze re-scope).
+- Build: the world module (sub-agent 3-e, eye-gated), the contract
+  (ingest GREEN on the first probe = the round-3 test), the bake
+  driver (per-zone speed map), the scene module (the x-sign palette
+  split, the glyph spine, the crane re-keyed), the flow strip (THE
+  STILL CERTIFIED: two frozen banks + the runner threading).
+- The framing round: 12 shots + 9 probe candidates; the stills
+  runner's clone seam (rendered the FERRY's shots) caught by eyes;
+  the crane was silently static (my _cameras never keyed loc0->loc1)
+  — re-keyed per the tferry pattern.
+- The daylight ladder: 12 combos measured; the wash diagnosed (the
+  sky ambient, not the disc, not exposure); the ratio lever won
+  (sun5/sky0.15/1°).
+- The review wave (3-f/3-g/3-h/3-i, parallel): zero P0s, 3 P1s
+  consumed (the dead --seed, the order-indexed speed map, the
+  FACADES swallowing the spawn strips — moved 28->30), the
+  determinism law re-proven (byte-identical reruns; the pin drift
+  reconstructed as an uncommitted draft table), the doc drift mapped
+  (REV-4 folds).
+- tgreen_1 exported rev 1 (all gates) -> staged -> verified in-app;
+  then rev 2 (the facade fix IN the package). Ledger:
+  docs/USABILITY_TG1_green_light.md (F-TG1..8). SKILL session-16
+  laws at the 30k cap.
+
+Stage Summary:
+- THREE films live: tdawn_3 + tferry_1 rev 2 + tgreen_1 rev 2 —
+  dawn / night / afternoon; comments ON; the server UP.
+- Sub-agents this session: 9 (3-a..3-i). The visual gate + the
+  critical paths stayed with the principal (the kit's division of
+  labor held).
+- Kit capture: the F-TG ledger + the session-16 SKILL laws + REV-4.
+- Next: the user review round on ALL THREE films (the whole session
+  points here); F-TD9 (the install.sh Pillow probe) + the six older
+  filings remain the standing kit chores.
