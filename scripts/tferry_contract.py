@@ -78,6 +78,15 @@ BARRICADES = [
     # so the box's south half is reachable THROUGH the throat, which
     # makes "boarding" literal) (REV-2 F3)
     (x, -5.0, 0.55) for x in (-5.0, -3.5, -2.0, 2.0, 3.5, 5.0)
+] + [
+    # the SOUTH-EDGE WALL at y=-0.5 (the flow strip's water-walk find,
+    # F-TF3): the hardcoded walkable spans the FULL x -6..6 down to
+    # y=-6, so agents bled west/east of the apron and strolled ON THE
+    # WATER south of the deck edge. This wall (deck-edge line, squares
+    # 1.1m wide) closes x beyond the apron while leaving the boarding
+    # channel (x -2..2) and the ramp (x +-1.3) clear.
+    (x, -0.5, 0.55)
+    for x in (-5.45, -4.35, -3.25, -2.35, 2.35, 3.25, 4.35, 5.45)
 ]
 
 # camera keepouts: (name, px, py, f0, f1) in FRAMES (the F-TD13 law
@@ -88,14 +97,14 @@ BARRICADES = [
 # zero keepout rows, no agent ever walks there (REV-2 F8). The S11
 # crane's landing pose x/y never enters the walkable.
 CAM_KEEPOUTS_V3 = [
-    ("CAM_S2", 1.5, 4.6, 85, 168),
+    ("CAM_S2", 0.9, 5.6, 85, 168),
     ("CAM_S3", -2.0, 30.0, 169, 264),
     ("CAM_S4", 4.0, 36.0, 265, 348),
     ("CAM_S5", 2.2, 24.0, 349, 444),
-    ("CAM_S6", -3.6, 4.6, 445, 528),
+    ("CAM_S6", -5.2, 7.0, 445, 528),
     ("CAM_S7", -4.6, 14.0, 529, 624),
-    ("CAM_S8", -2.4, 3.6, 625, 720),
-    ("CAM_S9", 3.2, 9.6, 721, 816),
+    ("CAM_S8", -3.4, 0.6, 625, 720),
+    ("CAM_S9", 2.6, 10.8, 721, 816),
     ("CAM_S10", -2.0, 3.4, 817, 912),
     # S11/S12: the crane flies the OUTBOARD margin/water (x -8.6..-9.2)
     # -- zero rows, no agent ever walks there (REV-2 F8)

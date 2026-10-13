@@ -174,8 +174,11 @@ def build_world(scene):
     # --- the ticket KIOSK (dressing beside the throat, declared) ------
     kiosk = _box("TF.Kiosk", 1.4, 1.6, 2.3, (3.1, 2.0, 1.15),
                  mats["kiosk"])
+    # the BOARDING sign on the NORTH face (the arriving crowd's side --
+    # the south face was the dead side: the S2 probe showed the blank
+    # slab), PROUD of the panel (the tdawn board lesson)
     kiosk_sign = _box("TF.KioskSign", 1.2, 0.1, 0.4,
-                      (3.1, 1.2, 2.1), mats["neon_mag"])
+                      (3.1, 2.86, 2.1), mats["neon_mag"])
     parts["kiosk"], parts["kiosk_sign"] = kiosk, kiosk_sign
 
     # --- the neon: the ferry-line sign over the throat ------------------
@@ -283,9 +286,9 @@ def build_world(scene):
     cyan_spill = _area("TF.NeonCyanSpill", (0.0, 0.9, 3.3), 14.0,
                        (0.10, 0.80, 0.95), 4.4, 0.5)
     cyan_spill.rotation_euler = (math.radians(58), 0.0, 0.0)
-    mag_spill = _area("TF.NeonMagSpill", (3.1, 1.4, 2.1), 16.0,
+    mag_spill = _area("TF.NeonMagSpill", (3.1, 4.1, 2.0), 16.0,
                       (0.95, 0.12, 0.45), 1.2, 0.4)
-    mag_spill.rotation_euler = (0.0, math.radians(-70), 0.0)
+    mag_spill.rotation_euler = (math.radians(-60), 0.0, 0.0)
     lights += [cyan_spill, mag_spill]
     # the ferry's warm interior wash over the apron (the recede beat's
     # key light source south of the throat)
