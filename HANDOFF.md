@@ -1,12 +1,65 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session close: 2026-10-12 (session 14, the REVIEW ROUND + the kit
-> trio + the SECOND film's slice). The user reviewed tdawn_2 IN-FLIGHT
-> (5 comments, all consumed) → tdawn_3 LIVE. F-TD10/11/12 closed
-> upstream+ports; F-TD13 found+fixed. The NEW film LAST FERRY
-> (tferry_1) has its design (REV-2) + contract/world/scene modules +
-> a LOOK-proven night-light pass. Read docs/DESIGN_last_ferry.md
-> (REV-2) + docs/DESIGN_FTD_trio.md (REV-2) first.
+> Session close: 2026-10-13 (session 15, the REVIEW APP RESTORED +
+> LAST FERRY built end-to-end). BOTH films are live in previz-review:
+> **tdawn_3** (default) + **tferry_1** (NEW, audit-ok) — comments ON.
+> The user review round on both is THE open item. Read
+> docs/DESIGN_last_ferry.md (REV-2) + the worklog session-15 record.
+
+## Session-15 close state (NEWEST — read this first)
+
+- **THE APP SURVIVAL KIT (verified this session)**: clone
+  previz-review → `bun install` → `npx prisma generate` → `npm run
+  db:push` (REPO-LOCAL db) → start via
+  `python3 scripts/daemonize.py <ABSOLUTE log> bash -c "cd <repo> &&
+  bun run dev"` — daemonize.py chdirs to "/", so relative log paths
+  EACCES and relative commands "Script not found". Then
+  `s33_restore_comments.sh` (needs the server UP first).
+- **The tdawn_2 comments are recoverable from git**: the mirror
+  journal had none — they were re-injected from escape 8841ee1
+  (previz_comments_tdawn_2.json) via POST. The db dies with the
+  sandbox; the escape-repo export is the durable copy. Keep exporting
+  user comments there.
+- **tferry_1 is LIVE and complete** (staged 749d0a1, module
+  4ef144b+): 12 shots / 45 s / 129-agent converge crowd / 21.1MB GLB
+  / 96 strips / 12 EEVEE night stills / sfx events. Export ALL GATES
+  GREEN. The scene module's FINAL merged set is 329a9d8 (the parallel
+  lane composed both lanes' night passes: sign_flip keys, gang spot,
+  gate work light, 420W lane lamp, S9 onto the gate @f735) — the
+  STAGED package predates that composition; stage rev 2 from the
+  final module if the deltas matter to the user round.
+- **tferry build-order laws (new, measured)**:
+  - F-TF1: ingest fail-closes on contract shape names — the contract
+    needs DT + N_RELEASE + SPAWN_ZONES_V5 (the slice's "dry-run
+    green" was scene-side only; ingest was never exercised).
+  - The bake driver asserts the REV-2 F1 envelope PRE-bake (crew
+    2.60 <= far 2.65) — the bridge clamps SILENTLY otherwise.
+  - F-TF5 (OPEN): the vision-kit VENDOR wheel is 1.0.0, crowd-kit's
+    is 1.5.4; the bridge needs 1.5.4 (motion_matcher kwarg). Re-vendor
+    via the governed sync.
+  - The exporter's story contracts: build_scene MUST return
+    ctx["scene"] (exporter:2736); BEATS is (id, t_seconds, label)
+    with t = (f-1)/24; sfx events need {name|kind, frame} — the "id"
+    key is dropped 3/3 BY THE APP (found from the in-app console).
+  - The Latecomer HOLDS at (4.8,8) f444-700 — aim the shot cams at
+    the HELD pose, not the intent text (S7's aim was 4.8m stale).
+  - Night pools: the east band needed (5.6,17.5) + (5.6,7.0) — lamp
+    gaps read as murky dead stretches on the shot cams. The title
+    card needs F-TD11 emission (make_material's 3rd arg is ROUGHNESS).
+  - The sandbox's headless chrome CANNOT play the 21MB GLB (software
+    GL; the tab died twice) — verify packages via the API + stills;
+    3D playback is the USER's real browser.
+- **Chain-replay receipt** (the aborted session-14 segment): the
+  committed chain inputs replayed on the rebuilt master — cuts/props/
+  route/walk/SITS all matched the R6/R7/R8 records numerically (both
+  sits GREEN). The chain is reproducible from committed inputs; that
+  was its purpose. Queue item CLOSED.
+- **Merge law learned the hard way**: in `git rebase`, `--theirs` is
+  YOUR replayed commit and `--ours` is the base — resolving backwards
+  silently drops the incoming work. RE-RENDER + DIFF against the
+  incoming commit after every conflict resolution (the re-render
+  caught the dropped F-TF3 water-wall within one round).
+
 
 ## Session-14 close state (NEWEST — read this first)
 

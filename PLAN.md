@@ -299,3 +299,32 @@ code-level finding (--frames BLOCKER) remains valid.
   export-shaped); (2) the user review round on tdawn_3 + tferry_1
   (comments ON); (3) F-TD9 (install.sh stale-tools probe); (4) the
   S10-class OOM note for the heavy framings (SAMPLES override law).
+
+## Session-15 receipts (the app restored + LAST FERRY end-to-end)
+
+- **tferry_1 LIVE** (staged, audit-ok, comments ON): the full build
+  order executed — bake (129 agents, envelope asserted) → flow strip
+  → 3 workbench framing rounds → 2 EEVEE night passes → export (all
+  gates green, 21.1MB GLB, 135 actions) → filmstrips → stage. The
+  review app serves BOTH films (tdawn_3 + tferry_1) with the comment
+  loop verified on tferry_1 itself.
+- **The review-app continuity lane is now a solved problem**: the
+  bootstrap kit (bun/prisma/db:push/daemonize-absolute-paths/
+  s33-restore) + the tdawn_2 comment recovery path (escape 8841ee1)
+  are documented in HANDOFF. The db dies with sandboxes; the export
+  file in the escape repo is the durable user-voice copy.
+- **F-TF1/2/3 consumed + F-TF5 filed** (vendor wheel 1.0.0 vs 1.5.4 —
+  the bridge needs 1.5.4). The sfx {name,frame} contract, the
+  exporter ctx["scene"]/BEATS shapes, and the rebase --theirs
+  direction lesson are recorded in HANDOFF.
+- **Chain-replay queue item CLOSED**: the committed chain inputs
+  replay the R6→R7→R8 chain on the rebuilt master (cuts/props/route/
+  walk/sits all matched the records; both sits GREEN).
+- Next-session candidates, in value order: (1) the USER review round
+  on tdawn_3 + tferry_1 (comments ON — the whole session pointed
+  here); (2) stage tferry_1 rev 2 from the final merged module
+  (329a9d8) if the user round wants the newest light composition;
+  (3) F-TF5 re-vendor (the governed sync); (4) F-TD9 (install.sh
+  stale-tools Pillow probe — the fresh case self-healed again this
+  session); (5) the six older filings (F-TD1/2/3 + the make_material
+  default).
