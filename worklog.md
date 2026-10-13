@@ -3620,3 +3620,66 @@ Stage Summary:
 - Next: the user round on BOTH films; stage rev 2 = the review-fix
   re-export (8b7d4d8e) when comments demand a cut; F-TD9 + F-TF5
   (the vendor wheel re-sync) are the remaining kit chores.
+
+---
+Task ID: 1-a
+Agent: exporter-contract-auditor
+Task: READ-ONLY export-lane contract inventory + landmine list (t10
+  pre-work); verified every ledger claim against current code.
+Work Log:
+- Exporter ctx: ONE key read — ctx.get("scene") (1056, R4 F10
+  fallback). ":2736" ledger cite = the agent-kit canonical copy, not
+  this 1455-line tree copy; scene_last_ferry:385 comment stale. F10b
+  NameError (gate14 blob/glb_blob): FIXED (1434; R4 ledger 44-52).
+- BEATS (id,t_seconds,label): NOT read by THIS exporter (STORY_SOURCES
+  81-103 lacks it) — wrong shape = silent NO-OP here, opaque crash
+  only in the canonical lane; shapes correct in both film modules.
+- sfx {name|kind,frame}: scene-side FIXED (tferry:540, tdawn:646);
+  still NO gate validates the stream; build_sfx KeyErrors (185/191).
+- render.fps pinned in both film modules (tferry:371, tdawn:343);
+  exporter trusts it (1057), ignores fps_base (1181).
+- 15 gates inventoried; version-drift gate (990) globs scene_escape_v*
+  ONLY; STORY_SOURCES lacks CAST/SYNOPSIS/BEATS/CROWD_TIER_PINS →
+  this copy exports a film module GREEN but story-empty (film lanes
+  actually exported via agent-kit KIT_EXPORTER, kb:46).
+- F-TD5 STILL-LIVE here: render_hidden_objects (blender_kit:912-925)
+  lacks view_layer.update() (upstream e4450a3 never vendored down).
+- tests/: ZERO export_previz_package coverage (nearest:
+  test_usd_carrier.py = previz_usd_hook only). Full report delivered.
+Stage Summary: No code touched. Contract pinned: 1 ctx key, 4 table
+  contracts, 15 gates, 2-exporter constellation, 0 tests. Top
+  landmines: story-collector opaque crashes (544-660), BOARD
+  silent-drop (584-596), no sfx-stream gate, no film-vocabulary
+  story mapping, F-TD5 ungated; preflight feasibility recorded.
+
+---
+Task ID: 1-b
+Agent: ledger-triage
+Task: READ-ONLY audit of every OPEN kit-side friction filing across the usability ledgers (TD1/TF1/R1-R9/D16) vs current code; produce prioritized triage for the next implementation wave.
+Work Log:
+- Read SKILL.md, PLAN.md, HANDOFF.md, worklog tail; all USABILITY_* ledgers.
+- Verified each candidate filing against code: vendor wheel still 1.0.0
+  (F-TF5 OPEN; TF1 ledger's "CLOSED" = workaround only); install.sh:140
+  head-1 python probe version-blind, no BLENDER_PY override (F-TD9 OPEN;
+  QA-R69 dangling-symlink guard also absent); semantic_lib split has no
+  N>50 ack_many_parts gate (F19 OPEN); viewport_capture.py:233 renders
+  with zero marker handling (F-TD3 OPEN); validate_scene.py:138 shell
+  tokens lack roof/structure (F-TD2 OPEN); validate_scene.py:73 lacks
+  agent-kit 0.2m slab fix (VK-9 OPEN). CLOSED verified in code: F-TD10
+  (blrun flock), F-TD11/F-TD6 (emission params + default pin), F-TD12
+  (--probe-camera), F18/F20-R5/F21 (doc laws), F22, F23 (ledger json),
+  VK-10 (frame_set hunk). Doc debt: PLAN checkboxes for F18/F20/F-TD5/
+  T6-ship + Queue item 6 stale; HANDOFF still counts the make_material
+  default open; F20 ID collision (R5 vs R6 variants).
+- No files edited; no commit. Report returned to orchestrator.
+Stage Summary:
+- OPEN kit-side: F-TF5, F-TD9(+QA-R69, F-TD1 flag), F19, F20-R6 hint,
+  VK-9, F-TD3, F-TD2, t10, F-TF6/F-TD4 (crowd-kit lane), T3 (infra),
+  F-TD8 (process). Suggested wave: vendor sync -> install.sh bundle ->
+  F19 gate -> doc-debt sweep -> VK-9 -> F-TD3 -> F-TD2 -> t10.
+---
+Task ID: 1-c
+Agent: doc-drift-auditor
+Task: READ-ONLY doc-drift audit of AGENTS.md against the current tool surface (every literal CLI/flag/op/exit-code claim re-verified against scripts/ argparse + MUTATIONS + placement_lib + blrun.sh; file paths and LAW MAP cross-checked).
+Work Log: Extracted ~40 literal claims from AGENTS.md (717 l). Verified OK: quick start, vision loop, canonical workflow 1-7, all look.py/apply_patch/viewport_capture/keyframe_contact_sheet/motion_study/transient_scan/scene_schema/validate_scene/export_gltf/save_blend/agent_server/polyhaven/image_metrics flags; engine type= normalizers intact both vocabularies (blender_kit:82,101; look:211); look exit 3 (582); blrun exit propagation + warm-cache + env vars; audit 100mm pad; D16 op params; physics_gate verify_movers; FLAG_CAP 60; motion_grid/suspects/EVENT-TABLE outputs. DRIFT: (1) AGENTS:213 teaches `--annotate` — flag DOES NOT EXIST (only --no-annotate, look:255) = verbatim-copy crash; (2) "35 ops" (252) is 39 in MUTATIONS (set_camera_dof/label_objects/split_mesh/mesh_prepare missing from enumeration; set_camera_dof taught nowhere); (3) quality table Engine column (505-513): only previz/viewport force workbench — draft/preview/final inherit --engine whose DEFAULT is CYCLES (blender_kit:413,484) → "EEVEE" rows wrong; (4) LAW MAP L1-L4 stale (body has L1-L6); (5) /kb/ascii_vision.md pointer dead; (6) KB index omits semantic_labeling/tdawn_vision_film/gait_modifiers.md. CODE BUG FOUND (doc law violated by kit): apply_patch:420,422 scoped-audit matches p["verdict"] ("PENETRATING 8.0 mm — fix") not p["state"] → {"op":"audit","id":X} recomputed failed is ALWAYS False → fail_on_penetration can never abort a scoped audit (doc's own LAW 270-272 is correct). MISSING DOCS (sessions 12-15 surface): look.py --probe-camera (272), blrun flock/LOCK-HELD/exit 90/:98 workaround (blrun.sh:84-106), make_material emission_color/strength (blender_kit:516-554), manifest_diff.py (whole tool), export_previz_package.py dual-lane + preflight contracts, sfx_events/build_sfx lane, r7_route_planner exit 4 (296).
+Stage Summary: Doc health GOOD — one verbatim-copy crash risk (--annotate), 4 stale claims, no other literal command drifts; the session-6 argparse-normalizer fix holds. Session-14/15 features (probe-camera, flock, emission kwargs, manifest_diff, export_previz_package+sfx lane) are entirely undocumented in AGENTS.md. Top fixes: drop --annotate, 35→39 ops, quality-table engine column, blrun flock section, add a "ship & verify" section (export_previz_package + manifest_diff + --probe-camera). Plus one code fix: scoped-audit verdict→state. No files edited; no commit.
