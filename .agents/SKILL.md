@@ -259,15 +259,10 @@ animated-prop placement rebases ALL keys (override='keyframe').
 
 ## Session-6/7 meta (condensed; full records docs/USABILITY_R5-R7.md + kb/semantic_labeling.md)
 
-- **D15 display-color sync**: workbench MATERIAL reads diffuse_color —
-  node-authored scenes render ALL-GRAY undetected; every render surface
-  calls the sync/restore pair.
-- **EEVEE warm-cache needs MemAvailable >= ~2.4 GB**; Cycles verify =
-  engine-ASSIGN probe.
-- **Scene driver contract**: build_scene() -> ctx; animate(ctx, *,
-  start_frame=1, n_frames=<int>) — tools BRIDGE with inspect.signature.
-- **D16 labeling**: VENDOR-NODE granularity; blind agents STOP-AND-FLAG
-  what the manifest cannot derive (AGENTS.md execution contract).
+- D15 display sync (workbench reads diffuse_color); EEVEE warm-cache
+  MemAvailable >= ~2.4 GB; driver contract build_scene->ctx +
+  animate(ctx,*,start_frame,n_frames); D16 vendor-node granularity +
+  STOP-AND-FLAG (full: docs/USABILITY_R5-R7.md).
 
 ## R7/R8 addenda (condensed — full records docs/USABILITY_R7.md + R8.md + D17)
 
@@ -284,13 +279,10 @@ numbers, never self-reports.
 Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
 ; design: docs/DESIGN_terminal_dawn.md. Survival laws:
 
-- **F-TD5 (KIT BUG — LANDED UPSTREAM session 13)**: the exporter's #29
-  sweep read a STALE view-layer list; a freshly-linked object
-  false-positived as excluded and gate 24 rejected legal packages.
-  Fixed in blender_kit.render_hidden_objects (+ regression A19f,
-  red/green proven); scene-side build_scene still ends with the update.
-- **marker-camera hijack + scene.camera mutation**: any custom pass:
-  suppress → RE-ASSERT scene.camera → restore.
+- F-TD5 (LANDED UPSTREAM+ported): exporter #29 needs view_layer.update()
+  before the sweep; scene-side build_scene still ends with the update.
+- Marker-camera hijack: custom passes suppress → RE-ASSERT scene.camera
+  → restore.
 - **5.2 AgX emission laws**: pin Emission COLOR; hot keys <= 0.95 (tan
   desaturation); sky 0.35-0.5 + exposure -0.5. PLUS the session-13
   glow-surface law (below) — the pair is the full gate-read fix.
@@ -412,3 +404,15 @@ Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
   the bridge's hardcoded (0,0) target natively — build the choke AT
   the origin, never move the target. Copy the tdawn module SHAPE
   (contract/world/actors/scene), change the STORY not the bridge.
+
+## SESSION 15 LAWS (the app lane + LAST FERRY build)
+
+- daemonize.py chdirs to "/": absolute log + `bash -c "cd <repo> && cmd"`.
+- Comments db dies with sandboxes; durable copy = escape export file (8841ee1), re-inject via POST.
+- sfx events: {name|kind, frame} or the app drops them (console find).
+- Exporter: ctx["scene"] load-bearing; BEATS=(id,t_s,label).
+- make_material arg3=ROUGHNESS; emission via F-TD11 kwargs.
+- Aim cams at hero HOLD poses, not intent text.
+- Rebase --theirs = YOUR replay; re-render + diff after resolutions.
+- Sandbox chrome can't play 21MB GLBs — verify via API + stills.
+- Crowd wheels drift across repos: the bridge pins the NEWEST.
