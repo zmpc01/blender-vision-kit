@@ -269,3 +269,38 @@ VERDICT HISTORY: REV-1 GO-WITH-CHANGES (2 P0s) → REV-2 folds →
 REV-3: the plaza experiment is closed by source; the freeze film is
 the design of record. Round-3 verification = the ingest probe on
 the real contract (empirical, cheaper than another audit).
+
+## REV-4 — the certified-round folds (the doc catches up to the build)
+
+The build ran three certified rounds after REV-3 (framing probes,
+the daylight ladder, the eye certifications); the 3-i audit mapped
+the drift. Camera truth = scene_green_light.py CAMS_V3 / the staged
+previz.json (the doc table below §3 is the REV-1 plan, kept for the
+audit trail). The certified deltas:
+
+- **Framing** (commits bd62820, 2dc5099-era): S1 (0,−36,32) 26mm
+  (the 52m knot span); S2 from the CROSSING side (−4.4,1.2,2.6) —
+  the glyph plates face S, the N-side cam saw the blank back; S6
+  aim (0.4,0.8,1.0) 35mm; S7 (24,5.5,2.2)→(10,1.2,0.9) 40mm (his
+  journey ahead); S9 (8,6,3.2)→(4,1.4,1.0) 55mm (the flood class
+  at-rim); S10 (−1.5,−3.8,1.9)→(−4.2,3.35,2.55) 60mm; the crane
+  keyed (S11 (−8.6,−14,3.2)→(−8,−5,9); S12 settles (−7.9,−4.9,9.4)).
+- **Keepouts**: 4 rows (S2 (−4.4,1.2) / S3 / S6 / S10 (−1.5,−3.8));
+  S7/S9 rows DROPPED (cams outboard, y 5.5/6.0 > walkable 5.0).
+  F13's "S6 only" leftover superseded by F20, now by this.
+- **Light**: the ladder winner sun 5.0 / sky 0.15 / angle 1° /
+  disc-off (F-TG4's ratio law; F10's 2/3/4 ladder was the diagnostic
+  that found the lever). Glyph emission pinned 3.9 (the middle rung).
+- **Geometry drift**: posts at the curb lips (−4.2,3.35)/(4.2,−6.15);
+  plaza apron 9×9 (clear of the ±6 bars); facades |x| 30..36 (the
+  3-f review: the spawn strips run to |x|=30); bus at (−23,−7.5);
+  grounding plane 500m (the ocean-horizon fix); title WHITE (0.82)
+  at (2.2,0.2,2.2) (charcoal probe-failed; z 4.2/2.7 both clipped).
+- **Heroes**: statue z 0.32 (plinth top), runner z 0.0; the reach
+  key f816 (the BEATS label says 805 — payload text only).
+- **Provenance**: rev 2 stamp 2c21c26b3a494f23, git_sha 3e852da
+  (the exporter's git_sha lags HEAD by the in-flight fixes — the
+  harness's dirty-at-export pattern, cross-bound by commit messages).
+
+Design-of-record status: REV-4 == the built truth; the ledger
+(docs/USABILITY_TG1_green_light.md) carries the frictions.
