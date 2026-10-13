@@ -17,9 +17,11 @@ CROWD_SEED = 4711          # LAST FERRY identity input (a NEW seed, not
                            # tdawn's 2026 -- REV-2 F15; ingest hard-fails
                            # without it and the pin is per-film identity)
 TICK_HZ = 12               # sim ticks per second
+DT = 1.0 / 12.0            # the 12 Hz LAW (P0-2; ingest fail-closes otherwise)
 FPS = 24                   # export fps
 TOTAL_FRAMES = 1080        # 45.0 s
 N_TICKS = 541              # TOTAL_FRAMES/(FPS/TICK_HZ) + 1
+N_RELEASE = 129            # 120 zone crowd + 9 crew tail (the loader pins it)
 
 # --- walkable (REV-2 F6: the outboard margin is crowd-free BY
 # CONSTRUCTION -- the x 6.2..13 margins carry rails/bollards/lamps/
@@ -36,6 +38,10 @@ ZONES = [
     (12.0, 20.0, 40, 1.4, 0.5),   # mid
     (6.0, 10.0, 36, 1.2, 0.5),    # near pockets
 ]
+
+# the bridge reads SPAWN_ZONES_V5 (the previz crowd_v6 shape name);
+# ZONES is this film's authored name -- the alias is the ingest seam.
+SPAWN_ZONES_V5 = ZONES
 
 # --- speed plan (REV-2 F1: the envelope law) --
 # populations[0].mu + 3*sigma is the GLOBAL max_speed for ALL agents
