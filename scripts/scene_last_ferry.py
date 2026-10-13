@@ -109,18 +109,20 @@ CAST = {
 }
 
 BEATS = [
-    ("calm",       "S1",  1),
-    ("boarding",   "S2",  85),
-    ("surge",      "S3",  169),
-    ("latecomer",  "S4",  265),
-    ("the_line",   "S5",  349),
-    ("the_choke",  "S6",  445),
-    ("bollards",   "S7",  529),
-    ("seen",       "S8",  625),
-    ("the_gap",    "S9",  721),
-    ("sealed",     "S10", 817),
-    ("rising",     "S11", 913),
-    ("title",      "S12", 1009),
+    # the exporter's story shape: (id, t_seconds, label) -- t =
+    # (f-1)/24 for the shot's opening frame (the float(b[1]) law)
+    ("calm",       0.0,  "the pier strip at night; a thin drift south"),
+    ("boarding",   3.5,  "the kiosk board flips to BOARDING (the call)"),
+    ("surge",      7.0,  "the surge ignites: the far bands pour south"),
+    ("latecomer",  11.0, "the Latecomer enters at the pier head, breaks into a run"),
+    ("the_line",   14.5, "the Latecomer's run down the east rail line"),
+    ("the_choke",  18.5, "the Deckhand holds the throat; the crowd piles"),
+    ("bollards",   22.0, "the Latecomer holds at the east rail; the stream jostles past"),
+    ("seen",       26.0, "the Deckhand sees the Latecomer; holds the gap open"),
+    ("the_gap",    30.0, "the beat: through the maintenance gate, the crew wave"),
+    ("sealed",     34.0, "the throat sealed; the pier quiets"),
+    ("rising",     38.0, "the crane rises: the Latecomer aboard, the windows move"),
+    ("title",      42.0, "LAST FERRY over the receding windows"),
 ]
 
 CROWD_TIER_PINS = []       # kit mode: single tier, no director pins
@@ -362,8 +364,10 @@ def build_scene():
     _markers(scene, cams)
     title = _title_card(scene)
     bpy.context.view_layer.update()
-    return {"parts": parts, "heroes": heroes, "cams": cams,
-            "chars": chars, "title": title}
+    # the exporter's ctx contract (tdawn shape): 'scene' is LOAD-BEARING
+    # (export_previz_package.py:2736 reads ctx["scene"])
+    return {"scene": scene, "parts": parts, "heroes": heroes,
+            "cams": cams, "chars": chars, "title": title}
 
 
 def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
