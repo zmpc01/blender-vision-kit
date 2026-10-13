@@ -1198,16 +1198,69 @@ def main() -> None:
     }
 
     # ---- 4. sfx events (module's own emitter, when present) ----
+    # Gate 15 (D19.3, session-16): the sfx stream is CONTRACT-CHECKED
+    # here, fail-closed. The F-TF4 class (events keyed `id` instead of
+    # `name`) used to export green — this block only counted, swallowing
+    # every error to 0 — and the review app silently dropped the events
+    # 3/3. The app contract is {name|kind, frame}; the file schema is
+    # {fps, events} (both real producers write fps — now contract, not
+    # accident). Missing file / no emitter = vacuous pass (template lane,
+    # law 20); an emitter that writes nothing = WARN (a scene may defer
+    # sfx); malformed = rejection naming the first bad event.
+    sfx_problems: list = []
     if hasattr(mod, "emit_sfx_events"):
         mod.emit_sfx_events(ctx, args.output)
         sfx_path = os.path.join(args.output, "sfx_events.json")
-        try:
-            with open(sfx_path) as f:
-                previz["n_sfx_events"] = len(
-                    json.load(f).get("events", []))
-        except Exception:
-            previz["n_sfx_events"] = 0
-        print(f"[pkg] sfx_events.json emitted", flush=True)
+        n_sfx = 0
+        if os.path.isfile(sfx_path):
+            try:
+                with open(sfx_path) as f:
+                    sfx_doc = json.load(f)
+                events = sfx_doc.get("events", [])
+                n_sfx = len(events)
+                if not isinstance(events, list):
+                    sfx_problems.append(
+                        f"sfx_events.json: 'events' must be a list, "
+                        f"got {type(events).__name__}")
+                else:
+                    for i, ev in enumerate(events):
+                        if not isinstance(ev, dict):
+                            sfx_problems.append(
+                                f"sfx_events.json: event[{i}] must be an "
+                                f"object, got {type(ev).__name__}")
+                            break
+                        if not ("name" in ev or "kind" in ev):
+                            sfx_problems.append(
+                                f"sfx_events.json: event[{i}] lacks both "
+                                "'name' and 'kind' — the review app "
+                                "drops events without one (the F-TF4 "
+                                "class; key it 'name' or 'kind')")
+                            break
+                        fr = ev.get("frame")
+                        if not isinstance(fr, int) or isinstance(fr, bool):
+                            sfx_problems.append(
+                                f"sfx_events.json: event[{i}] 'frame' must "
+                                f"be an integer, got {fr!r}")
+                            break
+                    sfx_fps = sfx_doc.get("fps")
+                    if sfx_fps is not None and \
+                            int(sfx_fps) != int(scene.render.fps):
+                        sfx_problems.append(
+                            f"sfx_events.json fps={sfx_fps} disagrees "
+                            f"with scene.render.fps={int(scene.render.fps)} "
+                            f"— the app stamps the timeline from the "
+                            f"scene; events would land at wrong times")
+            except Exception as e:
+                sfx_problems.append(
+                    f"sfx_events.json unreadable/unparseable: {e}")
+        else:
+            print("[pkg] WARN: module defines emit_sfx_events but wrote "
+                  "no sfx_events.json (a scene may defer sfx — verify "
+                  "this is intended)", flush=True)
+        previz["n_sfx_events"] = n_sfx
+        if n_sfx:
+            print(f"[pkg] sfx_events.json emitted ({n_sfx} events)",
+                  flush=True)
 
     # ---- 5. stills (optional copy) ----
     stills_present = []
@@ -1263,6 +1316,7 @@ def main() -> None:
 
     # ---- 7. FAIL-CLOSED gates ----
     problems = []
+    problems.extend(sfx_problems)  # gate 15 (sfx stream conformance)
 
     # gate 1: shot cameras in the GLB
     missing_cams = [s["camera"] for s in shots
@@ -1297,6 +1351,18 @@ def main() -> None:
         if k not in story:
             problems.append(f"module declares {attr} but JSON story is "
                             f"missing '{k}'")
+    # gate 4 strengthening (D19.3, session-16): BOARD is the only
+    # per-entry NOTE-and-drop decoder (_collect_story:580-596) — a
+    # declared non-empty BOARD whose every entry failed to parse used to
+    # export green with story.board == {} (boards/boarding frames
+    # silently vanished downstream). Partial boards keep their NOTEs
+    # (leniency), but a 100% decode failure rejects.
+    if getattr(mod, "BOARD", None):
+        if not story.get("board"):
+            problems.append(
+                "module declares a non-empty BOARD but every entry "
+                "failed to parse (see the [pkg] NOTE lines above) — "
+                "boards would be silently absent from the review JSON")
 
     # gate 5: characters + root objects. The characters registry is a
     # CROWD concept (BOARD/RUN_PARAMS actors); a scene that declares no
