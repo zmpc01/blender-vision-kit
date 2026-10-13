@@ -360,7 +360,7 @@ def _title_card(scene):
     mid-gray read)."""
     from tdawn_actors import make_material
     size = 0.52                 # 11 chars, Bfont advance 0.91-1.1em/char
-    tx, ty, tz = 2.2, 0.5, 2.7  # z 2.7: the S12 frame top reaches ~2.8m
+    tx, ty, tz = 2.2, 0.2, 2.2  # z 2.2: the 2.7 card clipped at frame top
     # at the card's distance (the 4.2 card rendered ABOVE the frame --
     # the eye round's invisible-title find)
     mat = make_material("TG.TitleCard", (0.82, 0.82, 0.80), 0.4)
