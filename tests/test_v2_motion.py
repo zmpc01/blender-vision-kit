@@ -199,7 +199,11 @@ def _run_scan_cli():
             os.path.abspath(__file__))), "scripts", "transient_scan.py"),
         "--", "--scene", "t6_transient", "--start", "1", "--end", "24",
         "--out", out]
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=280), out
+    # F-TD10 flock bypass (nested blrun under the outer blrun-held lock)
+    env = dict(os.environ)
+    env["BLRUN_FORCE"] = "1"
+    return subprocess.run(cmd, capture_output=True, text=True,
+                          timeout=280, env=env), out
 
 
 def test_6_scan_end_to_end():

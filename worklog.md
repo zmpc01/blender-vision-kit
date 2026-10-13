@@ -3621,6 +3621,100 @@ Stage Summary:
   re-export (8b7d4d8e) when comments demand a cut; F-TD9 + F-TF5
   (the vendor wheel re-sync) are the remaining kit chores.
 
+---
+Task ID: 1-a
+Agent: exporter-contract-auditor
+Task: READ-ONLY export-lane contract inventory + landmine list (t10
+  pre-work); verified every ledger claim against current code.
+Work Log:
+- Exporter ctx: ONE key read — ctx.get("scene") (1056, R4 F10
+  fallback). ":2736" ledger cite = the agent-kit canonical copy, not
+  this 1455-line tree copy; scene_last_ferry:385 comment stale. F10b
+  NameError (gate14 blob/glb_blob): FIXED (1434; R4 ledger 44-52).
+- BEATS (id,t_seconds,label): NOT read by THIS exporter (STORY_SOURCES
+  81-103 lacks it) — wrong shape = silent NO-OP here, opaque crash
+  only in the canonical lane; shapes correct in both film modules.
+- sfx {name|kind,frame}: scene-side FIXED (tferry:540, tdawn:646);
+  still NO gate validates the stream; build_sfx KeyErrors (185/191).
+- render.fps pinned in both film modules (tferry:371, tdawn:343);
+  exporter trusts it (1057), ignores fps_base (1181).
+- 15 gates inventoried; version-drift gate (990) globs scene_escape_v*
+  ONLY; STORY_SOURCES lacks CAST/SYNOPSIS/BEATS/CROWD_TIER_PINS →
+  this copy exports a film module GREEN but story-empty (film lanes
+  actually exported via agent-kit KIT_EXPORTER, kb:46).
+- F-TD5 STILL-LIVE here: render_hidden_objects (blender_kit:912-925)
+  lacks view_layer.update() (upstream e4450a3 never vendored down).
+- tests/: ZERO export_previz_package coverage (nearest:
+  test_usd_carrier.py = previz_usd_hook only). Full report delivered.
+Stage Summary: No code touched. Contract pinned: 1 ctx key, 4 table
+  contracts, 15 gates, 2-exporter constellation, 0 tests. Top
+  landmines: story-collector opaque crashes (544-660), BOARD
+  silent-drop (584-596), no sfx-stream gate, no film-vocabulary
+  story mapping, F-TD5 ungated; preflight feasibility recorded.
+
+---
+Task ID: 1-b
+Agent: ledger-triage
+Task: READ-ONLY audit of every OPEN kit-side friction filing across the usability ledgers (TD1/TF1/R1-R9/D16) vs current code; produce prioritized triage for the next implementation wave.
+Work Log:
+- Read SKILL.md, PLAN.md, HANDOFF.md, worklog tail; all USABILITY_* ledgers.
+- Verified each candidate filing against code: vendor wheel still 1.0.0
+  (F-TF5 OPEN; TF1 ledger's "CLOSED" = workaround only); install.sh:140
+  head-1 python probe version-blind, no BLENDER_PY override (F-TD9 OPEN;
+  QA-R69 dangling-symlink guard also absent); semantic_lib split has no
+  N>50 ack_many_parts gate (F19 OPEN); viewport_capture.py:233 renders
+  with zero marker handling (F-TD3 OPEN); validate_scene.py:138 shell
+  tokens lack roof/structure (F-TD2 OPEN); validate_scene.py:73 lacks
+  agent-kit 0.2m slab fix (VK-9 OPEN). CLOSED verified in code: F-TD10
+  (blrun flock), F-TD11/F-TD6 (emission params + default pin), F-TD12
+  (--probe-camera), F18/F20-R5/F21 (doc laws), F22, F23 (ledger json),
+  VK-10 (frame_set hunk). Doc debt: PLAN checkboxes for F18/F20/F-TD5/
+  T6-ship + Queue item 6 stale; HANDOFF still counts the make_material
+  default open; F20 ID collision (R5 vs R6 variants).
+- No files edited; no commit. Report returned to orchestrator.
+Stage Summary:
+- OPEN kit-side: F-TF5, F-TD9(+QA-R69, F-TD1 flag), F19, F20-R6 hint,
+  VK-9, F-TD3, F-TD2, t10, F-TF6/F-TD4 (crowd-kit lane), T3 (infra),
+  F-TD8 (process). Suggested wave: vendor sync -> install.sh bundle ->
+  F19 gate -> doc-debt sweep -> VK-9 -> F-TD3 -> F-TD2 -> t10.
+---
+Task ID: 1-c
+Agent: doc-drift-auditor
+Task: READ-ONLY doc-drift audit of AGENTS.md against the current tool surface (every literal CLI/flag/op/exit-code claim re-verified against scripts/ argparse + MUTATIONS + placement_lib + blrun.sh; file paths and LAW MAP cross-checked).
+Work Log: Extracted ~40 literal claims from AGENTS.md (717 l). Verified OK: quick start, vision loop, canonical workflow 1-7, all look.py/apply_patch/viewport_capture/keyframe_contact_sheet/motion_study/transient_scan/scene_schema/validate_scene/export_gltf/save_blend/agent_server/polyhaven/image_metrics flags; engine type= normalizers intact both vocabularies (blender_kit:82,101; look:211); look exit 3 (582); blrun exit propagation + warm-cache + env vars; audit 100mm pad; D16 op params; physics_gate verify_movers; FLAG_CAP 60; motion_grid/suspects/EVENT-TABLE outputs. DRIFT: (1) AGENTS:213 teaches `--annotate` — flag DOES NOT EXIST (only --no-annotate, look:255) = verbatim-copy crash; (2) "35 ops" (252) is 39 in MUTATIONS (set_camera_dof/label_objects/split_mesh/mesh_prepare missing from enumeration; set_camera_dof taught nowhere); (3) quality table Engine column (505-513): only previz/viewport force workbench — draft/preview/final inherit --engine whose DEFAULT is CYCLES (blender_kit:413,484) → "EEVEE" rows wrong; (4) LAW MAP L1-L4 stale (body has L1-L6); (5) /kb/ascii_vision.md pointer dead; (6) KB index omits semantic_labeling/tdawn_vision_film/gait_modifiers.md. CODE BUG FOUND (doc law violated by kit): apply_patch:420,422 scoped-audit matches p["verdict"] ("PENETRATING 8.0 mm — fix") not p["state"] → {"op":"audit","id":X} recomputed failed is ALWAYS False → fail_on_penetration can never abort a scoped audit (doc's own LAW 270-272 is correct). MISSING DOCS (sessions 12-15 surface): look.py --probe-camera (272), blrun flock/LOCK-HELD/exit 90/:98 workaround (blrun.sh:84-106), make_material emission_color/strength (blender_kit:516-554), manifest_diff.py (whole tool), export_previz_package.py dual-lane + preflight contracts, sfx_events/build_sfx lane, r7_route_planner exit 4 (296).
+Stage Summary: Doc health GOOD — one verbatim-copy crash risk (--annotate), 4 stale claims, no other literal command drifts; the session-6 argparse-normalizer fix holds. Session-14/15 features (probe-camera, flock, emission kwargs, manifest_diff, export_previz_package+sfx lane) are entirely undocumented in AGENTS.md. Top fixes: drop --annotate, 35→39 ops, quality-table engine column, blrun flock section, add a "ship & verify" section (export_previz_package + manifest_diff + --probe-camera). Plus one code fix: scoped-audit verdict→state. No files edited; no commit.
+---
+Task ID: 2-a
+Agent: d19-critique
+Task: READ-ONLY fresh-context design audit of docs/DESIGN_D19_export_preflight.md against scripts/export_previz_package.py (claims C1-C8 verified at cited lines; SKILL laws 12/15/18-20 + verification discipline applied).
+Work Log: Read SKILL.md sections, full D19 doc, full exporter (1455 l) + blender_kit helpers + both film modules + template + build_sfx. Verified: C1 TRUE (dispatch 1040-1053 branches on isinstance(n_frames default, int); shapes mod.animate(ctx) / (ctx, start_frame=1, n_frames=None)) but S1 passes bare `def animate(ctx)` which the exporter TypeErrors on; C2 TRUE (int(fps) at 1181, fps_base zero hits); C3 TRUE (BOARD=(6-seq, extra-seq), NOTE+drop 594-595); C5 TRUE (gate 4 key-presence only 1292-1299, story["board"] set unconditionally 596); C6 TRUE in-Blender (argparse behind main()/__main__ 1454) BUT scripts/ not on sys.path at import (1010-1015 is inside main) and bpy/blender_kit imports make it Blender-only; C7 TRUE (module writes out_dir/sfx_events.json {fps,meta,events}, exporter only counts, swallows errors to 0 at 1206-1209); C8 FALSE-DESIGN: exporter enforces cam.startswith("CAM_") at 1127, never sid-containment; "S1" in "CAM_S11"=True and tdawn has both; tferry SHOT_* is marker name not cam name. Derived real arity table (DIALOG>=2 frames-not-seconds; KNOCKDOWNS>=4; CHASE dict; MUZZLE>=3 int; JEEP_X>=2; _V3_SEG>=4; BOARD 2x(6+seq); RUN_PARAMS float(vv) crashes on None; RB_FALLS/RB_KD flat str|int lists; BARRICADE_T/Y scalars; CAMS_V3=7; SHOTS rows>=4 w/ empty-fallthrough). Found: S2-BEATS false-rejects real tdawn (BEATS[0] t=1.0 vs S1 opener t=0.0; BEATS has ZERO consumers in this exporter); t10 fixture unimportable (import_module + scripts/-only sys.path, PYTHONPATH ignored) and fixture spec misses gate-6 action + gate-3 span + markers; B4 missing atmo exemption (atmo_objects legitimately hidden, exporter excludes them 1100-1108); parity call needs fps/frame_start pinned (static phase has none); PATCHES allowlist = escape vocab, WARN-spams both films.
+Stage Summary: Verdict ADOPT-WITH-CHANGES. 7 blocking: mirror startswith("CAM_") in B3/S3 (exact CAM_{sid}); BEATS to WARN shape-only; S1 must Signature.bind the two dispatch shapes; fixture into scripts/ + satisfy gates 1/3/6; B4 atmo exemption + CAST dict shape; pin parity inputs + sys.path + str() keys + relabel parity raises as scene-data-suspect. Suggestions: import STORY_SOURCES/_import_scene_file instead of restating; differential delete-one-constant attribution; bpy-stub fast-tier property test (S2 accept-set ⊇ decoder accept-set, decoder-drop ⇒ S2-reject); compact the sfx WARN. No files edited; no commit; report returned to orchestrator.
+---
+Task ID: 5-a
+Agent: session-16-diff-reviewer
+Task: READ-ONLY full-diff review e64528f..HEAD (D19 preflight, exporter gates 15/4, kit fixes, install.sh, t10 suites, docs wave).
+Work Log: Read DESIGN_D19 REV-2 first, then export_preflight.py (1343 l) against the real exporter. Verified: S1 Signature.bind mirrors the dispatch (now exporter:1035-1048) exactly — bool-is-int, kw-only, no-n_frames sentinel case; S2 arity table line-checked vs _collect_story for BOARD/RUN_PARAMS/RB_FALLS/RB_KD/CHASE_FALLS_V3/CAMS_V3/DIALOG (+7 more) — cast-compatible, never stricter; no exception path exits 0 (fail-closed __main__ + exit 3); B5 differential deletion restores every attr via finally; B-checks read-only (no bpy leaks). Gate 15: sfx_problems initialized unconditionally (no NameError); fps-missing tolerated, fps-MISMATCHED rejects — both in-repo emitters (scene_terminal_dawn:667, scene_last_ferry:550) write fps → no escape-lane regression, P0 condition NOT met. Scoped audit: every audit_scene row carries "state" (pair_contact 7 update paths + AABB-reject path + ERROR row) → fix sound. F19 acks independent, ordering correct. install.sh: bash -n clean; P1 probe-order bug found. t10: cleanup NOT exception-safe (P1).
+Findings: 0×P0; 2×P1 (test_t10_export fixture cleanup not try/finally; install.sh Pillow probe prefers tools/blender over BLENDER_BIN — Pillow can land in a python blrun never runs); 11×P2 (fps doc/impl drift, exporter line-refs off by -5 after the docstring edit, _vec_check(None) S2 hole, animate=None false-PASS, scoped failed ignores band, split_would_refuse stale, B5 after B-sfx + mkdtemp leak, install else wording, gate-15 n_sfx/int() nits, CAMS legacy fallback over-strict, calibration number unrecorded). No files edited; no commit; report returned to orchestrator.
+
+---
+Task ID: 6 (session close)
+Agent: orchestrator (session-16)
+Task: KIT-QUALITY lane per the user's course correction — audit/test/refine the vision kit; no film building (parallel lane owns scenes).
+
+Work Log:
+- Context restored from SKILL/HANDOFF/PLAN at e64528f; fresh clone to local disk (FUSE law); install.sh green (Blender 5.2.2).
+- CRITICAL: GitHub PAT 401-dead (verified via API); GitLab PAT alive → GitLab = authoritative push target this session (all commits pushed there).
+- Audit wave (3 parallel read-only sub-agents): 1-a exporter contract inventory (0 tests on the export lane, 5 P0 landmine classes, TWO-exporter scoping finding); 1-b ledger triage (F-TF5/open verified, doc-debt map); 1-c AGENTS.md drift (1 crash-a-consumer defect, 4 stale claims, 1 real code bug: scoped audit matched verdict not state).
+- Wave A: six kit fixes + test_v9 8/8 (F-TD5 view_layer.update port, scoped-audit state fix, F19 ack_many_parts, F20-R6 hint, F-TD9 install.sh authoritative probe + QA-R69 symlink heal, F-TF5 wheel re-vendor 1.0.0→1.5.5).
+- Wave B: D19 design REV-2 (critique round: 7 blocking fixes adopted) → scripts/export_preflight.py (Phases S+B, parity guard w/ differential attribution) → t10 two-tier suite (property test 100 checks/0.2s pure-python both-direction drift property; subprocess tier 19 checks incl. F-TF4 + bare-animate classes) → exporter gate 15 (sfx conformance fail-closed) + gate 4 (BOARD total-decode-failure).
+- Wave C: AGENTS.md 9 code-verified fixes + Ship & verify section + doc-debt sweep (F18/F19/F20/F-TD5/T6/Queue-6 closed with evidence; "six older filings" recount → F-TD1/2/3).
+- Wave D: fresh-context review (2 P1 + 11 P2, all fixed) + full battery 26/26 after fixes: usd_export RNA-filter fix (5.2.2 kwarg rot), probe_crowd_bake scope move, BLRUN_FORCE for the four nested-blrun suites (flock had broken their documented mode).
+
+Stage Summary:
+- HEAD 1cfafc4 on GitLab (8 session commits, zero force pushes, no collisions).
+- The export/package lane has regression coverage for the first time; contract failures now surface pre-render with attributed messages.
+- Session-16 close state + next-session value order in HANDOFF/PLAN; laws distilled to SKILL.
+
 ## Session 16 (start) — the tferry_1 refinement round (rev 2 shipped)
 
 Work Log:
@@ -3657,6 +3751,52 @@ Stage Summary:
 - Kit capture: tferry_camprobe.py (the multi-candidate probe law);
   the flood-class law re-confirmed ("a tight lens in a streaming
   crowd ALWAYS reads as capsule backs -- pull back or go head-on").
+
+## Session 16 (main) — GREEN LIGHT: the third film, end-to-end
+
+Work Log:
+- tferry_1 rev 2 shipped first (the refinement round: the S4/S5
+  reframes via the new camprobe tool, the in-place rev-2 export, the
+  review-round crowd contract finally IN the staged package).
+- GREEN LIGHT designed (docs/DESIGN_green_light.md): 3 research/
+  audit sub-agents before a line of code — 3-a (the bridge source
+  audit: the capacity-box freeze law P0 + the per-film envelope P0),
+  3-b (the film-director audit: the statue+runner hero set + the
+  green/orange signal spine), 3-c (the M5 verdict: recorded-only),
+  3-d (round 2: the plaza refused three ways — the freeze re-scope).
+- Build: the world module (sub-agent 3-e, eye-gated), the contract
+  (ingest GREEN on the first probe = the round-3 test), the bake
+  driver (per-zone speed map), the scene module (the x-sign palette
+  split, the glyph spine, the crane re-keyed), the flow strip (THE
+  STILL CERTIFIED: two frozen banks + the runner threading).
+- The framing round: 12 shots + 9 probe candidates; the stills
+  runner's clone seam (rendered the FERRY's shots) caught by eyes;
+  the crane was silently static (my _cameras never keyed loc0->loc1)
+  — re-keyed per the tferry pattern.
+- The daylight ladder: 12 combos measured; the wash diagnosed (the
+  sky ambient, not the disc, not exposure); the ratio lever won
+  (sun5/sky0.15/1°).
+- The review wave (3-f/3-g/3-h/3-i, parallel): zero P0s, 3 P1s
+  consumed (the dead --seed, the order-indexed speed map, the
+  FACADES swallowing the spawn strips — moved 28->30), the
+  determinism law re-proven (byte-identical reruns; the pin drift
+  reconstructed as an uncommitted draft table), the doc drift mapped
+  (REV-4 folds).
+- tgreen_1 exported rev 1 (all gates) -> staged -> verified in-app;
+  then rev 2 (the facade fix IN the package). Ledger:
+  docs/USABILITY_TG1_green_light.md (F-TG1..8). SKILL session-16
+  laws at the 30k cap.
+
+Stage Summary:
+- THREE films live: tdawn_3 + tferry_1 rev 2 + tgreen_1 rev 2 —
+  dawn / night / afternoon; comments ON; the server UP.
+- Sub-agents this session: 9 (3-a..3-i). The visual gate + the
+  critical paths stayed with the principal (the kit's division of
+  labor held).
+- Kit capture: the F-TG ledger + the session-16 SKILL laws + REV-4.
+- Next: the user review round on ALL THREE films (the whole session
+  points here); F-TD9 (the install.sh Pillow probe) + the six older
+  filings remain the standing kit chores.
 
 ## Session 16 (main) — GREEN LIGHT: the third film, end-to-end
 

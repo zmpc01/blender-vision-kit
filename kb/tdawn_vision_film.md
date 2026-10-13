@@ -35,6 +35,13 @@ docs/DESIGN_terminal_dawn.md. This file is the HOW.
    f1/200/400/700/1000 → retime hero paths against the REAL stream
 6. shot-cam stills at representative frames (workbench, 480x270) →
    reframe cameras (expect 2-3 rounds)
+6b. PREFLIGHT before ANY export: `./scripts/blrun.sh --background
+   --python scripts/export_preflight.py -- --module
+   scripts/scene_<film>.py` — replays the exporter's REAL consumption
+   (contract shapes, sfx keys, fps pins, marker bindings) and exits 3
+   with attributed messages (constant, row index, expected vs got, fix
+   hint). The tferry session's three landmines would all have been
+   caught pre-bake. `--skip-build` = static phase only.
 7. EEVEE lighting pass (32 samples 640x360) → emission/exposure laws
 8. stills (one EEVEE process per shot!) → export → filmstrips → stage
 

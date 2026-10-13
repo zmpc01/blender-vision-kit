@@ -191,6 +191,33 @@ EOF
 cp viewer/index.html output/my_scene/
 ```
 
+### Ship & verify (review lane) — the STANDARD LOOP
+
+(a) PREFLIGHT before any export (seconds, not minutes):
+    ./scripts/blrun.sh --background --python scripts/export_preflight.py -- \
+        --module scripts/<scene>.py
+    Exit 3 = fix at the cheap end — every rejection names the constant,
+    row index, expected vs got shape + a fix hint (`--skip-build` runs
+    the static phase only — necessary, not sufficient). It replays the
+    exporter's REAL consumption: contract shapes, sfx keys ({name|kind,
+    frame}), the SFX_EVENTS file schema ({fps, events}), fps pins
+    (scene.render.fps vs module FPS), marker bindings — the tferry
+    session's three landmines would all have died here pre-bake. BEATS
+    rows are a shape-only WARN: BEATS is the canonical agent-kit
+    exporter lane's contract — THIS tree's exporter does not consume it.
+(b) THEN export (export_previz_package.py). Its gates are fail-closed:
+    sfx-stream conformance is gate 15; a BOARD whose every entry fails
+    to decode is rejected by gate 4 (partial boards keep their NOTEs).
+(c) Marker NAMES are unconstrained (SHOT_* is fine) — the CAM_ contract
+    lives on the CAMERA OBJECT name (exporter:1117 — the marker-bound
+    camera must startswith CAM_).
+(d) manifest_diff.py before.json after.json for before/after
+    look_manifest.json diffs; `--expect-clean` exits 1 on ANY
+    difference (verify delegated work by DIFF, not by trust).
+(e) look.py --probe-camera NAME|all names what each camera's center ray
+    hits first (repeatable / comma-separated; rows land in
+    look_manifest.json `camera_probes`) — run it on EVERY reframe.
+
 ## Tool reference
 
 ### blrun.sh — the wrapper (always use, never call blender directly)
@@ -207,14 +234,25 @@ propagated (verified: look.py exit 3 → blrun exit 3; the old "not
 propagated" lore was a pipeline-probe artifact — `$?` after a pipe is
 the LAST command's exit, not blrun's).
 
+Parallel lanes & the lock (F-TD10): blrun takes a per-DISPLAY flock
+(`/tmp/blrun_xvfb<display>.lock`, held for the pipeline's lifetime,
+crash-safe). A second concurrent pipeline on the SAME display fails
+FAST — exit 90 + LOCK-HELD. `BLRUN_FORCE=1` bypasses the lock (and
+re-opens the silent failure modes — concurrent pipelines kill each
+other's Xvfb; never run two EEVEE pipelines on one display).
+`BLENDER_DISPLAY=:98` runs a genuinely parallel second lane.
+
 ### look.py — the one vision-loop command (see THE VISION LOOP above)
 ```bash
 ... look.py -- --load-blend work.blend [--angles front,side,top,persp|none] \
-    [--frame N] [--engine workbench] [--annotate|--no-annotate] \
+    [--frame N] [--engine workbench] [--no-annotate] \
     [--labels 8] [--closeup Obj] [--closeup-fill 1.5] [--grid-cols 2] \
     [--no-grid] [--lens 50] [--target X,Y,Z] [--w 640 --h 480] \
     [--output DIR] [--no-fail-on-issues]
 ```
+`--no-annotate` is the ONLY annotation flag — annotations default ON;
+there is no `--annotate`, and a verbatim `--annotate` copy dies with
+argparse exit 2.
 `--angles none --closeup Obj` = closeup-only look (L1 image budget:
 no grid when you already know the subject).
 Defaults tuned for vision: 640×480 angles. Large scenes overflow the
@@ -249,12 +287,14 @@ Patch format: `{"scene":"module"|"load_blend":"file.blend","frames":N,"mutations
 > CLI flag, NOT a patch key; op key is `id`; `mode:"dry-run"` lives
 > INSIDE a mutation op (region ops: presence of `region` implies
 > dry-run planning — read the op's PARAM_DOCS line).
-35 ops: `set_location/rotation/scale`, `set_material_color/roughness/metallic`,
-`delete_object`, `duplicate_object`, `set_camera_location/lens`,
+39 ops (run `apply_patch.py --list` for the live signatures):
+`set_location/rotation/scale`, `set_material_color/roughness/metallic`,
+`delete_object`, `duplicate_object`, `set_camera_location/lens/dof`,
 `set_light_energy/color`, `set_world_strength`, `set_exposure`, `set_frame`,
 `render_viewport`, `add_cube/sphere/cylinder/cone/torus/plane/empty`,
 `move_to`, `place_on`, `seat_at`, `snap_z`, `physics_settle/place/oracle/gate`,
-`audit`, `seam_views`, `heat_bake`, `clear_bvh_cache`.
+`audit`, `seam_views`, `heat_bake`, `clear_bvh_cache`,
+`label_objects`, `split_mesh`, `mesh_prepare`.
 `add_*`: `id` required (refuses duplicates), sizes are FINAL world dims,
 `location` = CENTER (not bottom — seat with `place_on`).
 Composition: `add_*` → `place_on`/`physics_place` → `audit` in ONE chain.
@@ -265,9 +305,10 @@ Full details: `/kb/placement_and_physics.md`. Headlines:
 - `physics_settle/place/oracle/gate` — gravity finds the pose; oracle
   WITNESSES why X can't sit; gate rejects scene-wide with a fix queue
 - `audit` pair states: PENETRATING (penetration_mm) / TOUCHING / NESTED /
-  CLEAR (clearance_mm); audit only sees pairs within 100mm pad — floaters
-  >300mm appear in NO pair; use `physics_gate` or `look` verdict for
-  scene-wide floating. **LAW: exact-match the pair's `state` field
+  CLEAR (clearance_mm); audit only sees pairs within the 100 mm clearance
+  pad (placement_lib.py:577 — the pad is the real constant); beyond the
+  pad floaters appear in NO pair; use `physics_gate` or `look` verdict
+  for scene-wide floating. **LAW: exact-match the pair's `state` field
   (PENETRATING/TOUCHING/NESTED/CLEAR) — never `verdict`, which is the
   human string ("PENETRATING 7.8 mm — fix") and WILL drift**
 - **reference tokens**: `move_to` reference = `bottom-center` (default) |
@@ -504,13 +545,17 @@ name-based, and never a blanket carve-out.
 
 ## Quality presets
 
-| Preset | Resolution | Engine | Use case | ~Time/frame |
+| Preset | Resolution | Engine* | Use case | ~Time/frame |
 |--------|-----------|--------|----------|-------------|
 | `previz` | 480×270 | Workbench | vision geometry check | ~0.3s |
 | `viewport` | 960×540 | Workbench | vid2vid guidance track | ~0.05s |
 | `draft` | 320×180 | EEVEE | material iteration | ~0.5s warm |
 | `preview` | 640×360 | EEVEE | final preview animation | ~2s (MEASURED 8.5s/frame on 4-core llvmpipe 2026-09-28 — budget 10s/frame; a 24f render ≈ 3.5min, EXCEEDS a 2-min tool timeout: run inside one long-timeout call or render_daemon) |
 | `final` | 960×540 | Cycles | final still | ~50s |
+
+`*` The Engine shown applies only to previz/viewport (forced
+Workbench); draft/preview/final inherit `--engine`, whose DEFAULT IS
+CYCLES (~50 s/frame) — pass `--engine eevee` for the ~2-5 s budget.
 
 look.py/viewport_capture default 640×480 workbench — the vision sweet
 spot (measured: AA-OFF workbench ≈ 0.05s/frame at 960×540; the cost is
@@ -522,8 +567,8 @@ cold-start, not pixels).
 |---|---|
 | 1-10 (engine/rendering) | KEPT verbatim (§ Engine & rendering) |
 | 11-19 (scene building) | KEPT verbatim |
-| 20-26 (VLM verification) | REWRITTEN → two-column law + L1-L4 (remote-VLM stabilization is obsolete; the underlying truth — verify geometry programmatically — kept and strengthened) |
-| 27 (ASCII packs) | DEMOTED → Escalation paths (kept in tree, `/kb/ascii_vision.md`); later REMOVED entirely by the session-4 course correction — vision-native-only kit |
+| 20-26 (VLM verification) | REWRITTEN → two-column law + L1-L6 (remote-VLM stabilization is obsolete; the underlying truth — verify geometry programmatically — kept and strengthened) |
+| 27 (ASCII packs) | DEMOTED → Escalation paths; later REMOVED entirely (session-4 course correction) — vision-native-only kit |
 | 28-36 (placement & physics) | KEPT verbatim |
 | 37-40 (color discipline) | KEPT verbatim |
 | 41-43 (sub-agent orchestration) | KEPT verbatim |
@@ -531,7 +576,7 @@ cold-start, not pixels).
 | 55-61 (git & environment) | KEPT verbatim |
 | 62-64 (Blender version compat) | KEPT verbatim |
 | 104-110 (sessions 25-26 laws) | KEPT verbatim (§ Mechanics laws 104+) |
-| — | NEW: vision loop laws, L1-L4, state-carrier law, annotation law |
+| — | NEW: vision loop laws, L1-L6, state-carrier law, annotation law |
 
 ## Gotchas (mechanics — these save hours)
 
@@ -715,3 +760,6 @@ batched question round.
 - `/kb/glTF_export.md` — export flags, three.js loader quirks
 - `/kb/crowd_fields.md` — influence fields, relax PBD, gait phase engine
 - `/kb/prop_carry.md` — generalized prop anchoring & clamped carry
+- `/kb/semantic_labeling.md` — D16 ops: kit_label vocabulary, label_objects/split_mesh on imported assets
+- `/kb/tdawn_vision_film.md` — the film recipe + export contract (the crowd-mode review lane)
+- `/kb/gait_modifiers.md` — funny-walk gait modifier engine (data-only stacks)

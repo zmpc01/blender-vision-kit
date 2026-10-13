@@ -276,7 +276,11 @@ def main():
     os.unlink(usd_path)  # bpy.ops.wm.usd_export needs the path to not exist yet
 
     try:
-        # USD-REVIEW-1 F26 fix: use RNA-verified kwargs
+        # USD-REVIEW-1 F26 fix: use RNA-verified kwargs.
+        # session-16: RNA-FILTER at runtime (mirrors export_usd.py) — the
+        # hardcoded 4.5-calibrated set TypeErrors on 5.2.2 (the battery
+        # caught it: export_textures unrecognized). The test asserts the
+        # FILTERED export succeeds, not a frozen kwarg list.
         usd_kwargs = dict(
             filepath=usd_path,
             export_animation=False,
@@ -305,10 +309,18 @@ def main():
         )
 
         try:
+            rna_props = set(
+                bpy.ops.wm.usd_export.get_rna_type().properties.keys())
+            dropped = [k for k in usd_kwargs if k not in rna_props]
+            if dropped:
+                print(f"[test_usd_carrier] NOTE: RNA dropped {len(dropped)} "
+                      f"kwarg(s) on this Blender: {sorted(dropped)}")
+            usd_kwargs = {k: v for k, v in usd_kwargs.items()
+                          if k in rna_props}
             bpy.ops.wm.usd_export(**usd_kwargs)
         except TypeError as e:
             print(f"[test_usd_carrier] FAIL: usd_export kwarg error ({e}) "
-                  f"— the kwargs should match Blender 4.5.13 RNA")
+                  f"— even RNA-filtered kwargs failed")
             raise
         print(f"[test_usd_carrier] exported: {usd_path} "
               f"({os.path.getsize(usd_path)} bytes)")

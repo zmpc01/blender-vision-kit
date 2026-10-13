@@ -968,7 +968,12 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
             f"(check support objects / from_z). If the object OVERHANGS "
             f"its support (every bottom vert hangs off the edge — "
             f"common for plants on stands, trays on lips), retry with "
-            f"footprint='grid' which samples the whole bbox footprint.")
+            f"footprint='grid' which samples the whole bbox footprint. "
+            f"If the support is OCCLUDED below a taller object on the "
+            f"same spot (stacked/nested supports — the ray hits the "
+            f"upper item first), pass only the TOPMOST support as the "
+            f"support list, or check look --closeup for what actually "
+            f"sits under the target (F20-R6: the occluded-support class).")
 
     # --- slope awareness (round-2/U5) --------------------------------------
     # Mean support normal under the footprint; a sloped support means an

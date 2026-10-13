@@ -1,10 +1,55 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session close: 2026-10-13 (session 15, the REVIEW APP RESTORED +
-> LAST FERRY built end-to-end). BOTH films are live in previz-review:
-> **tdawn_3** (default) + **tferry_1** (NEW, audit-ok) — comments ON.
-> The user review round on both is THE open item. Read
-> docs/DESIGN_last_ferry.md (REV-2) + the worklog session-15 record.
+> Session close: 2026-10-13 (session 16, the KIT-QUALITY wave — audit /
+> test / refine the kit; NO film building per the user's course
+> correction). HEAD on **GitLab** (see the PAT warning below). Read
+> docs/USABILITY_S16_session16.md (the wave's ledger) +
+> docs/DESIGN_D19_export_preflight.md (REV-2, implemented).
+
+## Session-16 close state (NEWEST — read this first)
+
+- **⚠ THE GITHUB PAT IS DEAD (401 Bad credentials)** — verified at
+  session start; reads still work (public repo, anonymous) but PUSHES
+  fail. **GitLab carried the session** (oauth2 PAT alive, WAF-retry
+  discipline). USER ACTION NEEDED: a fresh GitHub PAT, then
+  `git push origin main` from any clone to reconcile GitHub (GitLab has
+  everything through session-16; GitHub is stuck at e64528f). Verify
+  BOTH PATs at session start (2-line curl check) before planning pushes.
+- **Lane discipline**: the parallel lane owns SCENE work (tdawn/tferry
+  modules, the review app, staging). This session touched ONLY kit
+  files — do not co-edit scene_*.py.
+- **D19 shipped — the export lane finally has regression coverage**:
+  (1) run `blrun.sh --background --python scripts/export_preflight.py --
+  --module scripts/<scene>.py` BEFORE any export (exit 3 = attributed
+  rejection; contract failures now surface pre-render); (2) exporter
+  gate 15 fail-closes malformed sfx streams (the F-TF4 class can never
+  export green again) and gate 4 rejects a BOARD that decodes to zero
+  entries; (3) t10 = test_t10_preflight_prop.py (100 checks, pure
+  python, 0.2 s, BOTH-direction drift property vs the REAL decoder) +
+  test_t10_export.py (19 checks, ~8 s, subprocess; fixture written into
+  scripts/ — a temp dir is UNREACHABLE by the exporter's name-import).
+- **Battery 26/26** (output/battery_s16/RESULTS.md). Three kit fixes it
+  forced: usd_export kwargs are RNA-FILTERED at runtime (the 4.5-calibrated
+  set TypeErrors on 5.2.2); the four nested-blrun suites carry
+  BLRUN_FORCE=1 (the F-TD10 flock had broken their documented mode);
+  probe files live under smoke/, never scripts/.
+- **Wave A kit fixes** (test_v9 8/8): F-TD5 ported to THIS tree (the
+  hidden-sweep updates the view layer itself), scoped audits honor the
+  state enum + contact band, F19 ack_many_parts gate, F20-R6 occluded-
+  support hint, install.sh authoritative Pillow probe + symlink heal,
+  F-TF5 wheel re-vendor 1.5.5.
+- **Bootstrap that works (fresh sandbox, verified this session)**: clone
+  (GitLab if GitHub auth is still dead) → `bash install.sh` (Blender
+  5.2.2 + Pillow resolved authoritatively) → suites via
+  `./scripts/blrun.sh --background --python tests/<suite>`. Crowd wheel:
+  vendor/blender-crowd/.../wheels/1.5.5 (provenance README in-tree).
+- **Next-session scope**: (1) the user review round on tdawn_3 +
+  tferry_1 (the app lane — parallel lane's); (2) F-TD3 marker-hijack
+  fix in viewport_capture (design first — the last silent-wrong-render
+  class in the core eye); (3) port the preflight to the canonical
+  agent-kit exporter via tools/sync_shared.py governed sync; (4) if a
+  fresh GitHub PAT arrives, reconcile GitHub first.
+- Laws distilled this session are in .agents/SKILL.md (SESSION 16).
 
 
 ## Session-16 addendum (GREEN LIGHT shipped — read FIRST)
@@ -42,6 +87,7 @@
   ladder,stills}.py/sh.
 
 ## Session-15 addendum (the SECOND lane's completion — read with the block below)
+
 
 - **The app NOW carries the FINAL composition**: the staged tferry_1
   was re-cut from vision-kit 329a9d8 (previz-review 0008cfa) — the
@@ -156,8 +202,10 @@
   export + stage (the build order = kb/tdawn_vision_film.md steps 4-8
   with tferry names); the user review round on tdawn_3 + tferry_1;
   F-TD9 (install.sh Pillow probe for the stale-4.x-tools case — the
-  fresh case self-healed); the six older filings (F-TD1/2/3 + the
-  make_material default — F-TD6 partially superseded by the glow law).
+  fresh case self-healed); the older filings — the true remainder is
+  F-TD1/2/3 (the make_material default is CLOSED —
+  blender_kit/__init__.py:516 make_material pins Emission Color to the
+  base rgb, :549).
 
 > The user-directed D18 lane: the 561MB loft.blend is now IN-GIT as
 > 119 textures + 14 chunks + manifest; fresh-clone rebuild proven

@@ -85,6 +85,15 @@ fi
 if [[ -f "$LOCAL_LIBS/libEGL.so.1" ]]; then
     echo "[install] libEGL.so.1 already extracted at $LOCAL_LIBS/"
 else
+    # QA-R69 (session-16): git checkout REWRITES the tools/ symlink tree —
+    # a stale $TOOLS_DIR/local-libs symlink left dangling makes
+    # dpkg-deb -x fail under set -euo pipefail with an opaque dpkg error
+    # BEFORE the teacher-grade message. Heal the dangling link first.
+    if [[ -L "$TOOLS_DIR/local-libs" && ! -e "$TOOLS_DIR/local-libs/" ]]; then
+        echo "[install] healing dangling tools/local-libs symlink (QA-R69)"
+        rm -f "$TOOLS_DIR/local-libs"
+    fi
+    mkdir -p "$LOCAL_LIBS"
     echo "[install] Downloading + extracting libEGL.so.1..."
     cd "$TOOLS_DIR"
     for url in "$LIBEGL1_URL" "$LIBEGL_MESA_URL"; do
@@ -135,14 +144,36 @@ fi
 # `pip install --user Pillow` installs to the wrong place. We must install
 # directly into the bundled Python's site-packages (no --user flag).
 echo "[install] Installing Pillow into Blender's bundled Python..."
-# Bundled python lives at tools/blender/<MAJOR.MINOR>/python/bin/python3.NN —
-# glob it instead of hardcoding a version dir (was hardcoded "4.2", broke on 4.5).
-BLENDER_PY="$(ls "$TOOLS_DIR"/blender/*/python/bin/python3.* 2>/dev/null | head -1 || true)"
-if [[ -z "$BLENDER_PY" || ! -x "$BLENDER_PY" ]]; then
-    # Try to discover the python path
+# Bundled python lives at tools/blender/<MAJOR.MINOR>/python/bin/python3.NN.
+# F-TD9 (session-16): the old glob `head -1` was VERSION-BLIND — on a
+# tree with multiple bundled interpreters (stale 4.x + 5.x) the stale
+# python3.11 won and Pillow landed where Blender never looks (three
+# sessions installed Pillow by hand for py3.13). Resolution order now:
+#   1. $BLENDER_PY env override (explicit; also the cross-kit wheel path)
+#   2. the AUTHORITATIVE probe — ask the blender binary we will actually
+#      run for sys.executable (BLENDER_BIN first — blrun prefers it —
+#      then tools/blender)
+#   3. glob fallback (offline best-effort)
+if [[ -n "${BLENDER_PY:-}" && -x "${BLENDER_PY:-}" ]]; then
+    # The override IS the python — no probing (a plain python has no
+    # --python-expr; only the blender binary does).
+    echo "[install] BLENDER_PY override: $BLENDER_PY"
+elif [[ -n "${BLENDER_BIN:-}" && -x "${BLENDER_BIN:-}" ]]; then
+    # BLENDER_BIN FIRST — blrun.sh runs BLENDER_BIN when set (blrun.sh:40);
+    # probing tools/blender instead would put Pillow in a python the kit
+    # never loads (the exact silent F-TD9 class this section kills).
+    BLENDER_PY=$("$BLENDER_BIN" --background --python-expr "
+import sys; print(sys.executable)
+" 2>/dev/null | tail -1 || true)
+elif [[ -x "$TOOLS_DIR/blender/blender" ]]; then
+    # AUTHORITATIVE: ask the blender binary we will actually run.
     BLENDER_PY=$("$TOOLS_DIR/blender/blender" --background --python-expr "
 import sys; print(sys.executable)
-" 2>/dev/null | tail -1)
+" 2>/dev/null | tail -1 || true)
+fi
+if [[ -z "$BLENDER_PY" || ! -x "$BLENDER_PY" ]]; then
+    # Glob fallback — prefer the NEWEST python3.NN (sort -V), not head -1.
+    BLENDER_PY="$(ls "$TOOLS_DIR"/blender/*/python/bin/python3.* 2>/dev/null | sort -V | tail -1 || true)"
 fi
 if [[ -n "$BLENDER_PY" && -x "$BLENDER_PY" ]]; then
     # Idempotent: skip if Pillow already importable (re-run after partial install)
@@ -174,7 +205,15 @@ if [[ -n "$BLENDER_PY" && -x "$BLENDER_PY" ]]; then
     fi
     "$BLENDER_PY" -c "from PIL import Image; print('[install] Pillow', Image.__version__)" 2>&1 | grep -E '\[install\]' || true
 else
-    echo "[install] WARNING: couldn't find Blender's python — skipping Pillow install"
+    # F-TD9 corollary: a missing Pillow is a SILENT killer of contact
+    # sheets — never a quiet skip when the probe failed. Loud WARN (not
+    # a hard exit): a BLENDER_BIN-only setup may pre-install Pillow
+    # itself; a hard fail here would block a legitimate bootstrap.
+    echo "[install] WARNING: couldn't resolve Blender's bundled python —" >&2
+    echo "[install]        Pillow NOT verified. OK if your BLENDER_BIN setup" >&2
+    echo "[install]        pre-installs Pillow itself; otherwise contact" >&2
+    echo "[install]        sheets fail until you run:" >&2
+    echo "[install]        BLENDER_PY=<bundled python3.NN> $0" >&2
 fi
 
 # ----------------------------------------------------------------------------

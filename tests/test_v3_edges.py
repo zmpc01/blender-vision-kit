@@ -51,6 +51,10 @@ def _blrun(script, *tool_args, timeout=300):
            "--python", os.path.join(KIT, "scripts", script), "--", *tool_args]
     env = dict(os.environ)
     env["BLRUN_NO_TRACEBACK_GATE"] = "1"  # we gate tracebacks OURSELVES per-case
+    # F-TD10 flock bypass: the OUTER blrun (running this test) holds the
+    # per-display lock; this nested call is the test's own tool invocation,
+    # not a competing pipeline — the battery proved rc=90 without it.
+    env["BLRUN_FORCE"] = "1"
     p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
     return p.returncode, (p.stdout + p.stderr)
 

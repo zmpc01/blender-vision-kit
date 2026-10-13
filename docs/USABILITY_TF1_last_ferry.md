@@ -59,13 +59,16 @@ timeline — found by the parallel lane in-app). Scene-side fixed to
 exporter's — when the app drops a key silently, diff a working
 package (tdawn_3) against the broken one.
 
-## F-TF5 — the vendor wheel version seam (CLOSED, parallel lane)
+## F-TF5 — the vendor wheel version seam (CLOSED — session-16 governed re-vendor)
 
 The vendored crowd wheel (1.0.0) predates the bridge's needs (1.5.4:
 `create_session` motion_matcher kwarg) — the bake dies with an opaque
 TypeError until the wheel is reinstalled from
 `blender-crowd-kit/vendor/blender-crowd/addon/blender_crowd/wheels/`.
 The bootstrap recipe (HANDOFF) carries the wheel step; keep it.
+CORRECTION: the earlier "CLOSED, parallel lane" note was doc-only —
+the vendored wheel in THIS tree stayed 1.0.0. Genuinely closed
+session-16: governed re-vendor to 1.5.5 + wheels/README provenance.
 
 ## F-TF6 — kit mode has no hero-lane pushout (OPEN, kit candidate)
 
