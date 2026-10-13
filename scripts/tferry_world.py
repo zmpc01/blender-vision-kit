@@ -272,10 +272,13 @@ def build_world(scene):
         scene.collection.objects.link(ob)
         return ob
 
-    # sodium lamp spots (down-cones onto the deck lanes)
+    # sodium lamp spots (down-cones onto the deck lanes). The east
+    # 17.5 pool fills the y16-22 gap the S5 run lane crosses (the
+    # eevee round: the Latecomer's mid-run stretch read murky)
     for i, (lx, ly) in enumerate(((-5.6, 8.0), (5.6, 12.0),
                                   (-5.6, 20.0), (5.6, 24.0),
-                                  (-5.6, 32.0), (5.6, 34.0))):
+                                  (-5.6, 32.0), (5.6, 34.0),
+                                  (5.6, 17.5), (5.6, 7.0))):
         lights.append(_spot(f"TF.LampSpot{i + 1}",
                             (lx - math.copysign(0.35, lx), ly, 4.5),
                             320.0, sodium, 95.0, 0.35))
@@ -299,14 +302,16 @@ def build_world(scene):
     # a dim deck fill so silhouettes never fully die (L-TF4 ladder:
     # practicals model the crowd before exposure moves). f486 lesson 2:
     # a BLUE fill + the cyan bar swamped the amber hero to GREEN — the
-    # fill goes neutral-cool gray and drops to 40W.
-    fill = _area("TF.DeckFill", (0.0, 18.0, 12.0), 40.0,
+    # fill goes neutral-cool gray and drops to 40W. The aerial
+    # establish (S1) needed 70W: at 40 the pier shape read black from
+    # above (the eevee round).
+    fill = _area("TF.DeckFill", (0.0, 18.0, 12.0), 70.0,
                  (0.42, 0.45, 0.50), 20.0, 30.0)
     lights.append(fill)
     # the Deckhand's CHECKPOINT LANTERN (diegetic warm anchor at the
     # throat — the green-cast fix: his amber needs a warm key of its
     # own, the cyan bar alone owned his local environment)
-    lantern = _area("TF.CheckpointLantern", (0.55, 1.35, 2.55), 30.0,
+    lantern = _area("TF.CheckpointLantern", (0.55, 1.35, 2.55), 45.0,
                     (1.0, 0.60, 0.26), 0.7, 0.7)
     lantern.rotation_euler = (math.radians(38), 0.0, math.radians(160))
     lights.append(lantern)

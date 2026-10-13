@@ -171,7 +171,9 @@ def _title_card(scene):
     from tdawn_actors import make_material
     size = 0.44                 # 11.6m crane distance: 0.30 read small
     tx, ty, tz = 0.0, 2.2, 3.0
-    mat = make_material("TF.TitleCard", (1.0, 0.88, 0.70), 0.4)
+    mat = make_material("TF.TitleCard", (1.0, 0.88, 0.70), 0.4,
+                        emission_color=(1.0, 0.88, 0.70),
+                        emission_strength=0.9)   # under the 1.0 tan cap
     crv = bpy.data.curves.new("TF.TitleCard", type="FONT")
     crv.body = "LAST FERRY"
     crv.size = size
