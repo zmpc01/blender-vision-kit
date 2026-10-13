@@ -511,10 +511,17 @@ def _split_risks(obj) -> list:
     return risks
 
 
-def split_object(obj, ack_risks=False) -> dict:
+def split_object(obj, ack_risks=False, ack_many_parts=False) -> dict:
     """Separate by loose parts. Refuses on risks without ack_risks=true.
     The source object KEEPS its name on the largest part (id stays
-    addressable); the rest become <name>_pNNN (charset-safe)."""
+    addressable); the rest become <name>_pNNN (charset-safe).
+
+    F19 (session-16): loose `split` on a HIGH-PART-COUNT mesh is
+    blind-legal but semantically destructive — real assets routinely
+    carry hundreds of loose parts (the 456-part espresso lesson), and
+    splitting them produces _pNNN fragments that no label vocabulary
+    can own. part_count > 50 now REFUSES without ack_many_parts=true
+    (the dry-run report carries part_count; read it first)."""
     if obj.type != "MESH":
         raise RuntimeError(f"split_mesh: '{obj.name}' is {obj.type}, "
                            f"not MESH")
@@ -532,6 +539,15 @@ def split_object(obj, ack_risks=False) -> dict:
         raise RuntimeError(
             f"split_mesh: '{obj.name}' is one connected component "
             f"(part_count=1) — nothing to split")
+    if dry["part_count"] > 50 and not ack_many_parts:
+        raise RuntimeError(
+            f"split_mesh: REFUSED — {dry['part_count']} loose parts "
+            f"(> 50). Blind loose-splitting a high-part-count mesh "
+            f"shreds it into _pNNN fragments no label vocabulary can "
+            f"own (F19/the 456-part lesson). If you truly want a "
+            f"geometric split (not semantic), re-run with "
+            f"\"ack_many_parts\": true; otherwise prefer vendor-node "
+            f"granularity or a vision-driven region cut.")
     warnings = [f"ack: {r}" for r in risks] if ack_risks else []
     if obj.data.users > 1:  # ack path: make single-user first
         obj.data = obj.data.copy()

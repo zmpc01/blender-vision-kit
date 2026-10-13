@@ -415,11 +415,18 @@ def _apply_audit(obj, params):
         rep = dict(rep)
         rep["pairs"] = scoped
         rep["pairs_checked"] = len(scoped)
+        # session-16 fix: count the STATE enum, not the verdict string.
+        # pair rows carry verdict = human string ("PENETRATING 8.0 mm — fix")
+        # and state = enum — the unscoped path counts states (the rep key is
+        # state_counts), and the doc's own law (AGENTS.md): exact-match the
+        # pair's `state` field, never `verdict` — matching verdict here made
+        # `failed` always False, so fail_on_penetration could never abort a
+        # scoped audit.
         counts = {}
         for p in scoped:
-            counts[p["verdict"]] = counts.get(p["verdict"], 0) + 1
+            counts[p["state"]] = counts.get(p["state"], 0) + 1
         rep["state_counts"] = counts
-        rep["failed"] = any(p["verdict"] == "PENETRATING" for p in scoped)
+        rep["failed"] = any(p["state"] == "PENETRATING" for p in scoped)
     _LAST_REPORTS["audit"] = rep
     if params.get("output"):
         out = params["output"]
@@ -903,7 +910,9 @@ def _apply_split_mesh(obj, params):
             raise RuntimeError("split_mesh: loose-parts split takes no "
                                "region — use mode split-region")
         rep = _SL.split_object(obj, ack_risks=bool(params.get("ack_risks",
-                                                              False)))
+                                                              False)),
+                               ack_many_parts=bool(params.get(
+                                   "ack_many_parts", False)))
     elif mode == "split-region":
         if region is None:
             raise RuntimeError("split_mesh: split-region requires the "
@@ -1060,7 +1069,7 @@ PARAM_DOCS = {
     "add_plane":          "id, size, location?(CENTER!), color?",
     "add_empty":          "id, location, empty_type?, size?, rotation_deg?",
     "label_objects":      "labels:{id: label|{label,confidence}}, rename?(bool, default false — additive kit_label is the v1 identity), on_collision?(suffix|fail), output?(report json; default output/labels_report.json)",
-    "split_mesh":         "id, mode?(dry-run|split|split-region, default dry-run; region param implies region dry-run), region?({min:[x,y,z],max:[x,y,z]} world box — vision-driven cut for WELDED geometry), new_id?(region-cut name), ack_risks?(bool — required when co-users/modifiers/shape-keys/armature present), output?(report json)",
+    "split_mesh":         "id, mode?(dry-run|split|split-region, default dry-run; region param implies region dry-run), region?({min:[x,y,z],max:[x,y,z]} world box — vision-driven cut for WELDED geometry), new_id?(region-cut name), ack_risks?(bool — required when co-users/modifiers/shape-keys/armature present), ack_many_parts?(bool — required when loose parts > 50, F19: prefer vendor-node granularity or a region cut), output?(report json)",
     "mesh_prepare":       "id, mode?(triangulate — the only mode; pre-welded-import n-gon triangulation so region cuts can capture fused floor/wall faces), output?(report json)",
 }
 

@@ -920,7 +920,16 @@ def render_hidden_objects(scene):
     GLB and the web viewer shows colliders drifting next to the jeep
     (user: 'i don't know what is this but it SHOULD NOT be visible')
     and coplanar physics planes z-fight the visible street (user:
-    'these are what's causing flickering!')."""
+    'these are what's causing flickering!').
+
+    F-TD5 (session-16 port from upstream e4450a3): sweep the DEPSGRAPH,
+    not a stale view layer. An object linked (or unhidden) within the
+    same script run is not yet in the evaluated state — the flags above
+    can read stale, classifying a legitimate subject render-hidden and
+    silently dropping it from the GLB. Callers (film modules) were
+    compensating with their own view_layer.update() before export;
+    the law now lives at the sweep itself."""
+    bpy.context.view_layer.update()
     return [ob for ob in scene.objects
             if ob.visible_camera is False or ob.hide_render is True]
 
