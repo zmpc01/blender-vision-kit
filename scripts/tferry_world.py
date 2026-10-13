@@ -90,6 +90,11 @@ def _build_materials():
         "TF.FerryWin", (0.030, 0.024, 0.016), 0.3,
         emission_color=(1.0, 0.72, 0.34), emission_strength=0.70)
     m["kiosk"] = make_material("TF.Kiosk", (0.050, 0.048, 0.044), 0.6)
+    # the board's FLIP row (its own material -- the f85 BOARDING key
+    # lands here; the night close-up ceiling measured at ~1.3)
+    m["sign_flip"] = make_material(
+        "TF.SignFlip", (0.012, 0.006, 0.010), 0.4,
+        emission_color=(0.95, 0.10, 0.45), emission_strength=0.06)
     m["crate"] = make_material("TF.Crate", (0.055, 0.048, 0.038), 0.75)
     m["title"] = make_material("TF.TitleCard", (1.0, 0.88, 0.70), 0.4)
     return m
@@ -174,12 +179,19 @@ def build_world(scene):
     # --- the ticket KIOSK (dressing beside the throat, declared) ------
     kiosk = _box("TF.Kiosk", 1.4, 1.6, 2.3, (3.1, 2.0, 1.15),
                  mats["kiosk"])
-    # the BOARDING sign on the NORTH face (the arriving crowd's side --
-    # the south face was the dead side: the S2 probe showed the blank
-    # slab), PROUD of the panel (the tdawn board lesson)
-    kiosk_sign = _box("TF.KioskSign", 1.2, 0.1, 0.4,
-                      (3.1, 2.86, 2.1), mats["neon_mag"])
-    parts["kiosk"], parts["kiosk_sign"] = kiosk, kiosk_sign
+    # the BOARDING BOARD (north face): a dark panel + TWO neon rows --
+    # row 1 (the line name) always on, row 2 (BOARDING) is the FLIP
+    # (its own material so the f85 key is independent). The S2 probe's
+    # single flat slab had no flip carrier -- the beat had nothing to
+    # land on (L-TF1 close-up ceiling measured: rows cap ~1.1-1.3).
+    board = _box("TF.KioskBoard", 1.5, 0.08, 0.9, (3.1, 2.86, 2.3),
+                 mats["kiosk"])
+    sign_row1 = _box("TF.SignRow1", 1.2, 0.06, 0.22,
+                     (3.1, 2.92, 2.52), mats["neon_mag"])
+    sign_row2 = _box("TF.SignRow2", 1.2, 0.06, 0.22,
+                     (3.1, 2.92, 2.14), mats["sign_flip"])
+    parts["kiosk"] = kiosk
+    parts["kiosk_board"] = (board, sign_row1, sign_row2)
 
     # --- the neon: the ferry-line sign over the throat ------------------
     # (a bar composition -- text does not survive glTF as curves; the
@@ -281,7 +293,18 @@ def build_world(scene):
                                   (5.6, 17.5), (5.6, 7.0))):
         lights.append(_spot(f"TF.LampSpot{i + 1}",
                             (lx - math.copysign(0.35, lx), ly, 4.5),
-                            320.0, sodium, 95.0, 0.35))
+                            420.0 if i == 1 else 320.0, sodium,
+                            110.0 if i == 1 else 95.0, 0.35))
+    # a sodium cone OVER THE GANGWAY itself (the S6/S8 EEVEE pass: the
+    # pile read as black lumps -- the throat had no diegetic light of
+    # its own; the queue + the Deckhand's callers need the pool)
+    lights.append(_spot("TF.GangSpot", (0.0, 2.3, 4.4), 200.0,
+                        sodium, 80.0, 0.4))
+    # the maintenance gate's WORK LIGHT (the S9 beat happens HERE in
+    # the dark east margin -- the crossing drowned at night; a work
+    # light over the gate is diegetic and owns the beat)
+    lights.append(_spot("TF.GateWorkLight", (6.2, 8.0, 3.6), 140.0,
+                        sodium, 75.0, 0.45))
     # the neon spill over the throat (cyan bar + magenta kiosk).
     # f486 lesson: 42W CYAN flooded the amber Deckhand to GREEN —
     # spill energy stays LOW and the tilt steep (graze the deck,
@@ -289,7 +312,7 @@ def build_world(scene):
     cyan_spill = _area("TF.NeonCyanSpill", (0.0, 0.9, 3.3), 14.0,
                        (0.10, 0.80, 0.95), 4.4, 0.5)
     cyan_spill.rotation_euler = (math.radians(58), 0.0, 0.0)
-    mag_spill = _area("TF.NeonMagSpill", (3.1, 4.1, 2.0), 16.0,
+    mag_spill = _area("TF.NeonMagSpill", (3.1, 4.1, 2.0), 8.0,
                       (0.95, 0.12, 0.45), 1.2, 0.4)
     mag_spill.rotation_euler = (math.radians(-60), 0.0, 0.0)
     lights += [cyan_spill, mag_spill]

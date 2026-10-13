@@ -66,7 +66,7 @@ CAMS_V3 = [
     # the blank north slab filled the frame); sign flipped north (the
     # arriving crowd's side) + camera north looking south at it
     ("CAM_S2",  (0.9, 5.6, 2.2), (0.9, 5.6, 2.2), 40,
-     (3.05, 2.75, 2.05), False, 0.0),
+     (3.05, 2.86, 2.3), False, 0.0),
     ("CAM_S3",  (-2.0, 30.0, 5.0), (-2.0, 30.0, 5.0), 30,
      (0.2, 10.0, 1.0), False, 0.02),
     # S4: tighter on the Latecomer's entry (he was buried mid-crowd)
@@ -89,10 +89,11 @@ CAMS_V3 = [
     # buries the Deckhand behind the pile: eye round 3)
     ("CAM_S8",  (7.2, 10.5, 2.8), (7.2, 10.5, 2.8), 35,
      (2.0, 2.8, 0.8), False, 0.012),
-    # S9: the OUTBOARD cam with the gate as background (the inboard
-    # views caught near-field occluders: a bollard dome, then a rail)
-    ("CAM_S9",  (8.6, 4.6, 2.4), (8.6, 4.6, 2.4), 35,
-     (3.8, 9.4, 1.0), False, 0.0),
+    # S9: the OUTBOARD cam ON THE GATE (the prior aim drifted north of
+    # the subject and the EEVEE night drowned it -- nothing read): the
+    # gate + the Latecomer's crossing centered, the Deckhand beyond
+    ("CAM_S9",  (9.0, 5.0, 3.0), (9.0, 5.0, 3.0), 35,
+     (5.0, 8.2, 1.0), False, 0.0),
     ("CAM_S10", (-2.0, 3.4, 2.6), (-2.0, 3.4, 2.6), 26,
      (0.4, -0.6, 1.4), False, 0.0),
     # the CRANE (S11/S12): loc AND aim keyed -- over the outboard
@@ -321,7 +322,13 @@ def _kf_set_pieces(ctx):
     """The BOARDING flip (the kiosk sign's magenta neon ignites at the
     call) + the S11 window recede (strength keyed DOWN)."""
     mats = ctx["parts"]["mats"]
-    _em_keys(mats["neon_mag"], [(1, 0.25), (85, 1.9), (1080, 1.9)])
+    # the SIGN rows are CLOSE-UP subjects: 1.9 clipped to a pastel
+    # pink monolith in the S2 EEVEE probe (the night ceiling is
+    # distance-dependent -- the far cyan BAR holds 1.9, the near board
+    # rows cap ~1.1-1.3). Row 1 (the line name) rides modest; row 2 is
+    # the FLIP (0.06 -> 1.3 at the call). L-TF1 measured.
+    _em_keys(mats["neon_mag"], [(1, 0.5), (1080, 0.5)])
+    _em_keys(mats["sign_flip"], [(1, 0.06), (85, 1.3), (1080, 1.3)])
     _em_keys(mats["neon_cyan"], [(1, 0.35), (85, 1.9), (1080, 1.9)])
     _em_keys(mats["ferry_win"], [(1, 0.70), (912, 0.70), (1008, 0.45),
                                  (1080, 0.45)])
