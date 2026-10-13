@@ -6,6 +6,41 @@
 > The user review round on both is THE open item. Read
 > docs/DESIGN_last_ferry.md (REV-2) + the worklog session-15 record.
 
+
+## Session-16 addendum (GREEN LIGHT shipped — read FIRST)
+
+- **THREE films live in previz-review** (newest-first, comments ON):
+  **tgreen_1 rev 2** (GREEN LIGHT — the afternoon crossing that
+  freezes; stamp 2c21c26b, git_sha 3e852da), **tferry_1 rev 2** (the
+  reframed S4/S5 + the review-round crowd contract), **tdawn_3**.
+  THE OPEN ITEM: the user review round on all three.
+- **The Green Light build order worked; reuse it** for any fourth
+  film: design doc -> 2 audit rounds + 1 research note FROM SOURCE
+  (the two P0s were pre-build catches) -> world module (sub-agent,
+  eye-gated) -> contract (INGEST PROBE = the round-3 test, seconds,
+  no bake) -> bake driver (per-zone speed map by PARSED ZONE ID) ->
+  scene module -> flow strip FIRST (the seam detector + the
+  behavior read) -> camprobe framing -> the daylight ladder -> 12
+  EEVEE stills (eye gate) -> in-place rev-N export (seed from the
+  staged stamp) -> stage with the stamp cross-check.
+- **The eye gate caught what no reviewer could**: the stills runner's
+  clone seam (rendered the FERRY's shots into the tgreen dir), the
+  ocean-horizon void, the invisible title (two z probes), the nadir
+  palette panic (a roll ambiguity — the ortho flow strip settled it).
+- **Determinism (3-h)**: same inputs -> byte-identical npz (tgreen
+  9f6ea8fa reruns; tferry 8b7d4d8e cross-session). Never reuse the
+  default --out across runs; uncommitted states leave no trace.
+- **The standing kit chores** (unchanged): F-TD9 (the install.sh
+  Pillow probe), the six older filings (F-TD1/2/3 + the
+  make_material default), F-TF6 (kit-mode hero-lane pushout — now
+  joined by F-TG1's engine truth: arrived agents are ghosts; a
+  pushout feature must define arrival semantics first).
+- Bootstrap is unchanged (clone 5 repos -> install.sh -> venv wheel
+  -> server via daemonize + repo-local db -> restore comments). The
+  green-light module set: tgreen_{contract,world,bake}.py +
+  scene_green_light.py + tgreen_{camprobe,flowstrip,filmstrips,
+  ladder,stills}.py/sh.
+
 ## Session-15 addendum (the SECOND lane's completion — read with the block below)
 
 - **The app NOW carries the FINAL composition**: the staged tferry_1

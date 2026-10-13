@@ -328,3 +328,26 @@ code-level finding (--frames BLOCKER) remains valid.
   stale-tools Pillow probe — the fresh case self-healed again this
   session); (5) the six older filings (F-TD1/2/3 + the make_material
   default).
+
+## Session-16 receipts (GREEN LIGHT: the third film + the daylight regime)
+
+- **tgreen_1 rev 2 LIVE** (the noon-afternoon crossing that freezes):
+  two opposing streams (the x-sign palette split), the freeze as the
+  third act (the capacity-box arrival law embraced), the statue+runner
+  hero pair, the green/orange signal spine (f85/f445/f1009), the
+  sun5/sky0.15 ratio rig. Export all gates green (140 actions); the
+  in-app verification done.
+- **The design process held**: 2 audit rounds + 1 research note FROM
+  SOURCE before build — the two P0s (the freeze law, the per-film
+  envelope) + the plaza triple-refusal were pre-build catches; the
+  ingest probe was the round-3 empirical test.
+- **The review wave** (4 parallel reviewers): zero P0s, 3 P1s
+  consumed; determinism re-proven; the doc mapped to REV-4.
+- **The daylight law family captured** (F-TG4): the ratio lever, the
+  disc innocence, the noon card-contrast inversion, the emission
+  transfer failure.
+- Next-session candidates, in value order: (1) the USER review round
+  on all three films (comments ON — everything else was prologue);
+  (2) F-TD9 + the six older filings; (3) a fourth film candidate:
+  the queue/formation stories (M6) or the hero-lane pushout (F-TF6 +
+  F-TG1's arrival semantics) — design-first, same discipline.
