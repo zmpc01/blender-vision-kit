@@ -51,6 +51,8 @@ def main():
         # factory trio; the previous combo's TG.* objects must GO)
         for o in list(bpy.data.objects):
             bpy.data.objects.remove(o, do_unlink=True)
+        for m in list(scene.timeline_markers):
+            scene.timeline_markers.remove(m)   # the 3-g purge-hygiene find
         for blk in (bpy.data.meshes, bpy.data.materials, bpy.data.cameras,
                     bpy.data.lights, bpy.data.curves, bpy.data.actions):
             for x in list(blk):
@@ -67,9 +69,13 @@ def main():
                 sid = f"sun{sun}_sky{sky}"
                 scene.frame_set(f)
                 # the shot cam active at f (marker restored temporarily)
+                best = None   # the 3-g find: f before the first marker
                 for m, c in marks:
                     if m.frame <= f:
                         best = (m.frame, c)
+                if best is None:
+                    print(f"[ladder] {sid} f{f}: NO MARKER <= f -- skipped")
+                    continue
                 scene.camera = best[1]
                 TG._set_engine(scene, "eevee", 24)
                 scene.render.resolution_x = 640

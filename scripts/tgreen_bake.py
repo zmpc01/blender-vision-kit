@@ -44,7 +44,6 @@ def _resolve(env_key, legacy, sibling_name):
         return sib
     return Path(legacy)
 
-
 CROWD_KIT_REPO = _resolve(
     "TGREEN_CROWD_KIT", "/home/z/work/blender-crowd-kit",
     "blender-crowd-kit")
@@ -75,17 +74,35 @@ def main():
 
     bridge = _bootstrap()
     out = Path(args.out)
+    if any(out.iterdir()):
+        raise SystemExit(
+            f"[tgreen_bake] --out {out} is not empty -- the native bake "
+            "refuses an existing cache path; use a fresh dir (the "
+            "fresh-dir law)")
     out.mkdir(parents=True, exist_ok=True)
 
     sys.path.insert(0, str(HERE))
     import tgreen_contract as C
+    if args.seed is not None:
+        # the bridge compares int(contract.CROWD_SEED) == int(seed) at
+        # ingest -- the override must move the CONTRACT attr, not just
+        # the call arg (the 3-f review's dead-flag find)
+        C.CROWD_SEED = int(args.seed)
     assert args.count == C.N_RELEASE, (
         f"--count {args.count} != the verbatim-{C.N_RELEASE} law "
         "(the loader's honesty assert pins N_RELEASE; a different count "
         "burns the bake and dies later)")
 
     plan = dict(C.SPEED_PLAN)   # far / near1 / near2 / crew -- the authority
-    seed = args.seed if args.seed is not None else C.CROWD_SEED
+    seed = C.CROWD_SEED
+
+    # the per-zone speed map keyed by PARSED ZONE ID (the 3-f review's
+    # order-indexing find: the bridge skips zero-count zones, which
+    # would shift an enumerate-index map silently)
+    import re as _re
+    zone_keys = ["far", "near1", "near2"]
+    assert len(C.SPAWN_ZONES_V5) == len(zone_keys), (
+        "SPEED_PLAN zone keys out of sync with SPAWN_ZONES_V5")
 
     t0 = time.time()
     scene = bridge.ingest_contract(C, count=args.count, seed=seed)
@@ -96,15 +113,13 @@ def main():
         f"count law broken: {n_agents} != {args.count} (the verbatim-129 law)"
 
     # --- the authored speed plan, FROM THE CONTRACT (per-zone, F19) ---
-    for zone_i, pop in enumerate(scene.populations):
+    for pop in scene.populations:
         if pop.id.endswith("zz_chase"):
             mu, sig = plan["crew"]
-        elif zone_i == 0:
-            mu, sig = plan["far"]
-        elif zone_i == 1:
-            mu, sig = plan["near1"]
         else:
-            mu, sig = plan["near2"]
+            m = _re.match(r"zombies_zone(\d+)$", pop.id)
+            assert m, f"unmapped population id: {pop.id}"
+            mu, sig = plan[zone_keys[int(m.group(1))]]
         scene.populations[scene.populations.index(pop)] = (
             dataclasses.replace(
                 pop,
@@ -112,12 +127,16 @@ def main():
                     pop.distributions, preferred_speed_mps=(mu, sig))))
         print(f"[tgreen_bake] {pop.id}: speed=({mu}, {sig})")
 
-    # verify the plan landed BEFORE baking (fail loudly)
-    seen = {p.id: tuple(p.distributions.preferred_speed_mps)
-            for p in scene.populations}
-    for key in ("far", "near1", "near2"):
-        assert plan[key] in seen.values(), f"{key} plan missing: {seen}"
-    assert plan["crew"] in seen.values(), f"crew plan missing: {seen}"
+    # verify the plan landed BEFORE baking -- PER POPULATION, not set
+    # membership (a silent mis-assignment must die here)
+    for pop in scene.populations:
+        want = plan["crew"] if pop.id.endswith("zz_chase") else None
+        if want is None:
+            m = _re.match(r"zombies_zone(\d+)$", pop.id)
+            want = plan[zone_keys[int(m.group(1))]]
+        got = tuple(pop.distributions.preferred_speed_mps)
+        assert tuple(want) == got, (
+            f"speed plan mis-landed on {pop.id}: want {want} got {got}")
     # the envelope law (F2): the tail must fit populations[0]'s
     # mu+3sigma cap or the bridge SILENTLY clamps the sprint away
     far_mu, far_sig = plan["far"]

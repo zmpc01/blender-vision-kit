@@ -154,6 +154,18 @@ def _bezier(ob):
             kp.handle_right_type = "AUTO_CLAMPED"
 
 
+def _bezier_guarded(ob):
+    """BEZIER + AUTO easing with the unkeyed-object guard (the tferry
+    shape; a future _bezier on an unkeyed object must no-op, not
+    AttributeError)."""
+    if ob.animation_data is None or ob.animation_data.action is None:
+        return
+    for fc in _iter_fcurves(ob.animation_data.action):
+        for kp in fc.keyframe_points:
+            kp.interpolation = "BEZIER"
+            kp.easing = "AUTO"
+
+
 def _iter_fcurves(action):
     """The 4.x/5.x fcurve iterator (the tdawn-vetted helper, verbatim
     from scene_last_ferry; 5.2 slotted actions carry fcurves in
@@ -277,8 +289,25 @@ def _markers(scene, cams):
 
 
 def _shot_table(shots, cams):
-    return [{"id": s[0], "f0": s[1], "f1": s[2], "intent": s[3],
-             "camera": f"CAM_{s[0]}"} for s in shots]
+    """The ShotCam rows the tiering/stash contract carries (the tferry
+    shape verbatim -- the 3-f review's shape-regression find: the kit
+    chain never reads it today, but wiring tiering onto a kit scene
+    must not AttributeError)."""
+    by_name = {c[0]: c for c in cams}
+    out = []
+    for sid, f0, f1, _intent in shots:
+        nm = f"CAM_{sid}"
+        c = by_name.get(nm)
+        if c is None:
+            raise KeyError(f"shot {sid}: no {nm} row in the cam table")
+        _name, loc0, loc1, lens, aim, pj, _shake = c
+        out.append({"shot_id": sid, "f0": int(f0), "f1": int(f1),
+                    "loc0": tuple(float(v) for v in loc0),
+                    "loc1": tuple(float(v) for v in loc1),
+                    "lens_mm": float(lens),
+                    "aim": None if pj else tuple(float(v) for v in aim),
+                    "parent_jeep": bool(pj)})
+    return out
 
 
 def _glyph_keys(ctx):
@@ -373,8 +402,9 @@ def _title_card(scene):
     ob = bpy.data.objects.new("TG.TitleCard", crv)
     ob.location = (tx, ty, tz)
     scene.collection.objects.link(ob)
-    # face the S12 crane END pose (-8.8,-4.0,11.6) looking at (0,0,0.8)
-    cx, cy, cz = -8.8, -4.0, 11.6
+    # face the S12 crane END pose (the 3-f review: keep the constant
+    # bound to the ROW, not a hand-copied number)
+    cx, cy, cz = CAMS_V3[-1][2]   # CAM_S12 loc1
     nx, ny = cx - tx, cy - ty
     ob.rotation_euler = (math.atan2(cz - tz, math.hypot(nx, ny)),
                          0.0, math.atan2(ny, nx) + math.pi / 2)
@@ -493,11 +523,13 @@ def _crowd_palette(ctx):
     EAST = [(0.56, 0.50, 0.43), (0.43, 0.38, 0.32)]   # warm gray pair
     chars = ctx["chars"]["zombies"]
     n = {"W": 0, "E": 0}
+    bpy.context.scene.frame_set(1)   # hoisted (the 3-f review: one
+    # depsgraph eval, not 132 -- bake2 keys tick 0 at f1 for every
+    # agent, so the spawn-pose read holds for all of them)
     for kind in ("crowd", "chase"):
         for ob in chars[kind]:
             if ob.data.users > 1:
                 ob.data = ob.data.copy()
-            bpy.context.scene.frame_set(1)
             side = "E" if ob.matrix_world.translation.x >= 0 else "W"
             tones = EAST if side == "E" else WEST
             i = n[side]

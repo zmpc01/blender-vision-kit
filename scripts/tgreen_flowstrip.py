@@ -63,7 +63,8 @@ def main():
         outs = []
         for f in frames:
             scene.frame_set(f)
-            p = os.path.abspath(args.out.replace(".png", f"_{f:05d}.png"))
+            base = os.path.splitext(args.out)[0]   # the 3-g find: --out without .png no-ops the replace
+            p = os.path.abspath(f"{base}_{f:05d}.png")
             scene.render.filepath = p
             bpy.ops.render.render(write_still=True)
             outs.append(p)

@@ -30,7 +30,7 @@ BEFORE build_world:
 Deviations from the build spec (recorded): the bus static moves from
 x -27.0 to x -23.0 -- a 10 m body centered at -27 spans -32..-22 and
 buries 4 m inside the W facade block (x -34..-28); the west end now
-abuts the facade face (x -28) instead. Everything else is spec-literal.
+now stands 7m clear of the W facade face (x -30). Everything else is spec-literal.
 """
 from __future__ import annotations
 
@@ -55,7 +55,11 @@ ZEBRA_XS = (-18.0, -12.0, -6.0, 6.0, 12.0, 18.0)   # spec-chosen 6 bars
 APRON_HW = 4.5                        # 9x9 plaza apron (clear of +-6 bars)
 POST_NW = (-4.2, 3.35)                # N curb/sidewalk lip
 POST_SE = (4.2, -6.15)                # S curb/sidewalk lip
-FACADE_X0, FACADE_X1 = 28.0, 34.0     # |x| band of both blocks
+FACADE_X0, FACADE_X1 = 30.0, 36.0     # |x| band (moved 28->30: the 3-f
+                                      # review find -- the spawn strips run
+                                      # to |x|=30 and ~30 agents embedded in
+                                      # the 28-band facades, walking out
+                                      # through walls in the GLB first act)
 FACADE_H = 11.0
 BUS_CENTER = (-23.0, -7.5)            # spec -27.0 buried the bus in the W
                                       # facade; west end abuts x -28 instead
@@ -253,7 +257,7 @@ def build_world(scene):
     glyphs["hand_se"] = _hand_glyph("TG.HandGlyph.SE", POST_SE[0], -5.985,
                                     2.34, mats["glyph_hand"])
 
-    # --- the facades (the F9 shade wedge): E/W blocks x +-28..34 ----
+    # --- the facades (the F9 shade wedge): E/W blocks x +-30..36 ---
     _box("TG.Facade.E", FACADE_X1 - FACADE_X0, STREET_Y * 2, FACADE_H,
          ((FACADE_X0 + FACADE_X1) / 2, 0.0, FACADE_H / 2), mats["facade"])
     _box("TG.Facade.W", FACADE_X1 - FACADE_X0, STREET_Y * 2, FACADE_H,
