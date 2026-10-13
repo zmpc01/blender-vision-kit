@@ -578,3 +578,29 @@ numbers (ok flag + dz + no_penetration + exit_ok), never self-reports.
 - Open: the F-TD9..12 kit filings; the user review round on tdawn_2
   (comments ON); the six older filings (F-TD1/2/3 + the make_material
   default) — F-TD6 is now PARTIALLY superseded by the glow-surface law.
+
+## Session-16 addendum 2 — THE PUSH-PROTECTION EVENT (read before
+## any merge of parallel-lane work)
+
+- A GitHub REPOSITORY RULE (push protection) now BLOCKS any push
+  carrying ghp_* tokens — the parallel lane's _sess16_*.sh helpers
+  embedded their (refreshed) PAT in commits that reached GitLab
+  (unscanned) but can NEVER reach GitHub.
+- THE PROTOCOL THAT WORKED (no force anywhere): (1) fetch the dirty
+  line from GitLab; (2) filter-branch the range redacting the PAT
+  PATTERN (s/ghp_[A-Za-z0-9]{30,45}/REDACTED-.../ — the LITERAL
+  string fails when the lane rotated the token); (3) rebuild the
+  merge commit with commit-tree on CLEAN parents (the resolved tree
+  from the first merge + the redacted lane tip); (4) REDACT THE
+  MERGE TREE ITSELF (the merge auto-merges the dirty tip files —
+  the tip carried the PAT even though the intermediate-check said
+  clean: always scan the TIP with the PATTERN, not a remembered
+  literal); (5) push — a clean fast-forward, no force, both remote
+  histories durable.
+- CURRENT MIRROR STATE: GitHub main = 2085bba (canonical, clean);
+  GitLab main = the raw lane line 78a3eaf (carries the PAT in
+  history — GitLab does not scan). Do NOT merge the GitLab-only
+  line into GitHub again without the redaction protocol. The lane
+  must stop committing tokens (the .env pattern is the home).
+- New kit tools from their lane to dog-food: export_preflight.py
+  (--module <scene.py> BEFORE any export), the t10 battery.
