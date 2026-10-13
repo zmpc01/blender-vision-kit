@@ -64,11 +64,15 @@ SHOTS_V3 = [
 ]
 
 CAMS_V3 = [
-    ("CAM_S1",  (0.0, -26.0, 18.0), (0.0, -26.0, 18.0), 35,
-     (0.0, 2.0, 0.0), False, 0.012),
-    # S2: the NW head close-up (the head's plates face S; the cam sits
-    # N of it looking down at the glyph face)
-    ("CAM_S2",  (-4.6, 4.6, 2.9), (-4.6, 4.6, 2.9), 55,
+    # S1: the high-S aerial WIDE enough for both knots (52m apart):
+    # 26mm from (0,-36,32) covers +-27m at street (the S1a/b/c probe
+    # ladder -- the knots cropped at every tighter pose)
+    ("CAM_S1",  (0.0, -36.0, 32.0), (0.0, -36.0, 32.0), 26,
+     (0.0, 0.0, 0.0), False, 0.012),
+    # S2: the glyph close-up from the CROSSING side (the plates face S
+    # toward the street -- the N-side cam saw the head's blank back:
+    # probe S2b lesson); the green MAN reads (S2c cert)
+    ("CAM_S2",  (-4.4, 1.2, 2.6), (-4.4, 1.2, 2.6), 55,
      (-4.2, 3.35, 2.55), False, 0.0),
     ("CAM_S3",  (-2.0, 4.6, 1.7), (-2.0, 4.6, 1.7), 40,
      (-16.0, 0.0, 1.0), False, 0.015),
@@ -79,22 +83,29 @@ CAMS_V3 = [
     ("CAM_S5",  (0.0, 2.5, 16.0), (0.0, 2.5, 16.0), 40,
      (0.0, 0.5, 0.0), False, 0.0),
     ("CAM_S6",  (0.0, -5.2, 1.6), (0.0, -5.2, 1.6), 35,
-     (0.0, 1.5, 1.4), False, 0.018),
-    ("CAM_S7",  (10.0, 4.4, 1.8), (10.0, 4.4, 1.8), 50,
-     (20.0, 0.8, 1.0), False, 0.02),
+     (0.4, 0.8, 1.0), False, 0.018),
+    # S7: his journey reads AHEAD of him (the S7a probe had the crowd
+    # behind-camera -- the story inverted); his back + the plaza + the
+    # frozen field beyond
+    ("CAM_S7",  (24.0, 5.5, 2.2), (24.0, 5.5, 2.2), 40,
+     (10.0, 1.2, 0.9), False, 0.02),
     ("CAM_S8",  (27.0, 6.0, 3.6), (27.0, 6.0, 3.6), 45,
      (18.0, 0.8, 1.0), False, 0.015),
-    # S9: the hesitate HOLD (4.6, 2.6) is the aim target (the HOLD law)
-    ("CAM_S9",  (6.2, 4.2, 1.5), (6.2, 4.2, 1.5), 65,
-     (4.6, 2.6, 1.0), False, 0.01),
-    ("CAM_S10", (3.0, 3.6, 1.55), (3.0, 3.6, 1.55), 50,
-     (4.2, -3.0, 2.6), False, 0.008),
-    # the CRANE (S11/S12): loc keyed, rises from the S margin; rides
-    # the shade wedge (F9)
-    ("CAM_S11", (-8.6, -14.0, 3.2), (-9.2, -6.0, 11.0), 30,
+    # S9: raised + pulled back over the field (the 65mm at-rim pose
+    # was the flood class -- his body invisible behind frozen capsules;
+    # S9b cert: the red head clear + the statue beyond; the cam is
+    # OUTBOARD now (y 6.0 > walkable 5.0) -- its keepout row DROPPED)
+    ("CAM_S9",  (8.0, 6.0, 3.2), (8.0, 6.0, 3.2), 55,
+     (4.0, 1.4, 1.0), False, 0.01),
+    # S10: the NW head + blinking hand dominate, the still below
+    ("CAM_S10", (-1.5, -3.8, 1.9), (-1.5, -3.8, 1.9), 60,
+     (-4.2, 3.35, 2.55), False, 0.008),
+    # the CRANE (S11/S12): loc keyed in _kf_crane -- S11 rises from the
+    # S margin to the certified (−8,−5,9) pose; S12 settles gently
+    ("CAM_S11", (-8.6, -14.0, 3.2), (-8.0, -5.0, 9.0), 30,
      (0.0, 0.0, 0.8), False, 0.0),
-    ("CAM_S12", (-9.2, -6.0, 11.0), (-8.8, -4.0, 11.6), 35,
-     (0.0, 0.0, 0.8), False, 0.0),
+    ("CAM_S12", (-8.0, -5.0, 9.0), (-7.9, -4.9, 9.4), 40,
+     (0.0, 0.0, 0.5), False, 0.0),
 ]
 
 CAST = {
@@ -342,13 +353,15 @@ def _kf_heroes(ctx):
 
 
 def _title_card(scene):
-    """GREEN LIGHT over the frozen field -- export-safe scale keys;
-    charcoal (F15: noon kills cream-on-dark) composed over the sunlit
-    E street the S12 crane settle sees."""
+    """GREEN LIGHT over the frozen field -- export-safe scale keys.
+    WHITE over the dark asphalt (the noon-contrast inversion: cream-
+    on-dark worked at night; at noon the dark street IS the contrast
+    field -- the F15 charcoal plan failed its probe, invisible on the
+    mid-gray read)."""
     from tdawn_actors import make_material
     size = 0.52                 # 11 chars, Bfont advance 0.91-1.1em/char
-    tx, ty, tz = 2.6, 0.5, 4.6
-    mat = make_material("TG.TitleCard", (0.07, 0.07, 0.08), 0.4)
+    tx, ty, tz = 2.4, 0.5, 4.2
+    mat = make_material("TG.TitleCard", (0.82, 0.82, 0.80), 0.4)
     crv = bpy.data.curves.new("TG.TitleCard", type="FONT")
     crv.body = "GREEN LIGHT"
     crv.size = size
@@ -403,6 +416,7 @@ def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
     scene.frame_end = total_frames
     _kf_heroes(ctx)
     _glyph_keys(ctx)
+    _kf_crane(ctx)
     crowd_cache = _crowd_cache_path()
     if crowd_cache and with_crowd is not False:
         _crowd_kit_branch(ctx, crowd_cache)
@@ -411,6 +425,35 @@ def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
               "pre-bake look (anchors at authored grid)")
     bpy.context.view_layer.update()
     return None
+
+
+def _kf_crane(ctx):
+    """The crane rise (the tferry pattern): S11 keys its span
+    (f913-1008, loc0 -> loc1 with the aim drifting down to the plaza),
+    S12 continues to its settle pose by f1030."""
+    c11 = ctx["cams"]["CAM_S11"]["ob"]
+    c11.location = ctx["cams"]["CAM_S11"]["loc0"]
+    c11.keyframe_insert(data_path="location", frame=913)
+    c11.location = ctx["cams"]["CAM_S11"]["loc1"]
+    c11.keyframe_insert(data_path="location", frame=1008)
+    c12 = ctx["cams"]["CAM_S12"]["ob"]
+    c12.location = ctx["cams"]["CAM_S12"]["loc0"]
+    c12.keyframe_insert(data_path="location", frame=1009)
+    c12.location = ctx["cams"]["CAM_S12"]["loc1"]
+    c12.keyframe_insert(data_path="location", frame=1030)
+    for c in (c11, c12):
+        _bezier(c)
+    a11 = bpy.data.objects.get("Aim.CAM_S11")
+    a11.location = (0.0, 0.0, 0.8)
+    a11.keyframe_insert(data_path="location", frame=913)
+    a11.location = (0.0, 0.0, 0.5)
+    a11.keyframe_insert(data_path="location", frame=1008)
+    a12 = bpy.data.objects.get("Aim.CAM_S12")
+    a12.location = (0.0, 0.0, 0.5)
+    a12.keyframe_insert(data_path="location", frame=1009)
+    a12.keyframe_insert(data_path="location", frame=1080)
+    _bezier(a11)
+    _bezier(a12)
 
 
 def _crowd_cache_path():

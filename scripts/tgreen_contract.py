@@ -53,12 +53,12 @@ SPAWN_ZONES_V5 = [
 # S11/S12 are row-free -- a keepout under an aerial punches a hole
 # exactly where it looks). rr = r + agent_radius = 1.64.
 CAM_KEEPOUTS_V3 = [
-    ("CAM_S2",  -4.6,  4.6,  85, 168),
+    ("CAM_S2",  -4.4,  1.2,  85, 168),
     ("CAM_S3",  -2.0,  4.6, 169, 264),
     ("CAM_S6",   0.0, -5.2, 445, 528),
-    ("CAM_S7",  10.0,  4.4, 529, 624),
-    ("CAM_S9",   6.2,  4.2, 721, 816),
-    ("CAM_S10",  3.0,  3.6, 817, 912),
+    ("CAM_S10", -1.5, -3.8, 817, 912),
+    # S7/S9: the cams moved OUTBOARD (y 5.5/6.0 > walkable 5.0) --
+    # rows dropped. Aerials row-free (the hole law): S1/S4/S5/S11/S12.
 ]
 
 CAM_KEEPOUT_R = 1.3
