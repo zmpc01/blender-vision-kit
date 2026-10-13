@@ -48,7 +48,7 @@ SHOTS_V3 = [
     ("S2",  85,   168, "the kiosk board flips to BOARDING (the call)"),
     ("S3",  169,  264, "the surge ignites: the far bands pour south"),
     ("S4",  265,  348, "the Latecomer enters at the pier head, breaks into a run"),
-    ("S5",  349,  444, "lateral: the Latecomer cuts along the east rail line"),
+    ("S5",  349,  444, "head-on: the Latecomer's run reads down the east rail"),
     ("S6",  445,  528, "the Deckhand holds the throat; the crowd piles at the choke"),
     ("S7",  529,  624, "low tracker: the Latecomer slips the bollard line"),
     ("S8",  625,  720, "the Deckhand sees the Latecomer; holds the gap open"),
@@ -70,13 +70,17 @@ CAMS_V3 = [
      (3.05, 2.86, 2.3), False, 0.0),
     ("CAM_S3",  (-2.0, 30.0, 5.0), (-2.0, 30.0, 5.0), 30,
      (0.2, 10.0, 1.0), False, 0.02),
-    # S4: tighter on the Latecomer's entry (he was buried mid-crowd)
-    ("CAM_S4",  (4.0, 36.0, 2.4), (4.0, 36.0, 2.4), 45,
-     (4.9, 27.5, 1.2), False, 0.015),
-    # S5: the raised OUTBOARD cam -- the Latecomer's head reads above
-    # the stream (the inboard lateral buried him: eye round 3)
-    ("CAM_S5",  (7.0, 19.0, 2.6), (7.0, 19.0, 2.6), 50,
-     (4.8, 15.0, 0.9), False, 0.025),
+    # S4: pulled back + wider (38mm, cam north at y38) -- the entry
+    # reads WITH depth (the 45mm tight row buried him among beige backs:
+    # session-16 probe round, the flood class again), the amber Deckhand
+    # visible top-center, the band small-but-glowing under EEVEE
+    ("CAM_S4",  (4.0, 38.0, 2.8), (4.0, 38.0, 2.8), 38,
+     (4.9, 27.0, 1.6), False, 0.015),
+    # S5: the OUTBOARD head-on -- he runs INTO the lens down the east
+    # rail (the raised lateral buried him in the capsule flood: probe
+    # round g1-g4, 8 candidates; S5g full-body no-pole cert)
+    ("CAM_S5",  (8.4, 8.2, 2.9), (8.4, 8.2, 2.9), 42,
+     (4.8, 17.0, 1.0), False, 0.025),
     # S6: the camera stood INSIDE the queue aiming at the EMPTY throat;
     # pulled west+north so the Deckhand AND the pile read together
     ("CAM_S6",  (-5.2, 7.0, 2.6), (-5.2, 7.0, 2.6), 40,

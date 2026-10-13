@@ -110,7 +110,7 @@ BARRICADES = [
 CAM_KEEPOUTS_V3 = [
     ("CAM_S2", 0.9, 5.6, 85, 168),
     ("CAM_S3", -2.0, 30.0, 169, 264),
-    ("CAM_S4", 4.0, 36.0, 265, 348),
+    ("CAM_S4", 4.0, 38.0, 265, 348),
     ("CAM_S6", -5.2, 7.0, 445, 528),
     ("CAM_S10", -2.0, 3.4, 817, 912),
     # S5/S7/S8/S9: zero rows -- those lenses moved OUTBOARD (x 6.6..8.6,
