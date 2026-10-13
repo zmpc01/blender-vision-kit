@@ -333,10 +333,9 @@ Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
   was invisible — ray-cast proven). When a subject "vanishes": ray-cast
   THROUGH it before doubting the animation. The fix is a viewpoint
   move, not a retime.
-- **"FRAME-EDGE CLIP" CAN BE OCCLUSION**: the title's missing "TE" was
-  a column 1m off the sight line, at FOUR different sizes — the clip
-  edge never moved. If resizing doesn't fix an edge clip, find the
-  occluder.
+- **"FRAME-EDGE CLIP" CAN BE OCCLUSION**: if resizing doesn't fix an
+  edge clip (the clip edge never moves), find the occluder on the
+  sight line.
 - **NEVER run two blrun/EEVEE pipelines concurrently**: both grab
   Xvfb :99 — the second kills the first's display SILENTLY (the stills
   run died mid-shot, no traceback). Serialize all Blender work.
@@ -346,10 +345,9 @@ Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
   LOUDLY** (the wrapper refuses on blender_kit sha mismatch): land the
   kit fix → run the kit's `tools/sync_shared.py --to <consumer>` →
   commit BOTH. The guard is the vendor discipline working.
-- **The comments API's db is REPO-LOCAL** (lib/db.ts forces
-  cwd/db/custom.db); the harness exports a global DATABASE_URL that
-  prisma-cli obeys but the app ignores — push the schema with the
-  absolute repo-local URL or the tables land in the wrong file.
+- **The comments API's db is REPO-LOCAL** (the harness's global
+  DATABASE_URL is obeyed by prisma-cli but IGNORED by the app —
+  push with the absolute repo-local URL; details in session-15).
 - **Pillow on 5.2 bundles python3.13** (not 3.11): install.sh's probe
   loop misses it; `tools/blender/5.2/python/bin/python3.13 -m pip
   install --no-user Pillow` by hand (filed as a kit friction).
@@ -408,11 +406,20 @@ Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
 ## SESSION 15 LAWS (the app lane + LAST FERRY build)
 
 - daemonize.py chdirs to "/": absolute log + `bash -c "cd <repo> && cmd"`.
-- Comments db dies with sandboxes; durable copy = escape export file (8841ee1), re-inject via POST.
+- Comments db dies with sandboxes; durable copy = escape export file, re-inject via POST.
 - sfx events: {name|kind, frame} or the app drops them (console find).
 - Exporter: ctx["scene"] load-bearing; BEATS=(id,t_s,label).
 - make_material arg3=ROUGHNESS; emission via F-TD11 kwargs.
-- Aim cams at hero HOLD poses, not intent text.
-- Rebase --theirs = YOUR replay; re-render + diff after resolutions.
-- Sandbox chrome can't play 21MB GLBs — verify via API + stills.
+- Aim cams at hero HOLD poses; stills catch the BEAT frame (S9 = f735).
+- Rebase sides INVERT on replay: --theirs = YOUR commit, --ours = remote.
+- Sandbox chrome can't play 21MB GLBs — verify via API + stills only.
 - Crowd wheels drift across repos: the bridge pins the NEWEST.
+- Barricade squares past the walkable edge = E_InvalidRange (cap at
+  walkable−r). The FLOW STRIP is the geometry-seam detector — run
+  BEFORE cameras (caught water-walking invisible to dry-runs). A
+  scene module is DONE only when a flow strip runs THROUGH the kit
+  loader. Night close-up emission ceiling is DISTANCE-dependent (1.9
+  far OK, ~1.1-1.3 near). No absolute sandbox paths in repo scripts.
+  Kit mode has NO hero-lane pushout (HERO_LANES dead data).
+- Git discipline held through 3 two-lane collisions: fetch-inspect-
+  rebase + eye-arbitration of certified sets; never force.
