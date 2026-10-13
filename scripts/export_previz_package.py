@@ -41,14 +41,9 @@ FAIL-CLOSED post-checks (the "nothing left out" gate):
   8. atmosphere (volume-only) objects are OUT of the GLB and fully
      declared in JSON (glTF has no volumes — opaque-shell law)
 
-Usage:
-    blrun.sh --background --python scripts/export_previz_package.py -- \
-        --scene scene_escape_v3_3 \
-        --output output/previz_v3_4 \
-        --package-id v3_4 \
-        --name "Last Ride Out v3.4" \
-        [--stills-dir /path/to/shot_jpgs] \
-        [--usd-sidecar]
+Usage (the STANDARD LOOP — preflight FIRST, export second):
+    blrun.sh --background --python scripts/export_preflight.py -- --module scripts/<scene>.py
+    blrun.sh --background --python scripts/export_previz_package.py -- --scene <scene> --output output/previz_<id> --package-id <id> --name "..." [--stills-dir /path/to/shot_jpgs] [--usd-sidecar]
 
 Kit laws baked in (session-20/21):
   - glTF export_cameras defaults to False — always go through

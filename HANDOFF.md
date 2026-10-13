@@ -121,8 +121,10 @@
   export + stage (the build order = kb/tdawn_vision_film.md steps 4-8
   with tferry names); the user review round on tdawn_3 + tferry_1;
   F-TD9 (install.sh Pillow probe for the stale-4.x-tools case — the
-  fresh case self-healed); the six older filings (F-TD1/2/3 + the
-  make_material default — F-TD6 partially superseded by the glow law).
+  fresh case self-healed); the older filings — the true remainder is
+  F-TD1/2/3 (the make_material default is CLOSED —
+  blender_kit/__init__.py:516 make_material pins Emission Color to the
+  base rgb, :549).
 
 > The user-directed D18 lane: the 561MB loft.blend is now IN-GIT as
 > 119 textures + 14 chunks + manifest; fresh-clone rebuild proven

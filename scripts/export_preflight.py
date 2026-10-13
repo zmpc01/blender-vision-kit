@@ -639,7 +639,8 @@ def s2_beats(mod, rep: Report) -> None:
         if rl is None or rl < 3 or not _can_float(_row(row, 1)):
             rep.warn(
                 f"{label}[{i}]: row needs >= 3 fields with field 1 numeric "
-                f"(label, t, note); got {_shape(row)} — shape-only WARN "
+                f"(canonical shape: (id, t_seconds, label)); got "
+                f"{_shape(row)} — shape-only WARN "
                 "(zero consumers in this exporter)")
 
 

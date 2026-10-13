@@ -12,8 +12,10 @@
 - [x] vision-native build loop proven at film scale (6 camera
       reframes + flow-strip retiming + AgX emission laws, all eye-driven)
 - [ ] the USER review round on tdawn_1 (comments on; A/B vs v6_1)
-- [ ] kit improvement filings upstream (F-TD5 view-layer sync is the
-      export-blocking one; see docs/USABILITY_TD1_vision_film.md)
+- [x] kit improvement filings upstream (F-TD5 view-layer sync was the
+      export-blocking one; see docs/USABILITY_TD1_vision_film.md) —
+      CLOSED: landed upstream (e4450a3) AND ported to THIS tree
+      (session-16 — render_hidden_objects updates the view layer itself).
 - [ ] optional polish: S2 board size, S6 gate glow gradient, Cycles
       keyframes for the 3 hero frames (EEVEE/AgX consistency tradeoff
       documented in the design)
@@ -149,20 +151,28 @@ code-level finding (--frames BLOCKER) remains valid.
   + both-labeled + centroid-inside pairs skip, visibly
   (summary.contained_pairs_skipped). D16 fixture: 2 blob P0s -> 0
   issues + 2 recorded skips. L22 regression.
-- [ ] F18: place_on/snap_z on glTF vendor origins (origin >> centroid):
+- [x] F18: place_on/snap_z on glTF vendor origins (origin >> centroid):
   doc the origin_offset_warning as load-bearing; set_location-style ops
-  unsafe (R5 finding).
-- [ ] F19: loose `split` on high-part-count meshes is blind-legal but
+  unsafe (R5 finding). CLOSED — law + warning shipped (AGENTS.md
+  origin_offset_warning marked LOAD-BEARING; placement_lib.py:775
+  emits it).
+- [x] F19: loose `split` on high-part-count meshes is blind-legal but
   semantically destructive — warn gate (dry-run N > 50 ->
-  ack_many_parts:true) + AGENTS.md line.
-- [ ] F20: dispatch prompts must show the apply_patch wrapper shape
+  ack_many_parts:true) + AGENTS.md line. CLOSED session-16:
+  ack_many_parts gate in apply_patch.py + test coverage
+  (tests/test_v9_fixes_s16.py).
+- [x] F20: dispatch prompts must show the apply_patch wrapper shape
   ({load_blend, mutations}) explicitly — the stress-test agent had to
-  read the script to recover (handled, but don't rely on it).
+  read the script to recover (handled, but don't rely on it). CLOSED:
+  the F20 law is taught in AGENTS.md (dispatch-prompts blockquote).
+  NOTE: F20 is a colliding ID — the R6 record also files "F20
+  (place_on occluded-support hint)"; that one closed with the R8 doc
+  laws (F20/F21 doc laws, session 11).
 - [ ] Candidate next: R6+ dog-food rounds (a WELDED level asset — the
   region-cut playbook on real level geometry; t10 export-package
   regression suite), crowd T3 (upstream-gated), upstream PR for D11
   install fallback
-- [ ] T6 scene ships in kit (t6_transient.py) as the transient/label regression vehicle; consider --frames interplay doc (look --frames N vs animate n_frames)
+- [x] T6 scene ships in kit (t6_transient.py) as the transient/label regression vehicle — CLOSED: scripts/t6_transient.py is in-tree; consider --frames interplay doc (look --frames N vs animate n_frames)
 - Note: blrun.sh without --background hangs silently (GUI-on-Xvfb startup) — FIXED session-4 (auto-inject --background guard)
 
 ### M4 — Wrap-up & handover (complete for session 1)
@@ -256,7 +266,8 @@ code-level finding (--frames BLOCKER) remains valid.
 3. t10 export suite. 4. VK-9 re-vendor (QA ask). 5. Upstream PR: D11
    install fallback + VK-10 hunk. 6. Re-point the R6 chain input from
    the Release/fetch to assets/loft rebuilt master (one-line doc +
-   chain smoke).
+   chain smoke) — CLOSED in the session-15 receipts (committed chain
+   inputs replay R6→R7→R8 on the rebuilt master; both sits GREEN).
 
 ## Session-13 receipts (the tdawn iteration round — 2026-10-11)
 
@@ -326,5 +337,6 @@ code-level finding (--frames BLOCKER) remains valid.
   (329a9d8) if the user round wants the newest light composition;
   (3) F-TF5 re-vendor (the governed sync); (4) F-TD9 (install.sh
   stale-tools Pillow probe — the fresh case self-healed again this
-  session); (5) the six older filings (F-TD1/2/3 + the make_material
-  default).
+  session); (5) the older filings — the true remainder is F-TD1/2/3
+  (the make_material default is CLOSED — blender_kit/__init__.py:516
+  make_material pins Emission Color to the base rgb, :549).
