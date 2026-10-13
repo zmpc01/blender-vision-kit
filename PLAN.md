@@ -340,3 +340,37 @@ code-level finding (--frames BLOCKER) remains valid.
   session); (5) the older filings — the true remainder is F-TD1/2/3
   (the make_material default is CLOSED — blender_kit/__init__.py:516
   make_material pins Emission Color to the base rgb, :549).
+
+## Session-16 receipts (the KIT-QUALITY wave — audit/test/refine, no film building)
+
+- **Course correction honored**: the user ruled the parallel lane owns
+  scene building; this session went back to the kit itself. Target
+  chosen by audit evidence: the export/package lane (0 tests, recurring
+  landmine class).
+- **D19 SHIPPED** (design REV-2 + critique round + implementation +
+  two-tier suite): `scripts/export_preflight.py` (the pre-export
+  contract gate — attributed rejections, decode-parity guard with
+  differential attribution) + `tests/test_t10_preflight_prop.py`
+  (100 checks, 0.2 s, both-direction drift property) +
+  `tests/test_t10_export.py` (19 checks, 7.5 s, subprocess) + exporter
+  gate 15 (sfx conformance fail-closed) + gate 4 strengthening.
+- **Wave A kit fixes** (test_v9 8/8): F-TD5 view_layer.update() port,
+  scoped-audit state fix, F19 ack_many_parts gate, F20-R6 hint, F-TD9 +
+  QA-R69 install.sh, F-TF5 wheel re-vendor 1.5.5.
+- **Wave C docs**: AGENTS.md 9 code-verified fixes + the Ship & verify
+  section + doc-debt sweep (F18/F19/F20/F-TD5/T6/Queue-6 closed with
+  evidence; the true older-filings remainder is F-TD1/2/3).
+- **Wave D QA**: full battery 26/26 after fixes (usd_export RNA-filter,
+  probe file scope move, BLRUN_FORCE for nested-blrun suites, 2 P1 +
+  11 P2 review findings all consumed).
+- **ENVIRONMENT**: the GitHub PAT died (401) — GitLab carried the
+  session as the authoritative target. A fresh GitHub PAT is the
+  user-side blocker for restoring the dual-remote backup.
+- Next-session candidates, in value order: (1) the USER review round on
+  tdawn_3 + tferry_1 (comments ON — the app lane); (2) F-TD3
+  (marker-camera hijack in viewport_capture — the last known
+  silent-wrong-render class in the core eye); (3) port the preflight to
+  the canonical agent-kit exporter via the governed sync (the film lane
+  gets the same pre-render gate); (4) F-TD2 validator structural
+  vocabulary; (5) R10 candidates (second-interior schema-reuse, crowd
+  lane on the level, prop-carry).
