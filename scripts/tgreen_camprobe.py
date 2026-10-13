@@ -33,7 +33,7 @@ def main():
     p.add_argument("--samples", type=int, default=16)
     args = p.parse_args(_script_args())
 
-    import scene_last_ferry as M
+    import scene_green_light as M
 
     scene = bpy.context.scene
     ctx = M.build_scene()
