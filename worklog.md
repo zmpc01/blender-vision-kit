@@ -3620,3 +3620,40 @@ Stage Summary:
 - Next: the user round on BOTH films; stage rev 2 = the review-fix
   re-export (8b7d4d8e) when comments demand a cut; F-TD9 + F-TF5
   (the vendor wheel re-sync) are the remaining kit chores.
+
+## Session 16 (start) — the tferry_1 refinement round (rev 2 shipped)
+
+Work Log:
+- Fresh-sandbox bootstrap: 5 repos cloned, context restored (SKILL/
+  HANDOFF/PLAN/worklogs); Blender 5.2.2 install clean in one pass;
+  review server UP (repo-local db, comments re-injected 5/5).
+- The comments-restore script carried a hardcoded /home/z/repos path
+  (the F-TF1 family in the app lane) -- patched to sibling resolution,
+  pushed (previz-review edeccf6).
+- Bake re-run: pin 8b7d4d8e REPRODUCED on a fresh machine (determinism
+  cross-check #3).
+- Eye round on all 12 certified stills: S5 FAIL (the capsule-flood
+  class -- the exact defect class the user flagged on tdawn_2 S5), S4
+  borderline (neon band cropped by the frame edge). S8/S12 stand as
+  the film's best frames.
+- NEW TOOL tferry_camprobe.py: N candidate framings per shot in ONE
+  blender process (move cam+aim empties, render workbench stills) --
+  the framing-round loop compressed ~6x (8 S5 candidates + 4 S4 in
+  4 process launches instead of 12 rebuilds).
+- S4 -> 38mm pulled back (depth + full band + hero foreground);
+  S5 -> outboard HEAD-ON 42mm (he runs INTO the lens down the east
+  rail; full body, no pole slice). Keepout row moved WITH the lens
+  (S4 36->38; pin unchanged -- the delta touched no agent paths).
+- EXPORT rev 2 (in-place re-export seeded from the staged rev-1 stamp
+  -- the exporter's revision-monotonicity machinery used as designed):
+  all gates green, 15 artifacts pinned, 12/12 stills, 96 strips + index.
+- STAGED + verified in-app (rev 2, S5 intent text live, stills 200,
+  GLB 21MB 200). previz-review 98c8da5; vision-kit 88ed5fa.
+
+Stage Summary:
+- tferry_1 rev 2 LIVE: the staged package now carries the review-round
+  crowd contract (flank wall, outboard RB statics, count law) + the
+  reframed S4/S5. Stamp honest (manifest sha256 pinned, gates=green).
+- Kit capture: tferry_camprobe.py (the multi-candidate probe law);
+  the flood-class law re-confirmed ("a tight lens in a streaming
+  crowd ALWAYS reads as capsule backs -- pull back or go head-on").
