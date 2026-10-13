@@ -488,7 +488,7 @@ def analyze_split(obj) -> dict:
         "polycount_base": len(me.polygons),
         "co_users": max(me.users - 1, 0),
         "risks": risks,
-        "split_would_refuse": bool(risks) and True,
+        "split_would_refuse": bool(risks) or len(parts) > 50,
     }
 
 

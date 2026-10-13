@@ -205,12 +205,22 @@ def _row_len(row):
         return None
 
 
-def _vec_check(val, what: str, rep: Report, label: str) -> None:
+def _vec_check(val, what: str, rep: Report, label: str,
+               none_ok: bool = True) -> None:
     """A decoder vec field: `[_r3(x) for x in v]` — any iterable of
     float-castables. The decoder never width-checks (REV-2 law: an
     exact-width check would be stricter than the decoder and false-reject
-    real modules), so len != 3 is a WARN, not a reject."""
+    real modules), so len != 3 is a WARN, not a reject.
+    none_ok=True preserves the BOARD seat_local contract (the decoder
+    None-guards it); CAMS vec fields pass none_ok=False — the decoder
+    does NOT guard those, a None raises TypeError (review 5-a P2-5)."""
     if val is None:
+        if not none_ok:
+            rep.reject(
+                f"{label}: {what} must be an iterable of numbers (the "
+                "decoder does NOT None-guard this field — a None raises "
+                f"inside the collector); got None. Fix: use a 3-tuple like "
+                "(0.0, 0.0, 1.0).")
         return
     if not _is_iterable(val):
         rep.reject(
@@ -269,13 +279,15 @@ def s1_entry_points(mod, rep: Report) -> None:
             f"callable; got {_shape(emit)}. Fix: define "
             "emit_sfx_events(ctx, out_dir) or remove it.")
 
-    anim = getattr(mod, "animate", None)
-    if anim is None:
+    if not hasattr(mod, "animate"):
         return
+    anim = mod.animate
     if not callable(anim):
         rep.reject(
             f"S1 animate: must be callable; got {_shape(anim)}. Fix: "
-            "define def animate(ctx, ...) or remove it.")
+            "define def animate(ctx, ...) or remove it. (Note: animate = "
+            "None still trips the exporter's hasattr dispatch — remove "
+            "the attribute entirely.)")
         return
     try:
         sig = inspect.signature(anim)
@@ -296,7 +308,7 @@ def s1_entry_points(mod, rep: Report) -> None:
         rep.reject(
             "S1 animate: the exporter's dispatch cannot bind this "
             f"signature ({'bare' if bare else 'sentinel'} branch, "
-            f"exporter:1040-1053): {e}. A bare `def animate(ctx)` "
+            f"exporter:1035-1048): {e}. A bare `def animate(ctx)` "
             "TypeErrors the exporter's sentinel call "
             "mod.animate(ctx, start_frame=1, n_frames=None) — the P0-5 "
             "class. Fix: def animate(ctx, *, start_frame=1, n_frames=None) "
@@ -544,7 +556,7 @@ def _s2_board(board, label: str, rep: Report) -> None:
     for name, entry in board.items():
         el = _row_len(entry)
         if el is None or el < 2:
-            # entry[1] raising is the real drop case (decoder:585)
+            # entry[1] raising is the real drop case (decoder:580)
             rep.reject(
                 f"{label}[{name!r}]: entry must be a (MAIN, EXTRA) pair — "
                 "missing the EXTRA slot at index 1 is the real drop case "
@@ -577,7 +589,7 @@ def _s2_board(board, label: str, rep: Report) -> None:
                 f"{label}[{name!r}]: MAIN field 4 'yaw_end' must be "
                 f"float-castable; got {_shape(_row(main, 4))}.")
         # main[5]: str() — cannot fail
-        if extra:  # falsy EXTRA -> offset 0.0 (decoder:592)
+        if extra:  # falsy EXTRA -> offset 0.0 (decoder:587)
             if _row_len(extra) is None or _row_len(extra) < 1 \
                     or not _can_float(_row(extra, 0)):
                 rep.reject(
@@ -603,12 +615,12 @@ def _s2_cams(cams, label: str, rep: Report) -> None:
                 f"{label}[{i}]: row needs >= 7 fields (name:str, loc0:vec3, "
                 "loc1:vec3, lens:num, aim:vec3, parent_jeep:bool, "
                 f"shake_amp:num); got {_shape(row)}. Fix: complete the row — "
-                "the decoder indexes c[0]..c[6] (_collect_story:650-660, "
-                "exporter:1156-1164).")
+                "the decoder indexes c[0]..c[6] (_collect_story:645-660, "
+                "exporter:1151-1159).")
             continue
         for idx, what in ((1, "loc0"), (2, "loc1"), (4, "aim")):
             _vec_check(_row(row, idx), f"field {idx} '{what}'", rep,
-                       f"{label}[{i}]")
+                       f"{label}[{i}]", none_ok=False)
         if not _can_float(_row(row, 3)):
             rep.reject(
                 f"{label}[{i}]: field 3 'lens' must be float-castable; got "
@@ -650,13 +662,13 @@ def s2_beats(mod, rep: Report) -> None:
 
 def shots_table(mod):
     """getattr(SHOTS_V3) or getattr(SHOTS) — replicated verbatim from
-    exporter:1120 (the `or` means an empty SHOTS_V3 falls back to SHOTS)."""
+    exporter:1115 (the `or` means an empty SHOTS_V3 falls back to SHOTS)."""
     return getattr(mod, "SHOTS_V3", None) or getattr(mod, "SHOTS", [])
 
 
 def cam_table(mod):
     """CAMS_V3 rows, CAMS as legacy fallback (design table 'CAMS_V3/CAMS').
-    NOTE: the exporter itself only ever reads CAMS_V3 (_collect_story:650,
+    NOTE: the exporter itself only ever reads CAMS_V3 (_collect_story:645,
     exporter:1134); the CAMS fallback is a preflight-only courtesy for
     legacy modules."""
     return getattr(mod, "CAMS_V3", None) or getattr(mod, "CAMS", None)
@@ -684,7 +696,7 @@ def s2_shots(mod, rep: Report):
                 f"S2 {attr}[{i}]: row needs >= 4 fields (sid:str, f0:int, "
                 f"f1:int, intent:str); got {_shape(row)}. Fix: complete the "
                 "row — the exporter unpacks sid, f0, f1, intent "
-                "positionally (exporter:1122).")
+                "positionally (exporter:1117).")
             continue
         f0, f1 = _row(row, 1), _row(row, 2)
         for idx, nm in ((1, "f0"), (2, "f1")):
@@ -693,7 +705,7 @@ def s2_shots(mod, rep: Report):
                     f"S2 {attr}[{i}]: field {idx} '{nm}' must be an int "
                     f"frame; got {_shape(_row(row, idx))}. Fix: the exporter "
                     "uses it as a timeline-marker key and in f1+1 contiguity "
-                    "arithmetic (exporter:1122, 1340-1341).")
+                    "arithmetic (exporter:1117, 1340-1341).")
         if _is_frame_num(f0) and _is_frame_num(f1):
             out.append((str(_row(row, 0)), int(f0), int(f1)))
     return out
@@ -721,6 +733,11 @@ def s3_coherence(mod, shots, rep: Report) -> None:
         return
     if not _is_iterable(cams) or isinstance(cams, (str, bytes, dict)):
         return  # already rejected in S2
+    # review 5-a P2-11: the exporter reads ONLY CAMS_V3 — a legacy-CAMS-only
+    # module exports green (vacuous), so S3 must not be stricter than that.
+    # Demote every cam-name rejection to a WARN when the table is the
+    # preflight-only legacy fallback.
+    legacy = getattr(mod, "CAMS_V3", None) is None
     names = []
     for r in cams:
         if (_row_len(r) or 0) >= 1 and _row(r, 0) is not None:
@@ -736,12 +753,18 @@ def s3_coherence(mod, shots, rep: Report) -> None:
                 f"S3 CAMS: shot {sid!r} has no exact '{want}' row but "
                 f"{adjacent[:2]} exist — substring-adjacent names never "
                 "match (the exporter merges cam specs by exact name, "
-                "exporter:1156; the shot gets no motion spec). WARN only.")
+                "exporter:1151; the shot gets no motion spec). WARN only.")
+        elif legacy:
+            rep.warn(
+                f"S3 CAMS: shot {sid!r} has no row named '{want}' — "
+                "but the table here is the LEGACY 'CAMS' fallback, which "
+                "the exporter never reads (CAMS_V3 only, _collect_story:645); "
+                "the export is vacuous either way. WARN only.")
         else:
             rep.reject(
                 f"S3 CAMS: shot {sid!r} has no CAMS row named '{want}' — "
                 "the exporter merges cam specs by exact object name "
-                f"(exporter:1156). Fix: add a ('{want}', loc0, loc1, lens, "
+                f"(exporter:1151). Fix: add a ('{want}', loc0, loc1, lens, "
                 "aim, parent_jeep, shake_amp) row.")
 
     # FPS cross-agreement among DECLARED sources (render.fps itself is
@@ -909,18 +932,18 @@ def b2_fps(mod, rep: Report, scene) -> None:
         rep.reject(
             f"B2 fps: scene.render.fps={int(fps)} != module FPS constant "
             f"{int(fps_const)} — the exporter stamps the review timeline "
-            "from the SCENE (exporter:1181). Fix: set render.fps in "
+            "from the SCENE (exporter:1176). Fix: set render.fps in "
             "build_scene (or fix the FPS constant).")
     if float(scene.render.fps_base) != 1.0:
         rep.reject(
             f"B2 fps: scene.render.fps_base={scene.render.fps_base} != 1.0 "
             "— the exporter casts int(fps) and IGNORES fps_base "
-            "(exporter:1181), so the stamped rate would differ from the "
+            "(exporter:1176), so the stamped rate would differ from the "
             "real rate. Fix: leave fps_base at 1.0.")
 
 
 def b3_markers(mod, rep: Report, scene, shots) -> dict:
-    """B3 — markers, mirroring exporter:1123-1129 EXACTLY (marker NAMES
+    """B3 — markers, mirroring exporter:1118-1124 EXACTLY (marker NAMES
     are unconstrained; only the bound CAMERA name carries the CAM_
     contract). Plus the exporter's own span gate (gate 3) against the
     SCENE. Returns {frame: marker} for B4."""
@@ -945,7 +968,7 @@ def b3_markers(mod, rep: Report, scene, shots) -> dict:
             rep.reject(
                 f"B3 markers: the marker at f{f0} (shot {sid!r}) binds "
                 f"{m.camera.name!r} — expected a CAM_* object "
-                "(exporter:1127-1129). Fix: name the camera CAM_<sid>.")
+                "(exporter:1117-1129). Fix: name the camera CAM_<sid>.")
         elif m.camera.name != f"CAM_{sid}":
             rep.warn(
                 f"B3 markers: shot {sid!r} binds camera {m.camera.name!r} "
@@ -958,7 +981,7 @@ def b3_markers(mod, rep: Report, scene, shots) -> dict:
                 f"B3 span: the shot table spans f{shots[0][1]}–"
                 f"f{shots[-1][2]} but the scene spans f{scene.frame_start}–"
                 f"{scene.frame_end} — exporter gate 3 rejects this "
-                "(exporter:1337-1339). Fix: set frame_start/frame_end to "
+                "(exporter:1332-1334). Fix: set frame_start/frame_end to "
                 "the shot span (or vice versa). Span comes from the SCENE, "
                 "never a module constant.")
     return all_marks
@@ -1086,29 +1109,36 @@ def b_sfx_emitter(mod, rep: Report, ctx, scene, shots) -> None:
     """Phase-B half of S4: call the module's own emitter into a temp dir
     and validate what it wrote (mirrors gate 15 without running the
     export). The exporter calls emit_sfx_events unguarded, so a raise
-    here would crash the export."""
+    here would crash the export. NOTE: this runs AFTER b5_parity (main()
+    ordering) — the exporter reads scene fps/frame_start BEFORE its own
+    emitter call, and an emitter that mutates the scene must not shift
+    what the parity guard snapshots (review 5-a P2-9)."""
     emit = getattr(mod, "emit_sfx_events", None)
     if not callable(emit):
         return
     tmp = tempfile.mkdtemp(prefix="pf_sfx_")
     try:
-        emit(ctx, tmp)
-    except Exception:
-        rep.reject(
-            "B sfx: emit_sfx_events(ctx, out_dir) RAISED — the exporter "
-            "calls it unguarded (exporter:1211-1212), so the export would "
-            "crash. Traceback tail on the next line.")
-        rep.reject("B sfx traceback tail:\n" + _tb_tail())
-        return
-    path = os.path.join(tmp, "sfx_events.json")
-    if os.path.isfile(path):
-        _sfx_check_file(path, "sfx_events.json (emitted)", rep, shots,
-                        require_fps=False, scene_fps=scene.render.fps)
-    else:
-        rep.warn(
-            "B sfx: module defines emit_sfx_events but wrote no "
-            "sfx_events.json (a scene may defer sfx — gate-15 WARN "
-            "parity; verify this is intended)")
+        try:
+            emit(ctx, tmp)
+        except Exception:
+            rep.reject(
+                "B sfx: emit_sfx_events(ctx, out_dir) RAISED — the exporter "
+                "calls it unguarded (exporter:1209), so the export would "
+                "crash. Traceback tail on the next line.")
+            rep.reject("B sfx traceback tail:\n" + _tb_tail())
+            return
+        path = os.path.join(tmp, "sfx_events.json")
+        if os.path.isfile(path):
+            _sfx_check_file(path, "sfx_events.json (emitted)", rep, shots,
+                            require_fps=False, scene_fps=scene.render.fps)
+        else:
+            rep.warn(
+                "B sfx: module defines emit_sfx_events but wrote no "
+                "sfx_events.json (a scene may defer sfx — gate-15 WARN "
+                "parity; verify this is intended)")
+    finally:
+        import shutil
+        shutil.rmtree(tmp, ignore_errors=True)  # review 5-a P2-9: no leak
 
 
 def b6_animate_dry(mod, rep: Report, ctx) -> None:
@@ -1300,12 +1330,12 @@ def main() -> int:
     checks["B4"] = _st(rep, n)
 
     n = len(rep.rejects)
-    b_sfx_emitter(mod, rep, ctx, scene, shots)
-    checks["B-sfx"] = _st(rep, n)
+    b5_parity(mod, rep, scene)   # BEFORE B-sfx: snapshot fps/frame_start
+    checks["B5"] = _st(rep, n)   # before any emitter can mutate the scene
 
     n = len(rep.rejects)
-    b5_parity(mod, rep, scene)
-    checks["B5"] = _st(rep, n)
+    b_sfx_emitter(mod, rep, ctx, scene, shots)
+    checks["B-sfx"] = _st(rep, n)
 
     if args.animate_dry:
         if rep.rejects:

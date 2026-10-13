@@ -1198,10 +1198,12 @@ def main() -> None:
     # `name`) used to export green — this block only counted, swallowing
     # every error to 0 — and the review app silently dropped the events
     # 3/3. The app contract is {name|kind, frame}; the file schema is
-    # {fps, events} (both real producers write fps — now contract, not
-    # accident). Missing file / no emitter = vacuous pass (template lane,
-    # law 20); an emitter that writes nothing = WARN (a scene may defer
-    # sfx); malformed = rejection naming the first bad event.
+    # {fps, events} — fps is checked for AGREEMENT WHEN PRESENT (a
+    # fps-MISMATCH rejects; fps-missing is tolerated for old-format
+    # files — review 5-a P2-3: the words, not the code, said "required").
+    # Missing file / no emitter = vacuous pass (template lane, law 20);
+    # an emitter that writes nothing = WARN (a scene may defer sfx);
+    # malformed = rejection naming the first bad event.
     sfx_problems: list = []
     if hasattr(mod, "emit_sfx_events"):
         mod.emit_sfx_events(ctx, args.output)
@@ -1212,12 +1214,12 @@ def main() -> None:
                 with open(sfx_path) as f:
                     sfx_doc = json.load(f)
                 events = sfx_doc.get("events", [])
-                n_sfx = len(events)
                 if not isinstance(events, list):
                     sfx_problems.append(
                         f"sfx_events.json: 'events' must be a list, "
                         f"got {type(events).__name__}")
                 else:
+                    n_sfx = len(events)  # AFTER the isinstance gate (5-a P2-10)
                     for i, ev in enumerate(events):
                         if not isinstance(ev, dict):
                             sfx_problems.append(
@@ -1238,13 +1240,17 @@ def main() -> None:
                                 f"be an integer, got {fr!r}")
                             break
                     sfx_fps = sfx_doc.get("fps")
-                    if sfx_fps is not None and \
-                            int(sfx_fps) != int(scene.render.fps):
-                        sfx_problems.append(
-                            f"sfx_events.json fps={sfx_fps} disagrees "
-                            f"with scene.render.fps={int(scene.render.fps)} "
-                            f"— the app stamps the timeline from the "
-                            f"scene; events would land at wrong times")
+                    if sfx_fps is not None:
+                        try:
+                            fps_ok = int(sfx_fps) == int(scene.render.fps)
+                        except (TypeError, ValueError):
+                            fps_ok = False
+                        if not fps_ok:
+                            sfx_problems.append(
+                                f"sfx_events.json fps={sfx_fps!r} disagrees "
+                                f"with scene.render.fps={int(scene.render.fps)} "
+                                "— the app stamps the timeline from the "
+                                "scene; events would land at wrong times")
             except Exception as e:
                 sfx_problems.append(
                     f"sfx_events.json unreadable/unparseable: {e}")
@@ -1347,7 +1353,7 @@ def main() -> None:
             problems.append(f"module declares {attr} but JSON story is "
                             f"missing '{k}'")
     # gate 4 strengthening (D19.3, session-16): BOARD is the only
-    # per-entry NOTE-and-drop decoder (_collect_story:580-596) — a
+    # per-entry NOTE-and-drop decoder (_collect_story:575-591) — a
     # declared non-empty BOARD whose every entry failed to parse used to
     # export green with story.board == {} (boards/boarding frames
     # silently vanished downstream). Partial boards keep their NOTEs

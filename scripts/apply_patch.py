@@ -426,7 +426,16 @@ def _apply_audit(obj, params):
         for p in scoped:
             counts[p["state"]] = counts.get(p["state"], 0) + 1
         rep["state_counts"] = counts
-        rep["failed"] = any(p["state"] == "PENETRATING" for p in scoped)
+        # match the unscoped path's rule (placement_lib.audit_scene): a
+        # penetration counts only beyond the contact band — sub-band
+        # micro-penetrations are advisory there and must stay advisory
+        # here (review 5-a P2-7).
+        band = params.get("contact_band_mm", 0.1)
+        rep["failed"] = any(
+            p["state"] == "PENETRATING" and
+            (p.get("penetration_mm") is None or
+             p["penetration_mm"] > band)
+            for p in scoped)
     _LAST_REPORTS["audit"] = rep
     if params.get("output"):
         out = params["output"]

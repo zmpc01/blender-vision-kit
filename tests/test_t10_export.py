@@ -182,99 +182,103 @@ def exporter(scene_name, case_out):
 # ==========================================================================
 # t10.1 + t10.2 — happy path (exporter green AND preflight green)
 # ==========================================================================
-happy_path = write_variant(FIXTURE, FIXTURE_SRC)
-case1 = os.path.join(OUT, "t1_export")
-r = exporter(FIXTURE, case1)
-check("t1.export_exit0", r.returncode == 0,
-      f"rc={r.returncode} tail={r.stdout[-400:] or r.stderr[-400:]}")
-previz_path = os.path.join(case1, "previz.json")
-check("t1.previz_json_exists", os.path.isfile(previz_path))
-if os.path.isfile(previz_path):
-    pv = json.load(open(previz_path))
-    check("t1.story_keys_present",
-          "board" in pv.get("story", {}) and "dialog" in pv.get("story", {}),
-          f"story keys={sorted(pv.get('story', {}).keys())}")
-    check("t1.n_sfx_events_1", pv.get("n_sfx_events") == 1,
-          f"n_sfx_events={pv.get('n_sfx_events')}")
-    check("t1.gates_green", "all gates green" in r.stdout,
-          r.stdout[-300:])
-check("t1.sfx_file_conforms", os.path.isfile(
-    os.path.join(case1, "sfx_events.json")))
-glb = [f for f in os.listdir(case1) if f.endswith(".glb")] \
-    if os.path.isdir(case1) else []
-check("t1.glb_exists", bool(glb), str(glb))
-case2 = os.path.join(OUT, "t2_preflight")
-rp = preflight(happy_path, case2)
-check("t2.preflight_exit0", rp.returncode == 0,
-      f"rc={rp.returncode} tail={(rp.stdout + rp.stderr)[-500:]}")
+try:
+    happy_path = write_variant(FIXTURE, FIXTURE_SRC)
+    case1 = os.path.join(OUT, "t1_export")
+    r = exporter(FIXTURE, case1)
+    check("t1.export_exit0", r.returncode == 0,
+          f"rc={r.returncode} tail={r.stdout[-400:] or r.stderr[-400:]}")
+    previz_path = os.path.join(case1, "previz.json")
+    check("t1.previz_json_exists", os.path.isfile(previz_path))
+    if os.path.isfile(previz_path):
+        with open(previz_path) as _pf:
+            pv = json.load(_pf)
+        check("t1.story_keys_present",
+              "board" in pv.get("story", {}) and "dialog" in pv.get("story", {}),
+              f"story keys={sorted(pv.get('story', {}).keys())}")
+        check("t1.n_sfx_events_1", pv.get("n_sfx_events") == 1,
+              f"n_sfx_events={pv.get('n_sfx_events')}")
+        check("t1.gates_green", "all gates green" in r.stdout,
+              r.stdout[-300:])
+    check("t1.sfx_file_conforms", os.path.isfile(
+        os.path.join(case1, "sfx_events.json")))
+    glb = [f for f in os.listdir(case1) if f.endswith(".glb")] \
+        if os.path.isdir(case1) else []
+    check("t1.glb_exists", bool(glb), str(glb))
+    case2 = os.path.join(OUT, "t2_preflight")
+    rp = preflight(happy_path, case2)
+    check("t2.preflight_exit0", rp.returncode == 0,
+          f"rc={rp.returncode} tail={(rp.stdout + rp.stderr)[-500:]}")
 
-# ==========================================================================
-# t10.3 — malformed sfx stream (F-TF4 repro): preflight rejects AND
-# exporter gate 15 rejects
-# ==========================================================================
-case3 = os.path.join(OUT, "t3_sfx")
-v3 = write_variant(FIXTURE + "_sfxid", VARIANTS["sfx_id_key"])
-r3p = preflight(v3, case3)
-check("t3.preflight_rejects", r3p.returncode == 3,
-      f"rc={r3p.returncode}")
-check("t3.preflight_names_event", "name" in r3p.stdout and
-      ("kind" in r3p.stdout), (r3p.stdout)[-300:])
-r3e = exporter(FIXTURE + "_sfxid", case3)
-check("t3.exporter_gate15_rejects", r3e.returncode != 0
-      and "sfx_events.json: event[0]" in r3e.stdout,
-      f"rc={r3e.returncode} tail={r3e.stdout[-400:]}")
+    # ==========================================================================
+    # t10.3 — malformed sfx stream (F-TF4 repro): preflight rejects AND
+    # exporter gate 15 rejects
+    # ==========================================================================
+    case3 = os.path.join(OUT, "t3_sfx")
+    v3 = write_variant(FIXTURE + "_sfxid", VARIANTS["sfx_id_key"])
+    r3p = preflight(v3, case3)
+    check("t3.preflight_rejects", r3p.returncode == 3,
+          f"rc={r3p.returncode}")
+    check("t3.preflight_names_event", "name" in r3p.stdout and
+          ("kind" in r3p.stdout), (r3p.stdout)[-300:])
+    r3e = exporter(FIXTURE + "_sfxid", case3)
+    check("t3.exporter_gate15_rejects", r3e.returncode != 0
+          and "sfx_events.json: event[0]" in r3e.stdout,
+          f"rc={r3e.returncode} tail={r3e.stdout[-400:]}")
 
-# ==========================================================================
-# t10.4 — BEATS wrong shape: shape-only WARN (never a rejection here —
-# BEATS is the canonical-copy lane's contract, zero consumers in this
-# exporter); the WARN text must name BEATS
-# ==========================================================================
-case4 = os.path.join(OUT, "t4_beats")
-src4 = FIXTURE_SRC + '\nBEATS = [("calm", "S1", 1)]\n'
-v4 = write_variant(FIXTURE + "_beats", src4)
-r4 = preflight(v4, case4)
-check("t4.beats_warn_not_reject", r4.returncode == 0,
-      f"rc={r4.returncode}")
-check("t4.beats_warn_names_beats", "BEATS" in r4.stdout, r4.stdout[-300:])
+    # ==========================================================================
+    # t10.4 — BEATS wrong shape: shape-only WARN (never a rejection here —
+    # BEATS is the canonical-copy lane's contract, zero consumers in this
+    # exporter); the WARN text must name BEATS
+    # ==========================================================================
+    case4 = os.path.join(OUT, "t4_beats")
+    src4 = FIXTURE_SRC + '\nBEATS = [("calm", "S1", 1)]\n'
+    v4 = write_variant(FIXTURE + "_beats", src4)
+    r4 = preflight(v4, case4)
+    check("t4.beats_warn_not_reject", r4.returncode == 0,
+          f"rc={r4.returncode}")
+    check("t4.beats_warn_names_beats", "BEATS" in r4.stdout, r4.stdout[-300:])
 
-# ==========================================================================
-# t10.5 — BOARD fully undecodable: gate 4 (strengthened) rejects the
-# exporter; preflight S2 rejects too
-# ==========================================================================
-case5 = os.path.join(OUT, "t5_board")
-v5 = write_variant(FIXTURE + "_board", VARIANTS["board_undecodable"])
-r5e = exporter(FIXTURE + "_board", case5)
-check("t5.exporter_gate4_rejects", r5e.returncode != 0
-      and "every entry" in r5e.stdout and "BOARD" in r5e.stdout,
-      f"rc={r5e.returncode} tail={r5e.stdout[-400:]}")
-r5p = preflight(v5, case5)
-check("t5.preflight_rejects", r5p.returncode == 3,
-      f"rc={r5p.returncode}")
+    # ==========================================================================
+    # t10.5 — BOARD fully undecodable: gate 4 (strengthened) rejects the
+    # exporter; preflight S2 rejects too
+    # ==========================================================================
+    case5 = os.path.join(OUT, "t5_board")
+    v5 = write_variant(FIXTURE + "_board", VARIANTS["board_undecodable"])
+    r5e = exporter(FIXTURE + "_board", case5)
+    check("t5.exporter_gate4_rejects", r5e.returncode != 0
+          and "every entry" in r5e.stdout and "BOARD" in r5e.stdout,
+          f"rc={r5e.returncode} tail={r5e.stdout[-400:]}")
+    r5p = preflight(v5, case5)
+    check("t5.preflight_rejects", r5p.returncode == 3,
+          f"rc={r5p.returncode}")
 
-# ==========================================================================
-# t10.6 — short CAMS row: preflight exit 3, message names CAMS_V3[i]
-# ==========================================================================
-case6 = os.path.join(OUT, "t6_cams")
-src6 = FIXTURE_SRC.replace(
-    '("CAM_S2", (7.0, -5.0, 3.5), (7.0, -5.0, 3.5), 50.0, (0, 0, 0), False, 0.0),',
-    '("CAM_S2", (7.0, -5.0, 3.5), (7.0, -5.0, 3.5), 50.0),')
-v6 = write_variant(FIXTURE + "_cams", src6)
-r6 = preflight(v6, case6)
-check("t6.preflight_rejects", r6.returncode == 3, f"rc={r6.returncode}")
-check("t6.message_names_constant_row", "CAMS_V3[1]" in r6.stdout,
-      r6.stdout[-300:])
+    # ==========================================================================
+    # t10.6 — short CAMS row: preflight exit 3, message names CAMS_V3[i]
+    # ==========================================================================
+    case6 = os.path.join(OUT, "t6_cams")
+    src6 = FIXTURE_SRC.replace(
+        '("CAM_S2", (7.0, -5.0, 3.5), (7.0, -5.0, 3.5), 50.0, (0, 0, 0), False, 0.0),',
+        '("CAM_S2", (7.0, -5.0, 3.5), (7.0, -5.0, 3.5), 50.0),')
+    v6 = write_variant(FIXTURE + "_cams", src6)
+    r6 = preflight(v6, case6)
+    check("t6.preflight_rejects", r6.returncode == 3, f"rc={r6.returncode}")
+    check("t6.message_names_constant_row", "CAMS_V3[1]" in r6.stdout,
+          r6.stdout[-300:])
 
-# ==========================================================================
-# t10.7 — bare `def animate(ctx)`: preflight S1 rejects (the exporter's
-# sentinel branch would TypeError post-render)
-# ==========================================================================
-case7 = os.path.join(OUT, "t7_animate")
-v7 = write_variant(FIXTURE + "_bare", VARIANTS["bare_animate"])
-r7 = preflight(v7, case7)
-check("t7.preflight_rejects", r7.returncode == 3, f"rc={r7.returncode}")
-check("t7.message_names_animate", "animate" in r7.stdout, r7.stdout[-300:])
+    # ==========================================================================
+    # t10.7 — bare `def animate(ctx)`: preflight S1 rejects (the exporter's
+    # sentinel branch would TypeError post-render)
+    # ==========================================================================
+    case7 = os.path.join(OUT, "t7_animate")
+    v7 = write_variant(FIXTURE + "_bare", VARIANTS["bare_animate"])
+    r7 = preflight(v7, case7)
+    check("t7.preflight_rejects", r7.returncode == 3, f"rc={r7.returncode}")
+    check("t7.message_names_animate", "animate" in r7.stdout, r7.stdout[-300:])
 
-cleanup_variants()
+finally:
+    cleanup_variants()
+
 
 print(f"[t10] {NCHECK} checks, {len(FAILS)} failed")
 if FAILS:

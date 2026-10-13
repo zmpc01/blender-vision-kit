@@ -27,7 +27,7 @@ background mode and the exporter only adds it inside main():1010-1015).
 Without calling build_scene:
 
 - **S1 entry points**: `build_scene` callable. `animate` (if present):
-  replicate the exporter's dispatch EXACTLY (exporter:1040-1053) via
+  replicate the exporter's dispatch EXACTLY (exporter:1035-1048) via
   `inspect.Signature(...).bind`: if an `n_frames` param exists and its
   default passes `isinstance(default, int)` (bool-is-int quirk
   preserved — it's the exporter's real behavior), then
@@ -90,7 +90,7 @@ Without calling build_scene:
 `mod.build_scene()` →
 - **B1 ctx**: dict; `ctx.get("scene")` or bpy.context.scene has ≥1 object.
 - **B2 fps**: `scene.render.fps == module FPS constant` (when declared);
-  `fps_base == 1.0` (exporter:1181 casts int(fps), ignores fps_base —
+  `fps_base == 1.0` (exporter:1176 casts int(fps), ignores fps_base —
   verified zero fps_base references).
 - **B3 markers** (mirror the exporter EXACTLY, 1123-1129): for each
   SHOTS row, a timeline marker exists at f0, `marker.camera` is set,

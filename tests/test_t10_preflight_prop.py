@@ -161,6 +161,8 @@ VARIANTS = [
     ("seg_short_row", "_V3_SEG", [(0.0, 1.0, 1.0)], "raise"),
     ("cams_short_row", "CAMS_V3",
      [("CAM_S1", (0, 0, 5), (0, 0, 0), 50.0)], "raise"),
+    ("cams_none_vec", "CAMS_V3",
+     [("CAM_S1", None, (0, 0, 0), 50.0, (0, 0, 0), False, 0.0)], "raise"),
     # NOTE: SHOTS_V3 is NOT consumed by _collect_story — its real consumer
     # is the shot-table assembly in main() (exporter:1120-1131, row[3]
     # IndexError). The decoder-outcome property does not apply; the S2

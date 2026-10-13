@@ -124,6 +124,14 @@ def main():
         # USD-REVIEW-1 F26 fix: removed bogus kwargs (generate_preview_material,
         # export_curves_as_ribbons, export_material_bindings). Used the
         # actual RNA-confirmed kwargs.
+        #
+        # session-16: kwargs are RNA-FILTERED at runtime. The battery
+        # caught the drift class on 5.2.2 (export_textures unrecognized —
+        # the 4.5-calibrated set is not stable across Blender versions;
+        # the same unexercised-lane class as the R4 exporter NameError).
+        # The filter keeps exactly the kwargs the RUNNING Blender's RNA
+        # declares and NOTEs the drops — version-proof by construction
+        # (the _safe_set philosophy, applied to operator kwargs).
         usd_kwargs = dict(
             filepath=out_path,
             export_animation=args.export_animation,
@@ -155,6 +163,14 @@ def main():
         )
 
         try:
+            # RNA filter: drop kwargs the running Blender doesn't declare.
+            rna_props = set(bpy.ops.wm.usd_export.get_rna_type().properties.keys())
+            dropped = [k for k in usd_kwargs if k not in rna_props]
+            if dropped:
+                print(f"[export_usd] NOTE: RNA dropped {len(dropped)} kwarg(s) "
+                      f"not in this Blender's usd_export: {sorted(dropped)}")
+            usd_kwargs = {k: v for k, v in usd_kwargs.items()
+                          if k in rna_props}
             bpy.ops.wm.usd_export(**usd_kwargs)
         except TypeError as e:
             # Older Blender versions may not have all kwargs; retry with minimum.

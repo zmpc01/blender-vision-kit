@@ -176,6 +176,8 @@ def main():
     outdir = os.path.join(_OUT, "look")
     env = dict(os.environ)
     env["PYTHONPATH"] = _SCRIPTS + os.pathsep + env.get("PYTHONPATH", "")
+    # F-TD10 flock bypass: nested blrun under the outer blrun-held lock
+    env["BLRUN_FORCE"] = "1"
     blrun = os.path.join(os.path.dirname(_SCRIPTS), "scripts", "blrun.sh")
     blender_bin = os.environ.get("BLENDER_BIN",
                                  os.path.join(os.path.dirname(_SCRIPTS),

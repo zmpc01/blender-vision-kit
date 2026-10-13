@@ -101,6 +101,9 @@ def run_look(extra, timeout=600):
            "--load-blend", FIXTURE] + extra
     env = dict(os.environ)
     env["BLENDER_BIN"] = BLENDER_BIN
+    # F-TD10 flock bypass: nested blrun under the outer blrun-held lock
+    # (the battery proved rc=90 LOCK-HELD without it — suite 8 artifact)
+    env["BLRUN_FORCE"] = "1"
     return subprocess.run(cmd, capture_output=True, text=True,
                           timeout=timeout, env=env)
 
