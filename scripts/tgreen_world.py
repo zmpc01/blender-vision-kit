@@ -153,6 +153,11 @@ def _build_materials():
     m["bus_body"] = make_material("TG.BusBody", (0.75, 0.74, 0.72), 0.5)
     m["bus_win"] = make_material("TG.BusWin", (0.04, 0.05, 0.06), 0.25)
     m["bollard"] = make_material("TG.Bollard", (0.30, 0.31, 0.33), 0.6)
+    # the grounding plane (the eye round's find: beyond the set the
+    # void rendered as an OCEAN HORIZON at street level -- S6/S7/S10
+    # read 'coastal boulevard' unintentionally). A huge neutral plane
+    # grounds the set; the horizon becomes hazy city-edge.
+    m["ground"] = make_material("TG.Ground", (0.085, 0.085, 0.09), 0.95)
     return m
 
 
@@ -186,6 +191,9 @@ def build_world(scene):
     # --- the street slab (top at z=0) ----------------------------------
     _box("TG.Street", STREET_X * 2, STREET_Y * 2, 0.1,
          (0.0, 0.0, -0.05), mats["asphalt"])
+    # the grounding plane UNDER everything (the ocean-horizon fix)
+    _box("TG.GroundPlane", 500.0, 500.0, 0.02, (0.0, 0.0, -0.13),
+         mats["ground"])
 
     # --- the zebra (6 longitudinal bars, y -2.2..2.2, h 0.012 on the
     # asphalt; the two worn whites ALTERNATE per bar -- F10) ------------
