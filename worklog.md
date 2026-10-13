@@ -3571,3 +3571,52 @@ Stage Summary:
   the sfx-contract + daemonize-path + BEATS-shape laws recorded.
 - Remotes: GitHub main bee2845->4ef144b (vision-kit), 80ce2a0->749d0a1
   (previz-review); fetch-rebase held through 2 parallel collisions.
+
+---
+
+## Session 15 (cont.) — the second lane: bake-to-stage completion + the review round
+
+Work Log:
+- Restored context from GitHub (5 repos), review server UP via
+  daemonize + repo-local db, comments restored (v6_0:6, v6_1:3).
+- tferry_bake.py written (contract-authoritative speed plan, sibling
+  repo resolution, envelope assert) — BAKE GREEN 129 agents, pin
+  f5fe4423 (== the parallel lane's, deterministic cross-check).
+- F-TF1: the contract-shape aliases (DT/N_RELEASE/SPAWN_ZONES_V5) +
+  the sibling-resolution fix for the /home/z/work hardcode family.
+- F-TF2: the slice's crowd branch was structurally wrong — rewritten
+  to the kit-loader shape (132 anchors, the rename law, bake2 pairing
+  pre-assert GREEN, palette post-materialize).
+- F-TF3: the flow strip caught agents WALKING ON WATER south of the
+  deck edge — two wall rows in the contract (y=-0.5, y=-2.7); the
+  native engine E_InvalidRange-refuses squares past the walkable
+  (cap centers at 5.45; a NEW hard law).
+- Three framing rounds + three EEVEE night rounds (all eye-driven):
+  the S2 flip BOARD (the f85 beat carrier; the night close-up
+  emission ceiling is DISTANCE-dependent ~1.1-1.3), the GANG SPOT +
+  GATE WORK LIGHT (every beat needs its diegetic light), the 420W
+  lane lamp (the Latecomer's hold lane inside the pool radius).
+- THE PARALLEL LANE: three remote collisions (the framing set, the
+  night pass, the sfx key), all resolved fetch-inspect-rebase with
+  eye arbitration; the final set = both lanes' contributions composed
+  as ONE (12/12 certified). Zero force pushes.
+- EXPORT GREEN (rev 1, all gates: 12 shots / 129 tracks / 135
+  actions / 12 GLB cams), 96 filmstrips, staged tferry_1, re-staged
+  0008cfa with the final composition; in-app verified (S12 title
+  scale-key, GLB anim, audit-ok, comments panel live).
+- The fresh-context review round (sub-agent 5-a): zero P0s, 5 P1s —
+  all consumed (the count law, HERO_LANES dead-data removal → F-TF6,
+  the outboard RB statics, render.fps, the flank wall). Re-bake pin
+  8b7d4d8e; the contract evolves AHEAD of the staged pkg (documented).
+- docs/USABILITY_TF1_last_ferry.md (the F-TF ledger + the night laws
+  + the merge-cost lesson); SKILL +30 laws under the 30k cap;
+  HANDOFF addendum.
+
+Stage Summary:
+- LIVE: tferry_1 (the final merged composition) + tdawn_3 — both
+  awaiting the user's review; comments ON.
+- Kit: F-TF1..4 closed, F-TF6 filed OPEN (kit-mode hero-lane
+  pushout), the E_InvalidRange + flow-strip-seam laws captured.
+- Next: the user round on BOTH films; stage rev 2 = the review-fix
+  re-export (8b7d4d8e) when comments demand a cut; F-TD9 + F-TF5
+  (the vendor wheel re-sync) are the remaining kit chores.
