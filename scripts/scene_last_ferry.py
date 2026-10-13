@@ -513,10 +513,12 @@ def _crowd_palette(ctx):
 
 def emit_sfx_events(ctx, out_dir):
     import json
+    # the app's sfx contract: {name|kind, frame} objects -- the "id"
+    # key was dropped 3/3 by the app's loader (the in-app find)
     events = [
-        {"id": "chime", "frame": 85, "label": "boarding chime"},
-        {"id": "clang", "frame": 721, "label": "gangway clang"},
-        {"id": "horn", "frame": 913, "label": "departure horn"},
+        {"name": "chime", "frame": 85, "label": "boarding chime"},
+        {"name": "clang", "frame": 721, "label": "gangway clang"},
+        {"name": "horn", "frame": 913, "label": "departure horn"},
     ]
     with open(os.path.join(out_dir, "sfx_events.json"), "w") as f:
         json.dump({"fps": FPS, "meta": {"scene": "scene_last_ferry"},
