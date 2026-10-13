@@ -349,8 +349,7 @@ Deep recipe: kb/tdawn_vision_film.md; frictions: docs/USABILITY_TD1*
   DATABASE_URL is obeyed by prisma-cli but IGNORED by the app —
   push with the absolute repo-local URL; details in session-15).
 - **Pillow on 5.2 bundles python3.13** (not 3.11): install.sh's probe
-  loop misses it; `tools/blender/5.2/python/bin/python3.13 -m pip
-  install --no-user Pillow` by hand (filed as a kit friction).
+  misses it; install by hand with that interpreter (kit friction).
 - **Palette per-agent = post-materialize only**: bake2 gives each sim
   agent a private mesh (users==1); the 3 RB carts stay shared (copy
   first). Assigning before bake2 mutates the SHARED lib datablock and
