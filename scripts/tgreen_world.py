@@ -43,8 +43,8 @@ from tdawn_actors import make_material
 
 # --- the daylight ladder (F10 sun 2.0/3.0/4.0 at sky 0.5; F11 glyph
 # strength lives in the materials, swept by the scene module) --------
-TG_SUN_STRENGTH = 3.0     # the TG.Sun lamp's W/m2 AND the ladder midpoint
-TG_SKY_STRENGTH = 0.5     # sky:sun = 0.5:3.0 (the F10 sky anchor)
+TG_SUN_STRENGTH = 5.0     # the ladder winner (sun5/sky0.15: deepest shadows, the two-tone read)
+TG_SKY_STRENGTH = 0.15    # the ladder winner (the ambient was the wash: p95-p50 0.07 at 0.5)
 TG_SUN_ELEV_DEG = 40.0    # 3-4pm light (F9)
 TG_SUN_AZ_DEG = 235.0     # WSW bearing -> shadows fall ENE (~55 deg)
 
@@ -285,7 +285,7 @@ def build_world(scene):
     # must reach the lamp, hence read at CALL time, not def time).
     ld = bpy.data.lights.new("TG.Sun", type='SUN')
     ld.energy = TG_SUN_STRENGTH * 1.0
-    ld.angle = math.radians(2.0)          # soft-ish edges
+    ld.angle = math.radians(1.0)          # crisper edges (the ladder find: 2 deg read too soft at 16m)
     ld.color = (1.0, 0.96, 0.90)
     sun_ob = bpy.data.objects.new("TG.Sun", ld)
     sun_ob.location = (-18.0, -12.0, 14.0)   # label-only (direction-only)
@@ -303,6 +303,17 @@ def build_world(scene):
     add_sky_world(sun_elevation_deg=TG_SUN_ELEV_DEG,
                   sun_rotation_deg=TG_SUN_AZ_DEG,
                   strength=TG_SKY_STRENGTH)
+    # KILL THE SKY'S OWN SUN DISC (the first ladder's find): the
+    # MULTIPLE_SCATTERING disc is physically brilliant -- its irradiance
+    # washed every frame pastel and dwarfed the lamp (the sun 2->4 ladder
+    # moved mean luma 0.707->0.724, i.e. nothing). The TG.Sun lamp is
+    # the SOLE direct light; the sky is atmosphere-only fill.
+    if scene.world and scene.world.use_nodes:
+        for n in scene.world.node_tree.nodes:
+            if n.type == 'TEX_SKY' and hasattr(n, 'sun_disc'):
+                n.sun_disc = False
+                print(f"[tgreen_world] sky sun_disc -> off "
+                      f"({n.sky_type})")
 
     bpy.context.view_layer.update()
     created = [ob for ob in scene.objects if ob.name not in pre]
