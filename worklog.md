@@ -3695,3 +3695,22 @@ Agent: session-16-diff-reviewer
 Task: READ-ONLY full-diff review e64528f..HEAD (D19 preflight, exporter gates 15/4, kit fixes, install.sh, t10 suites, docs wave).
 Work Log: Read DESIGN_D19 REV-2 first, then export_preflight.py (1343 l) against the real exporter. Verified: S1 Signature.bind mirrors the dispatch (now exporter:1035-1048) exactly — bool-is-int, kw-only, no-n_frames sentinel case; S2 arity table line-checked vs _collect_story for BOARD/RUN_PARAMS/RB_FALLS/RB_KD/CHASE_FALLS_V3/CAMS_V3/DIALOG (+7 more) — cast-compatible, never stricter; no exception path exits 0 (fail-closed __main__ + exit 3); B5 differential deletion restores every attr via finally; B-checks read-only (no bpy leaks). Gate 15: sfx_problems initialized unconditionally (no NameError); fps-missing tolerated, fps-MISMATCHED rejects — both in-repo emitters (scene_terminal_dawn:667, scene_last_ferry:550) write fps → no escape-lane regression, P0 condition NOT met. Scoped audit: every audit_scene row carries "state" (pair_contact 7 update paths + AABB-reject path + ERROR row) → fix sound. F19 acks independent, ordering correct. install.sh: bash -n clean; P1 probe-order bug found. t10: cleanup NOT exception-safe (P1).
 Findings: 0×P0; 2×P1 (test_t10_export fixture cleanup not try/finally; install.sh Pillow probe prefers tools/blender over BLENDER_BIN — Pillow can land in a python blrun never runs); 11×P2 (fps doc/impl drift, exporter line-refs off by -5 after the docstring edit, _vec_check(None) S2 hole, animate=None false-PASS, scoped failed ignores band, split_would_refuse stale, B5 after B-sfx + mkdtemp leak, install else wording, gate-15 n_sfx/int() nits, CAMS legacy fallback over-strict, calibration number unrecorded). No files edited; no commit; report returned to orchestrator.
+
+---
+Task ID: 6 (session close)
+Agent: orchestrator (session-16)
+Task: KIT-QUALITY lane per the user's course correction — audit/test/refine the vision kit; no film building (parallel lane owns scenes).
+
+Work Log:
+- Context restored from SKILL/HANDOFF/PLAN at e64528f; fresh clone to local disk (FUSE law); install.sh green (Blender 5.2.2).
+- CRITICAL: GitHub PAT 401-dead (verified via API); GitLab PAT alive → GitLab = authoritative push target this session (all commits pushed there).
+- Audit wave (3 parallel read-only sub-agents): 1-a exporter contract inventory (0 tests on the export lane, 5 P0 landmine classes, TWO-exporter scoping finding); 1-b ledger triage (F-TF5/open verified, doc-debt map); 1-c AGENTS.md drift (1 crash-a-consumer defect, 4 stale claims, 1 real code bug: scoped audit matched verdict not state).
+- Wave A: six kit fixes + test_v9 8/8 (F-TD5 view_layer.update port, scoped-audit state fix, F19 ack_many_parts, F20-R6 hint, F-TD9 install.sh authoritative probe + QA-R69 symlink heal, F-TF5 wheel re-vendor 1.0.0→1.5.5).
+- Wave B: D19 design REV-2 (critique round: 7 blocking fixes adopted) → scripts/export_preflight.py (Phases S+B, parity guard w/ differential attribution) → t10 two-tier suite (property test 100 checks/0.2s pure-python both-direction drift property; subprocess tier 19 checks incl. F-TF4 + bare-animate classes) → exporter gate 15 (sfx conformance fail-closed) + gate 4 (BOARD total-decode-failure).
+- Wave C: AGENTS.md 9 code-verified fixes + Ship & verify section + doc-debt sweep (F18/F19/F20/F-TD5/T6/Queue-6 closed with evidence; "six older filings" recount → F-TD1/2/3).
+- Wave D: fresh-context review (2 P1 + 11 P2, all fixed) + full battery 26/26 after fixes: usd_export RNA-filter fix (5.2.2 kwarg rot), probe_crowd_bake scope move, BLRUN_FORCE for the four nested-blrun suites (flock had broken their documented mode).
+
+Stage Summary:
+- HEAD 1cfafc4 on GitLab (8 session commits, zero force pushes, no collisions).
+- The export/package lane has regression coverage for the first time; contract failures now surface pre-render with attributed messages.
+- Session-16 close state + next-session value order in HANDOFF/PLAN; laws distilled to SKILL.
