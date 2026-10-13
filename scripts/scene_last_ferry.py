@@ -18,17 +18,6 @@ _here = str(Path(__file__).resolve().parent)
 if _here not in sys.path:
     sys.path.insert(0, _here)
 
-# the escape-previz scripts (crowd_kit plugin + crowd_v6 shared
-# loader) -- sibling resolution first, the tdawn hardcode retired
-# (the F-TF1 friction family; TPREVIZ_SCRIPTS still wins)
-_lab = Path(__file__).resolve().parent.parent.parent
-_sib = _lab / "blender-escape-previz" / "scripts"
-_previz_scripts = os.environ.get(
-    "TPREVIZ_SCRIPTS",
-    str(_sib) if _sib.is_dir() else "/home/z/work/blender-escape-previz/scripts")
-if _previz_scripts not in sys.path:
-    sys.path.insert(0, _previz_scripts)
-
 import tferry_world as W
 
 FPS = 24
@@ -47,49 +36,35 @@ SHOTS_V3 = [
     ("S2",  85,   168, "the kiosk board flips to BOARDING (the call)"),
     ("S3",  169,  264, "the surge ignites: the far bands pour south"),
     ("S4",  265,  348, "the Latecomer enters at the pier head, breaks into a run"),
-    ("S5",  349,  444, "lateral: the Latecomer cuts along the east rail line"),
+    ("S5",  349,  444, "lateral: the Latecomer's run down the east rail line"),
     ("S6",  445,  528, "the Deckhand holds the throat; the crowd piles at the choke"),
-    ("S7",  529,  624, "low tracker: the Latecomer slips the bollard line"),
+    ("S7",  529,  624, "the Latecomer holds at the east rail; the stream jostles past"),
     ("S8",  625,  720, "the Deckhand sees the Latecomer; holds the gap open"),
     ("S9",  721,  816, "the beat: through the maintenance gate, the crew wave"),
     ("S10", 817,  912, "the throat sealed by the Deckhand's arm; the pier quiets"),
-    ("S11", 913,  1008, "the crane rises: the empty pier, the windows begin to move"),
+    ("S11", 913,  1008, "the crane rises: the Latecomer aboard, the windows begin to move"),
     ("S12", 1009, 1080, "title frame: LAST FERRY over the receding windows"),
 ]
 
 CAMS_V3 = [
-    # S1 aerial moved SW+higher so the FERRY establishes (the pier strip
-    # alone read as "a queue somewhere")
-    ("CAM_S1",  (-9.0, -9.0, 15.0), (-9.0, -9.0, 15.0), 26,
-     (0.5, 20.0, 0.0), False, 0.0),
-    # S2: the BOARDING sign was on the kiosk's SOUTH face (dead side --
-    # the blank north slab filled the frame); sign flipped north (the
-    # arriving crowd's side) + camera north looking south at it
-    ("CAM_S2",  (0.9, 5.6, 2.2), (0.9, 5.6, 2.2), 40,
-     (3.05, 2.75, 2.05), False, 0.0),
+    ("CAM_S1",  (-7.5, -6.5, 13.0), (-7.5, -6.5, 13.0), 26,
+     (1.0, 24.0, 0.0), False, 0.0),
+    ("CAM_S2",  (1.6, -2.2, 2.6), (1.6, -2.2, 2.6), 38,
+     (3.1, 1.2, 2.05), False, 0.0),
     ("CAM_S3",  (-2.0, 30.0, 5.0), (-2.0, 30.0, 5.0), 30,
      (0.2, 10.0, 1.0), False, 0.02),
-    # S4: tighter on the Latecomer's entry (he was buried mid-crowd)
-    ("CAM_S4",  (4.0, 36.0, 2.4), (4.0, 36.0, 2.4), 45,
-     (4.9, 27.5, 1.2), False, 0.015),
-    ("CAM_S5",  (2.2, 24.0, 1.9), (2.2, 24.0, 1.9), 30,
-     (4.8, 16.0, 1.1), False, 0.025),
-    # S6: the camera stood INSIDE the queue aiming at the EMPTY throat;
-    # pulled west+north so the Deckhand AND the pile read together
-    ("CAM_S6",  (-5.2, 7.0, 2.6), (-5.2, 7.0, 2.6), 40,
-     (0.0, 2.5, 1.2), False, 0.018),
-    # S7: aim was 4m north of the Latecomer's hold pose (f580 he holds
-    # (4.8, 8.0))
-    ("CAM_S7",  (-4.6, 14.0, 1.5), (-4.6, 14.0, 1.5), 35,
-     (4.8, 9.0, 1.1), False, 0.03),
-    # S8: the pairing shot -- Deckhand (0.3,0.7) + Latecomer (4.8,8)
-    # in ONE frame from the west deck edge (was: empty throat)
-    ("CAM_S8",  (-3.4, 0.6, 2.0), (-3.4, 0.6, 2.0), 35,
-     (3.2, 5.2, 1.2), False, 0.012),
-    # S9: aim past the subject (the maint gate) -- recentered on the
-    # gate + his crossing path
-    ("CAM_S9",  (2.6, 10.8, 2.3), (2.6, 10.8, 2.3), 32,
-     (5.4, 7.6, 1.1), False, 0.0),
+    ("CAM_S4",  (4.0, 36.0, 2.2), (4.0, 36.0, 2.2), 34,
+     (4.9, 30.0, 1.2), False, 0.015),
+    ("CAM_S5",  (7.0, 19.0, 2.6), (7.0, 19.0, 2.6), 50,
+     (4.8, 15.0, 0.9), False, 0.025),
+    ("CAM_S6",  (-5.0, 8.2, 3.2), (-5.0, 8.2, 3.2), 40,
+     (0.2, 1.8, 1.0), False, 0.018),
+    ("CAM_S7",  (6.6, 5.2, 1.9), (6.6, 5.2, 1.9), 35,
+     (4.8, 8.2, 1.0), False, 0.03),
+    ("CAM_S8",  (7.2, 10.5, 2.8), (7.2, 10.5, 2.8), 35,
+     (2.0, 2.8, 0.8), False, 0.012),
+    ("CAM_S9",  (8.6, 4.6, 2.4), (8.6, 4.6, 2.4), 35,
+     (3.8, 9.4, 1.0), False, 0.0),
     ("CAM_S10", (-2.0, 3.4, 2.6), (-2.0, 3.4, 2.6), 26,
      (0.4, -0.6, 1.4), False, 0.0),
     # the CRANE (S11/S12): loc AND aim keyed -- over the outboard
@@ -97,7 +72,7 @@ CAMS_V3 = [
     ("CAM_S11", (-8.6, 18.0, 3.2), (-9.2, 10.0, 11.0), 30,
      (0.5, 10.0, 0.5), False, 0.0),
     ("CAM_S12", (-9.2, 10.0, 11.0), (-8.8, 8.0, 11.6), 35,
-     (0.0, 1.0, 1.2), False, 0.0),
+     (0.8, -2.2, 0.9), False, 0.0),
 ]
 
 CAST = {
@@ -166,7 +141,7 @@ def _title_card(scene):
     (scale keys; converted mesh; the tdawn_2 'constantly visible' law
     from birth)."""
     from tdawn_actors import make_material
-    size = 0.44                 # 11.6m crane distance: 0.30 read small
+    size = 0.30
     tx, ty, tz = 0.0, 2.2, 3.0
     mat = make_material("TF.TitleCard", (1.0, 0.88, 0.70), 0.4)
     crv = bpy.data.curves.new("TF.TitleCard", type="FONT")
@@ -332,14 +307,13 @@ def _kf_set_pieces(ctx):
     c12.keyframe_insert(data_path="location", frame=1030)
     for c in (c11, c12):
         _bezier(c)
-    # the Aim.<CAM_S11> empty drifts down+SOUTH with the rise (the
-    # look-at keys: (0.5,10,0.5) -> (0,-1.0,0.5) -- the S11 intent is
-    # 'the windows begin to move': the FERRY must own the frame end;
-    # the deck queue falls out of the tight frustum)
+    # the Aim.<CAM_S11> empty drifts down with the rise (the look-at
+    # keys: (0.5,6.0,0.6) -> (0.8,-2.0,0.8) -- ends ON the ferry deck:
+    # the receding windows are the S11/S12 subject (the framing round))
     a11 = bpy.data.objects.get("Aim.CAM_S11")
-    a11.location = (0.5, 10.0, 0.5)
+    a11.location = (0.5, 6.0, 0.6)
     a11.keyframe_insert(data_path="location", frame=913)
-    a11.location = (0.0, -1.0, 0.5)
+    a11.location = (0.8, -2.0, 0.8)
     a11.keyframe_insert(data_path="location", frame=1008)
 
 
@@ -352,13 +326,12 @@ def build_scene():
             bpy.data.objects.remove(o, do_unlink=True)
     parts = W.build_world(scene)
     heroes = _heroes(scene)
-    chars = _crowd_anchors(scene)
     cams = _cameras(scene)
     _markers(scene, cams)
     title = _title_card(scene)
     bpy.context.view_layer.update()
     return {"parts": parts, "heroes": heroes, "cams": cams,
-            "chars": chars, "title": title}
+            "title": title}
 
 
 def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
@@ -368,11 +341,12 @@ def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
     _kf_heroes(ctx)
     _kf_set_pieces(ctx)
     crowd_cache = _crowd_cache_path()
-    if crowd_cache and with_crowd is not False:
+    if crowd_cache and with_crowd is False:
+        crowd_cache = None
+    if crowd_cache:
         _crowd_kit_branch(ctx, crowd_cache)
     else:
-        print("[tferry] no crowd (cache absent or --skip-crowd) -- "
-              "pre-bake look (anchors at authored grid)")
+        print("[tferry] no crowd cache -- pre-bake look (heroes only)")
     bpy.context.view_layer.update()
     return None
 
@@ -384,50 +358,39 @@ def _crowd_cache_path():
 
 
 def _crowd_anchors(scene):
-    """The 132 placeholder anchors the kit-mode loader's rename law
-    expects: 120 crowd Zed.NNNN (named to the cache-name law up front)
-    + 12 chase Zed.ChasePNN (3 of them are RB slots the loader renames
-    to Zed.RB.ChaseNN; 9 get positionally renamed Zed.Chase01..09 and
-    pair with the sim's crew tail). loader.py:530-560 is the law.
+    """The 120 crowd + 12 chase anchor capsules (the loader's §9.1
+    shape: 3 RB slots at chase indices 2/5/8 rename to placeholders,
+    the remaining 9 ride the sim tail -- THIS film's crew). Positions
+    are pre-bake stand-ins only: bake2 materializes the cache tracks.
 
-    Pre-bake positions: the zone rows (the crowd grid) and the pier
-    head (the crew answering the call). bake2 overwrites all 129
-    non-RB anchors with keyed TRS; the 3 RB placeholders stay where
-    they stand (outboard pier head -- dressing-plausible statics)."""
-    from tdawn_actors import (build_commuter_mesh, new_anchored_obj,
-                              commuter_material)
-    lib = build_commuter_mesh("TF.CommuteLib",
-                              mat_body=commuter_material(0))
-    # PARK the library mesh outside every frustum + hide_render (the
-    # tdawn law: the unparked source stood in-frame as a WHITE figure)
-    lib.location = (0.0, 45.0, -2.5)
-    lib.hide_render = True
+    The anchors SHARE the heroes' TF.CommuterMesh lib data (bake2
+    copies per-instance); the lib itself is parked + hide_render (the
+    unparked-lib law -- a white figure stood in the throat at f486).
+    """
+    from tdawn_actors import new_anchored_obj
+    lib = bpy.data.objects.get("TF.CommuterMesh")
+    if lib is None:
+        raise RuntimeError("[tferry] lib mesh TF.CommuterMesh missing "
+                           "-- build_scene must run first")
     crowd = []
-    # 120 anchors in the zone-row shape (24-34 / 12-20 / 6-10), a
-    # 12-wide grid reading as the pre-call drift
     for i in range(120):
-        row = i // 12
-        col = i % 12
-        y = 32.0 - row * 2.1 if row < 5 else 20.0 - (row - 5) * 2.1
-        if row >= 10:
-            y = 10.0 - (row - 10) * 1.2
-        x = ((col - 5.5) * 0.95)
         crowd.append(new_anchored_obj(
-            f"Zed.{i + 1:04d}", lib, (x, y, 0.0),
-            yaw=math.pi))       # facing south, toward the throat
+            f"Zed.{i + 1:04d}", lib,
+            (((i % 12) - 5.5) * 0.9, 9.0 + (i // 12) * 1.9, 0.0),
+            yaw=math.radians(180.0)))
     chase = []
     for i in range(12):
         chase.append(new_anchored_obj(
-            f"Zed.ChaseP{i + 1:02d}", lib,
-            (((i % 6) - 2.5) * 1.3, 30.0 + (i // 6) * 2.0, 0.0),
-            yaw=math.pi))
-    return {"zombies": {"crowd": crowd, "chase": chase}}
+            f"Zed.CrewP{i + 1:02d}", lib,
+            (((i % 6) - 2.5) * 1.2, 4.0 + (i // 6) * 2.0, 0.0),
+            yaw=math.radians(180.0)))
+    return {"crowd": crowd, "chase": chase}
 
 
 def _shot_table(shots, cams):
-    """The ShotCam rows the tiering/stash contract carries (the tdawn
-    shape; kept local so the scene module stays independent of the v6
-    import order)."""
+    """The ShotCam rows the tiering/stash contract carries (tdawn's
+    local copy -- the scene module stays independent of the v6 import
+    order)."""
     by_name = {c[0]: c for c in cams}
     out = []
     for sid, f0, f1, _intent in shots:
@@ -446,18 +409,24 @@ def _shot_table(shots, cams):
 
 
 def _crowd_kit_branch(ctx, cache_path):
-    """The kit-mode crowd path (the tdawn shape, mirrors
-    scene_escape_v5.py:1256-1274): loader honesty asserts + anchor
-    rename law + bake2 pairing + the tferry palette.
+    """The kit-mode crowd path (the tdawn PROVEN shape): build anchors
+    -> ctx["chars"] -> load_kit_cache (honesty asserts + §9.1 rename
+    law + bake2 pairing pre-assert) -> bake_tier2 (per-agent mesh
+    copies + shape keys + TRS actions) -> palette (the color
+    DISCIPLINE: a neutral value-variance register; identity color is
+    for call-outs ONLY -- ONE dark-blue crew tone, the user's law)."""
+    import json
+    print(f"[tferry] kit cache ctx: {cache_path}")
+    with open(cache_path) as f:
+        cache_ctx = json.load(f)
+    print(f"[tferry] kit cache digest: "
+          f"{str(cache_ctx.get('digest'))[:16]}")
 
-    F-TF2 (the slice's gap): this branch originally hand-rolled a
-    json read of a chars shape that does not exist and skipped the
-    anchor assembly + bake_tier2 entirely -- the scene module was
-    'export-complete' on paper only. The kit loader owns this chain;
-    scenes must NEVER hand-roll it."""
-    print(f"[tferry] kit cache: {cache_path}")
+    scene = bpy.context.scene
+    ctx["chars"] = {"zombies": _crowd_anchors(scene)}
     ctx["crowd_shots"] = _shot_table(SHOTS_V3, CAMS_V3)
     ctx["crowd_tier_pins"] = CROWD_TIER_PINS
+
     import crowd_kit as _CK
     _CK.loader.load_kit_cache(ctx)
     import crowd_v6 as CV6
@@ -467,38 +436,27 @@ def _crowd_kit_branch(ctx, cache_path):
 
 
 def _crowd_palette(ctx):
-    """Per-agent palette assignment (the user's color-discipline law
-    from birth here): the population is a NEUTRAL register -- value
-    variance only; identity color is for call-outs. The crew tail
-    shares ONE dark-blue tone (group identity, previz semantics).
-
-    bake2 gives every sim agent a private mesh copy (users==1); the 3
-    RB placeholders keep the shared lib mesh (users>1 -> copy first).
-    Assigning earlier would mutate the SHARED library datablock (the
-    tdawn_1 clone-army lesson)."""
+    """Per-agent palette (the color-discipline law, session-14):
+    neutral crowd register + ONE dark-blue crew callout. mesh.copy()
+    preserves shape keys; materials.clear() never touches them."""
     from tdawn_actors import make_material
     NEUTRALS = [(0.13, 0.13, 0.14), (0.22, 0.21, 0.20),
                 (0.16, 0.17, 0.19), (0.27, 0.25, 0.22),
                 (0.10, 0.10, 0.11), (0.20, 0.19, 0.18)]
     CREW = (0.09, 0.11, 0.20)   # the crew: ONE dark-blue callout tone
     chars = ctx["chars"]["zombies"]
+    groups = ((chars["crowd"], NEUTRALS), (chars["chase"], None))
     n = 0
-    for i, ob in enumerate(chars["crowd"]):
-        if ob.data.users > 1:
-            ob.data = ob.data.copy()
-        ob.data.materials.clear()
-        ob.data.materials.append(make_material(
-            f"CA.Commute.TF0.{i % len(NEUTRALS)}",
-            NEUTRALS[i % len(NEUTRALS)]))
-        n += 1
-    for i, ob in enumerate(chars["chase"]):
-        if ob.data.users > 1:
-            ob.data = ob.data.copy()
-        ob.data.materials.clear()
-        ob.data.materials.append(make_material(
-            f"CA.Commute.TF1.{i % len(NEUTRALS)}", CREW))
-        n += 1
-    print(f"[tferry] crowd palette: {n} anchors "
+    for group, palette in groups:
+        for i, ob in enumerate(group):
+            rgb = CREW if palette is None else palette[i % len(palette)]
+            if ob.data.users > 1:
+                ob.data = ob.data.copy()
+            ob.data.materials.clear()
+            ob.data.materials.append(make_material(
+                f"CA.Commute.TF.{i % len(NEUTRALS)}", rgb))
+            n += 1
+    print(f"[tferry] crowd palette: {n} agents "
           f"(neutral crowd + dark-blue crew)")
 
 
@@ -534,8 +492,8 @@ def main():
     scene = bpy.context.scene
     ctx = build_scene()
     animate(ctx, with_crowd=not args.skip_crowd)
-    out = os.path.join(args.output, "stillwork")
-    os.makedirs(out, exist_ok=True)
+    out = args.output          # the caller owns the dir (the tdawn law:
+    os.makedirs(out, exist_ok=True)   # --output is the stillwork dir)
     if args.still:
         scene.frame_set(args.still)
         _set_engine(scene, args.engine, args.samples)
