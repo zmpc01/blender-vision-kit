@@ -224,23 +224,27 @@ def _apply_duplicate_object(obj, params):
     bpy.context.collection.objects.link(new_obj)
     new_obj.name = params["new_id"]
     if "location" in params:
+        _finite_check("duplicate_object", "location", params["location"])
         new_obj.location = tuple(params["location"])
     if "rotation_deg" in params:
+        _finite_check("duplicate_object", "rotation_deg", params["rotation_deg"])
         new_obj.rotation_euler = tuple(math.radians(v) for v in params["rotation_deg"])
     if "scale" in params:
+        _finite_check("duplicate_object", "scale", params["scale"])
         new_obj.scale = tuple(params["scale"])
 
 
 def _apply_set_camera_location(obj, params):
     if obj.type != 'CAMERA':
         raise RuntimeError(f"{obj.name} is not a camera")
+    _finite_check("set_camera_location", "location", params["location"])
     obj.location = tuple(params["location"])
 
 
 def _apply_set_camera_lens(obj, params):
     if obj.type != 'CAMERA':
         raise RuntimeError(f"{obj.name} is not a camera")
-    obj.data.lens = params["lens_mm"]
+    obj.data.lens = _require(params, "lens_mm", "set_camera_lens")
 
 
 def _apply_set_camera_dof(obj, params):
@@ -263,8 +267,10 @@ def _apply_set_camera_dof(obj, params):
     dof.use_dof = True
     dof.focus_object = None  # distance-based focus, not object-based
     if focus is not None:
+        _finite_check("set_camera_dof", "focus_distance", focus)
         dof.focus_distance = float(focus)
     if fstop is not None:
+        _finite_check("set_camera_dof", "aperture_fstop", fstop)
         dof.aperture_fstop = float(fstop)
     print(f"[apply_patch] set_camera_dof: {obj.name} "
           f"focus_distance={dof.focus_distance:.6g} m, "
@@ -274,7 +280,7 @@ def _apply_set_camera_dof(obj, params):
 
 def _apply_set_frame(obj, params):
     # obj is None for this op
-    bpy.context.scene.frame_set(params["frame"])
+    bpy.context.scene.frame_set(_require(params, "frame", "set_frame"))
 
 
 def _apply_render_viewport(obj, params):
@@ -354,7 +360,7 @@ def _apply_set_light_energy(obj, params):
 def _apply_set_light_color(obj, params):
     if obj.type != 'LIGHT':
         raise RuntimeError(f"{obj.name} is not a light")
-    obj.data.color = tuple(params["color"])
+    obj.data.color = tuple(_require(params, "color", "set_light_color"))
 
 
 
@@ -481,7 +487,7 @@ def _apply_seat_at(obj, params):
 
 
 def _apply_snap_z(obj, params):
-    rep = _PL.snap_z(obj, params["target_z"],
+    rep = _PL.snap_z(obj, _require(params, "target_z", "snap_z"),
                      reference=params.get("reference", "bottom"),
                      override=params.get("override"),
                      output=params.get("output"))

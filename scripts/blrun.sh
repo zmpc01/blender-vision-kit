@@ -190,6 +190,11 @@ cleanup() {
     # leaked one blender_warm_XXXX.py per warm run. Remove it here (the
     # single EXIT trap — a second trap would clobber cleanup()).
     [[ -n "$WARM_SCRIPT" ]] && rm -f "$WARM_SCRIPT" 2>/dev/null || true
+    # F5A-10 (wave-2): BLRUN_OUT/BLRUN_ERR also leak on the SIGNAL path —
+    # the normal-path rm at the bottom never runs when the script is
+    # killed. The vars may be unset this early; default them empty.
+    [[ -n "${BLRUN_OUT:-}" ]] && rm -f "$BLRUN_OUT" 2>/dev/null || true
+    [[ -n "${BLRUN_ERR:-}" ]] && rm -f "$BLRUN_ERR" 2>/dev/null || true
     if [[ -n "$XVFB_PID" && -z "${KEEP_XVFB:-}" ]]; then
         kill "$XVFB_PID" 2>/dev/null || true
         # Wait briefly, then escalate to SIGKILL

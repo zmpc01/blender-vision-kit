@@ -314,15 +314,20 @@ def main():
         clear_scene()
         ctx = mod.build_scene()
         if hasattr(mod, "animate"):
-            # F2B-24 twin: mirror the exporter's dispatch so bare
+            # F2B-24 twin + F5A-5: mirror the exporter's dispatch so bare
             # def animate(ctx) modules don't TypeError here either.
+            # bind/call SPLIT (the apply_patch twin's contract, pinned by
+            # s17_10c): a TypeError raised INSIDE the module's animate
+            # body must propagate, not silently re-run the module bare
+            # (partial side effects applied twice).
             import inspect as _inspect
             try:
                 _inspect.signature(mod.animate).bind(
                     ctx, start_frame=1, n_frames=args.frames)
-                mod.animate(ctx, start_frame=1, n_frames=args.frames)
             except TypeError:
                 mod.animate(ctx)
+            else:
+                mod.animate(ctx, start_frame=1, n_frames=args.frames)
 
     print(f"[scene_schema] exporting schema (with_bounds={args.with_bounds})...")
     schema = export_scene_schema(with_bounds=args.with_bounds)

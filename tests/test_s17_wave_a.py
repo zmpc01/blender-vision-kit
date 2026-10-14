@@ -248,9 +248,64 @@ try:
 except RuntimeError as e:
     check("s17_8.keep_xy_false_refused", "F2B-4" in str(e), str(e)[:60])
 
-# ---------------------------------------------------------------- summary
+# ------------------------------------------------- wave-2 additions (F5A)
+# F5A-1: NaN through the LIBRARY gate (snap_z target_z — the audit's own
+# named example; the _require path was already covered above).
+try:
+    PL.snap_z(bpy.data.objects.new("_tmp_nan", None), float("nan"))
+    check("s17_19a.snapz_nan_refused", False, "NaN target_z accepted")
+except RuntimeError as e:
+    check("s17_19a.snapz_nan_refused", "not finite" in str(e), str(e)[:60])
+
+# F5A-2: seat_at must PRESERVE the mover's world scale (the s17 first cut
+# wrote a pure-rotation linear part and silently rescaled the mover).
+wipe()
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0, 0, 2))
+mv = bpy.context.active_object
+mv.name = "ScaledMover"
+mv.scale = (2.0, 1.0, 0.5)
+bpy.ops.object.empty_add(location=(1, 1, 2))
+an = bpy.context.active_object
+an.name = "Anchor2"
+bpy.context.view_layer.update()
+rep = PL.seat_at(mv, an, reference="origin")
+bpy.context.view_layer.update()
+got = tuple(round(v, 4) for v in mv.matrix_world.to_scale())
+check("s17_19b.seat_preserves_scale", got == (2.0, 1.0, 0.5),
+      f"world scale after seat_at: {got}")
+check("s17_19c.seat_lands_origin",
+      (Vector(mv.matrix_world.translation) -
+       Vector(an.matrix_world.translation)).length < 1e-4)
+
+# F5A-3: move_to under a ROTATED parent with override='keyframe' must
+# rebase keys by the BASIS delta (world delta was the missed twin).
+wipe()
+bpy.ops.mesh.primitive_cube_add(size=0.4)
+m2 = bpy.context.active_object
+m2.name = "M2"
+bpy.ops.object.empty_add(location=(0, 0, 0))
+p2 = bpy.context.active_object
+p2.name = "P2"
+p2.rotation_euler = (0, 0, 1.5708)   # 90 deg about Z
+m2.parent = p2
+m2.matrix_parent_inverse = p2.matrix_world.inverted()
+bpy.context.view_layer.update()
+m2.keyframe_insert(data_path="location", frame=1)
+m2.location = (1, 0, 0)
+m2.keyframe_insert(data_path="location", frame=24)
+bpy.context.view_layer.update()
+tgt = (3.0, 2.0, 1.0)
+PL.move_to(m2, tgt, reference="origin", override="keyframe")
+bpy.context.view_layer.update()
+bpy.context.scene.frame_set(24)
+bpy.context.view_layer.update()
+check("s17_19d.move_to_key_at_target",
+      (Vector(m2.matrix_world.translation) - Vector(tgt)).length < 1e-4,
+      f"keyed world pos at f24: {tuple(round(v, 4) for v in m2.matrix_world.translation)}")
+
 print(f"[test_s17] {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print(f"[test_s17] FAILED: {FAIL}")
     sys.exit(1)
-print("[test_s17] ALL PASS")
+print("[test_s17] ALL PASS (incl. wave-2 additions)")
+sys.exit(0)

@@ -1282,9 +1282,16 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
         # contract ("figure faces the empty's +Y"). Set the world rotation
         # to the anchor's exactly; the anchor translation below
         # re-positions the object.
-        R4 = seat_mw.to_euler().to_matrix().to_4x4()
+        # F5A-2: preserve the mover's WORLD SCALE — a pure-rotation linear
+        # part silently rescaled any non-unit-scaled mover (the old
+        # rotation_euler write preserved scale; this must too). to_scale()
+        # is Blender's decompose — approximate under shear, which kit
+        # movers don't carry.
+        S = obj.matrix_world.to_3x3().to_scale()
+        L4 = (seat_mw.to_euler().to_matrix() @
+              Matrix.Diagonal(S)).to_4x4()
         obj.matrix_world = Matrix.Translation(
-            obj.matrix_world.translation) @ R4
+            obj.matrix_world.translation) @ L4
         bpy.context.view_layer.update()
     if offset:
         target_loc = seat_mw @ Vector(offset)
@@ -1391,6 +1398,7 @@ def move_to(obj, target, *, reference='bottom-center', override=None,
         ref_pt = Vector(((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mn.z))
     tgt = Vector(target)
     delta = tgt - ref_pt
+    _basis_before = obj.matrix_basis.translation.copy()
     # world-space write (code-review gate P1: per-component location adds
     # are PARENT-space — a rotated parent silently redirects the move)
     obj.matrix_world = Matrix.Translation(delta) @ obj.matrix_world
@@ -1398,7 +1406,12 @@ def move_to(obj, target, *, reference='bottom-center', override=None,
     if override == "keyframe":
         ad = getattr(obj, "animation_data", None)
         if ad is not None and ad.action is not None:
-            n, chans = _rebase_location_keys(obj, delta)
+            # F5A-3: rebase by the BASIS-space delta (fcurves are basis
+            # space) — move_to was the missed twin of F2B-8; under a
+            # rotated parent the world delta displaced keys wrongly (the
+            # R1 mug-drift class).
+            d_local = obj.matrix_basis.translation - _basis_before
+            n, chans = _rebase_location_keys(obj, d_local)
             report["keyframes_rebased"] = n
             report["rebased_channels"] = chans
         else:
@@ -1431,6 +1444,13 @@ def snap_z(obj, target_z, *, reference='bottom', override=None, output=None):
             f"snap_z: unknown reference {reference!r} — valid tokens: "
             f"'bottom' (default), 'origin', 'centroid' (alias 'center')")
     ref_used = 'center' if reference == 'centroid' else reference
+    # F5A-1: library-level finite gate (the wave-1 audit's own named
+    # example — abs(nan) < 1e-12 is False, so a NaN target_z used to
+    # write a NaN location and exit 0).
+    if not math.isfinite(target_z):
+        raise RuntimeError(
+            f"snap_z: target_z is {target_z} (not finite) — refusing to "
+            f"write a non-finite location.")
     report = {"op": "snap_z", "obj": obj.name, "target_z": target_z,
               "reference": ref_used}
     if ref_used != reference:

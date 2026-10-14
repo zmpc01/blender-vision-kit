@@ -309,8 +309,14 @@ def render_angle(angle_label: str, out_path: str, *,
         scene.camera = orig_camera
         try:
             restore_markers()
-        except Exception:  # noqa: BLE001 — restore must never mask the render error
-            pass
+        except Exception as e:  # noqa: BLE001 — restore must never mask the render error
+            # F5A-6: silent `pass` would PERMANENTLY lose the shot cut
+            # (the marker's camera binding) with no trace. Loud note;
+            # the binding can be re-set from the SHOTS table if it ever
+            # fires, but the agent must KNOW.
+            print(f"[viewport] WARNING: marker camera restore failed "
+                  f"({e!r}) — a shot cut binding may be lost; re-set it "
+                  f"from the scene's SHOTS table.", flush=True)
         if cleanup:
             cleanup()
 
@@ -515,7 +521,20 @@ def main():
         clear_scene()
         ctx = mod.build_scene()
         if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=1, n_frames=args.frames)
+            # F5A-4 (wave-2): mirror the exporter's signature dispatch —
+            # the F2B-24 fix landed on apply_patch and scene_schema but
+            # missed THIS twin; bare `def animate(ctx)` modules TypeError
+            # here. Check the real API before asserting (kit law): the
+            # apply_patch twin (s17_10c) pins bind/call SPLIT — an
+            # in-body TypeError must not re-run the module bare.
+            import inspect as _inspect
+            try:
+                _inspect.signature(mod.animate).bind(
+                    ctx, start_frame=1, n_frames=args.frames)
+            except TypeError:
+                mod.animate(ctx)
+            else:
+                mod.animate(ctx, start_frame=1, n_frames=args.frames)
     else:
         print("[viewport] using currently-loaded scene")
 
