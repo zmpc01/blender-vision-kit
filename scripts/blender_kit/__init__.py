@@ -145,6 +145,34 @@ def _scaffold_5x_action(action):
     return bag
 
 
+def filter_rna_kwargs(op_id, kwargs, tag=""):
+    """F2C-1/F2C-2 (session-17): filter operator kwargs to what the RUNNING
+    Blender's RNA actually declares, and NOTE the drops.
+
+    The usd_export kwarg set was calibrated against 4.5.13's RNA; on 5.2.2
+    the same set TypeErrors (export_textures unrecognized) — the drift
+    class the session-16 battery caught in export_usd.py. This is the
+    shared filter: EVERY usd_export call site (export_usd.py,
+    export_previz_package.py --usd-sidecar, blender_kit.export_usd) goes
+    through it, so no twin can re-grow the unfiltered variant.
+
+    The _safe_set philosophy, applied to operator kwargs: version-proof by
+    construction. `tag` names the caller in the NOTE line.
+
+    Raises nothing: if get_rna_type() is unavailable (very old Blender),
+    returns kwargs unchanged and the caller's own TypeError retry remains
+    the fallback (degradation, not a new failure mode)."""
+    try:
+        rna_props = set(bpy.ops.wm.usd_export.get_rna_type().properties.keys())
+    except Exception:  # noqa: BLE001 — no RNA → caller's retry path handles it
+        return kwargs
+    dropped = [k for k in kwargs if k not in rna_props]
+    if dropped:
+        print(f"[{tag or 'blender_kit'}] NOTE: RNA dropped {len(dropped)} "
+              f"kwarg(s) not in this Blender's {op_id}: {sorted(dropped)}")
+    return {k: v for k, v in kwargs.items() if k in rna_props}
+
+
 def iter_fcurves(action):
     """Return the action's fcurves collection (iterable; supports .new/.find).
 
@@ -1077,17 +1105,15 @@ def export_usd(args: argparse.Namespace | None = None, *,
             triangulate_meshes=False,
         )
 
-        try:
-            bpy.ops.wm.usd_export(**usd_kwargs)
-        except TypeError as e:
-            # Older Blender versions may not have all kwargs; retry with minimum.
-            print(f"[blender_kit] note: usd_export kwarg error ({e}); retrying")
-            bpy.ops.wm.usd_export(
-                filepath=out_path,
-                export_animation=export_animation,
-                export_cameras=True,
-                export_lights=True,
-            )
+        # F2C-2 (session-17): RNA-filter via the shared filter. The old
+        # TypeError fallback SILENTLY DROPPED ~20 settings (evaluation_mode,
+        # export_custom_properties + namespace = the previz:entity carrier,
+        # uvmaps, normals, armatures, shapekeys...) — a degraded export that
+        # still returned success. The filter keeps everything the running
+        # Blender declares and notes exactly what it drops.
+        usd_kwargs = filter_rna_kwargs(
+            "usd_export", usd_kwargs, tag="blender_kit.export_usd")
+        bpy.ops.wm.usd_export(**usd_kwargs)
     finally:
         previz_usd_hook.unregister()
 
