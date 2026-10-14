@@ -39,10 +39,20 @@ from mathutils.geometry import intersect_ray_tri
 # 5.x compat: action.fcurves moved to channelbag API. Local fallback so this
 # module still imports when scripts/ isn't on PYTHONPATH (audit_contacts.py
 # pattern). See blender_kit/__init__.py:iter_fcurves for the source of truth.
+# F2B-9: READ-ONLY consumers (guards, finders, keyframe rebases) must use
+# iter_all_fcurves — iter_fcurves probes slot[0] only (blind to 5.x
+# multi-slot actions) and AUTO-SCAFFOLDS a fresh action's slot/layer/strip/
+# channelbag as a read side effect. Create paths that need .new()/.find()
+# keep iter_fcurves (none exist in this module).
 try:
-    from blender_kit import iter_fcurves
+    from blender_kit import iter_fcurves, iter_all_fcurves
 except ImportError:
     def iter_fcurves(action):
+        return action.fcurves
+
+    def iter_all_fcurves(action):
+        # read-only fallback: 4.x flat fcurves (the full 5.x slot chain
+        # lives in blender_kit; this stub keeps direct imports importable)
         return action.fcurves
 
 # ---------------------------------------------------------------------------
@@ -59,9 +69,14 @@ EPS_TANGENT = 1e-3
 
 
 def clear_bvh_cache():
-    """Drop all cached BVH trees. Called automatically after open_mainfile
-    by the patch ops; call manually after bulk geometry edits."""
+    """Drop all cached BVH trees AND the world-polygon cache (F2B-30:
+    _POLY_CACHE is keyed by the same _cache_key and survives
+    open_mainfile in-process — an edit that preserves vert/face counts,
+    frame and matrix would serve stale world polys to the CROSSING test).
+    Called automatically after open_mainfile by the patch ops; call
+    manually after bulk geometry edits."""
     _BVH_CACHE.clear()
+    _POLY_CACHE.clear()
 
 
 def _cache_key(obj):
@@ -668,20 +683,24 @@ def audit_scene(pairs=None, exclude=(), *, sample='verts',
 
 def _location_anim_channels(obj):
     """Location fcurves/drivers that would clobber placement writes
-    (review blocker #4)."""
+    (review blocker #4). F2B-9: iter_all_fcurves (read-only, ALL 5.x
+    slots) — iter_fcurves probed slot[0] only, so location keys in a
+    later slot were invisible and the guard passed right before a
+    frame_set clobbered the placement; iter_fcurves also scaffolds fresh
+    actions as a read side effect."""
     chans = []
     ad = getattr(obj, "animation_data", None)
     if not ad:
         return chans
     if ad.action:
-        for fc in iter_fcurves(ad.action):
+        for fc in iter_all_fcurves(ad.action):
             if fc.data_path == "location":
                 chans.append(f"action:location[{fc.array_index}]")
     for tr in getattr(ad, "nla_tracks", []):
         for st in tr.strips:
             act = getattr(st, "action", None)
             if act:
-                for fc in iter_fcurves(act):
+                for fc in iter_all_fcurves(act):
                     if fc.data_path == "location":
                         chans.append(f"nla:{act.name}:location[{fc.array_index}]")
     for dc in getattr(ad, "drivers", []):
@@ -719,7 +738,12 @@ def _rebase_location_keys(obj, delta):
         return 0, []
     touched = set()
     n = 0
-    for fc in iter_fcurves(ad.action):
+    # F2B-9: iter_all_fcurves is safe here despite the WRITES below — it
+    # never calls .new()/.find() (the reason iter_fcurves exists), it only
+    # chains EXISTING per-slot fcurve collections; the keyframe_points
+    # writes go to fcurves obtained by iteration, which stay valid
+    # references. Bonus: location keys in a non-[0] 5.x slot now rebase too.
+    for fc in iter_all_fcurves(ad.action):
         if fc.data_path != "location" or fc.array_index not in (0, 1, 2):
             continue
         d = delta[fc.array_index]
@@ -941,6 +965,23 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
     override: None | 'keyframe' | 'ignore' (see _guard_anim).
     Returns placement report (JSON-safe) with post-solve contact audit
     against every support."""
+    if not supports:
+        # F2B-15: an empty support list used to surface as
+        # "max() arg is an empty sequence" from support_heights.
+        raise RuntimeError(
+            "place_on: no supports given — name at least one support "
+            "object (the TOPMOST surface under the mover)")
+    if footprint not in ('bottom', 'all', 'grid'):
+        # F2B-16: any unrecognized token (kb-documented 'inset', 'Bottom',
+        # 'grids') used to fall into the else branch = silent whole-vert
+        # sampling with the report echoing the bogus token and ok=True.
+        raise RuntimeError(
+            f"place_on: unknown footprint {footprint!r} — valid values: "
+            f"'bottom' (downward-facing verts, default), 'all' (every "
+            f"vert), 'grid' (samples the bbox bottom). 'inset' is NOT a "
+            f"footprint value — pass the numeric inset=<meters> param "
+            f"instead (it shrinks the footprint inside its own bbox for "
+            f"seat lips).")
     if keep_xy is not True:
         raise RuntimeError(
             "place_on: keep_xy=False is refused (F2B-4: accepted-but-"
@@ -1232,11 +1273,18 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
     seat_mw = seat_empty.matrix_world.copy()
     target_loc = seat_mw.translation.copy()
     if align:
-        # world-rotation premultiply: orientation result is identical to
-        # the old basis write, but parent rotation/scale no longer leaks
-        # in; the anchor translation below then re-positions the object.
+        # world-rotation ABSOLUTE via matrix_world (F2B-8 parent-safety:
+        # the old basis write `rotation_euler = seat_mw.to_euler()` let
+        # parent rotation leak into world orientation). Wave A first tried
+        # a RELATIVE premultiply (R_seat @ R_old) — that STACKED the
+        # mover's existing yaw on the anchor's (t9 S1b: 10deg + 35deg =
+        # 45deg) instead of COPYING it, breaking the documented absolute
+        # contract ("figure faces the empty's +Y"). Set the world rotation
+        # to the anchor's exactly; the anchor translation below
+        # re-positions the object.
         R4 = seat_mw.to_euler().to_matrix().to_4x4()
-        obj.matrix_world = R4 @ obj.matrix_world
+        obj.matrix_world = Matrix.Translation(
+            obj.matrix_world.translation) @ R4
         bpy.context.view_layer.update()
     if offset:
         target_loc = seat_mw @ Vector(offset)
@@ -1370,22 +1418,36 @@ def move_to(obj, target, *, reference='bottom-center', override=None,
 
 
 def snap_z(obj, target_z, *, reference='bottom', override=None, output=None):
-    """Put obj's bottom (or 'origin'/'center') at an exact world z."""
+    """Put obj's bottom (or 'origin'/'centroid') at an exact world z.
+
+    F2B-12: AGENTS.md/PARAM_DOCS document 'centroid' but the lookup table
+    only had 'center' — the documented token raised a KeyError that the
+    friendly converter re-asserted ("signature: ...centroid"). 'centroid'
+    now aliases 'center' (report carries the EFFECTIVE token plus the
+    requested one); unknown tokens get a clean kit error listing the
+    valid set."""
+    if reference not in ('bottom', 'origin', 'centroid', 'center'):
+        raise RuntimeError(
+            f"snap_z: unknown reference {reference!r} — valid tokens: "
+            f"'bottom' (default), 'origin', 'centroid' (alias 'center')")
+    ref_used = 'center' if reference == 'centroid' else reference
     report = {"op": "snap_z", "obj": obj.name, "target_z": target_z,
-              "reference": reference}
+              "reference": ref_used}
+    if ref_used != reference:
+        report["reference_requested"] = reference
     anim = _guard_anim(obj, override)
     if anim:
         report["anim_override"] = anim
     bpy.context.view_layer.update()
     mn, mx = _aabb(obj)
     cur = {"bottom": mn.z, "center": (mn.z + mx.z) / 2,
-           "origin": obj.matrix_world.translation.z}[reference]
+           "origin": obj.matrix_world.translation.z}[ref_used]
     _apply_translation(obj, target_z - cur, override, report)
     bpy.context.view_layer.update()
     clear_bvh_cache()
     mn2, mx2 = _aabb(obj)
     got = {"bottom": mn2.z, "center": (mn2.z + mx2.z) / 2,
-           "origin": obj.matrix_world.translation.z}[reference]
+           "origin": obj.matrix_world.translation.z}[ref_used]
     report["result_z"] = round(got, 6)
     return _maybe_write(report, output)
 
@@ -1527,6 +1589,36 @@ def seam_views(a, b, *, out_dir, res=(640, 360), engine='workbench',
     cam = bpy.data.objects.new("SeamCam", cam_data)
     scene.collection.objects.link(cam)
     old_cam = scene.camera
+    # F2B-18: the SeamCam object+data used to leak into the scene (and
+    # therefore into --save-blend's state carrier) — every seam_views call
+    # left one behind, accumulating across a patch chain. Mirror the
+    # section_pair discipline: remove camera+data in finally (render
+    # exceptions included), keep the scene.camera restore.
+    try:
+        rep_views = _seam_views_shoot(a, b, out_dir=out_dir, res=res,
+                                      engine=engine,
+                                      contact_band_mm=contact_band_mm,
+                                      fill_frac=fill_frac, contact=contact,
+                                      centroid=centroid, normal=normal,
+                                      cam=cam, cam_data=cam_data,
+                                      cam_coords=cam_coords)
+    finally:
+        scene.camera = old_cam
+        bpy.data.objects.remove(cam, do_unlink=True)
+        bpy.data.cameras.remove(cam_data)
+    return {"contact_state": contact["state"],
+            "centroid": [round(v, 3) for v in centroid],
+            "normal_est": [round(v, 3) for v in normal],
+            "views": rep_views, "cameras": cam_coords}
+
+
+def _seam_views_shoot(a, b, *, out_dir, res, engine, contact_band_mm,
+                      fill_frac, contact, centroid, normal, cam, cam_data,
+                      cam_coords):
+    """seam_views' four renders (F2B-18 split: the caller owns camera
+    lifecycle so a render exception cannot leak the temp camera)."""
+    import os
+    scene = bpy.context.scene
 
     def shoot(name, loc, target, lens=50, ortho=None, clip_start=None,
               cam_type='PERSP'):
@@ -1629,12 +1721,7 @@ def seam_views(a, b, *, out_dir, res=(640, 360), engine='workbench',
         "section_side", centroid + side * (d_exit + 0.15), centroid,
         ortho=sec_ortho, clip_start=0.01,
         cam_type='ORTHO')
-
-    scene.camera = old_cam
-    return {"contact_state": contact["state"],
-            "centroid": [round(v, 3) for v in centroid],
-            "normal_est": [round(v, 3) for v in normal],
-            "views": paths, "cameras": cam_coords}
+    return paths
 
 
 def _aabb_union(a, b):

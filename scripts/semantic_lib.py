@@ -86,10 +86,14 @@ def _validate_batch(labels_map):
                 f"{sorted(_CONFIDENCE)} (id '{obj_id}')")
         obj = bpy.data.objects.get(obj_id)
         if obj is None:
-            avail = sorted(o.name for o in bpy.data.objects)[:15]
+            all_names = sorted(o.name for o in bpy.data.objects)
+            avail = all_names[:15]
+            # F2B-28: the "…" suffix printed even when nothing was
+            # truncated (<=15 objects) — it implied a hidden tail.
+            ell = " …" if len(all_names) > 15 else ""
             raise RuntimeError(
                 f"label_objects: id '{obj_id}' not found; scene objects: "
-                f"{avail} …")
+                f"{avail}{ell}")
         rows.append({"id": obj_id, "obj": obj, "label": label,
                      "confidence": conf})
     if not rows:

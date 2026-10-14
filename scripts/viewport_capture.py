@@ -467,8 +467,10 @@ def main():
                    help="Output PNG path. For multi-angle, this is the contact sheet path.")
     p.add_argument("--angles", default="persp",
                    help="Comma-separated list of angles. Options: "
-                        "front,side,top,persp,back,right,active,custom. "
-                        "Or 'ring:N' for N cameras around the scene. "
+                        "front,side,top,persp,back,right,active,custom "
+                        "(custom needs --custom-loc X,Y,Z). For N cameras "
+                        "around the scene use --ring N instead (F2A-11: "
+                        "'ring:N' was never an --angles value). "
                         "Default: persp")
     p.add_argument("--ring", type=int, default=None,
                    help="Generate N cameras in a ring around the scene (alternative to --angles)")

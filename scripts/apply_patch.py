@@ -42,10 +42,12 @@ add_plane / add_empty):
       physics_place. "rotation_deg" and "color" (RGB(A)) are optional.
     * size params are FINAL world dimensions, data-baked at the mesh
       level (object scale stays 1,1,1 — never transform_apply, gotcha
-      #58): add_cube/add_plane take "size" (scalar or [x,y(,z)]);
-      add_sphere "radius"; add_cylinder "radius"+"depth"; add_cone
-      "radius1"(+"radius2" for truncated)+"depth"; add_torus
-      "major_radius"+"minor_radius"; add_empty "empty_type"+"size".
+      #58): add_cube takes "size" (scalar or [x,y,z]); add_plane "size"
+      (scalar or [x,y] — planes are flat, a z component is refused;
+      F2B-27 docstring sync); add_sphere "radius"; add_cylinder
+      "radius"+"depth"; add_cone "radius1"(+"radius2" for truncated)
+      +"depth"; add_torus "major_radius"+"minor_radius"; add_empty
+      "empty_type"+"size".
     * every add SELF-VERIFIES its realized dims against the request and
       fails loudly on mismatch (a lying primitive poisons every
       downstream op). add_empty creates a seat_at anchor (no mesh).
@@ -295,9 +297,31 @@ def _apply_render_viewport(obj, params):
     samples = params.get("samples", 1)
     width = params.get("width", 640)
     height = params.get("height", 480)
+    # F2B-26: negative/zero samples or dims reached the raw render operator
+    # and died in a C-level report; validate here in kit style instead.
+    for _key, _val in (("samples", samples), ("width", width),
+                       ("height", height)):
+        if (isinstance(_val, bool) or not isinstance(_val, (int, float))
+                or not float(_val).is_integer() or int(_val) < 1):
+            raise RuntimeError(
+                f"op 'render_viewport' key '{_key}' must be a positive "
+                f"integer (got {_val!r})")
+    samples, width, height = int(samples), int(width), int(height)
     target_str = params.get("target")
     if target_str:
-        target = tuple(target_str)
+        # F2B-26: a string target used to garble via tuple(target_str) into
+        # per-character 'atoms' — require a real 3-number vector.
+        if (not isinstance(target_str, (list, tuple)) or len(target_str) != 3
+                or any(isinstance(c, bool) or not isinstance(c, (int, float))
+                       for c in target_str)):
+            raise RuntimeError(
+                f"op 'render_viewport' key 'target' must be [x,y,z] "
+                f"numbers (got {target_str!r})")
+        if not all(math.isfinite(float(c)) for c in target_str):
+            raise RuntimeError(
+                f"op 'render_viewport' key 'target' contains "
+                f"NaN/Infinity — scenes do not")
+        target = tuple(float(c) for c in target_str)
     else:
         target = _compute_scene_center()
     lens = params.get("lens", 50)
@@ -390,7 +414,19 @@ def _apply_move_to(obj, params):
 
 
 def _apply_place_on(obj, params):
-    supports = [_get_obj(s, "place_on") for s in params["supports"]]
+    raw_supports = params["supports"]
+    # F2B-15: a bare string iterated per-character; an empty list reached
+    # placement_lib's max() as 'max() arg is an empty sequence'. Validate.
+    if isinstance(raw_supports, str) or not isinstance(raw_supports, (list, tuple)):
+        raise RuntimeError("op 'place_on' key 'supports' must be a list of "
+                           "support object names (got "
+                           f"{type(raw_supports).__name__} — a bare string "
+                           "would iterate per-character)")
+    if not raw_supports:
+        raise RuntimeError("op 'place_on' key 'supports' must name at least "
+                           "one support object (the TOPMOST surface under "
+                           "the mover)")
+    supports = [_get_obj(s, "place_on") for s in raw_supports]
     rep = _PL.place_on(
         obj, *supports,
         clearance=params.get("clearance", 0.0),
@@ -413,18 +449,35 @@ def _apply_place_on(obj, params):
 
 def _apply_seat_at(obj, params):
     seat = _get_obj(params["seat"], "seat_at")
+    # F2B-25: a typo'd seat_mesh used to resolve to None via
+    # bpy.data.objects.get — the requested post-audit silently never ran
+    # and the print defaulted to OK. Resolve loudly instead.
+    seat_mesh_name = params.get("seat_mesh")
+    if seat_mesh_name:
+        if not isinstance(seat_mesh_name, str):
+            raise RuntimeError("op 'seat_at' key 'seat_mesh' must be an "
+                               f"object name (string), got "
+                               f"{type(seat_mesh_name).__name__}")
+        seat_mesh = _get_obj(seat_mesh_name, "seat_at")
+    else:
+        seat_mesh = None
     rep = _PL.seat_at(
         obj, seat,
         reference=params.get("reference", "bottom"),
         offset=params.get("offset"),
         align=params.get("align", True),
         override=params.get("override"),
-        seat_mesh=bpy.data.objects.get(params["seat_mesh"]) if params.get("seat_mesh") else None,
+        seat_mesh=seat_mesh,
         contact_band_mm=params.get("contact_band_mm", 0.1),
         output=params.get("output"))
     _LAST_REPORTS["seat_at"] = rep
-    print("[apply_patch] seat_at:", rep["obj"], "->",
-          "OK" if rep.get("ok", True) else "CONTACT-ISSUES")
+    if "ok" in rep:
+        verdict = "OK" if rep["ok"] else "CONTACT-ISSUES"
+    else:
+        # F2B-25: no seat_mesh -> no post-contact audit ran; the old
+        # default-True print said OK for an unverified state.
+        verdict = "OK(unverified — pass seat_mesh to post-audit contact)"
+    print("[apply_patch] seat_at:", rep["obj"], "->", verdict)
 
 
 def _apply_snap_z(obj, params):
@@ -437,10 +490,38 @@ def _apply_snap_z(obj, params):
 
 
 def _apply_audit(obj, params):
+    # F2B-15: raw bpy.data.objects[p[0]] indexing inside audit_scene turned
+    # a typo'd pair name into a KeyError that the friendly converter
+    # mislabeled "missing/invalid param 'Nope'"; a 3-name 'A,B,C' entry
+    # silently dropped the third name. Validate + resolve here.
     pairs = None
-    if params.get("pairs"):
-        pairs = [tuple(p.split(",")) for p in params["pairs"]]
-    exclude = tuple(params.get("exclude", ()))
+    raw_pairs = params.get("pairs")
+    if raw_pairs is not None:
+        if isinstance(raw_pairs, str) or not isinstance(raw_pairs, (list, tuple)) \
+                or not raw_pairs:
+            raise RuntimeError("op 'audit' key 'pairs' must be a non-empty "
+                               "list of 'A,B' name strings")
+        pairs = []
+        for p in raw_pairs:
+            if not isinstance(p, str):
+                raise RuntimeError(
+                    f"op 'audit' pairs entries must be 'A,B' name strings, "
+                    f"got {p!r}")
+            names = [s.strip() for s in p.split(",")]
+            if len(names) != 2 or not all(names):
+                raise RuntimeError(
+                    f"op 'audit' pair {p!r} must be exactly 'A,B' (object "
+                    f"names containing commas are not supported — rename "
+                    f"the object)")
+            _get_obj(names[0], "audit")
+            _get_obj(names[1], "audit")
+            pairs.append((names[0], names[1]))
+    raw_exclude = params.get("exclude", ())
+    if isinstance(raw_exclude, str):
+        raise RuntimeError("op 'audit' key 'exclude' must be a list of "
+                           "object names (a bare string would iterate "
+                           "per-character)")
+    exclude = tuple(raw_exclude)
     rep = _PL.audit_scene(pairs=pairs, exclude=exclude,
                           sample=params.get("sample", "verts"),
                           contact_band_mm=params.get("contact_band_mm", 0.1),
@@ -517,9 +598,25 @@ def _physics_warn(rep):
 
 
 def _apply_physics_settle(obj, params):
-    rep = _PP.settle(objs=_resolve_objlist(params.get("objs"), "physics_settle") or None,
-                     environment=_resolve_objlist(
-                         params.get("environment")) or [],
+    # F2B-23: [] and null used to be synonyms (both -> objs=None = settle
+    # EVERY eligible mesh, the "almost never wanted" free-fall mode).
+    # Refuse [] loudly; null/omitted keeps whole-scene semantics.
+    raw_objs = params.get("objs")
+    if raw_objs is not None and not isinstance(raw_objs, (list, tuple)):
+        raise RuntimeError("op 'physics_settle' key 'objs' must be a list "
+                           "of mover names (a bare string would iterate "
+                           "per-character)")
+    if isinstance(raw_objs, (list, tuple)) and not raw_objs:
+        raise RuntimeError("op 'physics_settle': objs=[] is refused — name "
+                           "at least one mover, or omit/null the key for "
+                           "whole-scene settle")
+    raw_env = params.get("environment")
+    if raw_env is not None and not isinstance(raw_env, (list, tuple)):
+        raise RuntimeError("op 'physics_settle' key 'environment' must be a "
+                           "list of names (a bare string would iterate "
+                           "per-character)")
+    rep = _PP.settle(objs=_resolve_objlist(raw_objs, "physics_settle"),
+                     environment=_resolve_objlist(raw_env) or [],
                      frames=params.get("frames", 45),
                      apply=params.get("apply", "end"),
                      tol_mm=params.get("tol_mm", 1.0),
@@ -533,6 +630,11 @@ def _apply_physics_settle(obj, params):
                      output=params.get("output"))
     _LAST_REPORTS["physics_settle"] = rep
     print("[apply_patch] physics_settle:", rep.get("verdict"))
+    if raw_objs is None and rep.get("whole_scene_warning"):
+        # F2B-23: the whole-scene warning used to live only in the report
+        # JSON — the stdout path a pipeline greps never saw it.
+        print("[apply_patch] physics_settle WARNING:",
+              rep["whole_scene_warning"])
     # wave-1 friction #6: the documented per-mover verdict tokens
     # (AT_REST/SETTLED/SLIPPED/TOPPLED/...) were JSON-only — print them
     for o in (rep.get("objects") or [])[:8]:
@@ -593,6 +695,10 @@ def _apply_physics_gate(obj, params):
     for _q in rep.get("fix_queue", [])[:8]:
         print("[apply_patch]   queue:", _q.get("op", "(manual)"),
               _q.get("objs", ""), "-", _q.get("note", ""))
+    # F2B-19: a fail_hard=false gate REJECTS with ok=False — that failure
+    # never reached _PHYSICS_FAILURES, so --fail-on-physics-failure exited
+    # 0 on a rejected scene (fail-open exit-code gate).
+    _physics_warn(rep)
 
 
 def _apply_seam_views(obj, params):
@@ -1082,69 +1188,110 @@ MUTATIONS = {
 # wave-1 friction #2/#11: param schemas were only discoverable by
 # trial-and-error KeyError. One-line-per-op signature for --list and
 # for friendly error conversion in apply_mutation.
+# F2B-10: this dict is the ALLOWED-KEY source of truth for
+# _warn_unknown_keys — every key listed here must be a key the handler
+# actually reads, and every key a handler reads must be listed here
+# (enforced bidirectionally by tests/test_s17_wave_b.py's AST parity
+# check). The tokenizer in _doc_keys splits ONLY on depth-0 commas, so
+# parenthesized/bracketed detail is safe.
 PARAM_DOCS = {
     "set_location":       "id, location:[x,y,z]",
     "move_to":            "id, target:[x,y,z], reference?(bottom-center|centroid|origin), override?, output?",
     "set_rotation":       "id, rotation_deg:[rx,ry,rz]",
     "set_scale":          "id, scale:[sx,sy,sz]",
-    "set_material_color": "id, color:[r,g,b(,a)], match?(name-regex)",
+    "set_material_color": "id, color:[r,g,b(,a)]",
     "set_material_roughness": "id, roughness:float",
     "set_material_metallic":  "id, metallic:float",
     "delete_object":      "id",
-    "duplicate_object":   "id, new_id",
+    "duplicate_object":   "id, new_id, location?, rotation_deg?, scale?",
     "set_camera_location": "id, location:[x,y,z]",
     "set_camera_lens":    "id, lens_mm:float",
-    "set_camera_dof":     "id, focus_distance(m), aperture_fstop",
+    "set_camera_dof":     "id, focus_distance(m), focus_distance_m?(legacy alias), aperture_fstop",
     "set_light_energy":   "id, energy:float(watts)",
     "set_light_color":    "id, color:[r,g,b]",
     "set_world_strength": "strength:float",
     "set_exposure":       "exposure:float (EV shift)",
     "set_frame":          "frame:int",
-    "render_viewport":    "output:path, angle?(persp|front|side|top|back|right|active|custom), engine?(workbench|eevee|cycles), width?, height?, samples?, target?, custom_loc?",
-    "place_on":           "id, supports:[names..] (name the TOPMOST surface!), clearance?, footprint?, mode?, keep_xy?, align_to_surface?, override?(keyframe=REBASE animation path), output?",
-    "seat_at":            "id, seat:anchor-empty-name, reference?(bottom), offset?, align?(bool), seat_mesh?, override?(keyframe=REBASE animation path), output?",
+    "render_viewport":    "output:path, angle?(persp|front|side|top|back|right|active|custom), engine?(workbench|eevee|cycles), width?, height?, samples?, target?:[x,y,z], lens?, custom_location?, custom_loc?(legacy alias — F2B-1)",
+    "place_on":           "id, supports:[names..] (name the TOPMOST surface!), clearance?, footprint?(bottom|all|grid), mode?(rest|sink|p25|p50|p75), grid_n?, inset?(meters), keep_xy?(true only — false refused, F2B-4), align_to_surface?, override?(keyframe=REBASE animation path), contact_band_mm?, output?",
+    "seat_at":            "id, seat:anchor-empty-name, reference?(bottom|origin|centroid), offset?:[dx,dy,dz] (empty's local space), align?(bool), seat_mesh?, override?(keyframe=REBASE animation path), contact_band_mm?, output?",
     "snap_z":             "id, target_z:float, reference?(bottom|origin|centroid), override?, output?",
-    "heat_bake":          "id",
-    "audit":              "pairs?:['A,B',..], id?(scope report to this object), exclude?:[names], fail_on_penetration?(bool, default true), output?",
-    "seam_views":         "id, supports",
+    "heat_bake":          "id, others:[names..], yellow_mm?, green_mm?",
+    "audit":              "pairs?:['A,B',..], id?(scope report to this object), exclude?:[names], sample?(verts|verts+edges|bottom), contact_band_mm?, clearance_pad_mm?, force?(bool — audit skinned/animated pairs anyway), fail_on_penetration?(bool, default true), output?",
+    "seam_views":         "a:name, b:name, out_dir:path, res?:[w,h], engine?, contact_band_mm?, fill_frac?",
     "clear_bvh_cache":    "-",
-    "physics_settle":     "objs?:[names] (null=whole scene, almost never wanted), environment?:[names], frames?, apply?, repair_penetrations?(refuse|physics), snap?, output?",
-    "physics_place":      "id, drop_mm?, snap?, output?",
-    "physics_oracle":     "id, target_z:float, output?",
-    "physics_gate":       "fail_hard?(bool), verify_movers?:[names], output?",
+    "physics_settle":     "objs?:[names] (null=whole scene; [] refused — F2B-23), environment?:[names], frames?, apply?, repair_penetrations?(refuse|physics), tol_mm?, allow_bake?, allow_copy?, pad_mm?, snap?, snap_cap_mm?, output?",
+    "physics_place":      "id, drop_mm?, frames?, snap?, snap_cap_mm?, apply?, tol_mm?, allow_bake?, allow_copy?, pad_mm?, output?",
+    "physics_oracle":     "id, target_z?:float, target?:[x,y,z], frames?, pad_mm?, tol_mm?, intended_support?:name, allow_bake?, allow_copy?, output?",
+    "physics_gate":       "fail_hard?(bool), verify_movers?:[names], tol_mm?, frames?, pad_mm?, audit_pad_mm?, output?",
     "add_cube":           "id, size?(scalar|[x,y,z]), location?(CENTER!), rotation_deg?, color?",
-    "add_sphere":         "id, radius, location?(CENTER!), segments?, color?",
-    "add_cylinder":       "id, radius, depth, location?(CENTER!), vertices?, color?",
-    "add_cone":           "id, radius1, radius2?, depth, location?(CENTER!), color?",
-    "add_torus":          "id, radius_major, radius_minor, location?(CENTER!), color?",
-    "add_plane":          "id, size, location?(CENTER!), color?",
-    "add_empty":          "id, location, empty_type?, size?, rotation_deg?",
+    "add_sphere":         "id, radius?(default 0.5), segments?, ring_count?, location?(CENTER!), rotation_deg?, color?",
+    "add_cylinder":       "id, radius, depth, location?(CENTER!), vertices?, rotation_deg?, color?",
+    "add_cone":           "id, radius1, radius2?, depth, vertices?, location?(CENTER!), rotation_deg?, color?",
+    "add_torus":          "id, major_radius, minor_radius, location?(CENTER!), rotation_deg?, color?",
+    "add_plane":          "id, size?(scalar|[x,y] — flat), location?(CENTER!), rotation_deg?, color?",
+    "add_empty":          "id, location, empty_type?, size?, rotation_deg?, color?",
     "label_objects":      "labels:{id: label|{label,confidence}}, rename?(bool, default false — additive kit_label is the v1 identity), on_collision?(suffix|fail), output?(report json; default output/labels_report.json)",
     "split_mesh":         "id, mode?(dry-run|split|split-region, default dry-run; region param implies region dry-run), region?({min:[x,y,z],max:[x,y,z]} world box — vision-driven cut for WELDED geometry), new_id?(region-cut name), ack_risks?(bool — required when co-users/modifiers/shape-keys/armature present), ack_many_parts?(bool — required when loose parts > 50, F19: prefer vendor-node granularity or a region cut), output?(report json)",
     "mesh_prepare":       "id, mode?(triangulate — the only mode; pre-welded-import n-gon triangulation so region cuts can capture fused floor/wall faces), output?(report json)",
 }
 
 
+def _doc_keys(op: str) -> set:
+    """Extract the real param-key set from an op's PARAM_DOCS signature.
+
+    F2B-10: the allowed set for _warn_unknown_keys used to come from a
+    naive doc.split(",") — parenthesized detail leaked in as junk tokens
+    (set_camera_dof's "focus_distance(m)" never matched the live
+    focus_distance key, so the warning claimed an APPLIED param was
+    ignored) and list literals spawned phantom keys. Split only on
+    depth-0 commas; a key is the token up to its first : ( ? or !.
+    Shared with the test suite's AST parity check (single source of
+    truth)."""
+    keys = {"op", "id"}
+    doc = PARAM_DOCS.get(op)
+    if not doc:
+        return keys
+    tokens = []
+    token = ""
+    depth = 0
+    for ch in doc:
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}" and depth > 0:
+            depth -= 1
+        if ch == "," and depth == 0:
+            tokens.append(token)
+            token = ""
+        else:
+            token += ch
+    if token.strip():
+        tokens.append(token)
+    for tok in tokens:
+        cut = len(tok)
+        for sep in ":?!(":
+            i = tok.find(sep)
+            if i != -1:
+                cut = min(cut, i)
+        name = tok[:cut].strip()
+        if name and name.isidentifier():
+            keys.add(name)
+    return keys
+
+
 def _warn_unknown_keys(op: str, mut: dict):
     """wave-3: a misspelled OPTIONAL key (refrence vs reference) silently
     fell back to the default — placement semantics changed with zero
-    warning. Parse the op's PARAM_DOCS signature and warn on extras."""
-    doc = PARAM_DOCS.get(op)
-    if not doc:
-        return
-    allowed = {"op", "id"}
-    for token in doc.split(","):
-        token = token.strip()
-        if not token:
-            continue
-        name = token.split(":")[0].split("?")[0].split("!")[0].strip()
-        if name:
-            allowed.add(name)
+    warning. F2B-10: the allowed set now derives from _doc_keys (the same
+    tokenizer the parity test uses) over a PARAM_DOCS that lists every
+    key the handler reads — so a warning means the key is TRULY unknown
+    (undocumented AND unread), not merely missing from stale prose."""
+    allowed = _doc_keys(op)
     unknown = [k for k in mut if k not in allowed]
     if unknown:
         print(f"[apply_patch] WARNING: op '{op}' got unknown param(s) "
               f"{sorted(unknown)} (ignored — check spelling); "
-              f"signature: {doc}")
+              f"signature: {PARAM_DOCS.get(op, '(see --list)')}")
 
 
 def apply_mutation(mut: dict):
@@ -1153,9 +1300,17 @@ def apply_mutation(mut: dict):
         raise RuntimeError(f"Unknown mutation op: {op}. "
                            f"Known: {list(MUTATIONS.keys())}")
     fn, needs_obj = MUTATIONS[op]
-    obj = _get_obj(mut["id"]) if needs_obj and "id" in mut else None
-    if needs_obj and obj is None and "id" in mut:
-        raise RuntimeError(f"op '{op}' requires object id '{mut['id']}' but not found")
+    # F2B-14: the old guard (`obj is None and "id" in mut`) was DEAD code —
+    # _get_obj raises instead of returning None, so a missing id reached the
+    # handler as obj=None and died on a raw AttributeError (or worse, a
+    # swallowed one). Make the intended guard live and name the op.
+    obj = None
+    if needs_obj:
+        if "id" not in mut:
+            raise RuntimeError(
+                f"op '{op}' requires key 'id' (the target object name); "
+                f"signature: {PARAM_DOCS.get(op, '(see --list)')}")
+        obj = _get_obj(mut["id"], op)
     _warn_unknown_keys(op, mut)
     try:
         fn(obj, mut)
@@ -1168,6 +1323,82 @@ def apply_mutation(mut: dict):
             f"{PARAM_DOCS.get(op, '(see --list)')}") from None
     print(f"[apply_patch] applied: {op}" +
           (f" on '{mut['id']}'" if needs_obj and obj else ""))
+
+
+def _read_patch(args) -> dict:
+    """Parse --patch / --patch-json into the patch dict.
+
+    Extracted from main() (F2B-26) so the JSON-shape guards are unit-
+    testable; behavior unchanged. Exits 1 with a clean message on:
+    invalid JSON, --patch file not found, --patch-json that is neither
+    inline JSON nor a .json path (D1 fallback), and a non-object JSON
+    root (a list root used to crash later with AttributeError on
+    patch.get)."""
+    if args.patch_json:
+        src = args.patch_json
+        # D1 (session 16): consumers confuse --patch (file) with
+        # --patch-json (inline). A .json path in --patch-json parses
+        # as "Expecting value: line 1 column 1" — accept the file.
+        try:
+            if src.lstrip().startswith("{"):
+                patch = json.loads(src)
+            elif os.path.isfile(src) and src.endswith(".json"):
+                patch = json.load(open(src))
+                print(f"[apply_patch] --patch-json resolved as file path: {src}")
+            else:
+                print("[apply_patch] ERROR: --patch-json is not inline JSON "
+                      "and not a path to an existing .json file — use "
+                      "--patch for patch files", file=sys.stderr)
+                sys.exit(1)
+        except json.JSONDecodeError as e:
+            print(f"[apply_patch] ERROR: invalid JSON in patch: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        if not os.path.isfile(args.patch):
+            print(f"[apply_patch] ERROR: patch file not found: {args.patch}",
+                  file=sys.stderr)
+            sys.exit(1)
+        with open(args.patch) as f:
+            try:
+                patch = json.load(f)
+            except json.JSONDecodeError as e:
+                print(f"[apply_patch] ERROR: invalid JSON in patch: {e}",
+                      file=sys.stderr)
+                sys.exit(1)
+    if not isinstance(patch, dict):
+        # F2B-26: a JSON-array root crashed with AttributeError on
+        # patch.get("mutations") — a patch is an OBJECT.
+        print(f"[apply_patch] ERROR: patch JSON must be an object "
+              f'{{"mutations": [...], ...}}, got root type '
+              f"{type(patch).__name__}", file=sys.stderr)
+        sys.exit(1)
+    return patch
+
+
+def _animate_scene_module(mod, ctx, frames=24):
+    """Bind+call mod.animate under BOTH exporter contracts (F2B-24).
+
+    export_preflight S1 accepts a bare `def animate(ctx)` module (the
+    exporter's sentinel dispatch, export_previz_package.py:1043-1048),
+    but this call site used to pass start_frame/n_frames unconditionally
+    — the module TypeErrored BEFORE any mutation ran. Signature-bind the
+    sentinel call; fall back to the bare branch when it cannot bind (the
+    module owns its timeline). A TypeError raised INSIDE animate still
+    propagates loudly (the call sits outside the bind try)."""
+    if not hasattr(mod, "animate"):
+        return
+    import inspect as _inspect
+    sentinel = {"start_frame": 1, "n_frames": frames}
+    bindable = False
+    try:
+        _inspect.signature(mod.animate).bind(ctx, **sentinel)
+        bindable = True
+    except TypeError:
+        bindable = False
+    if bindable:
+        mod.animate(ctx, **sentinel)
+    else:
+        mod.animate(ctx)
 
 
 def main():
@@ -1217,8 +1448,9 @@ def main():
         return
 
     # CLI shortcut: synthesize a set_camera_dof mutation, appended AFTER the
-    # patch's own mutations (a patch can load/build the scene first; the
-    # patch itself is optional when only the shortcut is used).
+    # patch's own mutations (a patch can load/build the scene first). The
+    # patch is REQUIRED to carry load_blend/scene — the shortcut alone would
+    # target a cleared factory scene (F2B-22 guard below).
     dof_shortcut = None
     if args.focus_distance is not None or args.aperture_fstop is not None:
         dof_shortcut = {
@@ -1238,42 +1470,34 @@ def main():
         sys.exit(1)
 
     if args.patch or args.patch_json:
-        try:
-            if args.patch_json:
-                src = args.patch_json
-                # D1 (session 16): consumers confuse --patch (file) with
-                # --patch-json (inline). A .json path in --patch-json parses
-                # as "Expecting value: line 1 column 1" — accept the file.
-                if src.lstrip().startswith("{"):
-                    patch = json.loads(src)
-                elif os.path.isfile(src) and src.endswith(".json"):
-                    patch = json.load(open(src))
-                    print(f"[apply_patch] --patch-json resolved as file path: {src}")
-                else:
-                    print("[apply_patch] ERROR: --patch-json is not inline JSON "
-                          "and not a path to an existing .json file — use "
-                          "--patch for patch files", file=sys.stderr)
-                    sys.exit(1)
-            else:
-                if not os.path.isfile(args.patch):
-                    print(f"[apply_patch] ERROR: patch file not found: {args.patch}",
-                          file=sys.stderr)
-                    sys.exit(1)
-                with open(args.patch) as f:
-                    patch = json.load(f)
-        except json.JSONDecodeError as e:
-            print(f"[apply_patch] ERROR: invalid JSON in patch: {e}", file=sys.stderr)
-            sys.exit(1)
+        patch = _read_patch(args)
     else:
         patch = {}
     if dof_shortcut:
         patch.setdefault("mutations", []).append(dof_shortcut)
+        # F2B-22: the shortcut alone used to clear the FACTORY scene (the
+        # fresh-scene path below) and then fail "object 'Camera' not found"
+        # — a guaranteed-fail path the comment above claimed was supported.
+        # Refuse with guidance instead of clearing.
+        if "load_blend" not in patch and "scene" not in patch:
+            print("[apply_patch] ERROR: the DoF CLI shortcut needs a scene "
+                  "with a camera — combine it with a patch that has "
+                  "load_blend or scene, e.g.\n  apply_patch --patch-json "
+                  "'{\"load_blend\": \"scene.blend\"}' --focus-distance 2.5",
+                  file=sys.stderr)
+            sys.exit(1)
 
     # Load or build scene
     _patch_had_load_blend = False
     if "load_blend" in patch:
         _patch_had_load_blend = True
         blend_path = patch["load_blend"]
+        # F2B-26: a missing file used to surface as a raw wm.open_mainfile
+        # operator error; fail in kit style instead.
+        if not isinstance(blend_path, str) or not os.path.isfile(blend_path):
+            print(f"[apply_patch] ERROR: load_blend file not found: "
+                  f"{blend_path}", file=sys.stderr)
+            sys.exit(1)
         print(f"[apply_patch] loading .blend: {blend_path}")
         bpy.ops.wm.open_mainfile(filepath=blend_path)
         try:  # stale BVH trees cannot survive a file load
@@ -1287,8 +1511,7 @@ def main():
         mod = safe_import_scene(patch["scene"])
         clear_scene()
         ctx = mod.build_scene()
-        if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=1, n_frames=patch.get("frames", 24))
+        _animate_scene_module(mod, ctx, frames=patch.get("frames", 24))
     else:
         # Fresh-scene patch (no load_blend / scene field): the bare
         # blender process starts from the FACTORY startup scene, which

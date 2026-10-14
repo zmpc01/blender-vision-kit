@@ -338,7 +338,14 @@ def refresh_labels(layer):
 
 
 def delete_annotation_layer(layer: dict) -> int:
-    """Delete every annotation object + material. Returns count removed."""
+    """Delete every annotation object + material, and purge the layer's
+    orphaned MESH/CURVE datablocks by the KIT_ANNOT_ prefix. Returns count
+    of OBJECTS removed (datablock purges are extra).
+
+    F2A-4: _thin_box creates bpy.data.meshes.new(name) datablocks that
+    outlive their (removed) objects as zero-user residue — ~40 per look
+    run in-session forever. They are purged here by the same name-prefix
+    discipline as the FONT curves below."""
     n = 0
     for obj in layer.get("objects", []):
         try:
@@ -362,6 +369,14 @@ def delete_annotation_layer(layer: dict) -> int:
         if curve_name.startswith(ANNOT_PREFIX):
             try:
                 bpy.data.curves.remove(bpy.data.curves[curve_name])
+            except Exception:
+                pass
+    # F2A-4: mesh data outlives its object the same way (zero-user
+    # KIT_ANNOT_* grid/gnomon/flag boxes; covered by test_s17_wave_b)
+    for mesh_name in list(bpy.data.meshes.keys()):
+        if mesh_name.startswith(ANNOT_PREFIX):
+            try:
+                bpy.data.meshes.remove(bpy.data.meshes[mesh_name])
             except Exception:
                 pass
     return n

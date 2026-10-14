@@ -3,7 +3,7 @@
 ## apply_patch placement ops
 
 - `move_to`: world-space, origin-safe move (reference: bottom-center/centroid/origin). `set_location` moves the ORIGIN; on origin-baked meshes that acts relative — use `move_to` for world-space placement.
-- `place_on(id, supports, clearance)`: lifts mover, rests on TOP of named supports (raycast/grid from above). Solves Z ONLY (keep_xy=true default). If mover STARTS PENETRATING the support, `place_on` is UNDEFINED — repair first. `footprint`: 'bottom' (downward-facing verts), 'grid' (samples bbox bottom), 'inset' (seat lips). `align_to_surface`: true rotates onto incline.
+- `place_on(id, supports, clearance)`: lifts mover, rests on TOP of named supports (raycast/grid from above). Solves Z ONLY (keep_xy=true default). If mover STARTS PENETRATING the support, `place_on` is UNDEFINED — repair first. `footprint`: 'bottom' (downward-facing verts), 'grid' (samples bbox bottom), 'all' (every vert). `inset` (meters) shrinks the footprint inside its own bbox (seat lips) — it is a numeric param, NOT a footprint value (F2B-16: unknown footprint tokens are refused). `align_to_surface`: true rotates onto incline.
 - `seat_at(id, seat, align)`: needs an anchor EMPTY named by `seat`. `reference='bottom'` lands bbox bottom-center at anchor; `reference='origin'` lands the origin itself. Author the empty: `{"op":"add_empty","id":"Anchor","location":[...]}`.
 - `snap_z(id, target_z, reference)`: exact world z placement.
 - `physics_settle(objs, environment, apply, repair_penetrations)`: gravity finds the pose. Verdicts: AT_REST / SETTLED / SLIPPED / TOPPLED / REPAIRED_BY_PHYSICS / ESCAPED / PENETRATING_AT_END. `apply:"none"` = pure verifier (scene restored byte-equal).

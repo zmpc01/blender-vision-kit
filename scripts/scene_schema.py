@@ -57,11 +57,16 @@ def _object_bounds(obj):
 
 
 def _material_to_dict(mat):
-    """Extract material info from a Principled BSDF material."""
+    """Extract material info from a Principled BSDF material.
+
+    F2B-20e: the BSDF is matched by node TYPE ('BSDF_PRINCIPLED'), not the
+    literal name "Principled BSDF" — renamed/imported nodes used to export
+    color: None on the L4 read-color-from-schema path."""
     if not mat or not getattr(mat, 'use_nodes', True) or mat.node_tree is None:
         return {"name": mat.name if mat else None, "color": None,
                 "roughness": None, "metallic": None}
-    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    bsdf = next((n for n in mat.node_tree.nodes
+                 if n.type == 'BSDF_PRINCIPLED'), None)
     if bsdf is None:
         return {"name": mat.name, "color": None,
                 "roughness": None, "metallic": None}
@@ -98,13 +103,16 @@ def _camera_to_dict(obj):
 
 
 def _animation_to_dict(obj):
-    """Extract animation (keyframes) for an object."""
+    """Extract animation (keyframes) for an object.
+
+    F2B-9: iter_all_fcurves (read-only, ALL 5.x slots) — the slot[0]-only
+    probe missed curve data living in a later slot's channelbag."""
     if not obj.animation_data or not obj.animation_data.action:
         return None
     action = obj.animation_data.action
     curves = []
-    from blender_kit import iter_fcurves
-    for fc in iter_fcurves(action):
+    from blender_kit import iter_all_fcurves
+    for fc in iter_all_fcurves(action):
         keyframes = []
         for kp in fc.keyframe_points:
             keyframes.append({
@@ -121,11 +129,77 @@ def _animation_to_dict(obj):
     return {"action_name": action.name, "curves": curves}
 
 
+def _kit_props(obj):
+    """F2B-20a: kit_label / kit_label_conf / kit_semantic are durable
+    identity (D16) that gates READ BY PROP — the schema previously dropped
+    them, so a patch author could not see or preserve labeling state (the
+    look manifest had it; the two state exports disagreed). Export the
+    kit_* custom-prop subset, JSON-safe."""
+    try:
+        items = dict(obj.items())
+    except Exception:
+        return None
+    kit = {}
+    for k, v in items.items():
+        if not str(k).startswith("kit_"):
+            continue
+        if isinstance(v, (str, int, float, bool)) or v is None:
+            kit[str(k)] = v
+        else:
+            try:
+                kit[str(k)] = list(v)
+            except TypeError:
+                kit[str(k)] = str(v)
+    return kit or None
+
+
+def _world_to_dict(world):
+    """F2B-20c: the world export used to report the Background node's
+    DEFAULT grey color even when Color was LINKED from a sky/HDRI texture
+    (add_sky_world worlds exported the untouched default_value). Export
+    the real content: strength always; the linked source node (type,
+    sky_type, texture name) when linked; the flat color when not.
+    Backward-compatible keys (background_color/background_strength) keep
+    their meaning for unlinked worlds."""
+    info = {"name": world.name, "use_nodes": bool(world.use_nodes)}
+    if not world.use_nodes or world.node_tree is None:
+        info["color"] = [round(v, 3) for v in world.color]
+        return info
+    bg = world.node_tree.nodes.get("Background")
+    if bg is None:
+        return info
+    info["background_strength"] = round(bg.inputs["Strength"].default_value, 3)
+    cin = bg.inputs["Color"]
+    if cin.is_linked and cin.links:
+        src = cin.links[0].from_node
+        src_info = {"node": src.name, "type": src.type}
+        if src.type == 'TEX_SKY':
+            src_info["sky_type"] = getattr(src, "sky_type", None)
+        img = getattr(src, "image", None)
+        if img is not None:
+            src_info["texture_name"] = img.name
+        info["color_source"] = src_info
+    else:
+        info["background_color"] = [round(v, 3) for v in cin.default_value]
+    return info
+
+
 def export_scene_schema(*, with_bounds: bool = False) -> dict:
-    """Build a JSON-serializable dict describing the current scene."""
+    """Build a JSON-serializable dict describing the current scene.
+
+    F2B-21: view_layer.update() FIRST — matrix_world/bound_box are
+    lazily-updated RNA caches; after in-process mutations (the documented
+    apply_patch --export-schema path) they can hold the PRE-mutation pose
+    and the schema self-inconsistently shows the new `location` next to
+    the old matrix_world (the staleness law placement_lib's world_bvh
+    already guards)."""
+    bpy.context.view_layer.update()
     scene = bpy.context.scene
+    # F2B-27: version bumped with the additive fields (kit_props /
+    # hide_render / modifiers / world content) so consumers can detect
+    # the richer export. All new keys are additive.
     schema = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "blender_version": bpy.app.version_string,
         "scene_name": scene.name,
         "frame_range": [scene.frame_start, scene.frame_end],
@@ -137,14 +211,9 @@ def export_scene_schema(*, with_bounds: bool = False) -> dict:
         "active_camera": scene.camera.name if scene.camera else None,
     }
 
-    # World
-    if scene.world and scene.world.node_tree is not None:
-        bg = scene.world.node_tree.nodes.get("Background")
-        if bg:
-            schema["world"] = {
-                "background_color": [round(v, 3) for v in bg.inputs["Color"].default_value],
-                "background_strength": round(bg.inputs["Strength"].default_value, 3),
-            }
+    # World (F2B-20c: real sky/HDRI content, not the Background default)
+    if scene.world is not None:
+        schema["world"] = _world_to_dict(scene.world)
 
     # Objects
     for obj in scene.objects:
@@ -176,10 +245,23 @@ def export_scene_schema(*, with_bounds: bool = False) -> dict:
             "matrix_world": _matrix_to_list(obj.matrix_world),
             "parent": obj.parent.name if obj.parent else None,
             "visible": obj.visible_get(),
+            # F2B-20b: visible_get() is VIEWPORT visibility; hide_render is
+            # the flag render_hidden_objects/glTF/render presets act on —
+            # schema used to say visible for objects that will not render.
+            "hide_render": bool(obj.hide_render),
             "materials": [_material_to_dict(m) for m in obj.data.materials]
                          if obj.type == 'MESH' and hasattr(obj.data, "materials")
                          else [],
         }
+        # F2B-20a: durable kit identity (kit_label/kit_label_conf/kit_semantic)
+        kit_props = _kit_props(obj)
+        if kit_props:
+            entry["kit_props"] = kit_props
+        # F2B-20d: modifiers change the evaluated geometry that placement
+        # audits measure — export name/type so patch authors can see them.
+        mods = [{"name": m.name, "type": m.type} for m in obj.modifiers]
+        if mods:
+            entry["modifiers"] = mods
 
         if obj.type == 'MESH':
             entry["mesh"] = {
@@ -232,7 +314,15 @@ def main():
         clear_scene()
         ctx = mod.build_scene()
         if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=1, n_frames=args.frames)
+            # F2B-24 twin: mirror the exporter's dispatch so bare
+            # def animate(ctx) modules don't TypeError here either.
+            import inspect as _inspect
+            try:
+                _inspect.signature(mod.animate).bind(
+                    ctx, start_frame=1, n_frames=args.frames)
+                mod.animate(ctx, start_frame=1, n_frames=args.frames)
+            except TypeError:
+                mod.animate(ctx)
 
     print(f"[scene_schema] exporting schema (with_bounds={args.with_bounds})...")
     schema = export_scene_schema(with_bounds=args.with_bounds)
