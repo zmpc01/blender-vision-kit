@@ -101,12 +101,15 @@ programmatic-proxy verdicts for anything visual. Concretely:
 ## Kit improvement filings (owner-repo candidates, not landed here)
 
 1. render_hidden_objects: view_layer.update() before the #29 sweep
-   (F-TD5 — export-blocking).
+   (F-TD5 — CLOSED: landed in this tree session-16, blender_kit:932).
 2. look.py: marker-camera suppression + scene.camera re-assert for
-   marker-bound scenes (F-TD3; matches QA #11 on agent-kit).
+   marker-bound scenes (F-TD3 — CLOSED session-17: render_angle sweeps
+   the marker bindings, unbind→render→restore; test_s17_wave_a).
 3. to_previz_cache: loud WARN when the contract declares keepouts
    but keepouts=() was passed (F-TD4).
-4. make_material: pin Emission Color to base rgb (F-TD6).
+4. make_material: pin Emission Color to base rgb (F-TD6 — CLOSED
+   in-code s16: F-TD11 kwargs decouple them by design; the pin is the
+   DEFAULT, overrides are explicit).
 5. setup_native.sh: --blender-python PATH for cross-kit wheel
    installs (F-TD1).
 6. validate_scene: structural-join vocabulary (roof/structure) as an
