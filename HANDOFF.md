@@ -1,12 +1,81 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session close: 2026-10-13 (session 16, the KIT-QUALITY wave — audit /
-> test / refine the kit; NO film building per the user's course
-> correction). HEAD on **GitLab** (see the PAT warning below). Read
-> docs/USABILITY_S16_session16.md (the wave's ledger) +
-> docs/DESIGN_D19_export_preflight.md (REV-2, implemented).
+> Session close: 2026-10-14 (session 17 — the second KIT-QUALITY wave:
+> deep audit of the merged tree until findings exhausted). HEAD on
+> **GitHub** (canonical, PAT refreshed by the user and verified). Read
+> docs/audit_s17/ (the five wave-1 audit ledgers, 88 findings) +
+> docs/battery_s17_results.md (29/29) + docs/FINDINGS_upstream.md.
 
-## Session-16 close state (NEWEST — read this first)
+## Session-17 close state (NEWEST — read this first)
+
+- **REMOTES**: GitHub = canonical (user refreshed the PAT; verified 200
+  at session start). GitLab mirror DIVERGED in the session-16
+  push-protection history rewrite — do NOT push main to it; push
+  `git push gitlab main:github-canonical` (works, WAF-retry). USER
+  ACTION: **rotate the GitLab PAT** — its raw value sat in git HISTORY
+  (scripts/_sess16_*.sh) until the session-17 redaction; history
+  rewrite was NOT attempted (never-force law). GitHub push protection
+  rejects ghp_ tokens in commits — tokens live in .env (see
+  .env.example; helpers source it now).
+- **F-TD3 CLOSED — the last silent-wrong-render class in the core eye**:
+  the mechanism was NOT name hijack; bpy.ops.render.render honors the
+  camera bound to a TIMELINE MARKER over scene.camera, so every
+  multi-angle look panel on marker-bound film scenes silently rendered
+  the marker's shot cam (QA#11's identical panels). render_angle now
+  sweeps the bindings (unbind → render → restore in finally) and
+  look_manifest.json carries camera_intent rows naming the intended
+  camera + the marker cam at the frame (regression visible, not
+  silent). test_s17_wave_a 1a/1b/1c.
+- **Wave-1 audits**: 88 findings (2 P0, 13 P1, ~30 P2, rest P3) in
+  docs/audit_s17/2{a..e}_*.md. ALL ≥P2 fixed this session across four
+  waves; P3 residue either fixed-when-cheap or documented in the audit
+  files as open-P3. Two items FILED UPSTREAM (docs/FINDINGS_upstream.md):
+  F2E-5 sync_shared governance (upstream file — never touch from this
+  lane) + the note that the old "port preflight via sync_shared" plan
+  is inexpressible (non-owner→owner); the port should be a direct file
+  copy + test if the canonical exporter ever wants the gate.
+- **The fixes** (each with regression coverage): Wave A (test_s17_wave_a
+  21/21) F-TD3, look exit-4 on unreadable images, PNG-magic validation,
+  distance-scaled temp-cam clip planes, custom_loc P0, NaN/Inf param
+  refusal, WORLD-space placement under rotated parents
+  (_world_delta_to_local; seat_at via matrix_world; basis-delta
+  rebase), audit ERROR rows fail gates, keep_xy=False refused,
+  seat_at reference validation + centroid, _skinned_guard
+  armature-pose hole. Wave B (test_s17b) 18 mutation-surface fixes:
+  PARAM_DOCS↔handler parity class (AST-checked), iter_all_fcurves for
+  read-only fcurve consumers (5.x multi-slot blindness), schema blind
+  spots (kit props/hide_render/world/modifiers/Principled-by-type),
+  seam_views leak, physics-gate warn wiring, bare animate(ctx)
+  dispatch, footprint/snap_z/settle input validation. Wave C (t10
+  prop 124, export 25): --usd-sidecar RNA-filtered via the SHARED
+  blender_kit.filter_rna_kwargs (all 3 usd twins filtered now), S3
+  demoted to exporter-parity WARN, vacuous pass loud. Wave D
+  (test_s17i 18/18): blrun BLENDER_HOME fallback proven live,
+  install.sh probe failure-safe + header + BLENDER_PY exec check +
+  symlink-heal gating, **daemonize.py WRITTEN** (was documented-but-
+  absent for two sessions), render_daemon resume window-wipe +
+  daemon_error heartbeat, suite_runner rewrite (29 suites, --list,
+  RESULTS.md, reaping-law header), chunked_dl part tolerance, wheel
+  provenance sha256/size/origin.
+- **Battery 29/29** (docs/battery_s17_results.md — the FIRST complete
+  committed receipt; the s16 one only had the pre-fix 20/26 run). One
+  mid-run fix pair (look.py hint used front[0]=0 as camera distance —
+  SUBJECT-OVERFLOW fired on every scene; edge_tall hovered nothing —
+  C4 floating check red-by-construction since s16, masked by rc=90).
+- **Bootstrap (fresh sandbox, verified this session)**: clone GitHub →
+  `bash install.sh` → `bash scripts/suite_runner.sh --list` then run
+  in --only batches inside ONE foreground tool call each (reaping
+  law). Blender 5.2.2 + Pillow 12.3.0 + Cycles verified.
+- **Next-session scope**: (1) wave-2 audit if the user wants another
+  exhaustion pass (the audit files' open-P3 sections are the seed);
+  (2) apply docs/FINDINGS_upstream.md to blender-agent-kit IF an
+  upstream-owned session opens (small fail-closed guard); (3) the film
+  lane is designing the fourth film (DESIGN_squall REV-2) — it will
+  consume the kit; keep lane discipline (never co-edit scene_*.py);
+  (4) the user review round on the three live films (app lane).
+- Laws distilled: .agents/SKILL.md SESSION 17.
+
+## Session-16 close state (the KIT-QUALITY wave — pre-session-17 baseline)
 
 - **⚠ THE GITHUB PAT IS DEAD (401 Bad credentials)** — verified at
   session start; reads still work (public repo, anonymous) but PUSHES
@@ -75,11 +144,11 @@
 - **Determinism (3-h)**: same inputs -> byte-identical npz (tgreen
   9f6ea8fa reruns; tferry 8b7d4d8e cross-session). Never reuse the
   default --out across runs; uncommitted states leave no trace.
-- **The standing kit chores** (unchanged): F-TD9 (the install.sh
-  Pillow probe), the six older filings (F-TD1/2/3 + the
-  make_material default), F-TF6 (kit-mode hero-lane pushout — now
-  joined by F-TG1's engine truth: arrived agents are ghosts; a
-  pushout feature must define arrival semantics first).
+- **The standing kit chores** (UPDATED s17: F-TD9 CLOSED in-code s16;
+  F-TD5/F18/F19/F20 closed; the open filings are F-TD1, F-TD2, F-TD3
+  [CLOSED s17], the make_material default filing [closed-in-code],
+  F-TF6 — joined by F-TG1's engine truth: arrived agents are ghosts; a
+  pushout feature must define arrival semantics first):
 - Bootstrap is unchanged (clone 5 repos -> install.sh -> venv wheel
   -> server via daemonize + repo-local db -> restore comments). The
   green-light module set: tgreen_{contract,world,bake}.py +
@@ -399,8 +468,8 @@ eyes on grid. Protocol ROBUST.
   EEVEE stills — template passes 0.5; changing the library default
   needs an owner ruling.
 - GitLab push prints storage warnings even on success — verify HEAD.
-  Current GitLab PAT is invalid (401) — mirror behind, GitHub is
-  authoritative.
+  (HISTORICAL, session-14: the then-current GitLab PAT read invalid —
+  superseded s16/s17: GitHub canonical, GitLab archive branch.)
 
 ## Worklog + artifacts
 
@@ -530,7 +599,7 @@ hint (STOP-AND-FLAG exit 4 on contamination/clutter/low-confidence);
 executing a sit stays kit-side; verify delegated sits with the audit
 numbers (ok flag + dz + no_penetration + exit_ok), never self-reports.
 
-## Session-13 close state (NEWEST — read this first)
+## Session-13 close state (tdawn_2 era — historical)
 
 - **DELIVERABLE: `tdawn_2` LIVE** in previz-review (newest-first) and
   in the served checkout — the user-directed refinement round. Every
