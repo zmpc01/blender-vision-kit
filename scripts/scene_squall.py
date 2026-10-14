@@ -45,12 +45,12 @@ ts_exposure = 0.0            # the storm-dusk ladder sweeps sun/sky/practicals
 # sun5/sky0.15/82deg -- the moody storm-dusk; the practicals own the
 # interior; the sun lamp is nearly inert below energy 7 (the tgreen
 # sky-ambient law reconfirmed in the storm regime)
-TS_SUN_ENERGY = 5.0
-TS_SUN_ELEV = 82.0
-TS_SUN_COLOR = (1.0, 0.70, 0.45)
-TS_SKY_COLOR = (0.045, 0.055, 0.078)
-TS_SKY_STRENGTH = 0.15
-TS_THUNDER = (85, 625, 1009)   # the flash frames (the title flash last)
+ts_sun_energy = 5.0
+ts_sun_elev = 82.0
+ts_sun_color = (1.0, 0.70, 0.45)
+ts_sky_color = (0.045, 0.055, 0.078)
+ts_sky_strength = 0.15
+ts_thunder = (85, 625, 1009)   # the flash frames (the title flash last)
 
 _here = os.path.dirname(os.path.abspath(__file__))
 
@@ -144,6 +144,13 @@ BEATS = [
 ]
 
 CROWD_TIER_PINS = []
+
+CAST = {
+    "Bystander": {"root": "Bystander.Root",
+                  "material": "CA.Body.Bystander",
+                  "role": "the witness under the eave; crouches to the "
+                          "fallen stranger (the 4-e F2b anchor)"},
+}
 
 
 def frame_at(t):
@@ -398,26 +405,26 @@ def _storm_sky(scene):
         bg = nt.nodes.new("ShaderNodeBackground")
         out = next(n for n in nt.nodes if n.type == "OUTPUT_WORLD")
         nt.links.new(bg.outputs[0], out.inputs[0])
-    bg.inputs[0].default_value = (*TS_SKY_COLOR, 1.0)
-    bg.inputs[1].default_value = TS_SKY_STRENGTH
+    bg.inputs[0].default_value = (*ts_sky_color, 1.0)
+    bg.inputs[1].default_value = ts_sky_strength
     sun = bpy.data.lights.get("TSQ.StormSun") or \
         bpy.data.lights.new("TSQ.StormSun", "SUN")
-    sun.energy = TS_SUN_ENERGY
-    sun.color = TS_SUN_COLOR
+    sun.energy = ts_sun_energy
+    sun.color = ts_sun_color
     sun.angle = math.radians(4.0)
     ob = bpy.data.objects.get("TSQ.StormSun")
     if not ob:
         ob = bpy.data.objects.new("TSQ.StormSun", sun)
         scene.collection.objects.link(ob)
     ob.data = sun
-    ob.rotation_euler = (math.radians(90.0 - TS_SUN_ELEV), 0.0,
+    ob.rotation_euler = (math.radians(90.0 - ts_sun_elev), 0.0,
                          math.radians(-38.0))
     # the thunder flashes on the world strength
-    bg.inputs[1].default_value = TS_SKY_STRENGTH
+    bg.inputs[1].default_value = ts_sky_strength
     bg.inputs[1].keyframe_insert(data_path="default_value", frame=1)
-    for i, f in enumerate(TS_THUNDER):
+    for i, f in enumerate(ts_thunder):
         peak = 2.6 if f == 1009 else 1.8
-        bg.inputs[1].default_value = TS_SKY_STRENGTH
+        bg.inputs[1].default_value = ts_sky_strength
         bg.inputs[1].keyframe_insert(data_path="default_value",
                                      frame=f - 1)
         bg.inputs[1].default_value = peak
@@ -426,16 +433,21 @@ def _storm_sky(scene):
         bg.inputs[1].default_value = peak * 0.35
         bg.inputs[1].keyframe_insert(data_path="default_value",
                                      frame=f + 2)
-        bg.inputs[1].default_value = TS_SKY_STRENGTH
+        bg.inputs[1].default_value = ts_sky_strength
         bg.inputs[1].keyframe_insert(data_path="default_value",
                                      frame=f + 5)
-    bg.inputs[1].default_value = TS_SKY_STRENGTH
+    bg.inputs[1].default_value = ts_sky_strength
     return world
 
 
 def build_scene():
     scene = bpy.context.scene
     scene.render.fps = FPS
+    # the B3 span law: the SCENE carries the shot span at build time
+    # (SQUALL is the first film through the D19 preflight; the span
+    # comes from the scene, never a module constant)
+    scene.frame_start = 1
+    scene.frame_end = total_frames
     for o in list(bpy.data.objects):
         if o.name.startswith(("Cube", "Camera", "Light", "Lamp")):
             bpy.data.objects.remove(o, do_unlink=True)
