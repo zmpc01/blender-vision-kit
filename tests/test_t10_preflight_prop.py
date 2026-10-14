@@ -35,6 +35,10 @@ if "blender_kit" not in sys.modules:
     _bk.atmo_objects = lambda scene: []
     _bk.render_hidden_objects = lambda scene: []
     _bk.script_argv = lambda: sys.argv[1:]
+    # REV-3/F2C-1: export_previz_package now imports the shared RNA filter
+    # at module level; the stub mirrors the identity behavior (no bpy RNA
+    # here — the filter's real logic is exercised in-Blender by tier 2).
+    _bk.filter_rna_kwargs = lambda op_id, kwargs, tag="": kwargs
     sys.modules["blender_kit"] = _bk
 try:
     import build_sfx  # noqa: F401  (real PATCHES if numpy behaves)
@@ -228,6 +232,219 @@ for name, attr, junk in [
 m = mod_with(SHOTS_V3=[("S1", 1, 48)])
 check("variant.shots_short_row.s2_rejects", s2_rejects(m),
       "short SHOTS row must reject (the real consumer IndexErrors opaquely)")
+
+# ===========================================================================
+# REV-3 sections (session-17, audit 2-c). These cover S3/B3/coverage —
+# ALL outside the _collect_story oracle (like 2b above), so each check
+# asserts the preflight behavior directly against the exporter behavior
+# established by probe/code-read, not via the decoder property.
+# ===========================================================================
+
+# ---- 6. F2C-3 flip: a shot with no exact CAM_<sid> row is a WARN (the
+# exporter merges cam specs as an OPTIONAL exact-name merge, so the shot
+# exports green); the paired REJECT moved to B3, firing only when the
+# camera OBJECT CAM_<sid> is missing from the built scene too.
+m = mod_with(SHOTS_V3=[("S1", 1, 48, "test")],
+             CAMS_V3=[("CAM_S9", (0, 0, 5), (0, 0, 0), 50.0,
+                       (0, 0, 0), False, 0.1)])
+rep = PF.Report()
+missing, legacy = PF.s3_coherence(m, [("S1", 1, 48)], rep)
+check("s3flip.no_reject", not rep.rejects,
+      f"exact-name-missing must WARN now; rejects={rep.rejects}")
+check("s3flip.warns_missing_row",
+      any("no CAMS row named 'CAM_S1'" in w for w in rep.warns),
+      f"warns={rep.warns}")
+check("s3flip.missing_list_returned", missing == ["S1"] and legacy is False,
+      f"missing={missing} legacy={legacy}")
+
+m = mod_with(SHOTS_V3=[("S1", 1, 48, "test")],
+             CAMS_V3=[("CAM_S1", (0, 0, 5), (0, 0, 0), 50.0,
+                       (0, 0, 0), False, 0.1)])
+rep = PF.Report()
+missing, legacy = PF.s3_coherence(m, [("S1", 1, 48)], rep)
+check("s3exact.silent_when_row_present",
+      not rep.rejects and not rep.warns and missing == [],
+      f"rejects={rep.rejects} warns={rep.warns} missing={missing}")
+
+m = mod_with(SHOTS_V3=[("S1", 1, 48, "test")],
+             CAMS_V3=[("CAM_S11", (0, 0, 5), (0, 0, 0), 50.0,
+                       (0, 0, 0), False, 0.1)])
+rep = PF.Report()
+missing, _legacy = PF.s3_coherence(m, [("S1", 1, 48)], rep)
+check("s3adjacent.still_warn_only",
+      not rep.rejects and missing == ["S1"]
+      and any("substring-adjacent" in w for w in rep.warns),
+      f"rejects={rep.rejects} warns={rep.warns}")
+
+
+# ---- 6b. F2C-3 Phase-B half: B3 rejects ONLY on row+object both missing.
+class _FakeCam:
+    def __init__(self, name):
+        self.name = name
+
+
+class _FakeMarker:
+    def __init__(self, frame, camera):
+        self.frame, self.camera = frame, camera
+
+
+class _FakeScene:
+    """Just enough scene for b3_markers: timeline_markers, objects.get,
+    frame_start/frame_end (span gate)."""
+
+    def __init__(self, markers, objects, f_start=1, f_end=48):
+        self.timeline_markers = markers
+        self.objects = {o.name: o for o in objects}
+        self.frame_start, self.frame_end = f_start, f_end
+
+
+_CAM_ROW_S1 = [("CAM_S1", (0, 0, 5), (0, 0, 0), 50.0, (0, 0, 0), False, 0.1)]
+_SHOTS_2 = [("S1", 1, 24), ("S2", 25, 48)]
+
+# (a) both missing -> REJECT naming BOTH checks (S2 reuses S1's camera;
+#     no CAM_S2 row, no CAM_S2 object — the misname/rename class).
+m = mod_with(SHOTS_V3=_SHOTS_2, CAMS_V3=_CAM_ROW_S1)
+scene = _FakeScene(
+    [_FakeMarker(1, _FakeCam("CAM_S1")), _FakeMarker(25, _FakeCam("CAM_S1"))],
+    [_FakeCam("CAM_S1")])
+rep = PF.Report()
+PF.b3_markers(m, rep, scene, _SHOTS_2, missing_cam_rows=["S2"],
+              legacy_cams=False)
+check("b3pair.rejects_when_both_missing",
+      len(rep.rejects) == 1 and "B3 cam-presence" in rep.rejects[0],
+      f"rejects={rep.rejects}")
+check("b3pair.names_both_checks",
+      bool(rep.rejects) and "NO CAMS row named 'CAM_S2'" in rep.rejects[0]
+      and "no camera object named 'CAM_S2'" in rep.rejects[0],
+      f"rejects={rep.rejects}")
+
+# (b) row missing but OBJECT present -> NO Phase-B reject (the F2C-3
+#     false-reject case: exporter merges specs optionally, gate 11 skips
+#     static/absent specs — a spec-less shot is green).
+m = mod_with(SHOTS_V3=_SHOTS_2, CAMS_V3=_CAM_ROW_S1)
+scene = _FakeScene(
+    [_FakeMarker(1, _FakeCam("CAM_S1")), _FakeMarker(25, _FakeCam("CAM_S2"))],
+    [_FakeCam("CAM_S1"), _FakeCam("CAM_S2")])
+rep = PF.Report()
+PF.b3_markers(m, rep, scene, _SHOTS_2, missing_cam_rows=["S2"],
+              legacy_cams=False)
+check("b3pair.object_present_no_reject", not rep.rejects,
+      f"rejects={rep.rejects}")
+
+# (c) legacy CAMS table -> paired outcome stays WARN (the exporter never
+#     reads the legacy table, so it cannot fail on it — 5-a P2-11 parity).
+m = mod_with(SHOTS_V3=[("S1", 1, 48)], CAMS_V3=[],
+             CAMS=[("CAM_S9", (0, 0, 5), (0, 0, 0), 50.0,
+                    (0, 0, 0), False, 0.1)])
+scene = _FakeScene([_FakeMarker(1, _FakeCam("CAM_S9"))],
+                   [_FakeCam("CAM_S9")], f_start=1, f_end=48)
+rep = PF.Report()
+PF.b3_markers(m, rep, scene, [("S1", 1, 48)], missing_cam_rows=["S1"],
+              legacy_cams=True)
+check("b3pair.legacy_warns_not_rejects",
+      not rep.rejects and any("legacy CAMS table" in w for w in rep.warns),
+      f"rejects={rep.rejects} warns={rep.warns}")
+
+# ---- 7. F2C-8: CAMS_V3=[] + populated legacy CAMS must take the LEGACY
+# path (cam_table's falsy fallthrough) — the old `is None` test defeated
+# the demotion and rejected legacy rows.
+m = mod_with(SHOTS_V3=[("S1", 1, 48, "test")], CAMS_V3=[],
+             CAMS=[("CAM_OTHER", (0, 0, 5), (0, 0, 0), 50.0,
+                    (0, 0, 0), False, 0.1)])
+rep = PF.Report()
+missing, legacy = PF.s3_coherence(m, [("S1", 1, 48)], rep)
+check("legacy.empty_v3_uses_legacy_path", legacy is True,
+      f"legacy={legacy} (False = the F2C-8 `is None` bug)")
+check("legacy.no_reject_and_legacy_warn",
+      not rep.rejects and any("LEGACY" in w for w in rep.warns),
+      f"rejects={rep.rejects} warns={rep.warns}")
+check("legacy.missing_list_still_returned", missing == ["S1"],
+      f"missing={missing}")
+
+# ---- 8. F2C-10: unhashable CAMS_V3[i][0] — the collector str()s it
+# (accept), but the exporter's cam-map build TypeErrors; S2 must reject
+# with the attribution. DELIBERATE S2-stricter exception to the decoder
+# property (the collector's accept is a false-accept; the REAL consumer
+# is the `{c[0]: c}` dict build).
+m = mod_with(CAMS_V3=[(["bad"], (0, 0, 5), (0, 0, 0), 50.0,
+                       (0, 0, 0), False, 0.1)])
+kind, _ = decoder_outcome(m)
+check("unhashable.collector_accepts", kind == "accept",
+      f"decoder outcome={kind} (str() cast — the false-accept)")
+rep = PF.Report()
+PF.s2_schema(m, rep)
+check("unhashable.s2_rejects", bool(rep.rejects),
+      "S2 must reject what the cam-map build cannot consume")
+check("unhashable.attributed_to_cam_map",
+      bool(rep.rejects) and "HASHABLE" in rep.rejects[0]
+      and "cam map" in rep.rejects[0],
+      f"rejects={rep.rejects}")
+
+# ---- 9. F2C-9: one-shot iterators. materialize_table_iterators() is the
+# main()-time fix (normalize in place + WARN); s2/s3 keep per-phase
+# list() safety nets so a drained generator can only ever WARN, never
+# produce the old lying reject.
+def _gen(rows):
+    yield from rows
+
+
+_ROWS = [("CAM_S1", (0, 0, 5), (0, 0, 0), 50.0, (0, 0, 0), False, 0.1)]
+m = mod_with(CAMS_V3=_gen(_ROWS), SHOTS_V3=[("S1", 1, 48, "test")])
+rep = PF.Report()
+PF.materialize_table_iterators(m, rep)
+check("generator.materialized_in_place", isinstance(m.CAMS_V3, list),
+      f"type={type(m.CAMS_V3).__name__}")
+check("generator.warned", any("one-shot iterator" in w for w in rep.warns),
+      f"warns={rep.warns}")
+rep = PF.Report()
+missing, _legacy = PF.s3_coherence(m, [("S1", 1, 48)], rep)
+check("generator.s3_finds_row_after_materialize",
+      missing == [] and not rep.rejects and not rep.warns,
+      f"missing={missing} rejects={rep.rejects} warns={rep.warns}")
+
+# drained-generator safety net: S2 consumes a raw generator, then S3 must
+# WARN (never the old "has no CAMS row … Fix: add a (…) row" reject for a
+# row that exists).
+m = mod_with(CAMS_V3=_gen(_ROWS), SHOTS_V3=[("S1", 1, 48, "test")])
+PF.s2_schema(m, PF.Report())          # drains the generator (with its warn)
+rep = PF.Report()
+missing, _legacy = PF.s3_coherence(m, [("S1", 1, 48)], rep)
+check("generator.drained_s3_never_rejects",
+      not rep.rejects and missing == ["S1"],
+      f"rejects={rep.rejects} missing={missing}")
+
+# ---- 10. F2C-5: vacuous coverage — an empty module must report
+# vacuous=True (and the summary must say so LOUDLY), a populated one must
+# report real counts.
+cov = PF.coverage_summary(mod_with())
+check("coverage.empty.vacuous", cov.get("vacuous") is True, f"cov={cov}")
+check("coverage.empty.zeros",
+      cov["shots"] == 0 and cov["cams"] == 0 and cov["board"] == 0
+      and cov["story_constants"] == 0, f"cov={cov}")
+
+m = mod_with(**BASE)
+cov = PF.coverage_summary(m)
+check("coverage.full.counts",
+      not cov["vacuous"] and cov["shots"] == 1 and cov["cams"] == 1
+      and cov["board"] == 1 and cov["story_constants"] == 21, f"cov={cov}")
+
+m = mod_with(SHOTS_V3=[("S1", 1, 48, "test")])
+cov = PF.coverage_summary(m)
+check("coverage.shots_only_not_vacuous",
+      not cov["vacuous"] and cov["shots"] == 1 and cov["cams"] == 0,
+      f"cov={cov}")
+
+import contextlib
+import io as _io
+buf = _io.StringIO()
+with contextlib.redirect_stdout(buf):
+    rc = PF.print_summary(PF.Report(), "m.py", {}, {"S2": "ok"},
+                          coverage={"shots": 0, "cams": 0, "board": 0,
+                                    "story_constants": 0, "vacuous": True})
+out = buf.getvalue()
+check("coverage.summary_loud_vacuous",
+      rc == 0 and "VACUOUS" in out and "shots=0" in out
+      and "verify --module" in out, f"rc={rc} out={out!r}")
 
 print(f"[t10p] {NCHECK} checks, {len(FAILS)} failed")
 if FAILS:

@@ -20,6 +20,7 @@
 import bpy
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -27,6 +28,7 @@ import tempfile
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = argv[0] if argv else tempfile.mkdtemp(prefix="t10_")
+OUT_IS_TEMP = not argv  # F2C-11: the default mkdtemp OUT must be removed too
 os.makedirs(OUT, exist_ok=True)
 FAILS = []
 NCHECK = 0
@@ -50,9 +52,13 @@ def blender_run(script, args, timeout=600):
     # self-insert, so the subprocess needs PYTHONPATH + the
     # --python-use-system-env flag (Blender background mode ignores
     # PYTHONPATH without it). blrun.sh cannot be nested here (flock).
+    # F2C-11: PYTHONDONTWRITEBYTECODE keeps the fixture imports from
+    # leaking t10_fixture_*.pyc into scripts/__pycache__ (belt — the
+    # suspenders sweep lives in cleanup_variants).
     env = dict(os.environ)
     env["PYTHONPATH"] = os.path.join(REPO, "scripts") + os.pathsep + \
         env.get("PYTHONPATH", "")
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
     cmd = [os.environ.get(
         "BLENDER_BIN", os.path.join(REPO, "tools", "blender", "blender")),
         "--background", "--factory-startup", "--python-use-system-env",
@@ -163,6 +169,19 @@ def cleanup_variants():
             os.remove(p)
         except OSError:
             pass
+    # F2C-11: the exporter imports the fixtures by name, so CPython writes
+    # scripts/__pycache__/t10_fixture_*.pyc behind our backs — a
+    # stale-bytecode landmine for a later same-name fixture. Sweep them
+    # (and honor PYTHONDONTWRITEBYTECODE for our own run). Also applies to
+    # pre-existing landmines from earlier runs.
+    pycache = os.path.join(REPO, "scripts", "__pycache__")
+    if os.path.isdir(pycache):
+        for f in os.listdir(pycache):
+            if f.startswith("t10_fixture") and f.endswith(".pyc"):
+                try:
+                    os.remove(os.path.join(pycache, f))
+                except OSError:
+                    pass
 
 
 def preflight(module_path, case_out):
@@ -172,11 +191,12 @@ def preflight(module_path, case_out):
          os.path.join(case_out, "preflight.json")])
 
 
-def exporter(scene_name, case_out):
+def exporter(scene_name, case_out, extra=()):
     return blender_run(
         os.path.join(REPO, "scripts", "export_previz_package.py"),
         ["--scene", scene_name, "--output", case_out,
-         "--package-id", "t10_fixture", "--name", "t10 fixture"])
+         "--package-id", "t10_fixture", "--name", "t10 fixture"]
+        + list(extra))
 
 
 # ==========================================================================
@@ -219,8 +239,10 @@ try:
     r3p = preflight(v3, case3)
     check("t3.preflight_rejects", r3p.returncode == 3,
           f"rc={r3p.returncode}")
-    check("t3.preflight_names_event", "name" in r3p.stdout and
-          ("kind" in r3p.stdout), (r3p.stdout)[-300:])
+    # F2C-12: tightened from the near-vacuous "name"/"kind" substring check
+    # (both words appear in unrelated stdout) to the real S4 message.
+    check("t3.preflight_names_event",
+          "lacks both 'name' and 'kind'" in r3p.stdout, (r3p.stdout)[-300:])
     r3e = exporter(FIXTURE + "_sfxid", case3)
     check("t3.exporter_gate15_rejects", r3e.returncode != 0
           and "sfx_events.json: event[0]" in r3e.stdout,
@@ -276,8 +298,53 @@ try:
     check("t7.preflight_rejects", r7.returncode == 3, f"rc={r7.returncode}")
     check("t7.message_names_animate", "animate" in r7.stdout, r7.stdout[-300:])
 
+    # ==========================================================================
+    # t10.8 — USD sidecar (F2C-1): the RNA filter must keep the 4.5-
+    # calibrated kwarg set from TypeError-ing on this Blender; the sidecar
+    # writes scene.usda and the parity gate runs.
+    # ==========================================================================
+    case8 = os.path.join(OUT, "t8_usd")
+    # Probe THIS Blender's usd_export RNA in-process (same binary as the
+    # subprocesses): the NOTE assert only applies when the RNA actually
+    # lacks a calibrated kwarg (true on 5.2.2: export_textures).
+    try:
+        _rna_has_textures = "export_textures" in set(
+            bpy.ops.wm.usd_export.get_rna_type().properties.keys())
+    except Exception:
+        _rna_has_textures = None  # no readable RNA — NOTE assert skipped
+    r8 = exporter(FIXTURE, case8, extra=["--usd-sidecar"])
+    check("t8.sidecar_exit0", r8.returncode == 0,
+          f"rc={r8.returncode} tail={(r8.stdout + r8.stderr)[-500:]}")
+    check("t8.no_typeerror", "TypeError" not in (r8.stdout + r8.stderr),
+          "the unfiltered 4.5 kwarg set TypeErrors on 5.2.2 — the RNA "
+          f"filter leaked; tail={(r8.stdout + r8.stderr)[-400:]}")
+    usda8 = os.path.join(case8, "scene.usda")
+    check("t8.usda_written", os.path.isfile(usda8)
+          and os.path.getsize(usda8) > 0,
+          f"usda exists={os.path.isfile(usda8)}")
+    check("t8.sidecar_reported", "USD sidecar" in r8.stdout, r8.stdout[-300:])
+    pv8_path = os.path.join(case8, "previz.json")
+    if os.path.isfile(pv8_path):
+        with open(pv8_path) as _pf8:
+            pv8 = json.load(_pf8)
+        check("t8.usd_parity_ok",
+              pv8.get("usd_parity", {}).get("status") == "ok",
+              f"usd_parity={pv8.get('usd_parity')}")
+    else:
+        check("t8.usd_parity_ok", False, "previz.json missing")
+    if _rna_has_textures is False:
+        check("t8.rna_filter_notes_drops", "RNA dropped" in r8.stdout,
+              "expected the filter NOTE on this Blender (RNA lacks "
+              f"export_textures); tail={r8.stdout[-400:]}")
+    else:
+        check("t8.rna_filter_note_not_expected", _rna_has_textures is not None,
+              f"this Blender's RNA carries export_textures={_rna_has_textures} "
+              "— no NOTE expected")
+
 finally:
     cleanup_variants()
+    if OUT_IS_TEMP:  # F2C-11: never leak the default mkdtemp OUT
+        shutil.rmtree(OUT, ignore_errors=True)
 
 
 print(f"[t10] {NCHECK} checks, {len(FAILS)} failed")

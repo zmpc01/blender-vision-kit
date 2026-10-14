@@ -67,7 +67,7 @@ import subprocess
 
 import bpy
 
-from blender_kit import script_argv, atmo_objects
+from blender_kit import atmo_objects, filter_rna_kwargs, script_argv
 
 # module constant -> JSON story key (the audit's full inventory; a
 # constant the module declares MUST land in the JSON or the gate fails).
@@ -915,8 +915,16 @@ def _usd_customdata_keys(usda_path: str) -> list[str]:
 
 def _export_usd_sidecar(scene, mod, scene_module_name: str,
                         out_path: str) -> None:
-    """In-process USD export with the previz carrier hook (same kwargs
-    as scripts/export_usd.py, animation ON)."""
+    """In-process USD export with the previz carrier hook (animation ON).
+
+    F2C-1: same kwarg SET as scripts/export_usd.py, and like that script
+    the call goes through blender_kit.filter_rna_kwargs — the raw literal
+    was calibrated against 4.5.13's RNA and TypeErrors on 5.2.2
+    (export_textures unrecognized), which used to kill the export AFTER
+    the GLB was written. Three VALUES differ deliberately from the
+    script's flag-driven defaults: preview materials off and the
+    selection/visibility filters off, so the sidecar always carries the
+    FULL scene."""
     import sys
     sys_path = os.path.dirname(os.path.abspath(__file__))
     if sys_path not in sys.path:
@@ -927,7 +935,7 @@ def _export_usd_sidecar(scene, mod, scene_module_name: str,
     # module is the exact one the JSON collector read)
     previz_usd_hook.PrevizUSDHook._cached_scene_module = mod
     try:
-        bpy.ops.wm.usd_export(
+        usd_kwargs = dict(
             filepath=out_path,
             export_animation=True,
             export_meshes=True, export_lights=True, export_cameras=True,
@@ -944,6 +952,27 @@ def _export_usd_sidecar(scene, mod, scene_module_name: str,
             selected_objects_only=False, visible_objects_only=False,
             triangulate_meshes=False,
         )
+        # RNA filter: keep exactly the kwargs the RUNNING Blender declares
+        # and NOTE the drops (shared with export_usd.py +
+        # blender_kit.export_usd — no twin can re-grow the unfiltered call).
+        usd_kwargs = filter_rna_kwargs(
+            "usd_export", usd_kwargs, tag="export_previz_package")
+        try:
+            bpy.ops.wm.usd_export(**usd_kwargs)
+        except TypeError as e:
+            # Last resort (no readable RNA — the filter passes kwargs
+            # through unchanged there): retry with the minimum set and say
+            # loudly which settings were lost.
+            print(f"[pkg] NOTE: usd_export kwarg error ({e}); retrying with "
+                  "minimum kwargs — all export settings except "
+                  "filepath/animation/cameras/lights are LOST on this "
+                  "Blender", flush=True)
+            bpy.ops.wm.usd_export(
+                filepath=out_path,
+                export_animation=True,
+                export_cameras=True,
+                export_lights=True,
+            )
     finally:
         previz_usd_hook.unregister()
 
@@ -1286,7 +1315,23 @@ def main() -> None:
     if args.usd_sidecar:
         usd_path = os.path.join(args.output, "scene.usda")
         print(f"[pkg] exporting USD sidecar (animation ON)…", flush=True)
-        _export_usd_sidecar(scene, mod, args.scene, usd_path)
+        try:
+            _export_usd_sidecar(scene, mod, args.scene, usd_path)
+        except Exception as e:
+            # F2C-1: at this point scene.glb (step 1) and sfx_events.json
+            # (step 4) are already written but previz.json (step below) is
+            # NOT — a bare raise here orphans them, and the traceback names
+            # usd_export internals, never the package. Re-raise (fail
+            # closed, --python-exit-code surfaces it) but LOUDLY name the
+            # orphan files first.
+            print(f"[pkg] FAIL: USD sidecar export RAISED "
+                  f"({type(e).__name__}: {e}) AFTER the GLB was written and "
+                  f"BEFORE previz.json was dumped.", flush=True)
+            print(f"[pkg] ORPHAN PACKAGE: {glb_path} (+ sfx_events.json if "
+                  f"emitted) exists in {args.output} WITHOUT previz.json / "
+                  f"scene.usda — do NOT review the orphan GLB; delete "
+                  f"{args.output} or re-export.", flush=True)
+            raise
         previz["usd_sidecar"] = "scene.usda"
         usd_keys = _usd_customdata_keys(usd_path)
         # story keys as the USD carrier names them (shots/cameras live in

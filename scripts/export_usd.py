@@ -32,7 +32,7 @@ import os
 import sys
 
 import bpy
-from blender_kit import script_argv, clear_scene
+from blender_kit import filter_rna_kwargs, script_argv, clear_scene
 
 
 def main():
@@ -162,15 +162,14 @@ def main():
             triangulate_meshes=False,
         )
 
+        # F2C-2 (session-17): one SHARED filter for every usd_export call
+        # site (this script, export_previz_package --usd-sidecar,
+        # blender_kit.export_usd). The old inline filter's TypeError
+        # fallback silently dropped ~20 export settings; the shared filter
+        # drops only what this Blender's RNA lacks, with a NOTE.
+        usd_kwargs = filter_rna_kwargs(
+            "usd_export", usd_kwargs, tag="export_usd")
         try:
-            # RNA filter: drop kwargs the running Blender doesn't declare.
-            rna_props = set(bpy.ops.wm.usd_export.get_rna_type().properties.keys())
-            dropped = [k for k in usd_kwargs if k not in rna_props]
-            if dropped:
-                print(f"[export_usd] NOTE: RNA dropped {len(dropped)} kwarg(s) "
-                      f"not in this Blender's usd_export: {sorted(dropped)}")
-            usd_kwargs = {k: v for k, v in usd_kwargs.items()
-                          if k in rna_props}
             bpy.ops.wm.usd_export(**usd_kwargs)
         except TypeError as e:
             # Older Blender versions may not have all kwargs; retry with minimum.

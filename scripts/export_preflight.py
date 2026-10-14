@@ -1,12 +1,20 @@
 """
 export_preflight.py — pre-export contract gate for previz scene modules
-(D19.1/D19.2, session-16 REV-2).
+(D19.1/D19.2, session-16 REV-2; session-17 REV-3 amendments).
 
 Runs IN-BLENDER via blrun, BEFORE export_previz_package.py. It replays the
 exporter's real consumption of a scene module against the module's declared
 constants and its built scene, so every landmine surfaces at the cheap end
 (seconds) instead of inside a full export+GLB+gates pipeline (minutes) —
 or worse, as a green-but-broken review package.
+
+session-17 REV-3 amendments (audit 2-c): S3 exact-name-missing demoted to
+WARN with a paired Phase-B reject when the CAM_<sid> OBJECT is also missing
+(F2C-3); vacuous modules now WARN with a coverage count in summary/JSON
+(F2C-5); one-shot iterator constants are materialized once per phase
+(F2C-9); unhashable CAMS names get an attributed reject (F2C-10); the
+USD-sidecar RNA-kwarg drift was fixed in the EXPORTER
+(blender_kit.filter_rna_kwargs, F2C-1).
 
 Contract layers (who owns what):
   * export_previz_package._collect_story  — behavioral source of truth
@@ -30,14 +38,21 @@ Checks:
       constant = vacuous, law 20); arity table with >=n semantics mirroring
       the decoder casts (the decoder never width-checks, so neither do we —
       only castability); BEATS is a shape-only WARN (zero consumers here).
-  S3  cross-table coherence: SHOTS contiguity; every sid has a CAMS row
-      named EXACTLY CAM_<sid> (containment matching FORBIDDEN — a
-      substring-adjacent CAM_ row is a WARN); FPS cross-agreement among
-      declared sources.
+  S3  cross-table coherence: SHOTS contiguity; a shot with NO EXACT
+      CAM_<sid> row is a WARN (REV-3/F2C-3: the exporter merges cam specs
+      as an OPTIONAL exact-name merge — a spec-less shot exports green);
+      containment matching remains FORBIDDEN — a substring-adjacent CAM_
+      row is a WARN. The paired REJECT lives in Phase B (B3): if the
+      camera OBJECT CAM_<sid> is ALSO missing from the built scene, both
+      the spec and the object are gone and B3 rejects naming both checks.
+      FPS cross-agreement among declared sources.
   S4  sfx stream shape: {name|kind} + integer frame (bool excluded);
-      frame inside a SHOTS window (+/-4f) when SHOTS declared; unknown
-      names vs build_sfx.PATCHES = compact WARN. SFX_EVENTS as a JSON
-      path string validates the file ({fps, events} — fps required).
+      frame inside a SHOTS window (+/-4f) when SHOTS declared — applied
+      to the DECLARED and the EMITTED streams alike (the emitted-file
+      window check is deliberately STRICTER than exporter gate 15, which
+      has no window rule — see b_sfx_emitter); unknown names vs
+      build_sfx.PATCHES = compact WARN. SFX_EVENTS as a JSON path string
+      validates the file ({fps, events} — fps required).
   B1  fresh empty blend -> mod.build_scene() -> ctx dict + non-empty scene
       (ctx.get("scene") fallback to bpy.context.scene, mirrored).
   B2  scene.render.fps == module FPS constant (when declared); fps_base
@@ -602,12 +617,23 @@ def _s2_cams(cams, label: str, rep: Report) -> None:
     """CAMS_V3 rows >= 7: (name:str, loc0:vec3, loc1:vec3, lens:num,
     aim:vec3, parent_jeep:bool, shake_amp:num). Decoder casts: float(c[3]),
     float(c[6]), vec-iterates c[1]/c[2]/c[4]; bool(c[5]) and str(c[0])
-    cannot fail."""
+    cannot fail. DELIBERATELY stricter than the collector on field 0
+    (F2C-10): the collector str()s it, but the exporter's cam-map build
+    (`cams_spec = {c[0]: c ...}`) needs it HASHABLE — an unhashable name
+    TypeErrors the whole build, so it rejects here."""
     if not _is_iterable(cams) or isinstance(cams, (str, bytes, dict)):
         rep.reject(
             f"{label}: must be a list of 7-field rows; got {_shape(cams)}. "
             "Fix: declare it as a list of tuples.")
         return
+    if not isinstance(cams, (list, tuple)):
+        # F2C-9: a one-shot iterator is consumed by THIS loop; materialize
+        # (and say so) — main() normalizes the table constants before the
+        # phases, so this is the direct-call safety net.
+        rep.warn(f"{label}: is a {_tname(cams)}, not a list/tuple — the "
+                 "decoder will consume it once; declare a list/tuple so "
+                 "the value survives repeated reads")
+        cams = list(cams)
     for i, row in enumerate(cams):
         rl = _row_len(row)
         if rl is None or rl < 7:
@@ -617,6 +643,20 @@ def _s2_cams(cams, label: str, rep: Report) -> None:
                 f"shake_amp:num); got {_shape(row)}. Fix: complete the row — "
                 "the decoder indexes c[0]..c[6] (_collect_story:645-660, "
                 "exporter:1151-1159).")
+            continue
+        # F2C-10: field 0 keys the exporter's cam-map dict — unhashable
+        # names crash it (garbage-in guard; the collector's str() would
+        # silently accept and the crash would surface unattributed).
+        name0 = _row(row, 0)
+        try:
+            hash(name0)
+        except TypeError:
+            rep.reject(
+                f"{label}[{i}]: field 0 (cam name) must be HASHABLE — the "
+                "exporter builds its cam map keyed by it "
+                "(`cams_spec = {c[0]: c ...}`, exporter:1129) and an "
+                f"unhashable name TypeErrors the whole build; got "
+                f"{_shape(name0)}. Fix: use a string name like 'CAM_S1'.")
             continue
         for idx, what in ((1, "loc0"), (2, "loc1"), (4, "aim")):
             _vec_check(_row(row, idx), f"field {idx} '{what}'", rep,
@@ -715,7 +755,13 @@ def s2_shots(mod, rep: Report):
 # S3 — cross-table coherence
 # ---------------------------------------------------------------------------
 
-def s3_coherence(mod, shots, rep: Report) -> None:
+def s3_coherence(mod, shots, rep: Report):
+    """Cross-table coherence. Returns (missing_exact, legacy_cams) where
+    missing_exact lists the shot sids with NO exact CAM_<sid> row (S3
+    WARNs them; Phase B's B3 turns them into a paired REJECT when the
+    camera OBJECT is missing too — F2C-3) and legacy_cams says the table
+    came from the preflight-only CAMS fallback (the exporter never reads
+    it, so B3 only WARNs there)."""
     # contiguity (mirrors exporter gate 3 arithmetic, 1340-1344)
     for i in range(1, len(shots)):
         if shots[i][1] != shots[i - 1][2] + 1:
@@ -730,23 +776,31 @@ def s3_coherence(mod, shots, rep: Report) -> None:
     # row is a WARN.
     cams = cam_table(mod)
     if cams is None:
-        return
+        return [], True
     if not _is_iterable(cams) or isinstance(cams, (str, bytes, dict)):
-        return  # already rejected in S2
+        return [], True  # already rejected in S2
+    # F2C-9: never iterate a one-shot twice — S2 may have drained it; this
+    # list() is per-phase (main() normalizes the module constants first,
+    # so this is the direct-call safety net).
+    cams = list(cams)
     # review 5-a P2-11: the exporter reads ONLY CAMS_V3 — a legacy-CAMS-only
     # module exports green (vacuous), so S3 must not be stricter than that.
     # Demote every cam-name rejection to a WARN when the table is the
-    # preflight-only legacy fallback.
-    legacy = getattr(mod, "CAMS_V3", None) is None
+    # preflight-only legacy fallback. F2C-8: falsy CAMS_V3 ([] / "" / ())
+    # falls through to CAMS in cam_table above — the legacy path — so the
+    # test here must be falsiness, not `is None`.
+    legacy = not getattr(mod, "CAMS_V3", None)
     names = []
     for r in cams:
         if (_row_len(r) or 0) >= 1 and _row(r, 0) is not None:
             names.append(str(_row(r, 0)))
     exact_names = set(names)
+    missing_exact = []
     for sid, _f0, _f1 in shots:
         want = f"CAM_{sid}"
         if want in exact_names:
             continue
+        missing_exact.append(sid)
         adjacent = [n for n in names if n.startswith(want)]
         if adjacent:
             rep.warn(
@@ -761,11 +815,20 @@ def s3_coherence(mod, shots, rep: Report) -> None:
                 "the exporter never reads (CAMS_V3 only, _collect_story:645); "
                 "the export is vacuous either way. WARN only.")
         else:
-            rep.reject(
+            # REV-3/F2C-3: the exporter merges cam specs as an OPTIONAL
+            # exact-name merge — a shot without a CAMS row exports green
+            # (no motion spec; gate 11 only inspects rows that EXIST), so
+            # this used to be a false-REJECT. WARN here; Phase B (B3)
+            # rejects when the camera OBJECT CAM_<sid> is also missing.
+            rep.warn(
                 f"S3 CAMS: shot {sid!r} has no CAMS row named '{want}' — "
-                "the exporter merges cam specs by exact object name "
-                f"(exporter:1151). Fix: add a ('{want}', loc0, loc1, lens, "
-                "aim, parent_jeep, shake_amp) row.")
+                "the exporter merges cam specs as an OPTIONAL exact-name "
+                "merge (exporter:1151-1159), so the shot exports green with "
+                "no motion spec. WARN only — BUT if the camera OBJECT "
+                f"'{want}' is also missing from the built scene, Phase B "
+                "rejects (B3 names both checks). Fix: add a "
+                f"('{want}', loc0, loc1, lens, aim, parent_jeep, shake_amp) "
+                "row, or verify the shot reuses another CAM_* camera.")
 
     # FPS cross-agreement among DECLARED sources (render.fps itself is
     # checked in Phase B against the built scene).
@@ -784,6 +847,7 @@ def s3_coherence(mod, shots, rep: Report) -> None:
                 f"S3 FPS: module FPS={fps_const} disagrees with "
                 f"RUN_PARAMS['fps']={rp_fps} — the exporter stamps the "
                 "timeline from scene.render.fps; one of these is stale.")
+    return missing_exact, legacy
 
 
 # ---------------------------------------------------------------------------
@@ -849,7 +913,12 @@ def _sfx_check_file(path: str, source: str, rep: Report, shots,
     """Validate an sfx_events.json file. require_fps=True enforces the
     {fps, events} schema (SFX_EVENTS-as-path case: fps is contract, not
     accident). The gate-15-mirrored emitted-file case passes fps=None
-    through vacuously, exactly like exporter:1245-1252."""
+    through vacuously, exactly like exporter:1245-1252. NOTE (F2C-12):
+    the per-event SHAPE + fps agreement mirror gate 15, but the ±4f
+    SHOTS-window rule (in _sfx_check_events) is STRICTER than gate 15 by
+    design — the exporter has no window rule; the preflight applies S4's
+    declared-stream window to the emitted stream too, because the review
+    app must attach events to shots either way."""
     try:
         with open(path, encoding="utf-8") as fh:
             doc = json.load(fh)
@@ -942,11 +1011,17 @@ def b2_fps(mod, rep: Report, scene) -> None:
             "real rate. Fix: leave fps_base at 1.0.")
 
 
-def b3_markers(mod, rep: Report, scene, shots) -> dict:
+def b3_markers(mod, rep: Report, scene, shots,
+               missing_cam_rows=(), legacy_cams=False) -> dict:
     """B3 — markers, mirroring exporter:1118-1124 EXACTLY (marker NAMES
     are unconstrained; only the bound CAMERA name carries the CAM_
     contract). Plus the exporter's own span gate (gate 3) against the
-    SCENE. Returns {frame: marker} for B4."""
+    SCENE. Plus the REV-3/F2C-3 paired check: a shot whose CAMS table has
+    no exact CAM_<sid> row (S3 WARNed) AND whose built scene has no
+    camera OBJECT named CAM_<sid> rejects — spec and object both missing
+    is the misname/rename class. (Legacy-CAMS modules keep WARN parity:
+    the exporter never reads the legacy table, so it cannot fail on it.)
+    Returns {frame: marker} for B4."""
     all_marks = {m.frame: m for m in scene.timeline_markers}
     for sid, f0, _f1 in shots:
         m = all_marks.get(f0)
@@ -954,27 +1029,46 @@ def b3_markers(mod, rep: Report, scene, shots) -> dict:
             rep.reject(
                 f"B3 markers: no timeline marker at f{f0} for shot {sid!r} "
                 "— the exporter cannot bind a camera and exits "
-                "(exporter:1124-1126). Fix: add a marker at f" + str(f0) +
+                "(exporter:1119-1121). Fix: add a marker at f" + str(f0) +
                 " bound to the shot camera "
                 "(scene.timeline_markers.new(name, frame=" + str(f0) +
                 ").camera = cam).")
         elif m.camera is None:
             rep.reject(
                 f"B3 markers: the marker at f{f0} (shot {sid!r}) binds NO "
-                "camera — _marker_bindings skips unbound markers, so the "
-                "exporter fails identically (exporter:1123-1126). Fix: set "
+                "camera — _marker_bindings skips unbound markers "
+                "(exporter:109-112), so the export fails identically at "
+                "the no-marker raise (exporter:1119-1121). Fix: set "
                 "marker.camera.")
         elif not m.camera.name.startswith("CAM_"):
             rep.reject(
                 f"B3 markers: the marker at f{f0} (shot {sid!r}) binds "
                 f"{m.camera.name!r} — expected a CAM_* object "
-                "(exporter:1117-1129). Fix: name the camera CAM_<sid>.")
+                "(exporter:1122-1124). Fix: name the camera CAM_<sid>.")
         elif m.camera.name != f"CAM_{sid}":
             rep.warn(
                 f"B3 markers: shot {sid!r} binds camera {m.camera.name!r} "
                 f"!= 'CAM_{sid}' — exact-match is the real convention in "
                 "both films; WARN only (the exporter only requires the "
                 "CAM_ prefix).")
+    # REV-3/F2C-3 paired check — the Phase-B half of S3's demotion.
+    for sid in missing_cam_rows:
+        if scene.objects.get(f"CAM_{sid}") is None:
+            msg = (
+                f"B3 cam-presence: shot {sid!r} has NO CAMS row named "
+                f"'CAM_{sid}' (S3 WARN) AND no camera object named "
+                f"'CAM_{sid}' in the built scene — BOTH the exporter's "
+                "optional cam-spec merge (exporter:1151-1159) and the "
+                "CAM_<sid> object convention fail together (the "
+                "misname/rename class; the shot's framing would come from "
+                "whatever the f0 marker binds). Fix: name the shot camera "
+                f"'CAM_{sid}' and add the matching CAMS_V3 row, or point "
+                "the f0 marker at an existing CAM_* camera.")
+            if legacy_cams:
+                rep.warn(msg + " (legacy CAMS table: exporter reads "
+                         "CAMS_V3 only — WARN parity)")
+            else:
+                rep.reject(msg)
     if shots:
         if shots[0][1] != scene.frame_start or shots[-1][2] != scene.frame_end:
             rep.reject(
@@ -1107,12 +1201,17 @@ def b5_parity(mod, rep: Report, scene) -> None:
 
 def b_sfx_emitter(mod, rep: Report, ctx, scene, shots) -> None:
     """Phase-B half of S4: call the module's own emitter into a temp dir
-    and validate what it wrote (mirrors gate 15 without running the
-    export). The exporter calls emit_sfx_events unguarded, so a raise
-    here would crash the export. NOTE: this runs AFTER b5_parity (main()
-    ordering) — the exporter reads scene fps/frame_start BEFORE its own
-    emitter call, and an emitter that mutates the scene must not shift
-    what the parity guard snapshots (review 5-a P2-9)."""
+    and validate what it wrote. Per-event shape + fps agreement mirror
+    gate 15 WITHOUT running the export; the ±4f SHOTS-window rule is
+    STRICTER than gate 15 BY DESIGN (D19.1 S4's declared-stream window
+    also guards the emitted stream — the exporter has no window rule, the
+    review app needs events attachable to shots either way; documented
+    REV-3/F2C-12, not relaxed). The exporter calls emit_sfx_events
+    unguarded, so a raise here would crash the export. NOTE: this runs
+    AFTER b5_parity (main() ordering) — the exporter reads scene
+    fps/frame_start BEFORE its own emitter call, and an emitter that
+    mutates the scene must not shift what the parity guard snapshots
+    (review 5-a P2-9)."""
     emit = getattr(mod, "emit_sfx_events", None)
     if not callable(emit):
         return
@@ -1152,6 +1251,56 @@ def b6_animate_dry(mod, rep: Report, ctx) -> None:
         mod.animate(ctx, start_frame=1, n_frames=8)  # sentinel + small run
 
 
+def materialize_table_iterators(mod, rep: Report) -> None:
+    """F2C-9: one-shot iterators in the TABLE constants drain on first
+    read — S2 consumes them, then S3/B3/B5 re-read an EXHAUSTED iterator
+    and 'reject' rows that exist, with a lying fix-hint. Materialize each
+    to a list ONCE, here, and WARN. The exporter consumes each constant
+    exactly once, so this matches exporter semantics (it never mutates
+    the module the exporter sees — the exporter imports its own copy)."""
+    for attr in ("SHOTS_V3", "SHOTS", "CAMS_V3", "CAMS"):
+        val = getattr(mod, attr, None)
+        if val is None or isinstance(val, (list, tuple, dict, str)):
+            continue
+        if not _is_iterable(val):
+            continue  # not iterable at all — the shape checks reject it
+        try:
+            setattr(mod, attr, list(val))
+        except Exception:
+            continue  # unreadable iterator — the shape checks handle it
+        rep.warn(
+            f"import: {attr} is a one-shot iterator ({_tname(val)}) — "
+            "materialized to a list for checking (the exporter consumes it "
+            "exactly once; declare a list/tuple so repeated reads see the "
+            "value)")
+
+
+def coverage_summary(mod) -> dict:
+    """F2C-5: what the preflight actually had to check. 'vacuous' = the
+    module declares none of the story tables — every check passed with
+    ZERO coverage (law 20 makes that CORRECT, but it must be LOUD, not a
+    full-fat PASS)."""
+    def _n(v):
+        if v is None:
+            return 0
+        if isinstance(v, (list, tuple, dict, str)):
+            return len(v)
+        return 1  # declared but unmeasurable (scalar / one-shot iterator)
+
+    board = getattr(mod, "BOARD", None)
+    cov = {
+        "shots": _n(shots_table(mod)),
+        "cams": _n(cam_table(mod)),
+        "board": _n(board),
+        "story_constants": sum(
+            1 for a, _k in STORY_SOURCES
+            if getattr(mod, a, None) is not None),
+    }
+    cov["vacuous"] = not any(
+        cov[k] for k in ("shots", "cams", "board", "story_constants"))
+    return cov
+
+
 # ---------------------------------------------------------------------------
 # CLI + summary
 # ---------------------------------------------------------------------------
@@ -1174,11 +1323,21 @@ def parse_args(argv):
 
 
 def print_summary(rep: Report, mod_path: str, flags: dict,
-                  checks: dict) -> int:
+                  checks: dict, coverage: dict | None = None) -> int:
     print(f"{PF} ---- PREFLIGHT SUMMARY ----", flush=True)
     print(f"{PF} module: {mod_path}  flags: {flags}", flush=True)
     print(f"{PF} checks: " + "  ".join(f"{k}={v}" for k, v in checks.items()),
           flush=True)
+    if coverage is not None:
+        cov_line = "  ".join(f"{k}={v}" for k, v in coverage.items()
+                             if k != "vacuous")
+        if coverage.get("vacuous"):
+            # F2C-5: a vacuous pass must never look like a checked-clean one.
+            print(f"{PF} coverage: {cov_line}  VACUOUS — the module declares "
+                  "NO story tables; every check passed with nothing to check "
+                  "(verify --module)", flush=True)
+        else:
+            print(f"{PF} coverage: {cov_line}", flush=True)
     if rep.warns:
         shown = rep.warns[:WARN_CAP]
         for w in shown:
@@ -1196,9 +1355,10 @@ def print_summary(rep: Report, mod_path: str, flags: dict,
     return 0
 
 
-def write_json(path, mod_path, flags, checks, rep, scene=None) -> None:
+def write_json(path, mod_path, flags, checks, rep, scene=None,
+               coverage=None) -> None:
     doc = {
-        "tool": "export_preflight (D19 REV-2)",
+        "tool": "export_preflight (D19 REV-3)",
         "module": mod_path,
         "flags": flags,
         "checks": checks,
@@ -1206,6 +1366,8 @@ def write_json(path, mod_path, flags, checks, rep, scene=None) -> None:
         "rejections": rep.rejects,
         "warnings": rep.warns,
     }
+    if coverage is not None:
+        doc["coverage"] = coverage  # F2C-5: vacuous passes are visible here
     if scene is not None:
         doc["scene"] = {
             "fps": int(scene.render.fps),
@@ -1222,10 +1384,12 @@ def write_json(path, mod_path, flags, checks, rep, scene=None) -> None:
         print(f"{PF} WARN could not write --json {path}: {e}", flush=True)
 
 
-def _finish(rep, args, mod_path, flags, checks, scene) -> int:
-    rc = print_summary(rep, mod_path, flags, checks)
+def _finish(rep, args, mod_path, flags, checks, scene,
+            coverage=None) -> int:
+    rc = print_summary(rep, mod_path, flags, checks, coverage=coverage)
     if args.json_out:
-        write_json(args.json_out, mod_path, flags, checks, rep, scene=scene)
+        write_json(args.json_out, mod_path, flags, checks, rep, scene=scene,
+                   coverage=coverage)
     return rc
 
 
@@ -1233,13 +1397,14 @@ def main() -> int:
     args = parse_args(script_argv())
     mod_path = os.path.abspath(args.module)
     flags = {"skip_build": args.skip_build, "animate_dry": args.animate_dry}
-    print(f"{PF} export_preflight (D19 REV-2): module={mod_path} "
+    print(f"{PF} export_preflight (D19 REV-3): module={mod_path} "
           f"flags={flags}", flush=True)
 
     rep = Report()
     checks: dict[str, str] = {}
     scene = None
     ctx = None
+    coverage = None
 
     # ---- module import (by PATH — this tool's job; the EXPORTER's
     # name-only import constraint applies to t10 fixtures, not here) ----
@@ -1247,7 +1412,8 @@ def main() -> int:
         rep.reject(f"module: file not found: {mod_path}. Fix: pass the .py "
                    "path to --module (preflight imports by PATH).")
         checks["import"] = "rejected"
-        return _finish(rep, args, mod_path, flags, checks, scene)
+        return _finish(rep, args, mod_path, flags, checks, scene,
+                       coverage=coverage)
     try:
         mod = _import_scene_file(mod_path)
         checks["import"] = "ok"
@@ -1256,7 +1422,12 @@ def main() -> int:
                    "(traceback tail on the next line).")
         rep.reject("import traceback tail:\n" + _tb_tail())
         checks["import"] = "rejected"
-        return _finish(rep, args, mod_path, flags, checks, scene)
+        return _finish(rep, args, mod_path, flags, checks, scene,
+                       coverage=coverage)
+
+    # F2C-9: normalize one-shot iterator TABLE constants BEFORE any phase
+    # reads them (materialized in place; see materialize_table_iterators).
+    materialize_table_iterators(mod, rep)
 
     # ---- Phase S (no bpy scene state touched) ----
     n = len(rep.rejects)
@@ -1270,20 +1441,32 @@ def main() -> int:
     checks["S2"] = _st(rep, n)
 
     n = len(rep.rejects)
-    s3_coherence(mod, shots, rep)
+    missing_cam_rows, legacy_cams = s3_coherence(mod, shots, rep)
     checks["S3"] = _st(rep, n)
 
     n = len(rep.rejects)
     s4_sfx(mod, shots, rep, os.path.dirname(mod_path))
     checks["S4"] = _st(rep, n)
 
+    # F2C-5: coverage count + the loud vacuous WARN (WARNs never fail the
+    # run — law 20 says vacuous is CORRECT, it just must not be silent).
+    coverage = coverage_summary(mod)
+    if coverage["vacuous"]:
+        rep.warn(
+            "coverage: the module declares NO story tables (0 shots, 0 cam "
+            "rows, 0 BOARD entries, 0 story constants) — preflight coverage "
+            "is VACUOUS (every check passed with nothing to check; law 20) "
+            "— verify --module points at the intended film module")
+
     if args.skip_build:
         checks["B"] = "skipped (--skip-build: parity guard B5 does NOT run)"
-        return _finish(rep, args, mod_path, flags, checks, scene)
+        return _finish(rep, args, mod_path, flags, checks, scene,
+                       coverage=coverage)
     if rep.rejects:
         # A module that fails Phase S is not safe to build — stop here.
         checks["B"] = "skipped (Phase S rejected)"
-        return _finish(rep, args, mod_path, flags, checks, scene)
+        return _finish(rep, args, mod_path, flags, checks, scene,
+                       coverage=coverage)
 
     # ---- Phase B: fresh empty blend -> build_scene ----
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -1296,7 +1479,8 @@ def main() -> int:
         rep.reject("B1 traceback tail:\n" + _tb_tail())
         checks["B1"] = "rejected"
         checks["B2-B6"] = "skipped"
-        return _finish(rep, args, mod_path, flags, checks, scene)
+        return _finish(rep, args, mod_path, flags, checks, scene,
+                       coverage=coverage)
 
     # B1 — ctx dict + scene non-empty (exporter:1056 fallback mirrored)
     if not isinstance(ctx, dict):
@@ -1306,15 +1490,23 @@ def main() -> int:
             "bpy.context.scene (exporter:1056). Fix: return a ctx dict.")
         checks["B1"] = "rejected"
         checks["B2-B6"] = "skipped"
-        return _finish(rep, args, mod_path, flags, checks, scene)
+        return _finish(rep, args, mod_path, flags, checks, scene,
+                       coverage=coverage)
     scene = ctx.get("scene") or bpy.context.scene
     if len(scene.objects) == 0:
+        # F2C-12 reword: the exporter would NOT ship an empty GLB — its own
+        # fail-closed gates (1 and 6) reject first. Stop early with the
+        # honest reason.
         rep.reject(
-            "B1 ctx: the built scene has 0 objects — the exporter would "
-            "package an empty GLB. Fix: build_scene must add objects.")
+            "B1 ctx: the built scene has 0 objects — the exporter's own "
+            "fail-closed gates would reject the package (gate 1: zero "
+            "cameras in the GLB; gate 6: empty actions manifest), so "
+            "nothing reviewable would ship. Fix: build_scene must add "
+            "objects.")
         checks["B1"] = "rejected"
         checks["B2-B6"] = "skipped"
-        return _finish(rep, args, mod_path, flags, checks, scene)
+        return _finish(rep, args, mod_path, flags, checks, scene,
+                       coverage=coverage)
     checks["B1"] = "ok"
 
     n = len(rep.rejects)
@@ -1322,7 +1514,9 @@ def main() -> int:
     checks["B2"] = _st(rep, n)
 
     n = len(rep.rejects)
-    all_marks = b3_markers(mod, rep, scene, shots)
+    all_marks = b3_markers(mod, rep, scene, shots,
+                           missing_cam_rows=missing_cam_rows,
+                           legacy_cams=legacy_cams)
     checks["B3"] = _st(rep, n)
 
     n = len(rep.rejects)
@@ -1357,7 +1551,8 @@ def main() -> int:
     else:
         checks["B6"] = "skipped (--animate-dry off)"
 
-    return _finish(rep, args, mod_path, flags, checks, scene)
+    return _finish(rep, args, mod_path, flags, checks, scene,
+                   coverage=coverage)
 
 
 if __name__ == "__main__":
