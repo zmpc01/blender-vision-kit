@@ -16,7 +16,12 @@ from blender_kit import common_parser, script_argv, clear_scene, make_material
 
 def build_scene():
     clear_scene()
-    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, 3.0))
+    # s17: the tower HOVERS 300mm above the ground (bottom z = 0.3). At the
+    # old z=3.0 the bottom sat EXACTLY on the ground plane — legitimately
+    # seated, so the v3_edges C4 floating-law check was red-by-construction
+    # (masked all session-16 by the rc=90 lock failures). Hovering is what
+    # the suite's intent describes: a lone tower with NOTHING below it.
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, 3.3))
     tower = bpy.context.active_object
     tower.name = "Tower"
     tower.scale = (0.15, 0.15, 6.0)

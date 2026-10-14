@@ -571,10 +571,13 @@ def main():
             import math as _math
             diag = _math.dist(mn, mx)
             # F2A-15: exact half-width = dist * (sensor/2)/lens (no atan —
-            # the atan form was ~4% conservative); 5 m front offset and the
-            # 36 mm default sensor half-width are the same constants
-            # VIEW_ANGLES/the temp cameras use.
-            _dist = vc.VIEW_ANGLES["front"][0]
+            # the atan form was ~4% conservative). Distance = the front
+            # offset's MAGNITUDE (s17 fix: front[0] is the x component,
+            # which is 0 — the old arithmetic made visible ~0.0 and fired
+            # the hint on every scene); sensor half-width 18mm = bpy's
+            # default, the same constant the temp cameras use.
+            _front = vc.VIEW_ANGLES["front"][:3]
+            _dist = _math.sqrt(sum(v * v for v in _front))
             _sensor_half = 18.0
             visible = 2 * _dist * _sensor_half / max(args.lens, 1)
             if diag > visible * 1.4:
