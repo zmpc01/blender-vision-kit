@@ -43,3 +43,15 @@
   (adds the --usd-sidecar RNA-filter proof on 5.2.2).
 - Logs: output/battery_{b1,b1r,b2,b3,b4}/logs/ (sandbox-local); this file
   is the durable copy (F2D-6: the s16 receipt only had the pre-fix run).
+
+## Addendum — wave-2 verification round (post-receipt)
+
+The wave-2 fresh-context audit (docs/audit_s17/5a_wave2_verification.md)
+found 4× P2 "twins" + 1 real regression (seat_at scale). Wave F fixed
+all of them; the affected suites re-ran GREEN: test_s17_wave_a (25/25,
+extended), s17b, s17i, t10p, t8, t3, t5, v9, f17, t9 — 10 suites, 0
+failures. The 29/29 table above therefore holds for the final tip
+(post-5c39b86); the two mid-session fix pairs (b1r, wave F) are the
+documented exceptions to the single-run receipt. Open P3 residue is
+definitively listed in the 5a file (10 items — below the exhaustion
+bar per the session mandate).

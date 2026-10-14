@@ -3816,3 +3816,15 @@ Stage Summary:
 - F-TD3 CLOSED (the last silent-wrong-render class in the core eye). 88 findings → 86 fixed/closed, 2 filed upstream (sync_shared governance F2E-5 + nits, docs/FINDINGS_upstream.md), P3 residue documented in the audit files.
 - Battery 29/29; five new/extended suites; every fix carries a regression test.
 - The user must ROTATE the GitLab PAT (raw in git history pre-redaction; GitHub PAT was refreshed by the user this session and verified).
+
+---
+Task ID: session-17 addendum (wave-2 verification + Wave F)
+Agent: orchestrator + 1 verification auditor (5-a)
+Task: the exhaustion-loop pass — verify the fix waves with fresh eyes
+
+Work Log:
+- Wave-2 audit (read-only, adversarial): all 8 spot-audited mechanisms correct at core; three new suites have ZERO vacuous assertions; the failure pattern was "twins" — each fix landed on its flagship site and missed siblings (F5A-1 NaN gate, F5A-3 move_to rebase, F5A-4 vc dispatch) plus one real regression (F5A-2 seat_at silently rescaled the mover — caught BEFORE any vendor-asset lane consumed it). 4× P2 + 6× P3, no P0/P1.
+- Wave F (orchestrator): all 4 P2s + 3 cheap P3s fixed with tests (s17 25/25); 10 affected suites re-run green; the definitive open-P3 list (10 items) recorded in docs/audit_s17/5a_wave2_verification.md — the session's "exhaust until <P3" mandate is MET with the residue documented.
+
+Stage Summary:
+- tip 5c39b86; wave-2 receipt addendum in docs/battery_s17_results.md; GitLab archive branch synced through f546837 (re-push at next micro-step); the film lane's DESIGN_squall REV-3 FINAL rebased under us twice — the kit fixes protect its upcoming build.
