@@ -108,8 +108,13 @@ def main():
                                              # zombies_zz_chase
 
     t0 = time.time()
+    # F-TS2: chase_frame pinned EXPLICITLY — the r109 bridge default
+    # flipped to "world"; a re-bake without this pin would silently
+    # re-band the belt-shaped zones and move the destination (the
+    # determinism trap; the film pins ARE the belt frame).
     scene = bridge.ingest_contract(C, count=args.count,
-                                   seed=C.CROWD_SEED)
+                                   seed=C.CROWD_SEED,
+                                   chase_frame="belt")
     n_agents = sum(p.count for p in scene.populations)
     print(f"[tferry_bake] ingest OK: {len(scene.populations)} populations, "
           f"{n_agents} agents")

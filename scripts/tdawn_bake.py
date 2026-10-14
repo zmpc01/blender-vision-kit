@@ -77,8 +77,13 @@ def main():
     import tdawn_contract as C
 
     t0 = time.time()
+    # F-TS2: chase_frame pinned EXPLICITLY — the r109 bridge default
+    # flipped to "world"; a re-bake without this pin would silently
+    # re-band the belt-shaped zones and move the destination (the
+    # determinism trap; the film pins ARE the belt frame).
     scene = bridge.ingest_contract(C, count=args.count,
-                                   seed=C.CROWD_SEED)
+                                   seed=C.CROWD_SEED,
+                                   chase_frame="belt")
     print(f"[tdawn_bake] ingest OK: {len(scene.populations)} populations, "
           f"{sum(p.count for p in scene.populations)} agents")
 

@@ -105,7 +105,9 @@ def main():
         "SPEED_PLAN zone keys out of sync with SPAWN_ZONES_V5")
 
     t0 = time.time()
-    scene = bridge.ingest_contract(C, count=args.count, seed=seed)
+    # F-TS2: chase_frame pinned EXPLICITLY (the r109 default-flip trap).
+    scene = bridge.ingest_contract(C, count=args.count, seed=seed,
+                                   chase_frame="belt")
     n_agents = sum(p.count for p in scene.populations)
     print(f"[tgreen_bake] ingest OK: {len(scene.populations)} populations, "
           f"{n_agents} agents")
