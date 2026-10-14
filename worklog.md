@@ -3828,3 +3828,52 @@ Work Log:
 
 Stage Summary:
 - tip 5c39b86; wave-2 receipt addendum in docs/battery_s17_results.md; GitLab archive branch synced through f546837 (re-push at next micro-step); the film lane's DESIGN_squall REV-3 FINAL rebased under us twice — the kit fixes protect its upcoming build.
+
+## Session 17b — SQUALL: the fourth film (the storm-dusk regime) + the F-TS kit wave
+
+Work Log:
+- Fresh sandbox bootstrap (5 repos, both PATs verified, Blender 5.2.2
+  one-shot, venv + wheel 1.5.5, the review server UP via daemonize,
+  comments restored; the trilogy verified serving).
+- The research wave (4-a/4-b/4-c): the film path reads BASE bytes
+  (kit layers INVISIBLE — the F-TS1 mandate), the queue/portal/
+  HoldPosition shapes attachable film-side, the ragdoll stay-down
+  recipe (tick_end = cache end).
+- DESIGN_squall REV-1→2→3 with audit rounds 4-d/4-e/4-f: the portal
+  axis law (NORTH_SOUTH = the crossing), the flee-is-cosmetic law
+  (the ebb CUT), the emission-interval hijack, the loader N-pin P0,
+  the rim-band pick law, the vendor id/box pins.
+- The world module (sub-agent 4-g; the timed-out first pass had
+  written it — the second audited/fixed it; my eye gate PASSED after
+  the factory-Cube purge fix in the probe).
+- The kit wave landed: F-TS1 (the bridge composition + real z; r054
+  72/72 + the new test 13/13), F-TS2 (the belt pins in 4 drivers),
+  F-TS5 (the loader override), the F-TS3/F-TS4 filings.
+- The film: contract → probe (the doorway ROUTES 92/135; the queue
+  line EXISTS) → groups (the two-bake covenant) → finish (the rim-band
+  faller Zed.0050, the ragdoll stays down, the cast list, the bells)
+  → scene module → flow strip (the choke + the fill + the drain READ)
+  → the storm-dusk ladder (sun5/sky15 pinned; three runs of identical
+  pixels = the marker-camera law re-learned) → the framing rounds
+  (the camprobe; S5a the nadir, S4b, S3c, S6i, S7d, S9a, S11d the
+  AXIAL CRANE law, S12c the neon) → ALL 12 EYE-CERTIFIED.
+- The export: the preflight PASS (B3 span law — the first film
+  through it), the naming-law lowercase, the CAST registry, the
+  canonical export all-gates, staged, verified in-app.
+- The review wave (4-h the bridge, 4-i the lane): no P0s; the
+  tripwire/pipeline seam (F-TS6) fixed in pair with F-TS1; 7 P1s
+  patched in rev 2 (the keepout rewrite, the rain sawtooth + arc,
+  the fall-frame coupling, the sfx vocabulary, the rim bollards, the
+  no-crowd gate, the tumble per-channel keys); the deterministic
+  re-bake; 12 stills re-certified; rev 2 stamped + staged + served.
+
+Stage Summary:
+- FOUR films live: tdawn_3 + tferry_1 rev 2 + tgreen_1 rev 2 +
+  tsquall_1 rev 2 (SQUALL — storm dusk, rain, the slip-and-fall, the
+  window queue, the neon title). Comments ON; the server UP.
+- Sub-agents this session: 4-a..4-i (9) + the wave-1/2 lane merges.
+- Kit capture: docs/USABILITY_TS1_squall.md (F-TS1..8 + the tool
+  laws); the crowd-kit bridge + tests; the escape-previz loader +
+  gates + build_sfx.
+- Ledger: the quadrilogy spans dawn/night/noon/storm-dusk; the next
+  regime candidates: fog, blue hour, interior, night market queues.

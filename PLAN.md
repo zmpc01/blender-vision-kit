@@ -430,3 +430,23 @@ code-level finding (--frames BLOCKER) remains valid.
   landing (FINDINGS_upstream.md) when an upstream-owned session opens;
   (3) lane discipline holds — the film lane's fourth film (DESIGN_squall
   REV-2) consumes the kit; this lane audits/refines/stress-tests it.
+
+## Track TS: SQUALL (session 17b, DELIVERED — the review lane is open)
+
+- [x] tsquall_1 rev 2 exported (all gates) + staged + verified in-app
+      — the fourth film: storm-dusk regime (rain / wet ground /
+      thunder flashes / the neon title), the M6 queue/portal/
+      HoldPosition + the M5 ragdoll slip beat + groups + the
+      events→sfx spine, 135 agents
+- [x] the F-TS kit wave: F-TS1 (the bridge composition + real z),
+      F-TS2 (the belt pins), F-TS5 (the loader override), the F-TS6
+      tripwire pair, the SQUALL sfx vocabulary; F-TS3/F-TS4 filed
+      (docs/USABILITY_TS1_squall.md)
+- [ ] the USER review round on all FOUR films (tdawn_3 / tferry_1
+      rev 2 / tgreen_1 rev 2 / tsquall_1 rev 2)
+- [ ] the next-regime candidates (diversity queue): fog volumetrics,
+      blue hour, interior/night-market queues, a two-film round if
+      the review round lands clean
+- [ ] the honest-scope files (when a scenario needs them): SPEED/
+      GOAL/DISABLE layers are VIEW-invisible (the F-TS1 ledger); a
+      VIEW channel extension is a previz-side pinned-contract change

@@ -293,8 +293,8 @@ gait_modifiers.
   0.12 + practicals; saturated neon owns local radiance (give the hero
   a warm anchor); SSR knob = eevee.use_raytracing. Near-field emission
   ceiling is DISTANCE-dependent (~1.1-1.3 close, 1.9 far OK).
-- Sandbox chrome cannot play 21MB GLBs — verify packages via API + stills.
-- The FLOW STRIP is the geometry-seam detector — run BEFORE cameras.
+- Chrome cannot play 21MB GLBs — verify via API + stills. The FLOW
+  STRIP is the geometry-seam detector — run BEFORE cameras.
 - The governed-pair guard: land kit fix → tools/sync_shared.py --to
   <consumer> → commit BOTH (cross-repo drift fails loudly).
 
@@ -317,19 +317,17 @@ gait_modifiers.
 
 ## SESSION 16 LAWS (the KIT-QUALITY wave — D19 export preflight + t10; full: docs/USABILITY_S16 + DESIGN_D19)
 
-- **Lane discipline (user-ruled)**: the parallel lane owns SCENE work;
-  this kit's sessions audit/test/refine the kit or build STRESS
-  fixtures — never co-edit scene_*.py or stage films.
+- **Lane discipline**: the parallel lane owns SCENE work unless the
+  user directs films; never co-edit scene_*.py.
 - **Preflight-before-export** (exit 3, attributed rejections); gate 15
   (sfx fail-closed) + gate 4 (BOARD total-decode-failure) backstop.
 - **TWO exporters**: this tree's export_previz_package = escape/template
   lane; film lanes export via the CANONICAL agent-kit copy. Pin WHICH
   exporter is under test before writing suite asserts.
-- **Decode-parity property pattern**: the REAL decoder is the oracle —
-  stub bpy/blender_kit, assert both drift directions; the checker owns
-  ERROR QUALITY, the decoder owns truth. A checker is never stricter
-  than the decoder (≥n semantics), but None-where-decoder-raises IS a
-  rejection.
+- **Decode-parity**: the REAL decoder is the oracle — assert both
+  drift directions; the checker owns error quality, the decoder truth.
+  A checker is never stricter than the decoder, but
+  None-where-decoder-raises IS a rejection.
 - **RNA-filter operator kwargs** (get_rna_type) — version-calibrated
   kwarg sets rot.
 - **Subprocess tests**: direct binary + --python-use-system-env +
@@ -339,46 +337,22 @@ gait_modifiers.
 - **Audit-before-implement ROI**: 3 cheap read-only audits → 1 real bug
   + the whole D19 spec. Cite file:line — but re-verify anchors by grep
   before batch-editing them (they shift).
-## SESSION 16 LAWS (the THIRD film: GREEN LIGHT — the daylight regime)
+## SESSION 16 LAWS (the third film — condensed; full: USABILITY_TG1 + DESIGN_green_light REV-4)
 
-- **THE CAPACITY BOX IS AN ARRIVAL TRIGGER, NOT A CONTAINER**: an
-  agent freezes (velocity 0, GHOST — no neighbor risk) the moment it
-  ENTERS x ±5; the crowd never piles INSIDE. Design converge films
-  FROM the box mechanics; any plaza-scale barricade there seals a
-  nav pocket → UnreachableDestination. Embracing the two-rank ghost
-  freeze AS the story was the trilogy's best design move.
-- **The speed envelope is PER-FILM**: max_speed = populations[0]'s
-  mu+3σ applied to ALL agents (no global cap). The film's zone0 plan
-  IS the cap; the tail must fit it.
-- **NO delayed emission exists**: every population spawns at t0 —
-  "a crowd waits for the light" is unauthorable; open with motion.
-- **AgX-noon laws**: the pastel wash is the SKY AMBIENT (p95−p50
-  0.07), not the sun disc (disc-off changed nothing) and not
-  exposure (no clipping) — tune the direct:ambient RATIO (won
-  sun5/sky0.15/1°). White cards need a DARK field at noon (the
-  night cream-on-dark law INVERTED); glyph emission sweep 1.9/3.9/
-  5.5 (the night ceiling does not transfer).
-- **The x-sign palette split**: the V5 zone row spawns symmetric E+W
-  strips (asymmetric x is inexpressible) — two-stream identity is a
-  SCENE-SIDE palette keying on spawn-x sign at f1; value-split
-  tones (not hue) read at 640×360.
-- **The clone-seam law**: a tool clone that seds names misses the
-  scene-module path — the stills runner rendered the FERRY's shots
-  into the tgreen dir; only the eye gate caught it. Grep the clone
-  for the PARENT'S scene module before running; the review wave is
-  never a substitute for eyes.
-- **The spawn-band vs dressing seam**: set geometry must clear the
-  spawn strips (CROWD_X_RANGE ends) — facades at |x| 28 swallowed the strip end (~30 agents inside
-  buildings, walking out through walls in the GLB). Dress BEYOND the
-  walkable, not inside its tail.
-- **The seed override must move the CONTRACT attr** (the bridge
-  compares int(contract.CROWD_SEED) == int(seed) at ingest).
-- **Determinism hygiene**: never reuse the default --out across
-  runs (it destroyed the run-1 evidence); uncommitted states leave
-  no git trace; the pin law held when truly same-input (byte-
-  identical reruns, tferry 8b7d4d8e cross-session).
-- Ledger: docs/USABILITY_TG1_green_light.md (F-TG1..8); design
-  REV-4 = built truth.
+- THE CAPACITY BOX IS AN ARRIVAL TRIGGER, NOT A CONTAINER: agents
+  freeze (GHOST) the moment they ENTER the box — design converge
+  films FROM the box mechanics; plaza-scale barricades there seal a
+  nav pocket → UnreachableDestination.
+- The speed envelope is PER-FILM (populations[0].mu+3σ caps ALL
+  agents); NO delayed emission exists; the x-sign palette split is
+  SCENE-SIDE (V5 zones spawn symmetric E+W strips).
+- AgX-noon: the wash is the SKY AMBIENT — tune the direct:ambient
+  RATIO (sun5/sky0.15 won); white cards need a DARK field; glyph
+  emission sweep 1.9/3.9/5.5.
+- The clone-seam law: a sed-cloned tool rendered the PARENT'S film —
+  grep the clone for the parent's scene module before running; the
+  spawn-band vs dressing seam: dress BEYOND the walkable's tail.
+
 
 ## SESSION 17 LAWS (the second KIT-QUALITY wave — 88 findings, all ≥P2 fixed)
 
@@ -400,3 +374,38 @@ gait_modifiers.
   foreground call. Red-by-construction fixtures surface when their
   masking failure (rc=90) heals — re-check expectations after unmasking.
 
+
+## SESSION 17b LAWS (the fourth film: SQUALL — the storm-dusk regime; F-TS1..8)
+
+- **F-TS1: the film path now COMPOSES kit layers** (sidecar-gated
+  read_tick splice + real z; unlayered stays byte-identical) with the
+  paired tripwire fix (the layout_composed meta marker + the
+  composed-aware ground-contact gate).
+- **THE MARKER-CAMERA LAW**: shot timeline markers override
+  scene.camera inside their span — every probe tool nulls them in a
+  finally (three ladder runs rendered one shot's pose before this
+  re-landed).
+- **THE AXIAL-CRANE LAW**: an opaque roof makes the packed interior
+  visible ONLY along the colonnade axis — no outside-above crane can
+  see under it; a wall blocks any low lens north-side too (the
+  smoke-still-before-framing law).
+- **THE RAGDOLL WALK-CLIP CLASS**: the physics layer moves the
+  ORIGIN; the mesh keeps the walk clip — the film fix is the
+  per-channel tumble overlay (rot_x/rot_y) AFTER removing bake2's
+  flat whole-euler x/y fcurves via the OWNING CHANNELBAG (5.2 slotted
+  actions: never action.fcurves).
+- **chase_frame="belt" is now a PIN, not a default** (the r109 flip
+  would silently re-band every film re-bake — F-TS2). Appended
+  populations: interval=1 + zone0-first + chase-last re-asserts
+  (F-TS4: the native reads ONE global interval from the ID-SORTED
+  populations[0]).
+- **THE SILENT-REPLACE LAW**: a python .replace() on a cam table
+  drifts silently — assert-guard every replace; the keepout row and
+  the camprobe cert are ONE edit (F-TS7: a stale row clamps a crowd
+  hole with no camera there).
+- **The portal-axis naming trap (F-TS3)**: PortalAxis names the
+  CROSSING; NORTH_SOUTH = the wall at y=center.y. The emission
+  hijack (F-TS4) and the loader N-pin (F-TS5, expected_agents=) are
+  landed kit surfaces.
+- Ledger: docs/USABILITY_TS1_squall.md; the design of record:
+  docs/DESIGN_squall.md REV-3.

@@ -1,79 +1,56 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session close: 2026-10-14 (session 17 — the second KIT-QUALITY wave:
-> deep audit of the merged tree until findings exhausted). HEAD on
-> **GitHub** (canonical, PAT refreshed by the user and verified). Read
-> docs/audit_s17/ (the five wave-1 audit ledgers, 88 findings) +
-> docs/battery_s17_results.md (29/29) + docs/FINDINGS_upstream.md.
+> Session 17b close: 2026-10-14. HEAD = the SQUALL round (the fourth
+> film) + the F-TS kit wave. The full state chain: this block → the
+> session-16 blocks below → docs/USABILITY_TS1_squall.md +
+> docs/DESIGN_squall.md REV-3 + .agents/SKILL.md (SESSION 17b LAWS).
 
-## Session-17 close state (NEWEST — read this first)
+## Session-17b close state (NEWEST — read this first)
 
-- **REMOTES**: GitHub = canonical (user refreshed the PAT; verified 200
-  at session start). GitLab mirror DIVERGED in the session-16
-  push-protection history rewrite — do NOT push main to it; push
-  `git push gitlab main:github-canonical` (works, WAF-retry). USER
-  ACTION: **rotate the GitLab PAT** — its raw value sat in git HISTORY
-  (scripts/_sess16_*.sh) until the session-17 redaction; history
-  rewrite was NOT attempted (never-force law). GitHub push protection
-  rejects ghp_ tokens in commits — tokens live in .env (see
-  .env.example; helpers source it now).
-- **F-TD3 CLOSED — the last silent-wrong-render class in the core eye**:
-  the mechanism was NOT name hijack; bpy.ops.render.render honors the
-  camera bound to a TIMELINE MARKER over scene.camera, so every
-  multi-angle look panel on marker-bound film scenes silently rendered
-  the marker's shot cam (QA#11's identical panels). render_angle now
-  sweeps the bindings (unbind → render → restore in finally) and
-  look_manifest.json carries camera_intent rows naming the intended
-  camera + the marker cam at the frame (regression visible, not
-  silent). test_s17_wave_a 1a/1b/1c.
-- **Wave-1 audits**: 88 findings (2 P0, 13 P1, ~30 P2, rest P3) in
-  docs/audit_s17/2{a..e}_*.md. ALL ≥P2 fixed this session across four
-  waves; P3 residue either fixed-when-cheap or documented in the audit
-  files as open-P3. Two items FILED UPSTREAM (docs/FINDINGS_upstream.md):
-  F2E-5 sync_shared governance (upstream file — never touch from this
-  lane) + the note that the old "port preflight via sync_shared" plan
-  is inexpressible (non-owner→owner); the port should be a direct file
-  copy + test if the canonical exporter ever wants the gate.
-- **The fixes** (each with regression coverage): Wave A (test_s17_wave_a
-  21/21) F-TD3, look exit-4 on unreadable images, PNG-magic validation,
-  distance-scaled temp-cam clip planes, custom_loc P0, NaN/Inf param
-  refusal, WORLD-space placement under rotated parents
-  (_world_delta_to_local; seat_at via matrix_world; basis-delta
-  rebase), audit ERROR rows fail gates, keep_xy=False refused,
-  seat_at reference validation + centroid, _skinned_guard
-  armature-pose hole. Wave B (test_s17b) 18 mutation-surface fixes:
-  PARAM_DOCS↔handler parity class (AST-checked), iter_all_fcurves for
-  read-only fcurve consumers (5.x multi-slot blindness), schema blind
-  spots (kit props/hide_render/world/modifiers/Principled-by-type),
-  seam_views leak, physics-gate warn wiring, bare animate(ctx)
-  dispatch, footprint/snap_z/settle input validation. Wave C (t10
-  prop 124, export 25): --usd-sidecar RNA-filtered via the SHARED
-  blender_kit.filter_rna_kwargs (all 3 usd twins filtered now), S3
-  demoted to exporter-parity WARN, vacuous pass loud. Wave D
-  (test_s17i 18/18): blrun BLENDER_HOME fallback proven live,
-  install.sh probe failure-safe + header + BLENDER_PY exec check +
-  symlink-heal gating, **daemonize.py WRITTEN** (was documented-but-
-  absent for two sessions), render_daemon resume window-wipe +
-  daemon_error heartbeat, suite_runner rewrite (29 suites, --list,
-  RESULTS.md, reaping-law header), chunked_dl part tolerance, wheel
-  provenance sha256/size/origin.
-- **Battery 29/29** (docs/battery_s17_results.md — the FIRST complete
-  committed receipt; the s16 one only had the pre-fix 20/26 run). One
-  mid-run fix pair (look.py hint used front[0]=0 as camera distance —
-  SUBJECT-OVERFLOW fired on every scene; edge_tall hovered nothing —
-  C4 floating check red-by-construction since s16, masked by rc=90).
-- **Bootstrap (fresh sandbox, verified this session)**: clone GitHub →
-  `bash install.sh` → `bash scripts/suite_runner.sh --list` then run
-  in --only batches inside ONE foreground tool call each (reaping
-  law). Blender 5.2.2 + Pillow 12.3.0 + Cycles verified.
-- **Next-session scope**: (1) wave-2 audit if the user wants another
-  exhaustion pass (the audit files' open-P3 sections are the seed);
-  (2) apply docs/FINDINGS_upstream.md to blender-agent-kit IF an
-  upstream-owned session opens (small fail-closed guard); (3) the film
-  lane is designing the fourth film (DESIGN_squall REV-2) — it will
-  consume the kit; keep lane discipline (never co-edit scene_*.py);
-  (4) the user review round on the three live films (app lane).
-- Laws distilled: .agents/SKILL.md SESSION 17.
+- **FOUR films live in previz-review** (comments ON, the server UP
+  via daemonize): **tsquall_1 rev 2** (SQUALL — storm-dusk market:
+  the shelter convergence, the slip-and-fall, the window queue, the
+  neon title; 135 agents, the M6 queue/portal/HoldPosition + the M5
+  ragdoll beat + groups + the events→sfx spine), **tgreen_1 rev 2**,
+  **tferry_1 rev 2**, **tdawn_3**. THE OPEN ITEM: the user review
+  round on all four.
+- **The kit wave landed this session**: F-TS1 (the bridge composes
+  kit layout layers into the film VIEW + real z — the ragdoll beat's
+  enabler; r054 72/72 + test_ts1_composed_view 13/13), F-TS2 (the
+  chase_frame="belt" pins in all four drivers — the r109 flip trap),
+  F-TS5 (the loader expected_agents override), the F-TS6 paired
+  tripwire fix (the layout_composed marker + the composed-aware
+  ground-contact gate), the SQUALL sfx vocabulary (12 patches in
+  build_sfx). Filings: F-TS3 (the portal-axis naming trap), F-TS4
+  (the emission-interval hijack). Full ledger:
+  docs/USABILITY_TS1_squall.md.
+- **The SQUALL build order worked; reuse it** (the green-light recipe
+  + the deltas): research wave → design + 2 audit rounds (4-d/4-e/4-f
+  caught 4 P0s pre-code: the portal axis, the flee-is-cosmetic law,
+  the interval hijack, the loader pin) → world module (sub-agent) →
+  F-TS1/F-TS5 BEFORE the driver → contract → the 3-stage probe/
+  groups/finish bake (3-4s bakes!) → flow strip (the --hide-roof
+  flag for canopied sets) → the camprobe framing rounds → the
+  storm-dusk ladder → 12 EEVEE stills (eye gate) → preflight →
+  export → stage.
+- **The bootstrap**: clone 5 repos → verify BOTH PATs → install.sh →
+  the venv wheel (1.5.5) → the server (daemonize + the repo-local
+  db + s33_restore_comments.sh). Blender 5.2.2 one-shot again.
+- **Next-session scope**: (1) the USER review round on all four
+  films (the whole session points here); (2) if the user prompts a
+  fifth scenario, the candidate regimes: fog, blue hour, interior/
+  night market — the DESIGN_squall §2 ledger lists the honest-scope
+  files (SPEED/GOAL/DISABLE layers are VIEW-invisible; the escape-
+  lane tripwire now exempts composed rows); (3) the standing chores:
+  F-TD3 is CLOSED (the s17 lane), F-TS3/F-TS4 are filed (kb-level
+  documentation in the crowd-kit lane's FEATURE_REFERENCE when that
+  lane resumes).
+- **The remotes posture**: GitHub canonical (main); GitLab mirrors
+  the clean lineage as main-gh (the raw pre-redaction main stays
+  GitLab-only — the push-protection protocol from session 16; do NOT
+  merge the two lineages).
+- Laws distilled: .agents/SKILL.md SESSION 17b LAWS (29.9k/30k cap).
+
 
 ## Session-16 close state (the KIT-QUALITY wave — pre-session-17 baseline)
 
