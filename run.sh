@@ -13,7 +13,11 @@
 REPO="$(cd "$(dirname "$0")" && pwd)"
 
 if [ "${1:-}" = "--scope-check" ]; then
-    exec python3 "$REPO/tests/test_kit_scope.py" "${2:-}"
+    # F2E-22: forward only the REAL remaining args — the old "${2:-}" always
+    # passed one (possibly empty) argument, a phantom '' any future argv
+    # use would trip over.
+    shift
+    exec python3 "$REPO/tests/test_kit_scope.py" "$@"
 fi
 
 export BLENDER_BIN="${BLENDER_BIN:-$REPO/tools/blender/blender}"

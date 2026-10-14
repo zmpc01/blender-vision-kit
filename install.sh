@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # install.sh — reprovision the Blender agent kit from scratch.
 #
-# Downloads Blender 4.5 LTS (supported until July 2027), extracts libEGL.so.1
-# from .deb files (no root needed), and pre-warms the EEVEE shader cache.
+# Downloads Blender 5.2.2 LTS (supported until July 2028; BLENDER_VERSION
+# override supported — the kit's compat shim also covers 4.5.x), extracts
+# libEGL.so.1 from .deb files (no root needed), and pre-warms the EEVEE
+# shader cache.
 #
 # Idempotent: safe to re-run; skips already-installed components.
 #
@@ -58,7 +60,14 @@ else
     # (measured: 0% for minutes; the repo's own chunked_dl.sh assembled
     # 383MB in ~20s via 16 parallel ranged chunks). Try single-stream with
     # a stall watchdog; on stall/failure fall back to chunked_dl.sh.
-    BL_SIZE="$(curl -sIL --max-time 20 "$BL_URL" | grep -i content-length | tail -1 | tr -d '\r' | awk '{print $2}')"
+    # F2E-2: the probe must be FAILURE-SAFE — under `set -euo pipefail` a
+    # HEAD failure (curl timeout rc=28 / refused connection / a 200 with
+    # no Content-Length → grep rc=1) used to abort the script HERE, before
+    # the chunked fallback + its loud ERROR could ever run (dead code on
+    # the exact hostile network this section was built for). `|| true`
+    # covers the whole pipe; an empty BL_SIZE then routes to the explicit
+    # guard below.
+    BL_SIZE="$(curl -sIL --max-time 20 "$BL_URL" 2>/dev/null | grep -i content-length | tail -1 | tr -d '\r' | awk '{print $2}' || true)"
     if [[ -n "$BL_SIZE" ]] && curl -fL --retry 3 --speed-time 30 --speed-limit 20000 \
          -o "$BL_TARBALL" "$BL_URL" 2>/dev/null \
          && [[ "$(stat -c%s "$BL_TARBALL" 2>/dev/null || echo 0)" = "$BL_SIZE" ]]; then
@@ -89,7 +98,22 @@ else
     # a stale $TOOLS_DIR/local-libs symlink left dangling makes
     # dpkg-deb -x fail under set -euo pipefail with an opaque dpkg error
     # BEFORE the teacher-grade message. Heal the dangling link first.
-    if [[ -L "$TOOLS_DIR/local-libs" && ! -e "$TOOLS_DIR/local-libs/" ]]; then
+    # F2E-8: heal ONLY when tools/ is a REAL dir — when tools/ itself is a
+    # SYMLINK into a shared provisioned toolchain (D12), $TOOLS_DIR/local-libs
+    # resolves inside the SHARED tree, and rm+mkdir would materialize real
+    # dirs owned by this checkout inside every sibling's toolchain.
+    if [[ -L "$TOOLS_DIR" ]]; then
+        if [[ -L "$TOOLS_DIR/local-libs" && ! -e "$TOOLS_DIR/local-libs/" ]]; then
+            echo "[install] ERROR: $TOOLS_DIR/local-libs is a DANGLING symlink inside a SHARED symlinked tools/ tree" >&2
+            echo "[install]        (tools/ -> $(readlink -f "$TOOLS_DIR")). The shared toolchain owns that" >&2
+            echo "[install]        path (D12) — this checkout must not rm/mkdir it. Heal it in the shared" >&2
+            echo "[install]        toolchain checkout, or point BLENDER_KIT_LIBS at its local-libs." >&2
+            exit 1
+        fi
+        echo "[install] NOTE: tools/ is a symlink into a shared toolchain (D12) — local-libs" >&2
+        echo "[install]       provisioning writes into $(readlink -f "$TOOLS_DIR")/local-libs" >&2
+        echo "[install]       (shared with sibling checkouts; override BLENDER_KIT_LIBS to avoid)." >&2
+    elif [[ -L "$TOOLS_DIR/local-libs" && ! -e "$TOOLS_DIR/local-libs/" ]]; then
         echo "[install] healing dangling tools/local-libs symlink (QA-R69)"
         rm -f "$TOOLS_DIR/local-libs"
     fi
@@ -158,6 +182,13 @@ if [[ -n "${BLENDER_PY:-}" && -x "${BLENDER_PY:-}" ]]; then
     # The override IS the python — no probing (a plain python has no
     # --python-expr; only the blender binary does).
     echo "[install] BLENDER_PY override: $BLENDER_PY"
+elif [[ -n "${BLENDER_PY:-}" ]]; then
+    # F2E-13: an override that fails -x must be authoritative-or-LOUD —
+    # silently re-probing a *different* python re-creates the exact
+    # F-TD9 class this section was rewritten to kill (Pillow lands where
+    # Blender never looks).
+    echo "[install] ERROR: BLENDER_PY=$BLENDER_PY is set but not executable — fix it or unset it" >&2
+    exit 1
 elif [[ -n "${BLENDER_BIN:-}" && -x "${BLENDER_BIN:-}" ]]; then
     # BLENDER_BIN FIRST — blrun.sh runs BLENDER_BIN when set (blrun.sh:40);
     # probing tools/blender instead would put Pillow in a python the kit
@@ -173,7 +204,12 @@ import sys; print(sys.executable)
 fi
 if [[ -z "$BLENDER_PY" || ! -x "$BLENDER_PY" ]]; then
     # Glob fallback — prefer the NEWEST python3.NN (sort -V), not head -1.
-    BLENDER_PY="$(ls "$TOOLS_DIR"/blender/*/python/bin/python3.* 2>/dev/null | sort -V | tail -1 || true)"
+    # F2E-23: filter out *-config shims — a python3.NN-config is executable
+    # AND sorts last under -V; "running" it as an interpreter just prints
+    # flags, 3 pip retries die opaquely, fresh bootstrap killed.
+    BLENDER_PY="$(for p in "$TOOLS_DIR"/blender/*/python/bin/python3.*; do
+                      [[ -x "$p" && "$p" != *-config ]] && echo "$p"
+                  done | sort -V | tail -1 || true)"
 fi
 if [[ -n "$BLENDER_PY" && -x "$BLENDER_PY" ]]; then
     # Idempotent: skip if Pillow already importable (re-run after partial install)

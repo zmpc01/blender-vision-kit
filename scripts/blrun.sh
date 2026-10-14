@@ -37,8 +37,14 @@ fi
 
 # ----- Defaults (relative to kit root = parent of this script's dir) -----
 KIT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+WARM_SCRIPT=""   # F2E-17: --warm-cache temp script path; rm'd by cleanup()
 BLENDER_BIN="${BLENDER_BIN:-$KIT_ROOT/tools/blender/blender}"
 BLENDER_DISPLAY="${BLENDER_DISPLAY:-:99}"
+# F2E-1: capture operator intent BEFORE defaulting — the read-only-checkout
+# fallback below must fire only when BLENDER_HOME was never explicitly set
+# (the old code re-tested the already-defaulted value, making the fallback
+# unreachable dead code).
+BLENDER_HOME_EXPLICIT="${BLENDER_HOME:+1}"
 BLENDER_HOME="${BLENDER_HOME:-$KIT_ROOT/.blender-home}"
 # Wave-4a resilience: a STALE SYMLINK to a wiped checkout (e.g. a clone
 # restored from git where .blender-home was a relative symlink) makes
@@ -50,7 +56,10 @@ if [[ -L "$BLENDER_HOME" && ! -e "$BLENDER_HOME" ]]; then
 fi
 # Read-only checkout fallback (usability round-1/U2): a kit clone mounted
 # read-only would make the default HOME dir unwritable — fall back to /tmp.
-if [[ ! -w "$KIT_ROOT" && -z "${BLENDER_HOME:-}" && ! -w "$BLENDER_HOME" ]]; then
+# F2E-1: fires only when the operator did NOT set BLENDER_HOME explicitly
+# AND the checkout itself is unwritable (an explicit BLENDER_HOME is
+# authoritative; a writable checkout keeps the project-local default).
+if [[ -z "${BLENDER_HOME_EXPLICIT:-}" && ! -w "$KIT_ROOT" ]]; then
     BLENDER_HOME="/tmp/blender-home"
     echo "[blrun] kit checkout not writable — using BLENDER_HOME=$BLENDER_HOME" >&2
 fi
@@ -61,6 +70,15 @@ if [[ ! -x "$BLENDER_BIN" && -x "/home/z/blender-agent-kit/tools/blender/blender
     BLENDER_KIT_LIBS_FALLBACK="/home/z/blender-agent-kit/tools/local-libs/usr/lib/x86_64-linux-gnu"
 fi
 BLENDER_KIT_LIBS="${BLENDER_KIT_LIBS:-${BLENDER_KIT_LIBS_FALLBACK:-$KIT_ROOT/tools/local-libs/usr/lib/x86_64-linux-gnu}}"
+
+# F2E-6: validate the libEGL lane the way the binary is validated below —
+# but WARN, don't fail (Cycles/Workbench don't need libEGL). A fresh clone
+# that skipped install.sh (or a half-failed extraction — QA-R69's
+# dangling-symlink signature) otherwise gets Xvfb up, blender launched,
+# then an OPAQUE EEVEE/EGL failure instead of the kit's named-error doctrine.
+if [[ ! -f "$BLENDER_KIT_LIBS/libEGL.so.1" ]]; then
+    echo "[blrun] WARN: libEGL.so.1 missing at $BLENDER_KIT_LIBS — EEVEE will fail; run install.sh" >&2
+fi
 
 # ----- Validate Blender binary -----
 if [[ ! -x "$BLENDER_BIN" ]]; then
@@ -168,6 +186,10 @@ fi
 # if SIGTERM doesn't take Xvfb down.
 cleanup() {
     local rc=$?
+    # F2E-17: --warm-cache writes its temp script to /tmp; the old code
+    # leaked one blender_warm_XXXX.py per warm run. Remove it here (the
+    # single EXIT trap — a second trap would clobber cleanup()).
+    [[ -n "$WARM_SCRIPT" ]] && rm -f "$WARM_SCRIPT" 2>/dev/null || true
     if [[ -n "$XVFB_PID" && -z "${KEEP_XVFB:-}" ]]; then
         kill "$XVFB_PID" 2>/dev/null || true
         # Wait briefly, then escalate to SIGKILL
@@ -211,7 +233,11 @@ if [[ "${1:-}" == "--warm-cache" ]]; then
         exit 0
     fi
     echo "[blrun] warming EEVEE shader cache (one-time, ~30s)…"
-    WARM_SCRIPT="$(mktemp /tmp/blender_warm_XXXX.py)"
+    WARM_SCRIPT="$(mktemp /tmp/blender_warm_XXXX.py)"   # rm'd by cleanup() (F2E-17)
+    # NB (F2E-17): the render target below is a FIXED path (/tmp/_blender_warm.png)
+    # ON PURPOSE — warm-cache semantics are keyed on a stable output path; a
+    # mktemp png would re-warm every run. Concurrent warm runs are serialized
+    # by the per-display flock above, so the fixed path has no clobber risk.
     cat > "$WARM_SCRIPT" <<'PY'
 import bpy, sys, time
 print(f"[warm] Blender {bpy.app.version_string}")
