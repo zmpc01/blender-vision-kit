@@ -3877,3 +3877,17 @@ Stage Summary:
   gates + build_sfx.
 - Ledger: the quadrilogy spans dawn/night/noon/storm-dusk; the next
   regime candidates: fog, blue hour, interior, night market queues.
+
+---
+Task ID: 5-research (wave of 3, read-only)
+Agent: orchestrator (main) + 3 Explore auditors
+Task: source-audit the v2.0.0 crowd-kit surfaces for films 5+6 (formations→layers, bake_interaction, VIEW visibility)
+
+Work Log:
+- 5-a: formations authoring-only → emulation recipe pinned (per-agent PIN holds; per-agent TRANSFORM-absolute per-tick samples for march; no layer cap; legs play; YAW NEVER COMPOSES — kit-fix candidate; 12Hz law; phase-boundary continuity law)
+- 5-b: bake_interaction hand-authorable (full request/layer/motion_json recipe; native ladder rules incl. MAX_ROOT_STEP_M 2.0 / deviation 0.25m / 10°; contacts non-empty ladder rule) — but clip/phase ONLY: film beat = staged meeting + clip-0 idle hold, clip_source="channel"
+- 5-c: VIEW visibility table pinned (TRANSFORM/PIN/physics/resim VISIBLE; GOAL/SPEED/TIMING/APPEARANCE/RENDER_TIER/GROUP INVISIBLE; DISABLE partial); DANGER fields base-bytes VISIBLE (explicit t_active required, default (0,45) trap); gate predicate marker-based (layout_composed window = whole stack union incl muted); bridge outputs = cache_v6.npz + cache_ctx.json (+cast); dropped-fields accounting is warnings-only
+
+Stage Summary:
+- Films greenlit: tfog_1 THE EXPRESS (blue-hour fog rail platform; groups + DANGER blast + boarding queue) and tform_1 THE DRILL (golden-hour citadel; formation column via layers + bake_interaction beat)
+- Kit-fix candidates: composed-yaw re-derivation (bridge), empty-union assert + warnings capture (film drivers), BakeResult.dropped_fields (filed)
