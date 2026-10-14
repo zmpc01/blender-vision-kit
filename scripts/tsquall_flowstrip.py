@@ -45,8 +45,8 @@ def main():
         hidden = 0
         for o in bpy.data.objects:
             if o.type == 'MESH' and o.name.startswith(
-                    ("TSQ.Arcade.Roof", "TSQ.SignBand", "TSQ.BandFrame",
-                     "TSQ.Lintel")):
+                    ("TSQ.Arcade.Roof", "TSQ.Arcade.SignBand", "TSQ.Arcade.BandFrame",
+                     "TSQ.Arcade.Lintel")):
                 o.hide_render = True
                 o.hide_viewport = True
                 hidden += 1

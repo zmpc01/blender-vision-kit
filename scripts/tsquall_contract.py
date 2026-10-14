@@ -66,15 +66,17 @@ BARRICADES = (
 # vantage table (section 6) drives these rows; any reframe moves its
 # row WITH the lens (the F-TD13 coupling law).
 CAM_KEEPOUTS_V3 = (
-    # S6: interior side-on (1.5,1.0,1.7) -- ground-ish pose inside.
-    ("CAM_S6", 1.5, 1.0, 445, 528),
-    # S4: interior S (2,-4,1.6) -- inside the arrival box's south lip.
-    ("CAM_S4", 5.0, -3.5, 265, 348),
-    # S12's second key ends near (6,9.5,5.0) -- above agent height,
-    # but the sweep starts at S11's loc1 (11,-2,11): row-free.
-    # S7 (9.5,8.0,3.2): above agent height -- row-free.
-    # S9 (20,2,11) / S11 (13,-2,2.5)->(11,-2,11): row-free (aerials).
-    # S1/S3/S8/S10: aerial/edge -- row-free.
+    # ground-level lenses inside the walkable ONLY (the F20 law; the
+    # aerials and the above-agent-height poses are row-free -- a
+    # keepout under an aerial punches a hole exactly where it looks).
+    # rr = r + agent_radius = 1.98. The S6i lens (2,4,3.5) is ABOVE
+    # agent height -- row-free (the stale S6 row clamped a hole
+    # mid-arcade for a camera that moved: the 4-i review's P1-3).
+    ("CAM_S2", -18.0, 2.0, 85, 168),      # the low W oblique
+    ("CAM_S4", 5.0, -3.5, 265, 348),      # the interior press lens
+    ("CAM_S7", 12.0, -1.0, 529, 624),     # the through-colonnade lens
+    ("CAM_S10", -3.0, 2.5, 817, 912),     # the interior ease lens
+    ("CAM_S11", 17.0, 0.5, 913, 1008),    # the axial crane loc0
 )
 CAM_KEEPOUT_R = 1.64
 

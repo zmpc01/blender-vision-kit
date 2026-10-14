@@ -15,7 +15,7 @@ ONLY="${1:-}"
 for SID in S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12; do
   if [ -n "$ONLY" ] && [ "$ONLY" != "$SID" ]; then continue; fi
   F=${FRAMES[$SID]}
-  if [ -s "$OUT/shot_${SID}.png" ]; then echo "[stills] $SID exists, skip"; continue; fi
+  if [ -s "$OUT/shot_${SID}.png" ] && [ scripts/scene_squall.py -ot "$OUT/shot_${SID}.png" ]; then echo "[stills] $SID exists (scene older), skip"; continue; fi
   echo "[stills] $SID @ f$F ..."
   ./scripts/blrun.sh --background --factory-startup \
     --python scripts/scene_squall.py -- \

@@ -337,18 +337,36 @@ def _rain(scene):
             d.parent = root
             scene.collection.objects.link(d)
         drops_root.append(root)
-    # each root: fall 10m over 36f, snap back -- offset half-cycle
+    # each root: the FULL-FILM sawtooth (the 4-i P1-1: three keys
+    # froze both roots after f55 -- the GLB viewer hung the rain).
+    # fall 10m over 36f, snap, repeat to 1080; half-cycle offset.
     for gi, root in enumerate(drops_root):
-        f0 = 1 + gi * 18
-        root.location = (0.0, 0.0, 0.0)
-        root.keyframe_insert(data_path="location", frame=f0)
-        root.location = (0.0, 0.0, -10.0)
-        root.keyframe_insert(data_path="location", frame=f0 + 35)
-        root.location = (0.0, 0.0, 0.0)
-        root.keyframe_insert(data_path="location", frame=f0 + 36)
+        f = 1 + gi * 18
+        while f <= 1080:
+            root.location = (0.0, 0.0, 0.0)
+            root.keyframe_insert(data_path="location", frame=f)
+            root.location = (0.0, 0.0, -10.0)
+            root.keyframe_insert(data_path="location", frame=f + 35)
+            root.location = (0.0, 0.0, 0.0)
+            root.keyframe_insert(data_path="location", frame=f + 36)
+            f += 36
         for fc in _iter_fcurves(root.animation_data.action):
             for kp in fc.keyframe_points:
                 kp.interpolation = "LINEAR"
+    # the intensity arc (the 4-i P1-2: RAIN_ARC had zero consumers) --
+    # the drop material's Alpha carries the arc (previz dressing; the
+    # GLB drops material animation honestly)
+    import tsquall_contract as TC
+    nt = mat.node_tree
+    principled = next((n for n in nt.nodes
+                       if n.type == "BSDF_PRINCIPLED"), None)
+    if principled is not None:
+        a = principled.inputs["Alpha"]
+        a.default_value = 0.55
+        a.keyframe_insert(data_path="default_value", frame=1)
+        for af, av in TC.RAIN_ARC:
+            a.default_value = min(1.0, 0.55 * av)
+            a.keyframe_insert(data_path="default_value", frame=af)
     return {"roots": drops_root, "mat": mat, "n": n_total}
 
 
@@ -474,9 +492,14 @@ def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
     crowd_cache = _crowd_cache_path()
     if crowd_cache and with_crowd is not False:
         _crowd_kit_branch(ctx, crowd_cache)
+    elif with_crowd is False:
+        print("[tsquall] --skip-crowd: pre-bake look (authored grid)")
     else:
-        print("[tsquall] no crowd (cache absent or --skip-crowd) -- "
-              "pre-bake look (anchors at authored grid)")
+        raise SystemExit(
+            "[tsquall] no crowd cache at "
+            f"$CROWD_CACHE_DIR/cache_ctx.json ({crowd_cache!r}) -- a "
+            "crowd-less film renders silently otherwise (the 4-i P1-7 "
+            "gate); pass --skip-crowd explicitly for the pre-bake look")
     bpy.context.view_layer.update()
     return None
 
@@ -520,29 +543,37 @@ def _kf_faller_tumble(ctx):
                     if fc.data_path == "rotation_euler" and \
                             fc.array_index in (0, 1):
                         b.fcurves.remove(fc)
-    _kf(ob, ff - 1, scale=None)
-    ob.rotation_euler = (0.0, 0.0, 0.0)
-    ob.keyframe_insert(data_path="rotation_euler", frame=ff - 1)
-    ob.rotation_euler = (math.radians(80.0), math.radians(4.0), 0.35)
-    ob.keyframe_insert(data_path="rotation_euler", frame=ff + 3)
-    ob.rotation_euler = (math.radians(82.0), math.radians(2.0), 0.55)
-    ob.keyframe_insert(data_path="rotation_euler", frame=ff + 10)
-    ob.rotation_euler = (math.radians(82.0), math.radians(2.0), 0.55)
-    ob.keyframe_insert(data_path="rotation_euler", frame=1080)
+    for fr, rx, ry in ((ff - 1, 0.0, 0.0),
+                       (ff + 3, math.radians(80.0), math.radians(4.0)),
+                       (ff + 10, math.radians(82.0), math.radians(2.0)),
+                       (1080, math.radians(82.0), math.radians(2.0))):
+        ob.rotation_euler = (rx, ry, 0.0)
+        # index=0/1 ONLY: rot_z is bake2's yaw -- polluting it with the
+        # tumble's z would fight the walk heading (the 4-i P2-9)
+        ob.keyframe_insert(data_path="rotation_euler", frame=fr, index=0)
+        ob.keyframe_insert(data_path="rotation_euler", frame=fr, index=1)
     _bezier(ob)
     print(f"[tsquall] tumble overlay on ordinal {fo} at f{ff}")
 
 
 def _kf_bystander(ctx):
-    """The witness: stands under the eave; the fall at f372 turns him;
-    f470 the crouch (a keyed z drop + turn); holds to the end."""
+    """The witness: stands under the eave; turns at the fall, crouches
+    ~4.2s later, holds. The turn/crouch frames DERIVE from the cast's
+    fall_tick_frame (the 4-i P1-4: literals desync on a re-bake).
+    The crouch is a LOCATION key (the witness steps toward the rim)
+    plus a lean -- the capsule vocabulary has no knees."""
+    cast = ctx.get("cast") or {}
+    ff = int(cast.get("fall_tick_frame", 372))   # the fall frame
     bs = ctx["heroes"]["Bystander"]
     _kf(bs, 1, loc=(10.6, -1.2), rot_z=math.radians(125))
-    _kf(bs, 371, loc=(10.6, -1.2), rot_z=math.radians(125))
-    _kf(bs, 385, loc=(10.6, -1.0), rot_z=math.radians(95))   # turns to it
-    _kf(bs, 469, loc=(10.6, -1.0), rot_z=math.radians(95))
-    _kf(bs, 470, loc=(10.6, -0.6), rot_z=math.radians(80))   # the crouch
-    _kf(bs, 1080, loc=(10.6, -0.6), rot_z=math.radians(80))
+    _kf(bs, ff - 1, loc=(10.6, -1.2), rot_z=math.radians(125))
+    _kf(bs, ff + 13, loc=(10.6, -1.0), rot_z=math.radians(95))  # turns
+    _kf(bs, ff + 97, loc=(10.6, -1.0), rot_z=math.radians(95))
+    _kf(bs, ff + 98, loc=(10.6, -0.6), rot_z=math.radians(80))  # steps in
+    bs.location = (10.6, -0.6, -0.35)    # the crouch: the origin sinks
+    bs.keyframe_insert(data_path="location", frame=ff + 98)
+    bs.location = (10.6, -0.6, -0.35)
+    bs.keyframe_insert(data_path="location", frame=1080)
     _bezier(bs)
 
 
@@ -625,7 +656,7 @@ def _crowd_palette(ctx):
         if faller and ob.name == faller:
             ob.data.materials.append(make_material(
                 "CA.Comm.TS.Faller", FALLER_TONE))
-        elif ob.name.startswith("Zed.000") and n["v"] < 6:
+        elif n["v"] < 6 and ob.name == f"Zed.{n['v'] + 1:04d}":
             ob.data.materials.append(make_material(
                 f"CA.Comm.TS.Vendor.{n['v'] % 2}",
                 VENDOR_TONES[n["v"] % 2]))

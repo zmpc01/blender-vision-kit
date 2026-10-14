@@ -388,8 +388,11 @@ def build_world(scene):
     for bi, bx in enumerate((-4.0, -2.0, 0.0, 2.0, 4.0)):
         _prim("cyl", (0.24, 0.9), (bx, 7.5, 0.45), verts=12,
               mat=mats["bollard"], name=f"TSQ.Bollard.Gate.{bi + 1}")
-    # 3 more flanking the fountain approach (south side; deviation 8)
-    for bi, (bx, by) in enumerate(((11.8, 4.3), (14.0, 3.9), (16.2, 4.3))):
+    # 3 more flanking the fountain approach (south side; deviation 8;
+    # the 4-i P1-6: pulled to d>=4.2 from the basin -- the old middle
+    # bollard reached r 3.48m INSIDE the declared-clear rim band where
+    # the ragdoll slides)
+    for bi, (bx, by) in enumerate(((11.0, 3.2), (14.0, 2.9), (17.0, 3.2))):
         _prim("cyl", (0.24, 0.9), (bx, by, 0.45), verts=12,
               mat=mats["bollard"], name=f"TSQ.Bollard.Fountain.{bi + 1}")
     # 3 slat benches against the facade north side (x -14..-10, 12..16)
@@ -534,9 +537,13 @@ def _qa(ctx):
     fx, fy = SLIP_F
     scanned, bad = 0, []
     for ob in scene.objects:
-        oz = ob.matrix_world.translation.z
+        # the 4-i P1-6: the ORIGIN z misses tall dress (bollard origin
+        # 0.45); the BBOX MIN-z is the honest ground-presence test
+        import mathutils
+        bb = [ob.matrix_world @ mathutils.Vector(c) for c in ob.bound_box]
+        oz = min(v.z for v in bb)
         if oz >= 0.1:
-            continue                       # only ground-level dress
+            continue                       # only ground-reaching dress
         ox = ob.matrix_world.translation.x
         oy = ob.matrix_world.translation.y
         d = math.hypot(ox - fx, oy - fy)
