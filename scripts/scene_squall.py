@@ -61,7 +61,7 @@ SHOTS_V3 = [
     ("S3",  169,  264, "the streams merge toward the arcade mouth"),
     ("S4",  265,  348, "the doorway choke, from INSIDE looking out"),
     ("S5",  349,  444, "THE BEAT: the slip-and-fall beside the fountain"),
-    ("S6",  445,  528, "the queue holds at the food window (side-on)"),
+    ("S6",  445,  528, "the window: the queue waits at the counter"),
     ("S7",  529,  624, "the fill: under-canopy through the east colonnade"),
     ("S8",  625,  720, "the plaza empties (the honest beat)"),
     ("S9",  721,  816, "the peak-as-equilibrium: packed box + the fountain pair"),
@@ -78,9 +78,11 @@ CAMS_V3 = [
     # S2: low W oblique with storm sky + a stall string in frame
     ("CAM_S2",  (-18.0, 2.0, 1.8), (-18.0, 2.0, 1.8), 35,
      (2.0, 6.0, 2.4), False, 0.0),
-    # S3: N-edge elevated; the merge reads down the approach
-    ("CAM_S3",  (-6.0, 13.0, 4.5), (-6.0, 13.0, 4.5), 40,
-     (0.0, 3.0, 0.8), False, 0.0),
+    # S3: the NE aerial oblique (the S3c probe cert: the doorway press
+    # + the colonnade + the plaza streams; the band edge-on reads as
+    # entrance architecture instead of cropping the frame)
+    ("CAM_S3",  (12.0, 14.0, 9.0), (12.0, 14.0, 9.0), 35,
+     (0.0, 2.0, 0.5), False, 0.0),
     # S4: the doorway press from the WINDOW side (the S4b probe cert:
     # the press reads with shape + depth; S4a/c were the band-dominant
     # flood class)
@@ -91,21 +93,25 @@ CAMS_V3 = [
     # the crowd as muted texture -- the tgreen S5 law at storm scale)
     ("CAM_S5",  (14.8, 7.0, 11.0), (14.8, 7.0, 11.0), 40,
      (14.3, 9.8, 0.0), False, 0.0),
-    # S6: side-on from the arcade floor; the line crosses frame
-    # horizontally, window glow pooling right
-    ("CAM_S6",  (1.5, 1.0, 1.7), (1.5, 1.0, 1.7), 50,
-     (6.5, 1.5, 0.9), False, 0.0),
-    # S7: exterior through the east colonnade under the eave -- three
-    # graphic layers (rain sheet fg / packed interior / doorway glow)
-    ("CAM_S7",  (9.5, 8.0, 3.2), (9.5, 8.0, 3.2), 35,
-     (-2.0, 0.0, 1.2), False, 0.0),
+    # S6: the window close-up (the S6i probe cert: a queue walker at
+    # the counter, the amber vendor left; the LINE itself lives in
+    # S4's wide + S11d's axial crane -- the honest re-scope: the line
+    # is thin in this cache, a side-on wide read it as emptiness)
+    ("CAM_S6",  (2.0, 4.0, 3.5), (2.0, 4.0, 3.5), 40,
+     (6.6, -2.0, 0.6), False, 0.0),
+    # S7: the horizontal through-colonnade view (the S7d probe cert:
+    # the packed interior right, the witness bottom, the stall depth
+    # center -- the roof blocks ANY raised outside view; horizontal
+    # through the east opening is the only honest vantage)
+    ("CAM_S7",  (12.0, -1.0, 1.8), (12.0, -1.0, 1.8), 30,
+     (-4.0, 1.0, 1.0), False, 0.0),
     # S8: N-edge wide; the last stragglers cross, haze thickens
     ("CAM_S8",  (-8.0, 13.5, 2.6), (-8.0, 13.5, 2.6), 28,
      (6.0, 4.0, 0.8), False, 0.0),
-    # S9: high-E oblique through the colonnade; the fountain pair in
-    # frame right (the crescendo AND the callback)
-    ("CAM_S9",  (20.0, 2.0, 11.0), (20.0, 2.0, 11.0), 35,
-     (4.0, 3.0, 0.0), False, 0.0),
+    # S9: the higher oblique (the S9a probe cert: the roof drops to a
+    # canopy weight, the ranks + the faller + the bystander read)
+    ("CAM_S9",  (20.0, 2.0, 12.5), (20.0, 2.0, 12.5), 35,
+     (4.0, 4.0, 0.0), False, 0.0),
     # S10: interior; doorway + window glow; the light warms
     ("CAM_S10", (-3.0, 2.5, 1.6), (-3.0, 2.5, 1.6), 40,
      (5.0, -3.0, 1.2), False, 0.0),
@@ -354,8 +360,10 @@ def _neon_title(scene):
     crv.align_y = "CENTER"
     crv.extrude = 0.015
     ob = bpy.data.objects.new("TS.NeonTitle", crv)
-    ob.location = (tx, ty, tz)
-    ob.rotation_euler = (math.pi / 2, 0.0, 0.0)   # face north
+    ob.location = (tx, 6.28, tz)   # PROUD of the band's north face
+    # (90,0,180): upright, facing NORTH, readable from the plaza --
+    # (90,0,0) faced south into the acrylic (the S12a probe find)
+    ob.rotation_euler = (math.pi / 2, 0.0, math.pi)
     scene.collection.objects.link(ob)
     bpy.ops.object.select_all(action="DESELECT")
     bpy.context.view_layer.objects.active = ob
@@ -539,16 +547,16 @@ def _kf_crane(ctx):
     for c in (c11, c12):
         _bezier(c)
     a11 = bpy.data.objects.get("Aim.CAM_S11")
-    a11.location = (2.0, 4.0, 0.8)
+    a11.location = (0.0, 0.5, 0.8)
     a11.keyframe_insert(data_path="location", frame=913)
-    a11.location = (2.0, 4.0, 0.6)
+    a11.location = (0.0, 0.5, 0.8)
     a11.keyframe_insert(data_path="location", frame=1008)
     a12 = bpy.data.objects.get("Aim.CAM_S12")
-    a12.location = (2.0, 4.0, 0.6)
+    a12.location = (0.0, 0.5, 0.8)
     a12.keyframe_insert(data_path="location", frame=1009)
-    a12.location = (0.0, 6.2, 3.2)
+    a12.location = (0.0, 6.1, 3.2)
     a12.keyframe_insert(data_path="location", frame=1035)
-    a12.location = (0.0, 6.2, 3.2)
+    a12.location = (0.0, 6.1, 3.2)
     a12.keyframe_insert(data_path="location", frame=1080)
     _bezier(a11)
     _bezier(a12)
