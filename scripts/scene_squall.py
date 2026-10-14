@@ -41,6 +41,16 @@ if _previz_scripts not in sys.path:
 FPS = 24
 total_frames = 1080
 ts_exposure = 0.0            # the storm-dusk ladder sweeps sun/sky/practicals
+# the LADDER VERDICT (scripts/tsquall_ladder.py, the eye picked it):
+# sun5/sky0.15/82deg -- the moody storm-dusk; the practicals own the
+# interior; the sun lamp is nearly inert below energy 7 (the tgreen
+# sky-ambient law reconfirmed in the storm regime)
+TS_SUN_ENERGY = 5.0
+TS_SUN_ELEV = 82.0
+TS_SUN_COLOR = (1.0, 0.70, 0.45)
+TS_SKY_COLOR = (0.045, 0.055, 0.078)
+TS_SKY_STRENGTH = 0.15
+TS_THUNDER = (85, 625, 1009)   # the flash frames (the title flash last)
 
 _here = os.path.dirname(os.path.abspath(__file__))
 
@@ -71,14 +81,16 @@ CAMS_V3 = [
     # S3: N-edge elevated; the merge reads down the approach
     ("CAM_S3",  (-6.0, 13.0, 4.5), (-6.0, 13.0, 4.5), 40,
      (0.0, 3.0, 0.8), False, 0.0),
-    # S4: interior S looking out -- faces rim-lit by the storm sky,
-    # the queue line visible frame-right (REV-3 anti-flood law)
-    ("CAM_S4",  (2.0, -4.0, 1.6), (2.0, -4.0, 1.6), 35,
-     (0.0, 6.0, 1.4), False, 0.0),
-    # S5: low SE of the fountain; AIM = the graze point proxy (the
-    # final aim keys onto ctx cast faller_graze in _kf_beats)
-    ("CAM_S5",  (19.0, 3.0, 1.2), (19.0, 3.0, 1.2), 50,
-     (14.0, 5.6, 0.6), False, 0.0),
+    # S4: the doorway press from the WINDOW side (the S4b probe cert:
+    # the press reads with shape + depth; S4a/c were the band-dominant
+    # flood class)
+    ("CAM_S4",  (5.0, -3.5, 1.6), (5.0, -3.5, 1.6), 35,
+     (-2.0, 5.0, 1.2), False, 0.0),
+    # S5: THE NADIR (the S5a probe cert: the amber faller isolated
+    # mid-fall above the dark basin at f372, the prone hold at f430,
+    # the crowd as muted texture -- the tgreen S5 law at storm scale)
+    ("CAM_S5",  (14.8, 7.0, 11.0), (14.8, 7.0, 11.0), 40,
+     (14.3, 9.8, 0.0), False, 0.0),
     # S6: side-on from the arcade floor; the line crosses frame
     # horizontally, window glow pooling right
     ("CAM_S6",  (1.5, 1.0, 1.7), (1.5, 1.0, 1.7), 50,
@@ -360,6 +372,56 @@ def _neon_title(scene):
     return ob
 
 
+def _storm_sky(scene):
+    """The ladder-pinned storm sky + the thunder flashes. The world's
+    Background strength keys the flashes: base 0.15 -> spike 2.6 with a
+    2f/4f decay at each thunder frame (the title flash the biggest)."""
+    world = scene.world
+    if world is None:
+        world = bpy.data.worlds.new("TSQ.StormSky")
+        scene.world = world
+    world.use_nodes = True
+    nt = world.node_tree
+    bg = nt.nodes.get("Background")
+    if not bg:
+        bg = nt.nodes.new("ShaderNodeBackground")
+        out = next(n for n in nt.nodes if n.type == "OUTPUT_WORLD")
+        nt.links.new(bg.outputs[0], out.inputs[0])
+    bg.inputs[0].default_value = (*TS_SKY_COLOR, 1.0)
+    bg.inputs[1].default_value = TS_SKY_STRENGTH
+    sun = bpy.data.lights.get("TSQ.StormSun") or \
+        bpy.data.lights.new("TSQ.StormSun", "SUN")
+    sun.energy = TS_SUN_ENERGY
+    sun.color = TS_SUN_COLOR
+    sun.angle = math.radians(4.0)
+    ob = bpy.data.objects.get("TSQ.StormSun")
+    if not ob:
+        ob = bpy.data.objects.new("TSQ.StormSun", sun)
+        scene.collection.objects.link(ob)
+    ob.data = sun
+    ob.rotation_euler = (math.radians(90.0 - TS_SUN_ELEV), 0.0,
+                         math.radians(-38.0))
+    # the thunder flashes on the world strength
+    bg.inputs[1].default_value = TS_SKY_STRENGTH
+    bg.inputs[1].keyframe_insert(data_path="default_value", frame=1)
+    for i, f in enumerate(TS_THUNDER):
+        peak = 2.6 if f == 1009 else 1.8
+        bg.inputs[1].default_value = TS_SKY_STRENGTH
+        bg.inputs[1].keyframe_insert(data_path="default_value",
+                                     frame=f - 1)
+        bg.inputs[1].default_value = peak
+        bg.inputs[1].keyframe_insert(data_path="default_value",
+                                     frame=f)
+        bg.inputs[1].default_value = peak * 0.35
+        bg.inputs[1].keyframe_insert(data_path="default_value",
+                                     frame=f + 2)
+        bg.inputs[1].default_value = TS_SKY_STRENGTH
+        bg.inputs[1].keyframe_insert(data_path="default_value",
+                                     frame=f + 5)
+    bg.inputs[1].default_value = TS_SKY_STRENGTH
+    return world
+
+
 def build_scene():
     scene = bpy.context.scene
     scene.render.fps = FPS
@@ -374,6 +436,7 @@ def build_scene():
     _markers(scene, cams)
     rain = _rain(scene)
     neon = _neon_title(scene)
+    _storm_sky(scene)
     bpy.context.view_layer.update()
     return {"scene": scene, "parts": parts, "heroes": heroes,
             "cams": cams, "chars": chars, "rain": rain, "neon": neon}

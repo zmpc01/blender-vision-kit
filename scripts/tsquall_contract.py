@@ -66,13 +66,10 @@ BARRICADES = (
 # vantage table (section 6) drives these rows; any reframe moves its
 # row WITH the lens (the F-TD13 coupling law).
 CAM_KEEPOUTS_V3 = (
-    # S5: low SE of the fountain (17,3.0,1.2) -- ground pose inside
-    # the walkable, near the basin approach: clear the rim band.
-    ("CAM_S5", 17.0, 3.0, 349, 444),
     # S6: interior side-on (1.5,1.0,1.7) -- ground-ish pose inside.
     ("CAM_S6", 1.5, 1.0, 445, 528),
     # S4: interior S (2,-4,1.6) -- inside the arrival box's south lip.
-    ("CAM_S4", 2.0, -4.0, 265, 348),
+    ("CAM_S4", 5.0, -3.5, 265, 348),
     # S12's second key ends near (6,9.5,5.0) -- above agent height,
     # but the sweep starts at S11's loc1 (11,-2,11): row-free.
     # S7 (9.5,8.0,3.2): above agent height -- row-free.
