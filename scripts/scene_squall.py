@@ -115,14 +115,17 @@ CAMS_V3 = [
     # S10: interior; doorway + window glow; the light warms
     ("CAM_S10", (-3.0, 2.5, 1.6), (-3.0, 2.5, 1.6), 40,
      (5.0, -3.0, 1.2), False, 0.0),
-    # the CRANE (S11): east flank rise (the ray-cast gate re-verifies)
-    ("CAM_S11", (13.0, -2.0, 2.5), (11.0, -2.0, 11.0), 30,
-     (2.0, 4.0, 0.8), False, 0.0),
-    # S12: loc0 = S11 loc1 (continuity), then the descend+push north
-    # above the doorway to the igniting band (audit 4-f: the roof
-    # blocks the band from S11's loc1 -- S12 owns its second key)
-    ("CAM_S12", (11.0, -2.0, 11.0), (6.0, 9.5, 5.0), 35,
-     (0.0, 6.2, 3.2), False, 0.0),
+    # the CRANE (S11): the AXIAL rise through the east opening (the
+    # S11d probe cert -- the roof blocks any outside-above view of the
+    # packed interior; the axis is the only honest crane; the pitch
+    # stays flat so the underside never eats the frame)
+    ("CAM_S11", (17.0, 0.5, 1.9), (15.5, 0.5, 2.4), 28,
+     (0.0, 0.5, 1.3), False, 0.0),
+    # S12: loc0 = S11 loc1 (continuity), then the rise-and-swing north
+    # to the igniting band (the S12c probe cert: the neon reads on the
+    # band's north face)
+    ("CAM_S12", (15.5, 0.5, 2.4), (5.5, 10.0, 3.4), 40,
+     (0.0, 6.1, 3.2), False, 0.0),
 ]
 
 BEATS = [
