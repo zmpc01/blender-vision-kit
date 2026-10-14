@@ -3798,48 +3798,21 @@ Stage Summary:
   points here); F-TD9 (the install.sh Pillow probe) + the six older
   filings remain the standing kit chores.
 
-## Session 16 (main) — GREEN LIGHT: the third film, end-to-end
+---
+Task ID: session-17 (KIT-QUALITY lane)
+Agent: orchestrator (Super Z) + 8 sub-agents (5 auditors, 3 fix waves)
+Task: deep audit of tip 2c19f6c until only <P3 findings remain (user directive), GitHub PAT reconciliation, HANDOFF-queued items (F-TD3 etc.)
 
 Work Log:
-- tferry_1 rev 2 shipped first (the refinement round: the S4/S5
-  reframes via the new camprobe tool, the in-place rev-2 export, the
-  review-round crowd contract finally IN the staged package).
-- GREEN LIGHT designed (docs/DESIGN_green_light.md): 3 research/
-  audit sub-agents before a line of code — 3-a (the bridge source
-  audit: the capacity-box freeze law P0 + the per-film envelope P0),
-  3-b (the film-director audit: the statue+runner hero set + the
-  green/orange signal spine), 3-c (the M5 verdict: recorded-only),
-  3-d (round 2: the plaza refused three ways — the freeze re-scope).
-- Build: the world module (sub-agent 3-e, eye-gated), the contract
-  (ingest GREEN on the first probe = the round-3 test), the bake
-  driver (per-zone speed map), the scene module (the x-sign palette
-  split, the glyph spine, the crane re-keyed), the flow strip (THE
-  STILL CERTIFIED: two frozen banks + the runner threading).
-- The framing round: 12 shots + 9 probe candidates; the stills
-  runner's clone seam (rendered the FERRY's shots) caught by eyes;
-  the crane was silently static (my _cameras never keyed loc0->loc1)
-  — re-keyed per the tferry pattern.
-- The daylight ladder: 12 combos measured; the wash diagnosed (the
-  sky ambient, not the disc, not exposure); the ratio lever won
-  (sun5/sky0.15/1°).
-- The review wave (3-f/3-g/3-h/3-i, parallel): zero P0s, 3 P1s
-  consumed (the dead --seed, the order-indexed speed map, the
-  FACADES swallowing the spawn strips — moved 28->30), the
-  determinism law re-proven (byte-identical reruns; the pin drift
-  reconstructed as an uncommitted draft table), the doc drift mapped
-  (REV-4 folds).
-- tgreen_1 exported rev 1 (all gates) -> staged -> verified in-app;
-  then rev 2 (the facade fix IN the package). Ledger:
-  docs/USABILITY_TG1_green_light.md (F-TG1..8). SKILL session-16
-  laws at the 30k cap.
+- Fresh sandbox restored: cloned vision-kit (GitHub PAT from user = ALIVE; GitLab diverged in the s16 push-protection rewrite → GitHub canonical, GitLab archive branch github-canonical), Blender 5.2.2 reinstalled, all meta docs absorbed.
+- Wave-1 audits (5 read-only agents, 88 findings, docs/audit_s17/): 2a core-eye (F-TD3 CONFIRMED — render honors camera-bound TIMELINE MARKERS over scene.camera; the marker-hijack mechanism corrected), 2b mutation surface (P0 custom_loc spelling; fail-open audit gates; NaN poisoning; parent-space solver deltas), 2c preflight self-audit (--usd-sidecar unfiltered = the F-TD class again; S3 false-reject), 2d docs/merge (SKILL named the WRONG remotes; live GL PAT in 5 helpers; battery receipt only had the pre-fix run), 2e infra (blrun dead fallback; install.sh set-e; daemonize.py documented but ABSENT; render_daemon resume wipes completed chunks).
+- Wave A (orchestrator): F-TD3 marker sweep + camera_intent manifest rows; look exit 4 on unreadable images; _validate_png; distance-scaled clip planes; custom_loc accepted; NaN/Inf refused at _require; _world_delta_to_local (place_on/snap_z/seat_at world-space under rotated parents, basis-delta rebase); audit ERROR rows fail gates; keep_xy=False refused; seat_at reference validation + centroid; _skinned_guard armature-pose hole (found by the fixture). test_s17_wave_a 21/21; t8/v1/f17/t3 re-run green.
+- Waves B/C/D (sub-agents, timeouts on B/C — edits harvested and verified by orchestrator): B = 18 mutation-surface fixes (PARAM_DOCS parity class, iter_all_fcurves switch, schema blind spots, seam_views leak, physics-gate warn wiring, bare-animate dispatch...) + test_s17b; C = --usd-sidecar RNA-filtered via shared filter_rna_kwargs (t10 export proves no-TypeError on 5.2.2), S3 demoted to exporter-parity WARN, vacuous pass loud, t10 prop 100→124; D = blrun BLENDER_HOME fallback proven live, install.sh probe failure-safe, daemonize.py WRITTEN + proven, render_daemon resume window-wipe, suite_runner rewrite (29 suites), wheel provenance sha256, FINDINGS_upstream.md filing + test_s17i 18/18.
+- Orchestrator fixes on top: filter_rna_kwargs seeding (3rd usd twin), D19 REV-3 doc amendments + line-anchor re-verification (grep, never memory), look.py hint-distance bug (front[0]=0!), edge_tall red-by-construction hover, SKILL remotes/numbering/recovered-s15-film-laws, PAT redaction + .env.example, worklog dedupe, HANDOFF/PLAN rewrite.
+- Full battery: 29/29 PASS (docs/battery_s17_results.md — the first COMPLETE receipt; s16's was pre-fix 20/26). One mid-run fix pair, affected suite re-run.
+- 13 commits, push-after-every-micro-step, two fetch-rebase cycles for the film lane's concurrent docs pushes (DESIGN_squall REV-1/2 — the fourth film; never force).
 
 Stage Summary:
-- THREE films live: tdawn_3 + tferry_1 rev 2 + tgreen_1 rev 2 —
-  dawn / night / afternoon; comments ON; the server UP.
-- Sub-agents this session: 9 (3-a..3-i). The visual gate + the
-  critical paths stayed with the principal (the kit's division of
-  labor held).
-- Kit capture: the F-TG ledger + the session-16 SKILL laws + REV-4.
-- Next: the user review round on ALL THREE films (the whole session
-  points here); F-TD9 (the install.sh Pillow probe) + the six older
-  filings remain the standing kit chores.
+- F-TD3 CLOSED (the last silent-wrong-render class in the core eye). 88 findings → 86 fixed/closed, 2 filed upstream (sync_shared governance F2E-5 + nits, docs/FINDINGS_upstream.md), P3 residue documented in the audit files.
+- Battery 29/29; five new/extended suites; every fix carries a regression test.
+- The user must ROTATE the GitLab PAT (raw in git history pre-redaction; GitHub PAT was refreshed by the user this session and verified).
