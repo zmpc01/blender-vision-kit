@@ -1,10 +1,13 @@
 # DESIGN — "SQUALL" (tsquall_1) — the fourth film
 
-> REV-2 (post audit round 1 — tasks 4-d engine + 4-e director; all four
-> P0s folded: the portal-axis law, the flee-is-cosmetic law, the
-> emission-interval hijack, F-TS1 as an explicit task; the ebb beat CUT;
-> keyed faller + bystander; neon-lightning title; vantage column added).
-> Research receipts: 4-a/4-b/4-c (2026-10-14).
+> REV-3 (FINAL — post audit round 2, task 4-f: the loader N-pin P0
+> (load_kit_cache hard-pins 129 → the pin-override task), the ragdoll
+> pick law re-pinned to the fountain RIM band (the barricade law makes
+> a ≤1m approach impossible), vendor ids/boxes re-pinned (chase-last
+> re-assert + spawn-box-vs-barricade disjointness), S5 re-aimed off the
+> basin, S12 given its own key pair, probe gates sharpened).
+> Round-1 folds: portal axis NORTH_SOUTH, ebb CUT, vendor interval=1,
+> F-TS1 explicit. Research receipts: 4-a/4-b/4-c (2026-10-14).
 
 ## 1. Story and title
 
@@ -108,12 +111,20 @@ a nav route — an eastern-spawned queue agent may press the wall and
 slide to the gap on avoidance; the INGEST PROBE gates this (§7 step 5).
 
 Vendor graph: `BehaviorGraph(id="vendor_hold", root=HoldPosition())`,
-bound to SIX count-1 populations, one per stall post (spawn box = the
-post's 1.2m square). Driver law (audit 4-d P0 #3): EVERY vendor pop
-gets `emission_interval_ticks=1` + hygiene replaces (distributions +
-destinations), and the driver asserts `all(p.emission_interval_ticks==1)`
-and `scene.populations[0].id == "zombies_zone0"` (the envelope cap
-reads DECLARED list order — vendor appends go at the TAIL; audit 4-e F16).
+bound to SIX count-1 populations, ids `zombies_stall1..stall6` (sort
+BEFORE the chase id — 's' < 'z' — audit 4-f P1-1; they also sort first
+overall, which is HARMLESS because the driver pins their interval to
+1, neutralizing the F-TS4 id-sorted-interval hijack). Spawn boxes:
+1.2m squares OFFSET from the stall centers on the plaza-facing side
+(e.g. stall (-26, y) → box centered (-24.9, y)) — DISJOINT from the
+barricade squares inflated by radius+margin, because the spawn
+sampler ignores walls (spawn.rs:37-58; audit 4-f P1-2). Driver laws:
+EVERY vendor pop gets `emission_interval_ticks=1` + hygiene replaces
+(distributions + destinations); the driver RE-RUNS the chase-last
+predicate after the appends (ingest's assert ran before them) and
+asserts `all(p.emission_interval_ticks==1)` and
+`scene.populations[0].id == "zombies_zone0"` (the envelope cap reads
+DECLARED list order — vendor appends go at the TAIL; audit 4-e F16).
 
 Groups: base bake of the post-ingest scene (queues+portals+graphs
 attached — v1 IR identical, bake.py:1006-1013) →
@@ -127,8 +138,10 @@ max_separation_m=2.0; shared_destination_id="hero_pos"; kind REQUIRED)
 Zones (y_lo, y_hi, count, min_abs_x, x_jitter) — spawn strips
 |x| ∈ (min_abs_x, 30), y = the band (belt grammar):
 
-- zone0 `(10.0, 11.5, 44, 2.5, 0.35)` — the NEAREST band = the FAST
+- zone0 `(10.3, 11.5, 44, 2.5, 0.35)` — the NEAREST band = the FAST
   population: mu 2.0 σ 0.25 (cap owner; jog-clip share ~79% — eye-gate).
+  (y_lo 10.3: the fountain wall top reaches y 9.9 — the 0.1m seam
+  class is not worth a spawn-radius pop; audit 4-f P2-3.)
 - zone1 `(11.5, 13.0, 40, 2.5, 0.35)` — the middle strollers: mu 1.2 σ 0.2.
 - zone2 `(13.0, 14.0, 36, 2.5, 0.35)` — the far band: mu 1.35 σ 0.2.
 - chase 9 (queue-bound): mu 0.9 σ 0.15 (a queue walks calmly; the low
@@ -146,9 +159,19 @@ zone0-first (F16), per-population speed landed, all intervals 1.
 
 BARRICADES (belt consumes them, previz_bridge.py:489-494): stall
 counters r=0.95 at (±26, 1.5/3.5/5.5/7.5) — pitch 2.0 > 2r=1.9 ✓ (the
-overlap fix); fountain basin r=2.4 at (14, 7.5). All squares ≥2m apart,
-≥2.9m from the walkable edge (the sealed-pocket law). Spawn bands
-(y≥10) clear every set piece (the spawn-band seam law).
+overlap fix); fountain basin r=2.3 at (14, 7.5) (shrunken per audit
+4-f P0-1 so the rim band 2.6-3.4m from center is reachable). All
+squares ≥2m apart, ≥2.9m from the walkable edge (the sealed-pocket
+law). Spawn bands (y≥10.3) clear every set piece.
+
+**THE RAGDOLL PICK LAW (audit 4-f P0-1)**: no agent can pass within
+1m of the basin center — the barricade square (11.7,5.2)-(16.3,9.8)
+walls them out; the closest possible approach is ≈2.6-2.7m. The
+faller is picked from the flow data as the agent whose path GRAZES
+THE RIM BAND (closest approach 2.6-3.4m from (14,7.5), S/SW arc
+preferred — that pavement is the S5 frame) near the beat tick. The
+slip reads as catching the wet rim pavement; the S5 aim (§6) frames
+that pavement.
 
 ## 5. Set (world module — sub-agent built, eye-gated)
 
@@ -187,14 +210,14 @@ measure in the SHIPPING transform (AgX final, audit 4-e F18).
 | S2 | 85-168 | the thunder hit: stall lights flicker; the FAST band overtakes (zone0 crossing frame); storm sky visible (streaks need a dark field) | low W oblique with sky + stall string in frame, 35mm |
 | S3 | 169-264 | the streams merge toward the arcade mouth | N-edge elevated, 40mm |
 | S4 | 265-348 | the doorway choke — shot from INSIDE looking out (faces rim-lit by the storm sky, not backs; the queue line at x=6.5 visible frame-right) | interior S, (2,-4,1.6)→(0,6,1.4), 35mm |
-| S5 | 349-444 | THE BEAT: the slip-and-fall beside the fountain (fall at f380, thud f385, the HOLD after) | low SE of fountain (17,3.0,1.2)→(14,7.0,0.7), 50mm — faller crosses L→R, silhouetted on wet pavement, doorway glow rim |
+| S5 | 349-444 | THE BEAT: the slip-and-fall beside the fountain (fall at f380, thud f385, the HOLD after) | low SE of fountain (17,3.0,1.2)→(14,4.8,0.6), 50mm — RE-AIMED off the basin (the REV-2 aim was 0.5m INSIDE it; audit 4-f P1-3): the faller crosses the SOUTH pavement L→R, silhouetted on wet ground, doorway glow rim |
 | S6 | 445-528 | the queue holds: side-on line against the dark east columns, warm window glow pooling right | (1.5,1.0,1.7)→(6.5,1.5,0.9), 50mm |
 | S7 | 529-624 | the fill: under the canopy — exterior through the east colonnade under the eave; foreground rain sheet off the roof edge, packed interior midground, doorway glow behind | (9.5,8.0,3.2)→SW, 35mm |
 | S8 | 625-720 | the plaza empties: the last stragglers cross the north plaza, rain haze thickens (the honest beat — no counter-flow) | N-edge wide, 28mm |
 | S9 | 721-816 | the peak-as-equilibrium: the packed box seen through the open east colonnade from high-E oblique; the fountain pair (bystander crouch + still faller) in the empty plaza right — crescendo AND callback in one shot | (20,2,11)→(4,3,0), 35mm |
 | S10 | 817-912 | the storm eases: light warms; the last queue releases | interior, doorway + window glow, 40mm |
 | S11 | 913-1008 | the crane rises on the EAST flank: packed arcade left through the colonnade, the fountain pair right, empty plaza beyond; ray-cast sight line at loc0 AND loc1 (the roof occlusion check) | (13,-2,2.5)→(11,-2,11) looking N |
-| S12 | 1009-1080 | title: S12 camera = S11 crane loc1 (NO cut — the crane LANDS on the title); at f1009 the last lightning flash blows the frame white 2-3f, on decay the sign band's neon ignites "SQUALL" (two flickers f1009/f1021, then steady; emission+scale keys, F-TD11 decouple, sight-line ray-cast) | = S11 loc1 |
+| S12 | 1009-1080 | title: loc0 = S11 loc1 (continuity, no cut), then the crane descends and sweeps north-above the doorway; at f1009 the last lightning flash blows the frame white 2-3f, on decay the sign band's neon ignites "SQUALL" (two flickers f1009/f1021, then steady; emission+scale keys, F-TD11 decouple). NOTE (audit 4-f): from S11's loc1 the roof BLOCKS the band — S12 owns its second key; the ray-cast gate decides the final pose (candidate loc1 (6,9.5,5.0)→(0,6.2,3.2), the band's north face) | loc0=(11,-2,11) → loc1=(6,9.5,5.0), aim (0,6.2,3.2) |
 
 Ragdoll beat: faller = ONE agent picked AFTER the bake from the flow
 data (≥1 agent passes within ~1m of (14,7.5) near the beat tick) AND
@@ -238,13 +261,24 @@ S8 = haze thickens; S9 = the colonnade sheet edge; S12 = the flash.
    z from composed frames; GATED on a non-empty sidecar so unlayered
    films stay byte-identical (the r054 suite stays green); new test
    for the layered path (physics layer → npz z≠0, position composed).
+   **F-TS5 loader pin override (audit 4-f P0-2)**: crowd_kit/loader.py
+   :234-243 asserts npz n_agents == crowd_v6.contract.N_RELEASE (129 —
+   the tgreen pin). Parameterize load_kit_cache with an explicit pin
+   override (kwarg, default = the current 129 behavior); the SQUALL
+   driver passes 135. Never edit crowd_v6/contract.py in place (the
+   tgreen build shares it).
 5. contract module (me): zones, barricades, keepouts, N_RELEASE=135,
    CROWD_SEED, chase_frame="belt".
-6. INGEST PROBE (the round-3 pattern): ingest count=129 → attach
-   portal/queue/graphs/vendor pops (interval 1) → compile → verdicts:
-   does the corrected-axis doorway route? does the box survive south
-   of y=6? do the queue slots admit (the direct-steer-vs-wall gate)?
-   do vendor pops keep the chase-last assert + zone0-first?
+6. INGEST PROBE (the round-3 pattern, sharpened per audit 4-f): ingest
+   count=129 → attach portal/queue/graphs/vendor pops (interval 1) →
+   compile → verdicts: (a) tile connectivity THROUGH the doorway (the
+   reachability preflight passes trivially for street→street portals —
+   a sealed door surfaces only as runtime A* failures; the probe
+   checks nav tiles itself); (b) the box survives south of y=6; (c)
+   the queue admits AND ≥1 QueueReleased event by a target tick (the
+   head-stuck gate — no release ⇒ no drain, no sfx motif); (d) vendor
+   pops keep chase-last + zone0-first after the appends; (e) spawn
+   boxes disjoint from Blocked squares.
 7. bake driver (me): per-zone speed map, envelope asserts, vendor
    pops, base bake → groups → final bake → ragdoll attach → the cast
    list (faller etc.) → npz via the F-TS1-composed to_previz_cache.
@@ -276,7 +310,14 @@ S8 = haze thickens; S9 = the colonnade sheet edge; S12 = the flash.
 - R9 (new, from 4-d): the direct-steer queue agents pressing the wall
   — the probe gates; if eastern-spawned chase agents fail to reach
   slots, re-aim the chase spawn or accept the wall-slide (it reads as
-  joining the queue through the door).
+  joining the queue through the door). The head-stuck gate (≥1
+  QueueReleased by the target tick) is the hard gate.
 - R10 (new): zone0's jog-clip share at mu 2.0 (~79% sprint clip) — the
   eye gate on the flow strip decides whether zone0 reads as "hurrying"
   or "jogging"; mu 1.8 is the fallback.
+- R11 (4-f P2-5): the S12 second key is a candidate pose — the
+  camprobe ray-cast gate decides the final numbers before the stills
+  round.
+- R12 (4-f P1-1): vendor ids zombies_stall1..6 + the driver's
+  chase-last re-assert post-append — the naming law is only as strong
+  as its last re-check.
