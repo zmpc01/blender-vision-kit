@@ -142,8 +142,15 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 
 ## Git workflow (GIT IS THE DISK)
 
-- **Repo**: github.com/zmpc01/blender-agent-kit (primary)
-- **Mirror**: gitlab.com/ansgareutychisO/blender-agent-kit (backup)
+- **Repo**: github.com/zmpc01/blender-vision-kit (canonical — F2D-1 fix:
+  SKILL used to name the UPSTREAM blender-agent-kit here, which would
+  push THIS fork's work into the shared mainline)
+- **Mirror**: gitlab.com/ansgareutychisO/blender-vision-kit on branch
+  `github-canonical` (the session-16 raw mirror diverged in the
+  push-protection history rewrite — NEVER force it; push with
+  `git push gitlab main:github-canonical`)
+- **GitHub push protection REJECTS commits carrying ghp_ tokens** — the
+  token's home is .env (see .env.example); GitLab carries raw history
 - **Push to BOTH on every micro-step** — GitLab WAF blocks ~1/3 of pushes;
   retry up to 8× with 5s sleep. Use `oauth2:TOKEN` format for GitLab.
 - **NEVER force push** — local disk unreliable; force push can wipe the
@@ -165,11 +172,9 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 | Skill compliance tasks | NO | Sub-agents miss skill instructions |
 | ANY visual verdict / render judgment | NEVER | Sub-agent Read strips images in this harness; the kit is vision-native-only and does not bridge (course correction) |
 
-## Common meta-agent mistakes
-
-1. **Calling blender without blrun.sh** — `import blender_kit` fails (no PYTHONPATH). Always go through blrun.sh.
+## Common meta-agent mistakes1. **Calling blender without blrun.sh** — `import blender_kit` fails (no PYTHONPATH). Always go through blrun.sh.
 2. **Not warming EEVEE shader cache** — first render is 28s. `blrun.sh --warm-cache` once per container.
-3. **Editing in `/home/z/my-project/`** — watchdog reverts every 20s. Work in a clone outside it (e.g. `/home/z/work/blender-vision-kit/`). Also: git checkout writing inside a symlinked `tools/` REPLACES the symlink (broken-symlink signature; scope-check warns).
+3. **Editing in `/home/z/my-project/`** — watchdog reverts every 20s. Work in a clone outside it — the session-17 standard path is `/home/z/repos/blender-vision-kit/` (older docs may say /home/z/blender-kit, /home/z/work/... or /home/z/vision-work — all mean the same law). Also: git checkout writing inside a symlinked `tools/` REPLACES the symlink (broken-symlink signature; scope-check warns).
 4. **Setting EEVEE attrs that don't exist** — `use_bloom` removed in 4.2+. Use `_safe_set()`.
 5. **Not cleaning up temp cameras** — `viewport_capture.py` temp cameras accumulate. Use `_cleanup_temp_camera()`.
 6. **Not validating render output** — EEVEE shader failures produce 0-byte PNGs with exit 0. Always `_validate_outputs()`.
@@ -177,17 +182,15 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 8. **Forgetting `--python-use-system-env`** — if you must call blender directly (debugging), add this flag.
 9. **Not exercising every gate path** — a gate that only runs at render time passes every dry-run. Always run one full pipeline pass (dry-run + render + encode + export) before shipping.
 10. **Letting advisory gates stay advisory** — a gate that can't abort the build protects nothing. Flip to fail-closed the round you add it.
-12. **Inventing API return keys** — asserted `r["state"]` on a report whose real keys are `ok`/`post_contact` (T8). Read the function's return dict BEFORE writing the assert; the kit's own "check the real API first" law applies to tests too.
-15. **The harness REAPS background processes** (session-5): nohup/setsid did NOT keep install.sh alive across tool-call boundaries — the log just stops mid-step and `ps` finds nothing. Long download/extract steps: run in the FOREGROUND with a generous tool timeout. A truncated install log with no error = reaped, not failed.
-16. **Display-layer mangle is recurring and sneaky** (twice now): sed/Read/byte-prints sometimes DROP a `[`+following char, showing impossible syntax in valid files. The truth sequence: char-codes (hex ord) / `od` / `ast.parse` / `tokenize` — if parse OK but the printed line looks broken, BELIEVE the parser; never "fix" a phantom syntax error.
-17. **Dog-food discipline beats code-reading for UX bugs** (session-5, R1+R2): operating strictly as the consumer (docs-only, real scene, honest friction log) surfaced 7 kit defects that five hardening waves missed — the deepest (animated-prop placement needs PATH REBASING, not current-frame re-keying) was only observable end-to-end. Reset-and-repeat rounds also VERIFY the fixes from the consumer seat.
-18. **One CLI vocabulary, many accepted spellings** (session-6 R3 F1/F5): three engine vocabularies had evolved (docs raw enums, look-family short names, ship-family raw enums) and the docs' literal command crashed. When layers of one surface must speak different conventions (dispatch names vs Blender ids), bridge at the argparse `type=` layer with ONE normalizer per convention — never let a `choices=` list reject spellings the docs themselves teach. Note argparse DEFAULTS bypass `type=` (keep defaults in the family's native convention).
-19. **A tool with zero test coverage is presumed broken** (session-6 R4 F10b): export_previz_package carried a rename-leftover NameError that crashed EVERY run of ANY scene — it simply had never been run since the refactor. Every refactor leftover is a live landmine in an unexercised path; a lane the docs ship is a lane a suite must walk.
-20. **Crowd-convention tools must be lane-aware** (session-6 R4 F10): gates that index `shots[0]` or demand `ctx["scene"]` crash template-family scenes. Fail-closed gates should fire when the scene DECLARES the concept (SHOTS table, BOARD/RUN_PARAMS) and pass vacuously otherwise.
-21. **Workbench looks cannot see world lighting** (session-6 R3 F6, gotcha 128): workbench ignores world/sky entirely, so sky-driven EEVEE overexposure is invisible in every previz look — only the ship-preview lane (EEVEE, 0.0 EV on purpose) tells the truth. Cross-lane blindness is a design fact: know what each render mode CANNOT reveal.
-22. **Remote can move mid-session** (session-6): a parallel QA lane pushed while I worked and my push rejected non-fast-forward. Protocol held: fetch, verify their diff is non-overlapping, rebase, push. Never force; the remote is the shared disk now.
-
-## Verification discipline
+11. **Inventing API return keys** — asserted `r["state"]` on a report whose real keys are `ok`/`post_contact` (T8). Read the function's return dict BEFORE writing the assert; the kit's own "check the real API first" law applies to tests too.
+12. **The harness REAPS background processes** (session-5): nohup/setsid did NOT keep install.sh alive across tool-call boundaries — the log just stops mid-step and `ps` finds nothing. Long download/extract steps: run in the FOREGROUND with a generous tool timeout. A truncated install log with no error = reaped, not failed.
+13. **Display-layer mangle is recurring and sneaky** (twice now): sed/Read/byte-prints sometimes DROP a `[`+following char, showing impossible syntax in valid files. The truth sequence: char-codes (hex ord) / `od` / `ast.parse` / `tokenize` — if parse OK but the printed line looks broken, BELIEVE the parser; never "fix" a phantom syntax error.
+14. **Dog-food discipline beats code-reading for UX bugs** (session-5, R1+R2): operating strictly as the consumer (docs-only, real scene, honest friction log) surfaced 7 kit defects that five hardening waves missed — the deepest (animated-prop placement needs PATH REBASING, not current-frame re-keying) was only observable end-to-end. Reset-and-repeat rounds also VERIFY the fixes from the consumer seat.
+15. **One CLI vocabulary, many accepted spellings** (session-6 R3 F1/F5): three engine vocabularies had evolved (docs raw enums, look-family short names, ship-family raw enums) and the docs' literal command crashed. When layers of one surface must speak different conventions (dispatch names vs Blender ids), bridge at the argparse `type=` layer with ONE normalizer per convention — never let a `choices=` list reject spellings the docs themselves teach. Note argparse DEFAULTS bypass `type=` (keep defaults in the family's native convention).
+16. **A tool with zero test coverage is presumed broken** (session-6 R4 F10b): export_previz_package carried a rename-leftover NameError that crashed EVERY run of ANY scene — it simply had never been run since the refactor. Every refactor leftover is a live landmine in an unexercised path; a lane the docs ship is a lane a suite must walk.
+17. **Crowd-convention tools must be lane-aware** (session-6 R4 F10): gates that index `shots[0]` or demand `ctx["scene"]` crash template-family scenes. Fail-closed gates should fire when the scene DECLARES the concept (SHOTS table, BOARD/RUN_PARAMS) and pass vacuously otherwise.
+18. **Workbench looks cannot see world lighting** (session-6 R3 F6, gotcha 128): workbench ignores world/sky entirely, so sky-driven EEVEE overexposure is invisible in every previz look — only the ship-preview lane (EEVEE, 0.0 EV on purpose) tells the truth. Cross-lane blindness is a design fact: know what each render mode CANNOT reveal.
+19. **Remote can move mid-session** (session-6): a parallel QA lane pushed while I worked and my push rejected non-fast-forward. Protocol held: fetch, verify their diff is non-overlapping, rebase, push. Never force; the remote is the shared disk now.## Verification discipline
 
 - **Design-audit gate BEFORE implementation** — write spec with decision IDs, hand to FRESH agent with implementing files + mandate to attack, apply required changes before coding. Catches semantic collisions code review misses.
 - **Calibrate thresholds, don't guess** — measure the corpus, pick the separating statistic (dark-FRACTION beat mean-luma, strong-edge FRACTION beat mean-sobel). ±20% brightness and 2x downscale must not flip any fired rule.
@@ -208,7 +211,8 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 
 ## Physics layer (bullet-in-Blender headless)
 
-Five measured laws (all verified via probes in `experiments/physics_facts/`):
+Five measured laws (verified via probes — the `experiments/physics_facts/`
+lives in the UPSTREAM blender-agent-kit checkout, not this fork; F2D-9):
 1. **No `world_step` in 4.5** — sims advance via `scene.frame_set()`. Point cache SURVIVES object teardown → always `frame_set(1)` before every sim.
 2. **Sim pose lives only in `matrix_world`** — RNA location keeps spawn pose. Commit: capture matrix_world → remove rb → write matrices → update → clear_bvh_cache.
 3. **Collision shapes snapshot evaluated mesh at rb_add** — unapplied scale = pass-through. BOX tracks live bbox (safe for origin-centered); CONVEX_HULL is faithful; MESH pass-throughs thin shells (never use).
@@ -244,7 +248,7 @@ For user delivery: copy whole dir to `/home/z/my-project/download/<scene_name>/`
 - **4GB RAM, no GPU** — all CPU rendering via llvmpipe + Xvfb. EEVEE peaks at 1.6GB for 273 objects; use Workbench/Cycles for complex scenes.
 - **No root** — install.sh extracts .deb files locally for libEGL.
 - **Background processes die between tool calls** — long ops must run inside one Bash call with timeout, or use `render_daemon.py` (double-fork to PID 1).
-- **Watchdog** reverts `/home/z/my-project/` every ~20s — work in `/home/z/blender-kit/`.
+- **Watchdog** reverts `/home/z/my-project/` every ~20s — work in `/home/z/repos/` clones (F2D-16: one path, everywhere).
 
 ## KB entries (linked from AGENTS.md; each carries its own headlines)
 vision_loop · render_speed · placement_and_physics · semantic_labeling ·
@@ -293,6 +297,23 @@ gait_modifiers.
 - The FLOW STRIP is the geometry-seam detector — run BEFORE cameras.
 - The governed-pair guard: land kit fix → tools/sync_shared.py --to
   <consumer> → commit BOTH (cross-repo drift fails loudly).
+
+## SESSION 15 FILM LAWS (recovered — the s16 merge dropped this block; full: docs/USABILITY_TF1_last_ferry.md)
+
+- The native engine REFUSES barricade squares past the walkable edge
+  (E_InvalidRange) — cap barricade centers at walkable−r.
+- F-TF6: kit mode has NO hero-lane pushout; HERO_LANES was DEAD DATA.
+  F-TG1's engine truth (arrived agents are GHOSTS) means any pushout
+  feature must define arrival semantics FIRST.
+- The bridge shape is a FEATURE: N is pinned per-film (tferry 129,
+  tgreen from its own contract) — never "fix" a pinned N to match a
+  stale constant.
+- Camera-work budget: a 12-shot film spends its budget on REFRAMES not
+  new cams; the tferry choke law (keyed cranes must actually move:
+  _cameras never keyed loc0→loc1 = the static 'crane' class).
+- Night pools: lamp gaps read as murky dead stretches — east band needed
+  two fills; the title card needs F-TD11 emission (make_material arg3
+  is ROUGHNESS).
 
 ## SESSION 16 LAWS (the KIT-QUALITY wave — D19 export preflight + t10)
 
