@@ -315,43 +315,30 @@ gait_modifiers.
   two fills; the title card needs F-TD11 emission (make_material arg3
   is ROUGHNESS).
 
-## SESSION 16 LAWS (the KIT-QUALITY wave — D19 export preflight + t10)
+## SESSION 16 LAWS (the KIT-QUALITY wave — D19 export preflight + t10; full: docs/USABILITY_S16 + DESIGN_D19)
 
 - **Lane discipline (user-ruled)**: the parallel lane owns SCENE work;
   this kit's sessions audit/test/refine the kit or build STRESS
   fixtures — never co-edit scene_*.py or stage films.
-- **Preflight-before-export**: `export_preflight.py --module <scene.py>`
-  BEFORE any export (exit 3, attributed rejections); contract failures
-  belong at the cheap end. Exporter gate 15 (sfx conformance) + gate 4
-  (BOARD total-decode-failure) are the fail-closed backstop.
+- **Preflight-before-export** (exit 3, attributed rejections); gate 15
+  (sfx fail-closed) + gate 4 (BOARD total-decode-failure) backstop.
 - **TWO exporters**: this tree's export_previz_package = escape/template
-  lane; film lanes export via the CANONICAL agent-kit copy
-  (KIT_EXPORTER). Pin WHICH exporter is under test before writing
-  suite asserts.
+  lane; film lanes export via the CANONICAL agent-kit copy. Pin WHICH
+  exporter is under test before writing suite asserts.
 - **Decode-parity property pattern**: the REAL decoder is the oracle —
-  stub bpy/blender_kit imports, assert decoder-fail⇒checker-reject AND
-  decoder-accept⇒checker-accept (both rot directions), milliseconds,
-  no Blender. The checker owns ERROR QUALITY; the decoder owns truth.
-- **A checker is never stricter than the decoder** (≥n semantics — the
-  decoders never width-check). But CAST-compatible = reject: None
-  where the decoder raises IS a rejection (_vec_check none_ok=False
-  for CAMS vecs; BOARD's seat_local stays none_ok=True).
-- **RNA-filter operator kwargs** (get_rna_type().properties) —
-  version-calibrated kwarg sets rot (4.5's usd_export set TypeErrors
-  on 5.2.2; the battery caught it; export_usd.py is version-proof now).
+  stub bpy/blender_kit, assert both drift directions; the checker owns
+  ERROR QUALITY, the decoder owns truth. A checker is never stricter
+  than the decoder (≥n semantics), but None-where-decoder-raises IS a
+  rejection.
+- **RNA-filter operator kwargs** (get_rna_type) — version-calibrated
+  kwarg sets rot.
 - **Subprocess tests**: direct binary + --python-use-system-env +
-  PYTHONPATH=scripts (blrun cannot nest under its own per-display
-  lock); fixtures go INTO scripts/ (the exporter name-imports from
-  scripts only), try/finally cleanup; suites that nest blrun carry
-  BLRUN_FORCE=1 (the battery proved rc=90 without it — v2/v3/v4/v7).
-- **Verify BOTH PATs at session start** (2-line curl) — a dead GitHub
-  PAT silently converts dual-remote backup into GitLab-primary
-  (reads still work: public repo, anonymous).
+  PYTHONPATH=scripts; fixtures go INTO scripts/; suites that nest blrun
+  carry BLRUN_FORCE=1.
+- **Verify BOTH PATs at session start** (2-line curl).
 - **Audit-before-implement ROI**: 3 cheap read-only audits → 1 real bug
-  (scoped audit matched verdict not state), the whole D19 spec, and
-  the priority list. Cite file:line in doc claims — but line refs
-  shift when lines are inserted above them (batch-fix with a
-  verifying script, never from memory).
+  + the whole D19 spec. Cite file:line — but re-verify anchors by grep
+  before batch-editing them (they shift).
 ## SESSION 16 LAWS (the THIRD film: GREEN LIGHT — the daylight regime)
 
 - **THE CAPACITY BOX IS AN ARRIVAL TRIGGER, NOT A CONTAINER**: an
@@ -392,3 +379,24 @@ gait_modifiers.
   identical reruns, tferry 8b7d4d8e cross-session).
 - Ledger: docs/USABILITY_TG1_green_light.md (F-TG1..8); design
   REV-4 = built truth.
+
+## SESSION 17 LAWS (the second KIT-QUALITY wave — 88 findings, all ≥P2 fixed)
+
+- render_angle SWEEPS camera-bound marker bindings (render prefers the
+  marker over scene.camera — the F-TD3 silent-wrong-camera class);
+  look exit 4 = unreadable image; PNG magic verified, not existence.
+- Per-component location writes are PARENT-space: world-space solvers
+  go through _world_delta_to_local; seat_at composes matrix_world;
+  keyframe rebases take the BASIS delta (fcurves are basis-space).
+- Accepted-but-unimplemented params are fail-open lies: validate tokens
+  at the op layer (keep_xy/centroid/footprint/seat_mesh); the
+  PARAM_DOCS↔handler parity is AST-checked in test_s17_wave_b.
+- Operator kwargs: RNA-filter EVERY call site
+  (blender_kit.filter_rna_kwargs) — a TypeError fallback silently drops
+  settings (it dropped the previz:entity carrier).
+- _skinned_guard must check the ARMATURE's animation (the rig poses the
+  mesh even when the mesh object has none).
+- Battery = suite_runner.sh (29 suites); run --only batches in ONE
+  foreground call. Red-by-construction fixtures surface when their
+  masking failure (rc=90) heals — re-check expectations after unmasking.
+
