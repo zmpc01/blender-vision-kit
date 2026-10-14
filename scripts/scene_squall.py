@@ -458,6 +458,58 @@ def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
     return None
 
 
+def _kf_faller_tumble(ctx):
+    """The ragdoll moves the ORIGIN; the mesh keeps the walk clip (the
+    4-c risk 2 -- the 'sinking statue' class). The film fix: overlay
+    rot_x/rot_y keys on the faller's object AFTER bake2 (bake2 keys
+    loc + rot_z only -- the x/y rot channels are ours). The tumble:
+    upright until the fall frame, ~80 deg over 4 frames, prone hold to
+    the end (the wet-slide carries the origin; the tipped capsule
+    sells the slip)."""
+    cast = ctx.get("cast") or {}
+    fo = cast.get("faller_ordinal")
+    ff = int(cast.get("fall_tick_frame", 372))
+    if fo is None:
+        print("[tsquall] no faller in the cast -- no tumble overlay")
+        return
+    ob = ctx["chars"]["zombies"]["crowd"][int(fo)]
+    if ob.animation_data is None:
+        ob.animation_data_create()
+    # bake2 keyframed the WHOLE euler (x/y as zeros) — those flat
+    # fcurves would fight this overlay on the same channels: remove
+    # rot_x/rot_y, keep the yaw (z). 5.2 slotted actions: the fcurves
+    # live in channelbags — remove via the owning bag, not action.fcurves.
+    act = ob.animation_data.action
+    for layer in getattr(act, "layers", []) or []:
+        for strip in getattr(layer, "strips", []) or []:
+            bag = getattr(strip, "channelbag", None)
+            if not callable(bag):
+                continue
+            slots = list(getattr(act, "slots", []) or [None])
+            for slot in slots or [None]:
+                try:
+                    b = bag(slot) if slot is not None else bag()
+                except TypeError:
+                    continue
+                if b is None:
+                    continue
+                for fc in list(getattr(b, "fcurves", []) or []):
+                    if fc.data_path == "rotation_euler" and \
+                            fc.array_index in (0, 1):
+                        b.fcurves.remove(fc)
+    _kf(ob, ff - 1, scale=None)
+    ob.rotation_euler = (0.0, 0.0, 0.0)
+    ob.keyframe_insert(data_path="rotation_euler", frame=ff - 1)
+    ob.rotation_euler = (math.radians(80.0), math.radians(4.0), 0.35)
+    ob.keyframe_insert(data_path="rotation_euler", frame=ff + 3)
+    ob.rotation_euler = (math.radians(82.0), math.radians(2.0), 0.55)
+    ob.keyframe_insert(data_path="rotation_euler", frame=ff + 10)
+    ob.rotation_euler = (math.radians(82.0), math.radians(2.0), 0.55)
+    ob.keyframe_insert(data_path="rotation_euler", frame=1080)
+    _bezier(ob)
+    print(f"[tsquall] tumble overlay on ordinal {fo} at f{ff}")
+
+
 def _kf_bystander(ctx):
     """The witness: stands under the eave; the fall at f372 turns him;
     f470 the crouch (a keyed z drop + turn); holds to the end."""
@@ -523,6 +575,7 @@ def _crowd_kit_branch(ctx, cache_path):
     import crowd_v6 as CV6
     CV6.bake_tier2(ctx)
     _crowd_palette(ctx)
+    _kf_faller_tumble(ctx)   # bake2 keyed loc+rot_z; the x/y rot is ours
     return ctx["crowd_cache"]
 
 
