@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # ensure the vision-kit project exists on GitLab; create with API if missing
-GL_PAT="glpat-sIgzJ9HToAXg0RUvSc6bMGM6MQpvOjEKdTpvajFzbQ8.01.170zp32lq"
+[ -f "$REPO_DIR/.env" ] && . "$REPO_DIR/.env" 2>/dev/null || { [ -f ".env" ] && . ./.env 2>/dev/null; true; }
+GL_PAT="${GL_PAT:-${GITLAB_TOKEN:-GL_PAT_FROM_ENV}}"  # F2D-2: token home is .env
 SLUG="ansgareutychisO%2Fblender-vision-kit"
 for i in 1 2 3 4 5; do
   code=$(curl -s -o /tmp/gl_proj.json -w "%{http_code}" -H "PRIVATE-TOKEN: ${GL_PAT}" \
