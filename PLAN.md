@@ -263,11 +263,14 @@ code-level finding (--frames BLOCKER) remains valid.
    navigation (kb/prop_carry.md meets r7_navigate).
 2. Sitting_Exit->walk-away chaining (full inhabit loop); third seat
    (chair x2) if the probe generalizes free.
-3. t10 export suite. 4. VK-9 re-vendor (QA ask). 5. Upstream PR: D11
-   install fallback + VK-10 hunk. 6. Re-point the R6 chain input from
-   the Release/fetch to assets/loft rebuilt master (one-line doc +
-   chain smoke) — CLOSED in the session-15 receipts (committed chain
-   inputs replay R6→R7→R8 on the rebuilt master; both sits GREEN).
+3. t10 export suite — SHIPPED session-16 (D19: preflight + t10
+   two-tier; extended session-17: prop 124 / export 25 checks).
+   4. VK-9 re-vendor — DONE session-16 (wheel 1.5.5, provenance README
+   completed s17 with sha256/size/origin). 5. Upstream PR: D11 install
+   fallback + VK-10 hunk — still open (upstream-owned; see also
+   docs/FINDINGS_upstream.md F2E-5 sync_shared guard). 6. CLOSED in
+   the session-15 receipts (committed chain inputs replay
+   R6→R7→R8 on the rebuilt master; both sits GREEN).
 
 ## Session-13 receipts (the tdawn iteration round — 2026-10-11)
 
@@ -392,8 +395,38 @@ code-level finding (--frames BLOCKER) remains valid.
 - **The daylight law family captured** (F-TG4): the ratio lever, the
   disc innocence, the noon card-contrast inversion, the emission
   transfer failure.
-- Next-session candidates, in value order: (1) the USER review round
-  on all three films (comments ON — everything else was prologue);
-  (2) F-TD9 + the six older filings; (3) a fourth film candidate:
-  the queue/formation stories (M6) or the hero-lane pushout (F-TF6 +
-  F-TG1's arrival semantics) — design-first, same discipline.
+- Next-session candidates, in value order (s17 NOTE: (2) was stale —
+  F-TD9 had already closed in-code; the filings resolved s17): (1) the
+  USER review round on all three films (comments ON — everything else
+  was prologue); (2) the filings F-TD1/F-TD2 (+F-TD3, closed s17);
+  (3) a fourth film candidate: the queue/formation stories (M6) or the
+  hero-lane pushout (F-TF6 + F-TG1's arrival semantics) — design-first,
+  same discipline.
+
+---
+
+## Session-17 receipts (the second KIT-QUALITY wave — 2026-10-14)
+
+- **The deep audit delivered its mandate**: 5 read-only auditors on the
+  merged tip → 88 findings (2 P0, 13 P1, ~30 P2, rest P3) → ALL ≥P2
+  fixed across four waves with regression coverage; battery 29/29
+  (docs/battery_s17_results.md); P3 residue documented in
+  docs/audit_s17/ as open-P3 (the seed for any future exhaustion pass).
+- **F-TD3 closed** (timeline-marker override of scene.camera in
+  render_angle — the corrected mechanism, the sweep fix, the
+  camera_intent manifest rows).
+- **Kit-quality class kills**: the PARAM_DOCS↔handler parity class
+  (AST-checked), the unfiltered-operator-kwargs class (shared
+  filter_rna_kwargs, all 3 usd twins), the silent-degradation fallback
+  class (loud NOTEs), the parent-space solver class
+  (_world_delta_to_local), the accepted-but-unimplemented param class
+  (keep_xy=False, centroid, footprint, seat_mesh — all validated now).
+- **Infra truth restored**: daemonize.py exists (was documented-absent),
+  suite_runner enumerates the REAL battery, render_daemon resumes
+  without destroying completed work, blrun's fallbacks all reachable
+  (proven live), wheel provenance measurable (sha256/size/origin).
+- **Value order for the next sessions**: (1) wave-2 audit only if the
+  user asks (open-P3 seed is in the audit files); (2) upstream guard
+  landing (FINDINGS_upstream.md) when an upstream-owned session opens;
+  (3) lane discipline holds — the film lane's fourth film (DESIGN_squall
+  REV-2) consumes the kit; this lane audits/refines/stress-tests it.
