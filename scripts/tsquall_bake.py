@@ -78,6 +78,13 @@ BASIN = (14.0, 7.5)          # the fountain center (contract BARRICADES)
 RIM_LO, RIM_HI = 2.6, 3.6    # the pick band (the barricade law: >=2.6)
 
 
+def _cache_file(stage_dir: Path) -> str:
+    """The native cache is a .crowd DIRECTORY inside the stage dir."""
+    files = sorted(stage_dir.glob("*.crowd"))
+    assert len(files) == 1, f"expected one .crowd in {stage_dir}: {files}"
+    return str(files[0])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="/tmp/crowdcache_tsquall")
@@ -107,6 +114,7 @@ def main():
         agent_ids, visible_agent_ids, read_events, CrowdEventKind)
     from scripts.crowd.ragdoll import (
         RagdollHandoff, simulate_ragdoll_handoff, attach_ragdoll_to_cache)
+    from scripts.crowd.advanced import clear_kit_layout_layers
 
     t0 = time.time()
     scene = bridge.ingest_contract(C, count=129, seed=C.CROWD_SEED,
@@ -235,7 +243,7 @@ def main():
         return
 
     # --- groups (the two-bake covenant) --------------------------------
-    base_cache = str(out / "kit_bake")
+    base_cache = _cache_file(out / "kit_bake")
     ids = agent_ids(base_cache, tick=300)
     vis = set(int(i) for i in visible_agent_ids(base_cache, tick=300))
     assert all(int(i) in vis for i in ids[:8]), \
@@ -274,9 +282,10 @@ def main():
         return
 
     # --- finish: ragdoll + cast + events + composed npz/ctx ------------
-    final_cache = str(out / "kit_bake_final")
+    final_cache = _cache_file(out / "kit_bake_final")
     if not Path(final_cache).is_dir():
         raise SystemExit("[tsquall_bake] run --stage groups first")
+    clear_kit_layout_layers(final_cache)   # idempotent re-runs
     names = None
 
     # pre-ragdoll conversion: the flow pick + the base-true reference
@@ -288,26 +297,34 @@ def main():
         clamp=True, clip_source="speed")
     names = digest["names"]
     z = np.load(pre_npz)
-    # the faller: grazing the rim band around the beat tick, walking
-    # speed, S/SW arc of the basin (the S5 frame).
-    best, best_d = None, 1e9
+    # the faller: grazing the rim band INSIDE the S5 window (ticks
+    # 176-214 so the fall lands within f352-428), any approach arc
+    # (the natural approach is from the north -- the south side is the
+    # wall squeeze), speed >= 0.4 (the straggler IS the casting; the
+    # 4-e F9 fold). Emit the graze point for the camera aim.
+    best, best_score = None, 1e9
     for a in range(z["x"].shape[1]):
         if a < 6 or a >= z["x"].shape[1] - 9:
             continue                    # vendors and the queue are out
-        for t in range(FALL_TICK - 10, FALL_TICK + 11):
+        for t in range(176, 215):
             dx = float(z["x"][t, a]) - BASIN[0]
             dy = float(z["y"][t, a]) - BASIN[1]
             d = (dx * dx + dy * dy) ** 0.5
             sp = float(z["speed"][t, a])
-            if RIM_LO <= d <= RIM_HI and 0.8 <= sp <= 2.2 and dy < 1.0:
-                score = abs(d - 3.0)
-                if score < best_d:
-                    best_d, best = score, (a, t)
+            if RIM_LO <= d <= RIM_HI and sp >= 0.4:
+                # bias EARLY ticks: the fall at ~f370-390 keeps ~2.5s of
+                # S5 aftermath (the 4-e F7 hold law)
+                score = abs(d - 3.0) + abs(t - 185) * 0.02
+                if score < best_score:
+                    best_score = score
+                    best = (a, t, float(z["x"][t, a]),
+                            float(z["y"][t, a]), sp)
     assert best is not None, \
-        "no rim-band faller near the beat -- widen the pool or move the beat"
-    faller_ord, faller_tick = best
+        "no rim-band faller in the S5 window -- widen the pool or move the beat"
+    faller_ord, FALL_TICK, gx, gy, gsp = best
     print(f"[tsquall_bake] faller: ordinal {faller_ord} "
-          f"({names[faller_ord]}) grazes the rim at tick {faller_tick}")
+          f"({names[faller_ord]}) grazes the rim at tick {FALL_TICK} "
+          f"(graze ({gx:.2f},{gy:.2f}), speed {gsp:.2f})")
 
     # the ragdoll handoff: the incoming velocity comes from the KIT
     # cache's velocity channel at the beat tick (the npz has no vx) --
@@ -359,6 +376,8 @@ def main():
         "faller": names[faller_ord],
         "faller_ordinal": int(faller_ord),
         "fall_tick_frame": int(FALL_TICK * 2),
+        "faller_graze": [gx, gy],
+        "faller_speed": gsp,
         "vendors": [names[i] for i in range(6)],
         "queue": [names[i] for i in range(len(names) - 9, len(names))],
         "queue_bell_events": bells,
