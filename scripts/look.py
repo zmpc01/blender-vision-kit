@@ -424,8 +424,13 @@ def main():
         if angle_labels == ["none"]:
             angle_labels = []  # closeup-only look
         for lbl in angle_labels:
-            if lbl not in vc.VIEW_ANGLES and lbl not in ("active", "custom"):
+            if lbl not in vc.VIEW_ANGLES and lbl != "active":
                 print(f"[look] ERROR: unknown angle '{lbl}'")
+                if lbl == "custom":
+                    print("[look] (look.py has no --custom-loc — use "
+                          "--closeup <obj> for a macro of one object, or "
+                          "call viewport_capture.py directly for custom "
+                          "viewpoints)")
                 sys.exit(1)
 
         # ---- render angles ------------------------------------------------
@@ -565,18 +570,64 @@ def main():
         if meshes and mn:
             import math as _math
             diag = _math.dist(mn, mx)
-            visible = 2 * 5.0 * _math.atan(18.0 / max(args.lens, 1))
+            # F2A-15: exact half-width = dist * (sensor/2)/lens (no atan —
+            # the atan form was ~4% conservative); 5 m front offset and the
+            # 36 mm default sensor half-width are the same constants
+            # VIEW_ANGLES/the temp cameras use.
+            _dist = vc.VIEW_ANGLES["front"][0]
+            _sensor_half = 18.0
+            visible = 2 * _dist * _sensor_half / max(args.lens, 1)
             if diag > visible * 1.4:
                 print(f"[look] HINT: SUBJECT-OVERFLOW (cluster diag {diag:.1f}m "
                       f"> visible ~{visible:.1f}m at {args.lens}mm/5m offset) "
                       "— aim with --target/--lens or --closeup for readable frames")
         print("=" * 64)
 
+        # F-TD3 detectability: record which camera each panel intended,
+        # and which camera a timeline marker WOULD have bound at this frame
+        # (the pre-fix hijack class — film scenes bind every shot cam to a
+        # marker; bpy.ops.render.render prefers the marker over
+        # scene.camera). render_angle sweeps the markers, but the manifest
+        # row makes any future regression VISIBLE instead of silent.
+        def _marker_cam_at(fr):
+            best = None
+            for m in scene.timeline_markers:
+                if m.camera is not None and m.frame <= fr:
+                    if best is None or m.frame > best.frame:
+                        best = m
+            return best.camera.name if best is not None else None
+
+        intent = []
+        _fr = bpy.context.scene.frame_current
+        for lbl, path in per_angle.items():
+            row = {"image": os.path.basename(path), "angle": lbl,
+                   "rendered_cam": ("scene.camera" if lbl == "active"
+                                    else f"temp {lbl} panel")}
+            mk = _marker_cam_at(_fr)
+            if mk:
+                row["marker_cam_at_frame"] = mk
+            intent.append(row)
+        if args.closeup:
+            intent.append({"image": os.path.basename(closeup_path),
+                           "angle": "custom", "rendered_cam": "temp closeup panel",
+                           **({"marker_cam_at_frame": _marker_cam_at(_fr)}
+                              if _marker_cam_at(_fr) else {})})
+
         with open(os.path.join(outdir, "look_manifest.json"), "w") as f:
             json.dump({"engine": args.engine, "frame": args.frame,
                        "validator": report, "images": ready,
                        "manifest": man, "labels": lbl_map,
+                       "camera_intent": intent,
                        "camera_probes": probe_rows}, f, indent=2)
+
+        # F2A-2: a readiness row with "error" means an image the eye
+        # cannot open — that is a FAILED perception pass, not a warnable
+        # one. Exit 4 (distinct from the validator's 3).
+        if any("error" in r for r in ready):
+            print("[look] ERROR: image readiness failed on one or more "
+                  "outputs (unreadable/empty file) — treat this look as "
+                  "invalid, exit 4")
+            sys.exit(4)
 
         if (p0 or p1) and args.fail_on_issues:
             sys.exit(3)

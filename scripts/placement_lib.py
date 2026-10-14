@@ -335,6 +335,25 @@ def _skinned_guard(obj, force):
     ad = getattr(obj, "animation_data", None)
     animated = bool(ad and (ad.action or
                             any(tr.strips for tr in ad.nla_tracks)))
+    if not animated:
+        # s17 (found by the test fixture): the POSE lives on the ARMATURE —
+        # a skinned mesh whose armature object is animated (parent, modifier
+        # target, or find_armature) is posed even when the mesh object
+        # itself has no animation data. The old check read the bind pose
+        # and labeled it "rest-pose" — exactly gotcha #27.
+        cands = [m.object for m in obj.modifiers
+                 if m.type == 'ARMATURE' and m.object]
+        if obj.parent is not None and obj.parent.type == 'ARMATURE':
+            cands.append(obj.parent)
+        fa = obj.find_armature()
+        if fa is not None:
+            cands.append(fa)
+        for cand in cands:
+            cad = getattr(cand, "animation_data", None)
+            if cad and (cad.action or
+                        any(tr.strips for tr in cad.nla_tracks)):
+                animated = True
+                break
     if animated and not force:
         raise RuntimeError(
             f"'{obj.name}' is an ANIMATED skinned mesh — evaluated mesh "
@@ -618,10 +637,16 @@ def audit_scene(pairs=None, exclude=(), *, sample='verts',
     order = {"PENETRATING": 0, "NESTED": 1, "TOUCHING": 2, "CLEAR": 3,
              "ERROR": -1}
     reports.sort(key=lambda r: order.get(r.get("state"), 9))
-    failed = any(r.get("state") == "PENETRATING" and
-                 (r.get("penetration_mm") is None or
-                  r["penetration_mm"] > contact_band_mm)
-                 for r in reports)
+    # F2B-2: pair_contact raises on skinned/unguardable pairs and the
+    # except-row above carries severity="fail" — but `failed` never read
+    # it, so an audit whose pairs ALL errored printed failed=False (the
+    # "audit exits non-zero on penetration" contract was violated exactly
+    # when the audit could not look). ERROR rows fail the gate too.
+    failed = (any(r.get("severity") == "fail" for r in reports) or
+              any(r.get("state") == "PENETRATING" and
+                  (r.get("penetration_mm") is None or
+                   r["penetration_mm"] > contact_band_mm)
+                  for r in reports))
     counts = {}
     for r in reports:
         counts[r.get("state", "?")] = counts.get(r.get("state", "?"), 0) + 1
@@ -715,18 +740,48 @@ def _rebase_location_keys(obj, delta):
     return n, [f"location[{'xyz'[i]}]" for i in sorted(touched)]
 
 
+def _world_delta_to_local(obj, delta_world):
+    """Convert a world-space translation delta into the object's BASIS
+    delta — the space obj.location and its location fcurves live in
+    (F2B-8: per-component location adds are PARENT-space; a rotated or
+    scaled parent silently misdirected every world-space solver).
+
+    matrix_world = A @ matrix_basis with A = parent.matrix_world @
+    matrix_parent_inverse, so a world translate T(dW) conjugates to a
+    basis translate T(A.lin^-1 @ dW). Parentless objects are identity."""
+    d = Vector(delta_world)
+    if obj.parent is None:
+        return d
+    a = obj.parent.matrix_world @ obj.matrix_parent_inverse
+    return a.inverted().to_3x3() @ d
+
+
 def _apply_translation(obj, dz, override, report):
+    """Apply a WORLD-space vertical shift (place_on/snap_z semantics).
+
+    F2B-8: this used to be `obj.location.z += dz` — a PARENT-space write.
+    Under a rotated/scaled parent the shift went the wrong way AND needed
+    x/y basis components that were never written. Convert the world dz to
+    basis space first; the keyframe rebase gets the basis delta too (the
+    fcurves are basis-space)."""
     if abs(dz) < 1e-12:
         return
-    obj.location.z += dz
+    d_local = _world_delta_to_local(obj, Vector((0.0, 0.0, dz)))
+    obj.location += d_local
     report["applied_dz_m"] = round(dz, 6)
+    if any(abs(v) > 1e-9 for v in d_local.xy):
+        report["parent_space_conversion"] = {
+            "world_dz": round(dz, 6),
+            "local_delta": [round(v, 6) for v in d_local],
+            "note": "parented mover: the world z shift needed x/y basis "
+                    "components too (F2B-8)"}
     if override == "keyframe":
         ad = getattr(obj, "animation_data", None)
         has_anim = (ad is not None and ad.action is not None)
         if has_anim:
             # K4: rebase the WHOLE path (later keys must not keep the
             # pre-placement pose — usability R1 measured the drift)
-            n, chans = _rebase_location_keys(obj, (0.0, 0.0, dz))
+            n, chans = _rebase_location_keys(obj, d_local)
             report["keyframes_rebased"] = n
             report["rebased_channels"] = chans
         else:
@@ -878,13 +933,20 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
     inset: shrink footprint to points >= inset meters inside its own bbox
     (seat lips/edges).
     keep_xy: True (default) — solves Z ONLY, object stays at its current
-    x/y. To land on a DIFFERENT support, move the object over it first
-    (set_location) or pass keep_xy=False to also move to the support
-    height-field's centroid (usually wrong for scenes with several
-    supports — prefer set_location first; usability round-1/U2).
+    x/y. keep_xy=False is REFUSED (F2B-4): the docstring promised a move
+    to the support height-field's centroid but the code never implemented
+    it — it was accepted, echoed in the report, and returned ok=True for
+    an unachieved state. To land on a DIFFERENT support, move the object
+    over it first (move_to / set_location), then place_on.
     override: None | 'keyframe' | 'ignore' (see _guard_anim).
     Returns placement report (JSON-safe) with post-solve contact audit
     against every support."""
+    if keep_xy is not True:
+        raise RuntimeError(
+            "place_on: keep_xy=False is refused (F2B-4: accepted-but-"
+            "never-implemented — it returned ok=True for an unachieved "
+            "state). Move the object over the support first with move_to "
+            "or set_location, then place_on with the default keep_xy.")
     t0 = time.time()
     report = {"op": "place_on", "obj": obj.name,
               "supports": [s.name for s in supports],
@@ -946,9 +1008,9 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
                 f"place_on: empty footprint for '{obj.name}' "
                 f"(footprint={footprint}, inset={inset}). Try footprint="
                 f"'all' or 'grid', or inset=0.")
-        report["footprint_fallback"] = footprint == 'bottom' and any(
-            world_normal(obj, v.normal).z >= -0.3 for v in
-            obj.data.vertices) is False
+        report["footprint_fallback"] = footprint == 'bottom' and not any(
+            world_normal(obj, v.normal).z < -0.3 for v in
+            obj.data.vertices)
         pts_xy = [(p.x, p.y) for p in pts]
         z_ref = min(p.z for p in pts)
         footprint_pts = pts
@@ -1120,7 +1182,7 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
                                      force=force))
         except Exception as e:  # noqa: BLE001
             post.append({"a": obj.name, "b": s.name, "state": "ERROR",
-                         "error": repr(e)})
+                         "error": repr(e), "severity": "fail"})
     report["post_contact"] = post
     report["ok"] = all(p.get("severity") != "fail" for p in post)
     report["timings_ms"] = round((time.time() - t0) * 1000, 1)
@@ -1134,13 +1196,27 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
     along -Y, empty +Z is up).
 
     reference: 'bottom' — obj's bbox bottom-CENTER lands at the anchor
-    (plus offset); 'origin' — obj's origin lands at the anchor.
+    (plus offset); 'origin' — obj's origin lands at the anchor; 'centroid'
+    — the vertex centroid lands at the anchor (non-mesh objects fall back
+    to origin, reported). Any other token is REFUSED (F2B-6: unknown
+    tokens used to fall through to origin-anchoring while the report
+    echoed the requested token back).
     offset: (dx, dy, dz) interpreted in the EMPTY's local space.
     seat_mesh: optional mesh object to post-audit against (e.g. cushion).
-    Returns placement report with post_contact when seat_mesh given."""
+    Returns placement report with post_contact when seat_mesh given.
+
+    F2B-8: all writes are composed in WORLD space via matrix_world (the
+    move_to pattern). The old per-component `obj.location += delta` and
+    the bare `rotation_euler =` write are PARENT/BASIS-space — a rotated
+    or scaled parent silently redirected the seating; the keyframe rebase
+    gets the exact BASIS delta (fcurves are basis-space)."""
     t0 = time.time()
     report = {"op": "seat_at", "obj": obj.name, "seat": seat_empty.name,
               "reference": reference}
+    if reference not in ('bottom', 'origin', 'centroid'):
+        raise RuntimeError(
+            f"seat_at: unknown reference '{reference}' — valid tokens: "
+            f"'bottom' (bbox bottom-center), 'origin', 'centroid'")
     _origin_centroid_warn(obj, report)
     anim = _guard_anim(obj, override)
     if anim:
@@ -1152,10 +1228,15 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
     report["pre_bbox_min_m"] = [round(v, 4) for v in pre_bbox[0]]
     report["pre_bbox_max_m"] = [round(v, 4) for v in pre_bbox[1]]
 
+    _basis_before = obj.matrix_basis.translation.copy()
     seat_mw = seat_empty.matrix_world.copy()
     target_loc = seat_mw.translation.copy()
     if align:
-        obj.rotation_euler = seat_mw.to_euler()
+        # world-rotation premultiply: orientation result is identical to
+        # the old basis write, but parent rotation/scale no longer leaks
+        # in; the anchor translation below then re-positions the object.
+        R4 = seat_mw.to_euler().to_matrix().to_4x4()
+        obj.matrix_world = R4 @ obj.matrix_world
         bpy.context.view_layer.update()
     if offset:
         target_loc = seat_mw @ Vector(offset)
@@ -1163,12 +1244,25 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
         mn, mx = _aabb(obj)
         anchor_obj = Vector(((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mn.z))
         delta = target_loc - anchor_obj
-        obj.location.x += delta.x
-        obj.location.y += delta.y
-        obj.location.z += delta.z
-    else:
+    elif reference == 'centroid':
+        vs = obj.data.vertices if getattr(obj, 'data', None) is not None else None
+        if vs is None:
+            report["reference_fallback"] = (
+                "centroid requested on non-mesh object — used origin")
+            ref_pt = obj.matrix_world.translation.copy()
+        else:
+            step = max(1, len(vs) // 500)
+            cx = cy = cz = 0.0
+            m = 0
+            mw = obj.matrix_world
+            for i in range(0, len(vs), step):
+                w = mw @ vs[i].co
+                cx += w.x; cy += w.y; cz += w.z; m += 1
+            ref_pt = Vector((cx / m, cy / m, cz / m))
+        delta = target_loc - ref_pt
+    else:  # 'origin'
         delta = target_loc - obj.matrix_world.translation
-        obj.location += delta
+    obj.matrix_world = Matrix.Translation(delta) @ obj.matrix_world
     report["applied_translation_m"] = [round(v, 5) for v in delta]
     bpy.context.view_layer.update()
     post_bbox = _aabb(obj)
@@ -1183,7 +1277,10 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
     if override == "keyframe":
         ad = getattr(obj, "animation_data", None)
         if ad is not None and ad.action is not None:
-            n, chans = _rebase_location_keys(obj, delta)
+            # F2B-8: the fcurves live in BASIS space — rebase by the exact
+            # basis translation change, not the world delta.
+            d_local = obj.matrix_basis.translation - _basis_before
+            n, chans = _rebase_location_keys(obj, d_local)
             report["keyframes_rebased"] = n
             report["rebased_channels"] = chans
         else:

@@ -42,6 +42,7 @@ import tempfile
 from typing import List, Tuple
 
 import bpy
+from mathutils import Vector
 from blender_kit import script_argv
 
 
@@ -66,6 +67,13 @@ VIEW_ANGLES = {
 
 def _compute_scene_center() -> Tuple[float, float, float]:
     """Compute the bounding-box center of all mesh objects in the scene."""
+    # F2A-7: callers that built/animated the scene IN-PROCESS (the vc
+    # fresh-build path) hand us stale matrix_world caches — the kit's own
+    # stale-matrix law (look.py does frame_set + double update before it
+    # reads bounds). update() twice: once flushes the depsgraph, once
+    # re-copies the evaluated matrices into the RNA caches.
+    bpy.context.view_layer.update()
+    bpy.context.view_layer.update()
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH']
     if not meshes:
         return (0.0, 0.0, 0.0)
@@ -82,6 +90,14 @@ def _add_temp_camera(name: str, location: Tuple[float, float, float],
     """Add a temp camera at `location` pointing at `target` via Track To constraint."""
     cam_data = bpy.data.cameras.new(name=f"{name}_data")
     cam_data.lens = lens
+    # F2A-3: factory clip planes are 0.1 m / 100 m. The closeup path places
+    # the camera at ~2x the subject diagonal — subjects with a diagonal of
+    # a few cm put their near half BEHIND the 0.1 m near plane, which cuts
+    # the geometry open SILENTLY (exit 0, healthy-looking render). Scale
+    # both planes from the actual camera-to-target distance.
+    dist = (Vector(location) - Vector(target)).length
+    cam_data.clip_start = max(0.001, 0.02 * dist)
+    cam_data.clip_end = max(100.0, 3.0 * dist)
     cam = bpy.data.objects.new(name, cam_data)
     bpy.context.collection.objects.link(cam)
     cam.location = location
@@ -132,6 +148,60 @@ def _cleanup_temp_camera(cam, target_empty):
 # ---------------------------------------------------------------------------
 # Render one angle
 # ---------------------------------------------------------------------------
+
+def _marker_camera_sweep(scene):
+    """F-TD3 (the ledger's last silent-wrong-render class): bpy.ops.render.render
+    honors the camera bound to a timeline MARKER (the marker whose frame spans
+    the current frame) OVER scene.camera. Film scenes (tdawn/tferry/tgreen)
+    bind every shot cam to a marker — so every multi-angle look panel silently
+    rendered the MARKER's shot camera with healthy headers + exit 0 (QA#11:
+    all four panels mean-abs-diff 0.002 = identical images).
+
+    The fix: unbind every camera-bound marker for the duration of ONE render
+    and restore them after. Unbind (m.camera = None) rather than delete:
+    marker names/frames/sub-frame state survive exactly, and re-creating
+    markers can rename duplicates (name.001 drift). The restore callable is
+    idempotent and exception-safe; render_angle calls it in finally.
+    """
+    unbound = []
+    for m in scene.timeline_markers:
+        if m.camera is not None:
+            unbound.append((m, m.camera))
+            m.camera = None
+
+    def _restore():
+        for m, cam in unbound:
+            try:
+                _ = m.name          # ReferenceError if the marker RNA is gone
+            except ReferenceError:
+                continue
+            m.camera = cam
+
+    return _restore
+
+
+def _validate_png(path: str) -> None:
+    """F2A-2: the only guard a render write used to have was os.path.exists.
+    A created-but-empty/truncated PNG (ENOSPC, CANCELLED op) then flowed
+    into contact sheets and readiness headers as a healthy image (exit 0).
+    Verify the signature, not just the existence."""
+    try:
+        size = os.path.getsize(path)
+    except OSError as e:
+        raise RuntimeError(f"Render output missing at {path}: {e}")
+    if size == 0:
+        raise RuntimeError(
+            f"Render wrote a 0-byte PNG at {path} — the render op failed "
+            f"silently (disk full / shader crash / cancelled op). Not a "
+            f"usable image; failing loudly instead of feeding the eye "
+            f"an empty frame.")
+    with open(path, "rb") as f:
+        magic = f.read(8)
+    if magic != b"\x89PNG\r\n\x1a\n":
+        raise RuntimeError(
+            f"Render output at {path} ({size} bytes) is not a valid PNG "
+            f"(bad magic {magic!r}) — truncated or foreign file.")
+
 
 def render_angle(angle_label: str, out_path: str, *,
                  engine: str = "workbench",
@@ -225,19 +295,28 @@ def render_angle(angle_label: str, out_path: str, *,
     scene.render.image_settings.color_mode = 'RGB'
     scene.render.filepath = out_path
 
-    # Temporarily swap the scene's active camera
+    # Temporarily swap the scene's active camera. F-TD3: ALSO sweep the
+    # camera-bound timeline markers — bpy.ops.render.render prefers a
+    # camera-bound marker over scene.camera, so on every film scene the
+    # marker's shot cam hijacked this panel.
     orig_camera = scene.camera
+    restore_markers = _marker_camera_sweep(scene)
     scene.camera = cam
 
     try:
         bpy.ops.render.render(write_still=True)
     finally:
         scene.camera = orig_camera
+        try:
+            restore_markers()
+        except Exception:  # noqa: BLE001 — restore must never mask the render error
+            pass
         if cleanup:
             cleanup()
 
     if not os.path.exists(out_path):
         raise RuntimeError(f"Render failed silently — no output at {out_path}")
+    _validate_png(out_path)
     _warn_if_clipped(out_path, engine)
     return out_path
 

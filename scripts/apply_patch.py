@@ -92,6 +92,26 @@ from mathutils import Matrix, Vector
 from blender_kit import script_argv, clear_scene
 
 
+def _finite_check(op, key, val):
+    """F2B-5: JSON documents happily carry NaN/Infinity (python's json
+    accepts them by default) and a silent NaN location poisons the scene,
+    every downstream audit, and every render — with exit 0. Refuse at the
+    param layer."""
+    def _bad(v):
+        if isinstance(v, bool):
+            return False
+        if isinstance(v, float):
+            return not math.isfinite(v)
+        return False
+    bad = _bad(val) if not isinstance(val, (list, tuple)) else any(
+        _bad(x) for x in val)
+    if bad:
+        raise RuntimeError(
+            f"op '{op}' key '{key}' contains NaN/Infinity — a non-finite "
+            f"transform silently corrupts the scene (audits and renders "
+            f"keep 'passing' on garbage). Fix the patch value.")
+
+
 def _require(mut, key, op, *, expected_type=None, expected_len=None):
     """Extract a required key from a mutation dict, with a clean error message.
 
@@ -106,6 +126,7 @@ def _require(mut, key, op, *, expected_type=None, expected_len=None):
         raise RuntimeError(f"op '{op}' key '{key}' must be {expected_type.__name__}, got {type(val).__name__}")
     if expected_len and isinstance(val, (list, tuple)) and len(val) != expected_len:
         raise RuntimeError(f"op '{op}' key '{key}' must have {expected_len} elements, got {len(val)}")
+    _finite_check(op, key, val)
     return val
 
 
@@ -154,7 +175,7 @@ def _apply_set_material_color(obj, params):
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
     if bsdf is None:
         raise RuntimeError(f"No Principled BSDF in {mat.name}")
-    color = params["color"]
+    color = _require(params, "color", "set_material_color")
     if len(color) == 3:
         color = (*color, 1.0)
     bsdf.inputs["Base Color"].default_value = color
@@ -163,15 +184,31 @@ def _apply_set_material_color(obj, params):
 
 
 def _apply_set_material_roughness(obj, params):
+    # F2B-13: mirror set_material_color's guards (the sibling used to
+    # raise raw AttributeError on non-mesh / use_nodes=False objects)
+    if obj.type != 'MESH' or not obj.data.materials:
+        raise RuntimeError(f"Object {obj.name} has no materials to modify")
     mat = obj.data.materials[0]
+    from blender_kit import ensure_use_nodes
+    ensure_use_nodes(mat)
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
-    bsdf.inputs["Roughness"].default_value = params["roughness"]
+    if bsdf is None:
+        raise RuntimeError(f"No Principled BSDF in {mat.name}")
+    rough = _require(params, "roughness", "set_material_roughness")
+    bsdf.inputs["Roughness"].default_value = max(0.0, min(1.0, float(rough)))
 
 
 def _apply_set_material_metallic(obj, params):
+    if obj.type != 'MESH' or not obj.data.materials:
+        raise RuntimeError(f"Object {obj.name} has no materials to modify")
     mat = obj.data.materials[0]
+    from blender_kit import ensure_use_nodes
+    ensure_use_nodes(mat)
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
-    bsdf.inputs["Metallic"].default_value = params["metallic"]
+    if bsdf is None:
+        raise RuntimeError(f"No Principled BSDF in {mat.name}")
+    metal = _require(params, "metallic", "set_material_metallic")
+    bsdf.inputs["Metallic"].default_value = max(0.0, min(1.0, float(metal)))
 
 
 def _apply_delete_object(obj, params):
@@ -264,7 +301,12 @@ def _apply_render_viewport(obj, params):
     else:
         target = _compute_scene_center()
     lens = params.get("lens", 50)
-    custom_loc = params.get("custom_location")
+    # F2B-1 (P0): PARAM_DOCS documented `custom_loc` while the handler read
+    # only `custom_location` — the documented spelling was SILENTLY DROPPED
+    # (allowed-keys warning can't catch it: custom_loc is not a typo of
+    # anything), so angle='custom' demanded a nonexistent CLI flag instead.
+    # Accept both spellings; the docs keep canonical custom_location.
+    custom_loc = params.get("custom_location", params.get("custom_loc"))
     render_angle(angle, out, engine=engine, samples=samples,
                  width=width, height=height, target=target, lens=lens,
                  custom_location=custom_loc)
@@ -282,7 +324,7 @@ def _apply_render_viewport(obj, params):
 def _apply_set_light_energy(obj, params):
     if obj.type != 'LIGHT':
         raise RuntimeError(f"{obj.name} is not a light")
-    obj.data.energy = params["energy"]
+    obj.data.energy = _require(params, "energy", "set_light_energy")
 
 
 def _apply_set_light_color(obj, params):
@@ -301,12 +343,12 @@ def _apply_set_world_strength(obj, params):
     bg = scene.world.node_tree.nodes.get("Background")
     if bg is None:
         raise RuntimeError("World has no Background node")
-    bg.inputs["Strength"].default_value = params["strength"]
+    bg.inputs["Strength"].default_value = _require(params, "strength", "set_world_strength")
 
 
 def _apply_set_exposure(obj, params):
     """Set the scene's render exposure (in EV stops). obj is None."""
-    bpy.context.scene.view_settings.exposure = params["exposure"]
+    bpy.context.scene.view_settings.exposure = _require(params, "exposure", "set_exposure")
 
 
 
