@@ -209,8 +209,8 @@ cp viewer/index.html output/my_scene/
     sfx-stream conformance is gate 15; a BOARD whose every entry fails
     to decode is rejected by gate 4 (partial boards keep their NOTEs).
 (c) Marker NAMES are unconstrained (SHOT_* is fine) — the CAM_ contract
-    lives on the CAMERA OBJECT name (exporter:1117 — the marker-bound
-    camera must startswith CAM_).
+    lives on the CAMERA OBJECT name (exporter:1151-1153 — the marker-bound
+    camera must startswith CAM_; verified at tip, session-17).
 (d) manifest_diff.py before.json after.json for before/after
     look_manifest.json diffs; `--expect-clean` exits 1 on ANY
     difference (verify delegated work by DIFF, not by trust).

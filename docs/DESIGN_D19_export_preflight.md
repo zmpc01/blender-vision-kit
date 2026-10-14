@@ -1,5 +1,15 @@
-# D19 — EXPORT PREFLIGHT + t10 REGRESSION SUITE (design REV-2, session-16)
+# D19 — EXPORT PREFLIGHT + t10 REGRESSION SUITE (design REV-3, session-17)
 
+> REV-3 (session-17, wave-1 self-audit F2C-3/4/5): (1) S3's exact
+> CAM_<sid>-row-missing demoted from REJECT to WARN — the exporter
+> treats cam specs as an optional merge (exporter:1151-1159) and gate
+> 11 skips static cams, so the spec was stricter than the thing it
+> guards; S3 now REJECTS only when the shot's camera OBJECT is also
+> missing from the scene. (2) Gate-15 wording: fps OPTIONAL in the
+> shipped sfx-file check (5-a P2-3 was already the code's behavior).
+> (3) Vacuous pass is loud: a module with no SHOTS/BOARD/CAMS gets a
+> WARN + a coverage count in summary/JSON. Line anchors re-verified
+> against tip (F2C-6, verified by grep, never from memory).
 > REV-2: incorporates critique round 2-a (ADOPT-WITH-CHANGES, 7 blocking
 > fixes — all verified against exporter code). Status: FINAL for
 > implementation. Scope doctrine: KIT-QUALITY lane — no scene-module work.
@@ -83,16 +93,19 @@ Without calling build_scene:
   unknowns) against `build_sfx.PATCHES` — the escape film's synth
   vocab; film-lane markers legitimately fall outside it, so unknown
   names are never rejections. If the module ships a JSON path instead,
-  validate the file (`{fps, events}` schema — fps required: both real
-  producers write it; make it contract, not accident).
+  validate the file (`{fps?, events}` schema — REV-3: fps is OPTIONAL in
+  the shipped gate (5-a P2-3); `name|kind` + integer `frame` are the
+  required core, and fps AGREEMENT is checked only when fps is present —
+  both real producers write it, but a missing fps no longer rejects).
 
 **Phase B (build, flag `--skip-build`):** fresh empty blend →
 `mod.build_scene()` →
 - **B1 ctx**: dict; `ctx.get("scene")` or bpy.context.scene has ≥1 object.
 - **B2 fps**: `scene.render.fps == module FPS constant` (when declared);
-  `fps_base == 1.0` (exporter:1176 casts int(fps), ignores fps_base —
-  verified zero fps_base references).
-- **B3 markers** (mirror the exporter EXACTLY, 1123-1129): for each
+  `fps_base == 1.0` (exporter:1205 casts int(fps), ignores fps_base —
+  verified zero fps_base references; REV-3 re-anchor).
+- **B3 markers** (mirror the exporter EXACTLY, 1142-1153 — REV-3
+  re-anchor; `_marker_bindings` def at 109-112): for each
   SHOTS row, a timeline marker exists at f0, `marker.camera` is set,
   and `marker.camera.name.startswith("CAM_")`. Marker NAMES are
   unconstrained (tferry names them SHOT_* — only the CAMERA name is
