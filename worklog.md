@@ -3935,4 +3935,3 @@ Work Log:
 
 Stage Summary:
 - Round plan: K1 composed-motion kit fix FIRST (the tform enabler) → tfog completion lane (scene→flow→cams→ladder→stills→export→stage) → tform full build (contract→bake→scene→stills→export→stage) → review waves → wrap. 50+ sub-agent orchestration target.
->>>>>>> d3ec5e6 (session-19 bootstrap: context restored (tfog chain-green + tform world-only inherited); round plan = K1 fix + both films to staged)
