@@ -303,6 +303,18 @@ def build_world(scene):
               mat=mats["bin"], name=f"bin_{bi}")
     _box("kiosk", 2.6, 2.0, 2.6, (26.0, -2.0, 1.3), mats["kiosk"])
 
+    # --- the W exit stairs (the waiters' west_exit destination) ---------
+    # Descending stair block + side walls at the W end, x -35..-32,
+    # y -1.6..1.6 (OUTSIDE the walkable rect -- no sim blocked needed;
+    # agents ghost at the dest before the edge).
+    for si in range(6):
+        _box(f"wexit_stair_{si + 1}", 0.5, 3.2, 0.9 - si * 0.15,
+             (-32.25 - si * 0.5, 0.0, (0.9 - si * 0.15) / 2 - 0.9),
+             mats["concrete"])
+    _box("wexit_frame_l", 0.4, 0.25, 2.4, (-32.1, -1.7, 0.3), mats["steel"])
+    _box("wexit_frame_r", 0.4, 0.25, 2.4, (-32.1, 1.7, 0.3), mats["steel"])
+    _box("wexit_frame_t", 0.4, 3.65, 0.25, (-32.1, 0.0, 1.4), mats["steel"])
+
     # --- signal gantry over the N track (x=-34) --------------------------
     for tag, gy in (("w", -13.5), ("e", -3.5)):
         _box(f"gantry_post_{tag}", 0.3, 0.3, 5.4, (-34.0, gy, 1.8),
