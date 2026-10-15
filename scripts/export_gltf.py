@@ -62,7 +62,21 @@ def main():
         # Build & animate
         ctx = mod.build_scene()
         if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=args.start, n_frames=args.frames)
+            # s19-A5: the 4th call site of the F2B-24 bare-animate family —
+            # a bare `def animate(ctx)` module (blessed by the preflight's
+            # B6 check) TypeError'd here raw. Same bind-split as
+            # apply_patch._animate_scene_module / validate_scene /
+            # export_usd: bind in try, bare fallback in except, the real
+            # call in else (an in-body TypeError still propagates).
+            import inspect as _inspect
+            try:
+                _inspect.signature(mod.animate).bind(
+                    ctx, start_frame=args.start, n_frames=args.frames)
+            except TypeError:
+                mod.animate(ctx)
+            else:
+                mod.animate(ctx, start_frame=args.start,
+                            n_frames=args.frames)
 
     # Export
     out_path = export_gltf(args, out_path=args.output)

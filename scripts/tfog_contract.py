@@ -77,7 +77,11 @@ DEST_COHORTS = {
 DEST_QUEUE = {
     "id": "door_threshold",
     "point": (0.0, 3.5),
-    "capacity": ((-1.2, 2.9), (1.2, 3.9)),
+    # s19-B3: the south edge moved 2.9 -> 3.36 — the old box CONTAINED
+    # lamp2's blocked square ((-0.14,3.06),(0.14,3.34)), so boarding
+    # ghosts materialized inside the post. 3.36 = the lamp pad's north
+    # edge + 2cm; the threshold point (0,3.5) is unaffected.
+    "capacity": ((-1.2, 3.36), (1.2, 3.9)),
 }
 
 # --- the population plan (cache N = 126; ingest order = the cap law) ---
@@ -115,7 +119,11 @@ QUEUE = {
     "admission_capacity": 1,
     # 9 slots ALONG the S face (y=3.3 on-platform): head nearest the
     # door, tail strung W. Raw meters -- authored on the platform.
-    "slots": tuple((1.8 - 0.9 * i, 3.3) for i in range(9)),
+    # s19-B3: the row start moved 1.8 -> 2.25 — the old row planted
+    # slot i=2 at x=0.0 INSIDE lamp2's blocked square ((-0.14,3.06),
+    # (0.14,3.34)); 2.25 mod 0.9 puts the nearest slot at |x|=0.45,
+    # clear of the post (0.14 pad + ~0.3 agent radius = 0.44).
+    "slots": tuple((2.25 - 0.9 * i, 3.3) for i in range(9)),
 }
 
 # --- the DANGER field (the blast beat; base-bytes visible) -------------

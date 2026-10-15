@@ -127,18 +127,45 @@ def _nonneg_mm(op, params, keys, *, positive=()):
         v = params.get(k)
         if v is None:
             continue
-        if isinstance(v, bool) or not isinstance(v, (int, float)) \
-                or not math.isfinite(float(v)):
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
             raise RuntimeError(
                 f"op '{op}' key '{k}' must be a finite number in mm "
                 f"(got {v!r}) — NaN/Infinity makes every verdict "
                 f"comparison False and false-PASSES the gate")
-        if k in positive and float(v) <= 0:
+        try:
+            _fv = float(v)
+        except OverflowError:
+            # s19-A7: a huge int literal overflows float() — it is not a
+            # finite mm value; route it into the same refusal.
+            _fv = float('inf')
+        if not math.isfinite(_fv):
+            raise RuntimeError(
+                f"op '{op}' key '{k}' must be a finite number in mm "
+                f"(got {v!r}) — NaN/Infinity makes every verdict "
+                f"comparison False and false-PASSES the gate")
+        if k in positive and _fv <= 0:
             raise RuntimeError(
                 f"op '{op}' key '{k}' must be > 0 (got {v})")
-        if k not in positive and float(v) < 0:
+        if k not in positive and _fv < 0:
             raise RuntimeError(
                 f"op '{op}' key '{k}' must be >= 0 (got {v})")
+
+
+def _frames_guard(op, params):
+    """s19-E10: frames<=0 made _sim's range(2, frames+2) EMPTY — a
+    zero-frame 'verification' that verdicts the SPAWN pose (every check
+    reads a body that never moved); a NaN died as a raw TypeError in
+    range(). Require a sane integer sim length."""
+    f = params.get("frames")
+    if f is None:
+        return
+    if isinstance(f, bool) or not isinstance(f, (int, float)) \
+            or not math.isfinite(float(f)) or float(f) != int(f) \
+            or int(f) < 10:
+        raise RuntimeError(
+            f"op '{op}' key 'frames' must be an integer >= 10 (got {f!r}) "
+            f"— frames<=0 ran a zero-frame sim and verdicted the spawn "
+            f"pose")
 
 
 def _require(mut, key, op, *, expected_type=None, expected_len=None):
@@ -178,7 +205,23 @@ def _apply_set_location(obj, params):
     if "origin_offset_warning" in rep:
         print("[apply_patch] set_location WARNING:", rep["origin_offset_warning"])
     loc = _require(params, "location", "set_location", expected_type=list, expected_len=3)
+    _finite_check("set_location", "location", loc)
+    # s19-E4: the raw set_* ops were the C1-class siblings with NO
+    # animation guard — a keyed object got a silent hybrid pose (the
+    # write clobbered by its own keys at the next frame_set/render).
+    # Same contract as the solvers: refuse by default, override='keyframe'
+    # rebases the whole path by the ACTUAL world delta, override='ignore'
+    # writes anyway (s19-E3 validates the token).
+    override = params.get("override")
+    chans = _PL._guard_anim(obj, override)
+    _world_before = obj.matrix_world.translation.copy()
     obj.location = tuple(loc)
+    if chans and override == "keyframe":
+        bpy.context.view_layer.update()
+        n, names = _PL._rebase_location_keys(
+            obj, obj.matrix_world.translation - _world_before)
+        print(f"[apply_patch] set_location: rebased {n} location "
+              f"keyframes ({', '.join(names)})")
 
 
 def _apply_set_rotation(obj, params):
@@ -187,11 +230,65 @@ def _apply_set_rotation(obj, params):
     if "origin_offset_warning" in rep:
         print("[apply_patch] set_rotation WARNING:", rep["origin_offset_warning"])
     rot_deg = _require(params, "rotation_deg", "set_rotation", expected_type=list, expected_len=3)
-    obj.rotation_euler = tuple(math.radians(v) for v in rot_deg)
+    _finite_check("set_rotation", "rotation_deg", rot_deg)
+    # s19-E4: same animation-guard contract as the rotation-writing
+    # solvers (C1 class) — set_rotation was the unguarded sibling.
+    override = params.get("override")
+    rot_chans = _PL._guard_rotation_anim(obj, override, "set_rotation")
+    # s19-E2: write the channel the object's rotation_mode actually USES
+    # — rotation_euler is stored-but-unused on QUATERNION-mode objects
+    # (every glTF import), so the op printed applied and exited 0 while
+    # the scene kept the old orientation (the s18-C12 prop_carry twin).
+    _q_before = obj.matrix_world.to_quaternion().copy()
+    if obj.rotation_mode == 'QUATERNION':
+        from mathutils import Euler
+        obj.rotation_quaternion = Euler(
+            tuple(math.radians(v) for v in rot_deg), 'XYZ').to_quaternion()
+    elif obj.rotation_mode == 'AXIS_ANGLE':
+        raise RuntimeError(
+            f"set_rotation: '{obj.name}' uses rotation_mode='AXIS_ANGLE' "
+            f"— switch the object to EULER or QUATERNION, or use the "
+            f"move_to/seat_at solvers")
+    else:
+        obj.rotation_euler = tuple(math.radians(v) for v in rot_deg)
+    if rot_chans:
+        # the guard only lets quaternion-mode active-action keys through
+        # under override='keyframe' — rebase them by the ACTUAL world
+        # delta the write produced (the align/C1 pattern).
+        bpy.context.view_layer.update()
+        q_off = obj.matrix_world.to_quaternion() @ _q_before.inverted()
+        n, names = _PL._rebase_rotation_keys(
+            obj, _PL._world_rotation_delta_to_basis(obj, q_off))
+        print(f"[apply_patch] set_rotation: rebased {n} rotation "
+              f"keyframes ({', '.join(names)})")
 
 
 def _apply_set_scale(obj, params):
     scale = _require(params, "scale", "set_scale", expected_type=list, expected_len=3)
+    _finite_check("set_scale", "scale", scale)
+    # s19-E4: scale keys clobber the write at the next frame_set like any
+    # other transform channel (the C2 physics lesson). Scale rebasing is
+    # MULTIPLICATIVE (the additive location rebase does not apply), so
+    # 'keyframe' is refused — bake or clear the keys, or ignore loudly.
+    chans = _PL._anim_channels(obj, ("scale",))
+    override = params.get("override")
+    if chans:
+        if override is None:
+            raise RuntimeError(
+                f"'{obj.name}' has scale animation ({', '.join(chans[:4])}). "
+                f"A raw scale write would be clobbered by its own keys at "
+                f"the next frame_set (hybrid pose). Pass override='ignore' "
+                f"to write anyway at your own risk, or bake/clear the "
+                f"scale keys first (override='keyframe' is refused: scale "
+                f"rebasing is multiplicative).")
+        if override == "keyframe":
+            raise RuntimeError(
+                f"set_scale override='keyframe' is not supported — scale "
+                f"rebasing is multiplicative and the additive keyframe "
+                f"rebase does not apply. Bake or clear the scale keys.")
+        print(f"[apply_patch] set_scale WARNING: overriding scale "
+              f"animation ({', '.join(chans[:4])}) — keys will restore "
+              f"the old scale at the next frame_set")
     obj.scale = tuple(scale)
 
 
@@ -292,12 +389,35 @@ def _apply_duplicate_object(obj, params):
         new_obj.data = obj.data.copy()
     bpy.context.collection.objects.link(new_obj)
     new_obj.name = new_id
+    # s19-E5: obj.copy() SHARES the source's action (Blender duplicates
+    # objects, not animation data) — with transform params present, the
+    # writes below are clobbered by the shared keys at the very next
+    # depsgraph eval (possibly within the same patch chain). Name the
+    # trap instead of failing silently.
+    if new_obj.animation_data is not None \
+            and new_obj.animation_data.action is not None \
+            and any(k in params for k in
+                    ("location", "rotation_deg", "scale")):
+        print(f"[apply_patch] duplicate_object WARNING: '{new_id}' shares "
+              f"the source's action "
+              f"'{new_obj.animation_data.action.name}' — the transform "
+              f"params below WILL be clobbered by its keys at the next "
+              f"frame_set. Clear the copy's animation (animation_data_clear) "
+              f"or bake it if you need an independent pose.")
     if "location" in params:
         _finite_check("duplicate_object", "location", params["location"])
         new_obj.location = tuple(params["location"])
     if "rotation_deg" in params:
         _finite_check("duplicate_object", "rotation_deg", params["rotation_deg"])
-        new_obj.rotation_euler = tuple(math.radians(v) for v in params["rotation_deg"])
+        # s19-E2 twin: write the channel the copy's rotation_mode uses.
+        if new_obj.rotation_mode == 'QUATERNION':
+            from mathutils import Euler
+            new_obj.rotation_quaternion = Euler(
+                tuple(math.radians(v) for v in params["rotation_deg"]),
+                'XYZ').to_quaternion()
+        else:
+            new_obj.rotation_euler = tuple(
+                math.radians(v) for v in params["rotation_deg"])
     if "scale" in params:
         _finite_check("duplicate_object", "scale", params["scale"])
         new_obj.scale = tuple(params["scale"])
@@ -306,8 +426,12 @@ def _apply_duplicate_object(obj, params):
 def _apply_set_camera_location(obj, params):
     if obj.type != 'CAMERA':
         raise RuntimeError(f"{obj.name} is not a camera")
-    _finite_check("set_camera_location", "location", params["location"])
-    obj.location = tuple(params["location"])
+    # s19-E19: a scalar/string location died as a raw Blender TypeError —
+    # route it through the shape-checked path.
+    loc = _require(params, "location", "set_camera_location",
+                   expected_type=list, expected_len=3)
+    _finite_check("set_camera_location", "location", loc)
+    obj.location = tuple(loc)
 
 
 def _apply_set_camera_lens(obj, params):
@@ -332,12 +456,11 @@ def _apply_set_camera_dof(obj, params):
         raise RuntimeError(
             "set_camera_dof requires 'focus_distance' (m) and/or "
             "'aperture_fstop'")
-    dof = obj.data.dof
-    dof.use_dof = True
-    dof.focus_object = None  # distance-based focus, not object-based
+    # s19-A8: validate BEFORE the first write — a NaN-focus refusal used
+    # to leave use_dof enabled on the camera (partial mutation on an
+    # error path; the op family's own law is validate-then-write).
     if focus is not None:
         _finite_check("set_camera_dof", "focus_distance", focus)
-        dof.focus_distance = float(focus)
     if fstop is not None:
         _finite_check("set_camera_dof", "aperture_fstop", fstop)
         # wave-2b: fstop=0 makes the print's lens/(2*fstop) ZeroDivision
@@ -347,6 +470,12 @@ def _apply_set_camera_dof(obj, params):
                 f"op 'set_camera_dof' key 'aperture_fstop' must be > 0 "
                 f"(got {fstop}) — the aperture radius derives as "
                 f"lens/(2*fstop)")
+    dof = obj.data.dof
+    dof.use_dof = True
+    dof.focus_object = None  # distance-based focus, not object-based
+    if focus is not None:
+        dof.focus_distance = float(focus)
+    if fstop is not None:
         dof.aperture_fstop = float(fstop)
     print(f"[apply_patch] set_camera_dof: {obj.name} "
           f"focus_distance={dof.focus_distance:.6g} m, "
@@ -356,7 +485,13 @@ def _apply_set_camera_dof(obj, params):
 
 def _apply_set_frame(obj, params):
     # obj is None for this op
-    bpy.context.scene.frame_set(_require(params, "frame", "set_frame"))
+    _f = _require(params, "frame", "set_frame")
+    # s19-E19: a float/str frame died as a raw Blender TypeError.
+    if isinstance(_f, bool) or not isinstance(_f, (int, float)) \
+            or float(_f) != int(_f):
+        raise RuntimeError(
+            f"op 'set_frame' key 'frame' must be an integer (got {_f!r})")
+    bpy.context.scene.frame_set(int(_f))
 
 
 def _apply_render_viewport(obj, params):
@@ -375,7 +510,14 @@ def _apply_render_viewport(obj, params):
                        "BLENDER_WORKBENCH": "workbench", "CYCLES": "cycles",
                        "EEVEE": "eevee", "EEVEE_NEXT": "eevee",
                        "WORKBENCH": "workbench"}
-    engine = _ENGINE_ALIASES.get(str(engine).upper(), engine)
+    engine = _ENGINE_ALIASES.get(str(engine).upper())
+    if engine is None:
+        # s19-E20: an unknown token fell through and rendered the scene's
+        # CURRENT engine (accepted-but-unimplemented = the fail-open-lie
+        # law; normalize_engine_id's vocabulary, enforced here).
+        raise RuntimeError(
+            f"op 'render_viewport': unknown engine {params.get('engine')!r} "
+            f"— valid: workbench / eevee / cycles (any BLENDER_* spelling)")
     samples = params.get("samples", 1)
     width = params.get("width", 640)
     height = params.get("height", 480)
@@ -459,7 +601,17 @@ def _apply_set_light_energy(obj, params):
 def _apply_set_light_color(obj, params):
     if obj.type != 'LIGHT':
         raise RuntimeError(f"{obj.name} is not a light")
-    obj.data.color = tuple(_require(params, "color", "set_light_color"))
+    # s19-E19: any-shape values died as a raw Blender TypeError; clamp
+    # out-of-range channels with a note (0-255 RGB is the usual slip).
+    col = _require(params, "color", "set_light_color",
+                   expected_type=list, expected_len=3)
+    _finite_check("set_light_color", "color", col)
+    clamped = [min(1.0, max(0.0, float(c))) for c in col]
+    if clamped != [float(c) for c in col]:
+        print("[apply_patch] set_light_color WARNING: channel(s) outside "
+              f"0..1 clamped ({col} -> {clamped}) — 0-255 RGB is a unit "
+              f"slip")
+    obj.data.color = tuple(clamped)
 
 
 
@@ -708,8 +860,17 @@ def _apply_audit(obj, params):
     if scope_id and bpy.data.objects.get(scope_id) is None:
         raise RuntimeError(
             f"op 'audit': scope id '{scope_id}' not found in scene")
+    _sample = params.get("sample", "verts")
+    if _sample not in ("verts", "verts+edges", "bottom"):
+        # s19-E8: unknown tokens silently degraded to plain-vert sampling
+        # (surface_samples' else branch) — the gate could miss thin
+        # crossings while reporting the requested mode in the row.
+        raise RuntimeError(
+            f"op 'audit' key 'sample' must be one of verts / verts+edges / "
+            f"bottom (got {_sample!r}) — unknown tokens silently degrade "
+            f"to plain-vert sampling")
     rep = _PL.audit_scene(pairs=pairs, exclude=exclude,
-                          sample=params.get("sample", "verts"),
+                          sample=_sample,
                           contact_band_mm=band,
                           clearance_pad_mm=params.get("clearance_pad_mm", 100.0),
                           force=params.get("force", False))
@@ -801,6 +962,7 @@ def _apply_physics_settle(obj, params):
         raise RuntimeError("op 'physics_settle' key 'environment' must be a "
                            "list of names (a bare string would iterate "
                            "per-character)")
+    _frames_guard("physics_settle", params)
     rep = _PP.settle(objs=_resolve_objlist(raw_objs, "physics_settle"),
                      environment=_resolve_objlist(raw_env) or [],
                      frames=params.get("frames", 45),
@@ -833,6 +995,7 @@ def _apply_physics_place(obj, params):
     _nonneg_mm("physics_place", params, ("tol_mm", "pad_mm",
                                           "snap_cap_mm", "drop_mm"))
     target = _get_obj(params["id"], "physics_place")
+    _frames_guard("physics_place", params)
     rep = _PP.place(target,
                     drop_mm=params.get("drop_mm", 30.0),
                     frames=params.get("frames", 45),
@@ -876,6 +1039,7 @@ def _apply_physics_oracle(obj, params):
             raise RuntimeError(
                 f"op 'physics_oracle' key 'target_z' must be a finite "
                 f"number in meters (got {target_z!r})")
+    _frames_guard("physics_oracle", params)
     rep = _PP.oracle(target,
                      target_z=target_z,
                      target=xyz,
@@ -894,6 +1058,7 @@ def _apply_physics_oracle(obj, params):
 def _apply_physics_gate(obj, params):
     _nonneg_mm("physics_gate", params, ("tol_mm", "pad_mm",
                                          "audit_pad_mm"))
+    _frames_guard("physics_gate", params)
     rep = _PP.gate(tol_mm=params.get("tol_mm", 1.0),
                    frames=params.get("frames", 45),
                    apply="none",
@@ -931,7 +1096,20 @@ def _apply_seam_views(obj, params):
             "op 'seam_views' key 'res' must be [width, height] positive "
             f"integers (got {raw_res!r} — a bare string would become "
             f"per-character atoms)")
-    _nonneg_mm("seam_views", params, ("contact_band_mm", "fill_frac"))
+    _nonneg_mm("seam_views", params, ("contact_band_mm",))
+    _fill = params.get("fill_frac")
+    if _fill is not None:
+        # s19-A4: fill_frac=0 passed the >=0 gate and divided by zero
+        # MID-SHOOT (after pair_contact ran and the SeamCam existed); the
+        # old message also mislabeled it as mm. It is a framing fraction.
+        if isinstance(_fill, bool) or not isinstance(_fill, (int, float)) \
+                or not math.isfinite(float(_fill)) \
+                or not (0.0 < float(_fill) <= 1.0):
+            raise RuntimeError(
+                f"op 'seam_views' key 'fill_frac' must be a finite number "
+                f"in (0, 1] (got {_fill!r}) — it divides the framing "
+                f"distance, so 0 is a ZeroDivision and >1 or <0 is a "
+                f"framing lie")
     rep = _PL.seam_views(a, b, out_dir=params["out_dir"],
                          res=(int(raw_res[0]), int(raw_res[1])),
                          engine=params.get("engine", "workbench"),
@@ -955,7 +1133,23 @@ def _apply_heat_bake(obj, params):
             "op 'heat_bake' key 'others' entries must be object names "
             f"(strings), got {raw_others!r}")
     others = [_get_obj(n, "heat_bake") for n in raw_others]
+    if not others:
+        # s19-E11: an empty others list rendered a vacuous all-GRAY map
+        # and reported success (the place_on F2B-15 empty-refusal twin).
+        raise RuntimeError(
+            "op 'heat_bake' key 'others' is empty — a heat map with no "
+            "subjects is vacuous; name at least one object")
     _nonneg_mm("heat_bake", params, ("yellow_mm", "green_mm"))
+    _y = params.get("yellow_mm", 10.0)
+    _g = params.get("green_mm", 50.0)
+    if float(_y) >= float(_g):
+        # s19-A9: inverted bands silently ate every distance into YELLOW
+        # and left GREEN dead (the elif ordering), while the returned band
+        # spec printed the misleading numbers.
+        raise RuntimeError(
+            f"op 'heat_bake' requires yellow_mm < green_mm (got "
+            f"yellow={_y}, green={_g}) — inverted bands make every "
+            f"distance read yellow and the green band unreachable")
     rep = _PL.heat_bake(obj, others,
                         yellow_mm=params.get("yellow_mm", 10.0),
                         green_mm=params.get("green_mm", 50.0))
@@ -1119,14 +1313,23 @@ def _add_material(obj, obj_id, params):
 
 
 def _add_finalize(obj, obj_id, params, expect=None, tols=None):
-    """Shared tail: rename, data-name, material, self-verify, rotate."""
+    """Shared tail: self-verify, rename, data-name, material, rotate."""
+    got = None
+    if expect is not None:
+        # s19-E13: self-verify BEFORE the rename — a failed verify used to
+        # leave the lying primitive living under the REQUESTED id (the
+        # retry then hit the 'already exists' refusal, and --save-blend
+        # saved the half-baked object into the state carrier). Remove the
+        # object on failure so the scene is untouched.
+        try:
+            got = _add_selfverify(obj, expect, tols)
+        except Exception:
+            bpy.data.objects.remove(obj, do_unlink=True)
+            raise
     obj.name = obj_id
     if obj.data is not None:
         obj.data.name = obj_id  # readable .blend data names (cosmetic)
     _add_material(obj, obj_id, params)
-    got = None
-    if expect is not None:
-        got = _add_selfverify(obj, expect, tols)
     if params.get("rotation_deg") is not None:
         rot = _add_vec(params, "rotation_deg", 3)
         obj.rotation_euler = tuple(math.radians(v) for v in rot)
@@ -1456,10 +1659,10 @@ MUTATIONS = {
 # check). The tokenizer in _doc_keys splits ONLY on depth-0 commas, so
 # parenthesized/bracketed detail is safe.
 PARAM_DOCS = {
-    "set_location":       "id, location:[x,y,z]",
+    "set_location":       "id, location:[x,y,z], override?(keyframe=REBASE the path by the write's world delta|ignore)",
     "move_to":            "id, target:[x,y,z], reference?(bottom-center|centroid|origin), override?, output?",
-    "set_rotation":       "id, rotation_deg:[rx,ry,rz]",
-    "set_scale":          "id, scale:[sx,sy,sz]",
+    "set_rotation":       "id, rotation_deg:[rx,ry,rz] (writes the mode's real channel — QUATERNION included), override?(keyframe=REBASE quaternion-mode keys|refused-when-keyed)",
+    "set_scale":          "id, scale:[sx,sy,sz], override?(ignore only — keyframe refused: scale rebase is multiplicative)",
     "set_material_color": "id, color:[r,g,b(,a)]",
     "set_material_roughness": "id, roughness:float",
     "set_material_metallic":  "id, metallic:float",
@@ -1477,9 +1680,9 @@ PARAM_DOCS = {
     "place_on":           "id, supports:[names..] (name the TOPMOST surface!), clearance?, footprint?(bottom|all|grid), mode?(rest|sink|p25|p50|p75), grid_n?, inset?(meters), keep_xy?(true only — false refused, F2B-4), align_to_surface?, override?(keyframe=REBASE animation path), contact_band_mm?, output?",
     "seat_at":            "id, seat:anchor-empty-name, reference?(bottom|origin|centroid), offset?:[dx,dy,dz] (empty's local space), align?(bool), seat_mesh?, override?(keyframe=REBASE animation path), contact_band_mm?, output?",
     "snap_z":             "id, target_z:float, reference?(bottom|origin|centroid), override?, output?",
-    "heat_bake":          "id, others:[names..], yellow_mm?, green_mm?",
+    "heat_bake":          "id, others:[names..] (non-empty), yellow_mm?, green_mm? (must be > yellow_mm)",
     "audit":              "pairs?:['A,B',..], id?(scope report to this object), exclude?:[names], sample?(verts|verts+edges|bottom), contact_band_mm?, clearance_pad_mm?, force?(bool — audit skinned/animated pairs anyway), fail_on_penetration?(bool, default true), output?",
-    "seam_views":         "a:name, b:name, out_dir:path, res?:[w,h], engine?, contact_band_mm?, fill_frac?",
+    "seam_views":         "a:name, b:name, out_dir:path, res?:[w,h], engine?(workbench only — refused otherwise), contact_band_mm?, fill_frac?(0<d=1]",
     "clear_bvh_cache":    "-",
     "physics_settle":     "objs?:[names] (null=whole scene; [] refused — F2B-23), environment?:[names], frames?, apply?, repair_penetrations?(refuse|physics), tol_mm?, allow_bake?, allow_copy?, pad_mm?, snap?, snap_cap_mm?, output?",
     "physics_place":      "id, drop_mm?, frames?, snap?, snap_cap_mm?, apply?, tol_mm?, allow_bake?, allow_copy?, pad_mm?, output?",

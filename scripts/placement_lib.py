@@ -427,6 +427,12 @@ def pair_contact(a, b, *, sample='verts', cap=20000, contact_band_mm=0.1,
                  max_cross_pairs=512, force=False):
     """Full contact report for a pair of mesh objects. JSON-safe dict."""
     t0 = time.time()
+    # s19-E1: flush pending RNA writes BEFORE the AABB prefilter reads
+    # matrix_world — apply_patch's set_* ops write RNA only, so a
+    # [set_location, audit] chain branched the prefilter on the PRE-MOVE
+    # pose (moved-into-wall classified CLEAR and the gate false-PASSED;
+    # the F2B-21 scene_schema precedent, third site of the same class).
+    bpy.context.view_layer.update()
     band = contact_band_mm / 1000.0
     rep = {"a": a.name, "b": b.name, "sample": sample,
            "contact_band_mm": contact_band_mm}
@@ -508,6 +514,22 @@ def pair_contact(a, b, *, sample='verts', cap=20000, contact_band_mm=0.1,
 
     inside_test = "parity" if (parity_a or parity_b) else "sign"
 
+    # s19-E16: computed BEFORE the classification — whether the crossing
+    # test ran at all (overlap pairs beyond the cap skip it; a heavy
+    # interlock with zero contained verts would otherwise read as plain
+    # TOUCHING with no trace).
+    crossing_tested = len(pairs) <= max_cross_pairs
+    if not crossing_tested:
+        # s19-E16: the crossing test was SKIPPED (overlap pairs beyond the
+        # cap) — a heavy interlock with zero contained verts would read as
+        # plain TOUCHING below with no trace. Name the gap in the report
+        # so the consumer knows the verdict is UNTESTED for face-crossing,
+        # not proven.
+        rep["crossing_test_skipped"] = len(pairs)
+        if n_inside == 0:
+            print(f"[pair_contact] NOTE: {len(pairs)} overlap pairs exceed "
+                  f"the crossing-test cap ({max_cross_pairs}) — the "
+                  f"TOUCHING verdict does NOT rule out an interlock")
     if pairs and n_inside > 0:
         rep.update(state="PENETRATING",
                    penetration_mm=round(pen_max * 1000, 2),
@@ -528,7 +550,7 @@ def pair_contact(a, b, *, sample='verts', cap=20000, contact_band_mm=0.1,
         crossing = False
         crossing_depth = 0.0
         crossing_enters = False
-        if len(pairs) <= max_cross_pairs:
+        if crossing_tested:
             polys_a = _polys_world(a)
             polys_b = _polys_world(b)
             for ia, ib in pairs[:max_cross_pairs]:
@@ -668,6 +690,20 @@ def audit_scene(pairs=None, exclude=(), *, sample='verts',
 
     Returns JSON-safe dict with summary + per-pair reports."""
     t0 = time.time()
+    # s19-E1: same stale-depsgraph prefilter class as pair_contact —
+    # the AABB pair discovery must see post-patch poses.
+    bpy.context.view_layer.update()
+    _prefix_excluded = [o.name for o in bpy.context.scene.objects
+                        if o.type == 'MESH' and o.name not in exclude
+                        and o.name.startswith(("Cam", "Temp"))]
+    if _prefix_excluded:
+        # s19-E17: user meshes named Cam*/Temp* were silently unaudited —
+        # a mover named 'CamBox' skipped every pair with no trace.
+        print(f"[audit] NOTE: {len(_prefix_excluded)} mesh(es) skipped by "
+              f"the Cam*/Temp* sentinel-prefix rule: "
+              f"{_prefix_excluded[:6]}"
+              + (" ..." if len(_prefix_excluded) > 6 else "")
+              + " — rename them if they are real props")
     meshes = [o for o in bpy.context.scene.objects
               if o.type == 'MESH' and o.name not in exclude
               and not o.name.startswith(("Cam", "Temp"))]
@@ -790,6 +826,18 @@ def _transform_anim_channels(obj):
 
 
 def _guard_anim(obj, override):
+    # s19-E3: the override token was never validated — ANY junk value
+    # fell through to 'ignore' semantics (write anyway, keys win at the
+    # next frame_set), so override:"rebase" — the docs' own verb — was an
+    # accepted-but-unimplemented fail-open lie. The rotation guard
+    # (_guard_rotation_anim) always validated; this is its location twin.
+    if override is not None and override not in ("keyframe", "ignore"):
+        raise RuntimeError(
+            f"override={override!r} is not valid — valid values: None "
+            f"(refuse when the object is animated), 'keyframe' (rebase "
+            f"the whole path by the placement delta), 'ignore' (write "
+            f"anyway; the keys WILL restore the old pose at the next "
+            f"frame_set)")
     chans = _location_anim_channels(obj)
     if not chans:
         return None
@@ -881,6 +929,16 @@ def _rebase_location_keys(obj, delta):
             continue
         for kp in fc.keyframe_points:
             kp.co.y += d
+            # s19-E18: hand-tuned (FREE) handles must ride the same delta
+            # or the easing BETWEEN surviving keys corrupts after a rebase
+            # (auto-clamped handles recompute; FREE ones do not).
+            try:
+                if kp.handle_left_type == 'FREE':
+                    kp.handle_left.y += d
+                if kp.handle_right_type == 'FREE':
+                    kp.handle_right.y += d
+            except Exception:
+                pass
             n += 1
         touched.add(fc.array_index)
         try:
@@ -1351,7 +1409,19 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
             # DOWN-side at the sky; re-measure+solve then seats it inverted
             # and the contact check false-passes. Regression: T2 asserts
             # world +Z . normal > 0.9 after align.)
-            q = mean_n.to_track_quat('Z', 'Y')
+            q_target = mean_n.to_track_quat('Z', 'Y')
+            # s19-E9 (idempotence): compose the DELTA rotation from the
+            # object's CURRENT world +Z, not the absolute orientation —
+            # the absolute premultiply rotated the object AGAIN on every
+            # re-run (place_on was the only non-idempotent solver; a
+            # consumer re-running 'to be sure' left a tilted pose). A
+            # re-run now yields q == identity (a true no-op).
+            _cur_z = obj.matrix_world.to_quaternion() @ Vector((0, 0, 1))
+            q = q_target @ _cur_z.to_track_quat('Z', 'Y').inverted()
+            if q.angle < 1e-3:
+                report["align_skip_reason"] = (
+                    "current +Z already matches the surface normal — "
+                    "align delta is identity (idempotent re-run)")
             mn, mx = _aabb(obj)
             pivot = Vector(((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mn.z))
             R = q.to_matrix().to_4x4()
@@ -1460,25 +1530,31 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
         # leaving 3.8mm) — correct the residual into vertical units.
         _slope_rad = math.radians(report.get("slope_deg", 0.0))
         _corr = 1.0 / max(0.2, math.cos(_slope_rad))
-        clamp = max((max(good) - min(good)) * 5, 0.05,
-                    (pen or 0.0) * _corr, (gap or 0.0) * _corr)
-        # under-correct, never overshoot (code-review gate P1: near-vertical
-        # support faces inflate the cos correction up to 5x — capping the
-        # shift at the measured error guarantees a conservative result)
+        # s19-E12: the residual*_corr terms inside clamp made the whole
+        # correction DEAD — clamp >= residual*_corr always, so
+        # min(residual*_corr, clamp) collapsed to residual*_corr, and the
+        # further min against max(residual, band) collapsed THAT to the
+        # raw residual: the U5 cos-correction NEVER applied (the wedge
+        # air gap it exists to close persisted, ok=True). The cap now
+        # carries only the support's own height range — on slopes the
+        # shift legitimately exceeds the vertical residual (1/cos), and
+        # the post-solve audit still reports anything the correction
+        # could not close.
+        clamp = max((max(good) - min(good)) * 5, 0.05)
         if pen > band:
-            shift = min(pen * _corr, clamp, max(pen, band))
+            shift = min(pen * _corr, clamp)
             _apply_translation(obj, shift, override, report)
             report["refine"] = {"reason": "penetration",
                                 "shift_m": round(shift, 6)}
         elif gap is not None:
             residual = gap - clearance
             if residual > band:
-                shift = -min(residual * _corr, clamp, max(residual, band))
+                shift = -min(residual * _corr, clamp)
                 _apply_translation(obj, shift, override, report)
                 report["refine"] = {"reason": "gap above clearance",
                                     "shift_m": round(shift, 6)}
             elif residual < -band:
-                shift = min(-residual * _corr, clamp, max(-residual, band))
+                shift = min(-residual * _corr, clamp)
                 _apply_translation(obj, shift, override, report)
                 report["refine"] = {"reason": "gap below clearance",
                                     "shift_m": round(shift, 6)}
@@ -1776,6 +1852,10 @@ def snap_z(obj, target_z, *, reference='bottom', override=None, output=None):
         raise RuntimeError(
             f"snap_z: target_z is {target_z} (not finite) — refusing to "
             f"write a non-finite location.")
+    # s19-E15: snap_z was the ONLY solver without the skinned guard — a
+    # posed rigged mesh reads its bind-pose bbox and snaps to a wrong z
+    # silently (move_to/place_on/seat_at all guard).
+    _skinned_guard(obj, False)
     report = {"op": "snap_z", "obj": obj.name, "target_z": target_z,
               "reference": ref_used}
     if ref_used != reference:
@@ -1908,6 +1988,16 @@ def seam_views(a, b, *, out_dir, res=(640, 360), engine='workbench',
         a = bpy.data.objects[a]
     if isinstance(b, str):
         b = bpy.data.objects[b]
+    # s19-E1: flush pending RNA writes before pair_contact's AABB reads.
+    bpy.context.view_layer.update()
+    # s19-E7: only workbench is implemented — the old else-branch silently
+    # rendered with the scene's CURRENT engine (accepted-but-unimplemented
+    # = the fail-open-lie law).
+    if engine != 'workbench':
+        raise RuntimeError(
+            f"seam_views: engine={engine!r} is not implemented — only "
+            f"'workbench' is (the seam lane reads GEOMETRY; call it with "
+            f"engine='workbench')")
     os.makedirs(out_dir, exist_ok=True)
     contact = pair_contact(a, b, contact_band_mm=contact_band_mm)
     cam_coords = {}
@@ -1939,6 +2029,11 @@ def seam_views(a, b, *, out_dir, res=(640, 360), engine='workbench',
     # left one behind, accumulating across a patch chain. Mirror the
     # section_pair discipline: remove camera+data in finally (render
     # exceptions included), keep the scene.camera restore.
+    _snap = {"rx": scene.render.resolution_x,
+             "ry": scene.render.resolution_y,
+             "engine": scene.render.engine,
+             "color_type": scene.display.shading.color_type,
+             "filepath": scene.render.filepath}
     try:
         rep_views = _seam_views_shoot(a, b, out_dir=out_dir, res=res,
                                       engine=engine,
@@ -1948,6 +2043,16 @@ def seam_views(a, b, *, out_dir, res=(640, 360), engine='workbench',
                                       cam=cam, cam_data=cam_data,
                                       cam_coords=cam_coords)
     finally:
+        # s19-E6: _seam_views_shoot's shoot() writes resolution / engine /
+        # color_type / filepath into the SCENE — restore them or a
+        # [seam_views, --save-blend] chain bakes Workbench / 640x360 /
+        # MATERIAL + the last seam filepath into the state carrier (the
+        # A11 class; the old finally restored scene.camera only).
+        scene.render.resolution_x = _snap["rx"]
+        scene.render.resolution_y = _snap["ry"]
+        scene.render.engine = _snap["engine"]
+        scene.display.shading.color_type = _snap["color_type"]
+        scene.render.filepath = _snap["filepath"]
         scene.camera = old_cam
         bpy.data.objects.remove(cam, do_unlink=True)
         bpy.data.cameras.remove(cam_data)

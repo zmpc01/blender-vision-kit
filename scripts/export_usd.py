@@ -145,10 +145,11 @@ def main():
                 try:
                     _inspect.signature(mod.animate).bind(
                         ctx, start_frame=args.start, n_frames=args.frames)
-                    mod.animate(ctx, start_frame=args.start,
-                                n_frames=args.frames)
                 except TypeError:
                     mod.animate(ctx)
+                else:
+                    mod.animate(ctx, start_frame=args.start,
+                                n_frames=args.frames)
             except Exception as e:
                 if args.export_animation:
                     # D2 (session-18): an "animated" export whose animate()

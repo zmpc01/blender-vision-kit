@@ -188,6 +188,16 @@ def attach_m6(C, scene, cache_path):
     from scripts.crowd.advanced import Group, GroupKind, agent_ids
 
     ids = agent_ids(cache_path)
+    assert len(ids) == C.N_CACHE, (
+        f"cache carries {len(ids)} agents, contract pins {C.N_CACHE} — "
+        f"the cohort slice below would be misaligned")
+    # s19-B4: the slices assume CACHE ORDINAL ORDER == POP_PLAN ingest
+    # order (waiters [0:66], cohorts [66:117], doorq [117:126]). That
+    # holds by the bridge's own anchor law (bake2's spawn table = add
+    # order — previz_bridge.to_previz_ctx docstring), and the ids are
+    # 64-bit hashes with NO namespace to grep — the count asserts are
+    # the fence. If a future bake ever reorders the spawn table, the
+    # N_CACHE assert above is the tripwire.
     cohort_ids = list(ids[C.POP_PLAN[0][1]:C.POP_PLAN[0][1] + C.POP_PLAN[1][1]])
     assert len(cohort_ids) == C.POP_PLAN[1][1]
     groups = []
@@ -202,12 +212,36 @@ def attach_m6(C, scene, cache_path):
     return dataclasses.replace(scene, groups=groups)
 
 
-def _read_visible_pos(cache_path, tick):
-    from scripts.crowd.advanced import read_tick
-    frame = read_tick(cache_path, tick)
-    pos = frame["position"]
-    vis = frame["visible"]
-    return pos, vis
+def _gate_geometry(C):
+    """s19-B9: the geometric self-consistency gate — the keepout-intersect
+    asserts (round-2 R5) ran ONLY in the groups stage, so a probe/finish
+    -only run applied unasserted keepouts. Now runs in EVERY stage via
+    the build_scene chokepoint. s19-B3 adds the slot/dest-vs-BLOCKED
+    family: the old contract planted queue slot i=2 INSIDE lamp2's
+    blocked square and contained it in the dest capacity box — no gate
+    existed for that class."""
+    import math
+    for name, px, py, _f0, _f1 in C.CAM_KEEPOUTS:
+        rr = C.CAM_KEEPOUT_R + 0.34
+        for sx, sy in C.QUEUE["slots"]:
+            assert math.hypot(px - sx, py - sy) > rr, \
+                f"keepout {name} intersects queue slot ({sx},{sy})"
+        (clo, chi) = C.DEST_QUEUE["capacity"]
+        nx = max(clo[0] - px, 0.0, px - chi[0])
+        ny = max(clo[1] - py, 0.0, py - chi[1])
+        assert math.hypot(nx, ny) > rr, \
+            f"keepout {name} intersects the door dest box"
+    for sq_name, (x0, y0, x1, y1) in C.BLOCKED:
+        for sx, sy in C.QUEUE["slots"]:
+            assert not (x0 <= sx <= x1 and y0 <= sy <= y1), \
+                f"queue slot ({sx},{sy}) sits inside blocked square " \
+                f"'{sq_name}' — shift the slot row (the s19-B3 law)"
+        (clo, chi) = C.DEST_QUEUE["capacity"]
+        assert not (chi[0] > x0 and x1 > clo[0]
+                    and chi[1] > y0 and y1 > clo[1]), \
+            f"dest capacity box overlaps blocked square '{sq_name}' — " \
+            f"boarding ghosts would materialize inside it"
+
 
 
 def agent_ids_safe(cache_path):
@@ -238,6 +272,7 @@ def main():
 
     t0 = time.time()
     scene = build_scene(C, bridge)
+    _gate_geometry(C)  # s19-B9: every stage gates the geometry
     n_ingest = sum(p.count for p in scene.populations)
     print(f"[tfog_bake] custom scene OK: {n_ingest} cache agents, "
           f"{len(scene.behavior_graphs)} graphs, "
@@ -269,7 +304,6 @@ def main():
         def _u32(b):
             return np.frombuffer(b, dtype=np.uint32)
         pos0 = _f32(f0["position"], 3).astype(np.float64)
-        vis0 = _u32(f0["visible"]) != 0
         peak, arg_peak, arrivals = 0.0, None, 0
         states_seen = set()
         for tick in range(168, 265):
@@ -277,9 +311,15 @@ def main():
             pos = _f32(fr["position"], 3).astype(np.float64)
             vis = _u32(fr["visible"]) != 0
             state = fr.get("state")
-            if state is not None:
-                states_seen.update(int(s) for s in _u32(state)[:n_waiters])
-            dy = pos[:n_waiters, 1] - pos0[:n_waiters, 1]
+            # s19-B2: fail-closed on a MISSING state channel — the old
+            # `if state is not None` made states_seen stay empty and the
+            # zero-arrived assert below NEVER RUN (the film's central P0
+            # fold passed on garbage — the known-bad-input law).
+            assert state is not None, \
+                "the cache carries NO state channel — the zero-arrived " \
+                "law cannot be verified against this wheel/schema; " \
+                "fail-closed rather than green-on-garbage"
+            states_seen.update(int(s) for s in _u32(state)[:n_waiters])
             dy[~vis[:n_waiters]] = -1e9
             k = int(np.argmax(dy))
             if dy[k] > peak:
@@ -308,19 +348,6 @@ def main():
         if out.exists():
             raise SystemExit(f"[tfog_bake] {out} exists -- rm it first")
         out.mkdir(parents=True)
-        # the keepout-intersect assert (round-2 R5): keepout circles must
-        # not touch the queue slots or the door destination capacity box.
-        import math
-        for name, px, py, _f0, _f1 in C.CAM_KEEPOUTS:
-            rr = C.CAM_KEEPOUT_R + 0.34
-            for sx, sy in C.QUEUE["slots"]:
-                assert math.hypot(px - sx, py - sy) > rr, \
-                    f"keepout {name} intersects queue slot ({sx},{sy})"
-            (clo, chi) = C.DEST_QUEUE["capacity"]
-            nx = max(clo[0] - px, 0.0, px - chi[0])
-            ny = max(clo[1] - py, 0.0, py - chi[1])
-            assert math.hypot(nx, ny) > rr, \
-                f"keepout {name} intersects the door dest box"
         scene2 = attach_m6(C, scene, cache_path)
         with warnings.catch_warnings(record=True) as wlist:
             warnings.simplefilter("always")
@@ -336,7 +363,26 @@ def main():
 
     # --- stage finish ---------------------------------------------------
     from scripts.crowd.advanced import read_events, CrowdEventKind
-    cache_path = _cache_file(out)
+    # s19-B1: finish used to read the ROOT cache — the PROBE bake (the
+    # groups stage bakes into the SIBLING groups_fresh/ dir) — so the
+    # shipped npz/ctx silently lacked the 17-group cohesion beat (the
+    # film's S9 subject) while the stage printed GREEN. Prefer the
+    # groups bake when its pin is present.
+    _groups_dir = out / "groups_fresh"
+    _using_groups = (_groups_dir / "groups_pin.txt").exists()
+    if _using_groups:
+        out_eff = _groups_dir
+    else:
+        print("[tfog_bake][warn] no groups_fresh pin — finishing from the "
+              "PROBE cache (run --stage groups first; the S9 cohesion "
+              "beat will be MISSING from the deliverable)")
+        out_eff = out
+    cache_path = _cache_file(out_eff)
+    if _using_groups:
+        # the ctx/bridge reads group metadata off the SCENE — re-attach
+        # (the same resolve the groups stage ran, now against the groups
+        # cache; the two-bake covenant).
+        scene = attach_m6(C, scene, cache_path)
     events = read_events(cache_path)
     sfx_rows = []
     for e in events:
@@ -353,9 +399,20 @@ def main():
         keepouts=[(name, px, py, f0, f1) for name, px, py, f0, f1
                   in C.CAM_KEEPOUTS],
         keepout_radius=C.CAM_KEEPOUT_R,
+        # s19-B5: explicit — the pinned call shape all five drivers share
+        # (the defaults match, but the F-TD4 precedent says the keepout
+        # ENFORCEMENT must be visible at the call site, not implicit).
+        clamp=True,
+        clip_source="speed",
         # the film is TRUE WORLD-MODE: no belt transform (the audit
         # fork); rows stay in world meters.
     )
+    _ka = digest.get("keepouts_applied")
+    assert _ka == len(C.CAM_KEEPOUTS), \
+        f"keepouts_applied {_ka} != the {len(C.CAM_KEEPOUTS)} declared " \
+        f"rows — the ground-lens keepouts were not enforced"
+    print(f"[tfog_bake] keepouts_applied: {_ka} rows (the SKILL "
+          f"counts-ROWS law)")
     ctx = bridge.to_previz_ctx(cache_path, scene, digest=digest)
     ctx["cast"] = {
         "heroes": [
