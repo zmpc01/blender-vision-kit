@@ -117,6 +117,30 @@ def _finite_check(op, key, val):
             f"keep 'passing' on garbage). Fix the patch value.")
 
 
+def _nonneg_mm(op, params, keys, *, positive=()):
+    """wave-2b: the physics family's verdict thresholds (tol_mm/pad_mm/
+    snap_cap_mm/drop_mm) flow raw into comparisons — NaN tol_mm makes
+    every 'disp > tol' False and vacuously SETTLES; NaN pad kills the
+    neighbor search and false-PASSES. Finite + non-negative (strictly
+    positive for the `positive` keys) at the param layer."""
+    for k in keys:
+        v = params.get(k)
+        if v is None:
+            continue
+        if isinstance(v, bool) or not isinstance(v, (int, float)) \
+                or not math.isfinite(float(v)):
+            raise RuntimeError(
+                f"op '{op}' key '{k}' must be a finite number in mm "
+                f"(got {v!r}) — NaN/Infinity makes every verdict "
+                f"comparison False and false-PASSES the gate")
+        if k in positive and float(v) <= 0:
+            raise RuntimeError(
+                f"op '{op}' key '{k}' must be > 0 (got {v})")
+        if k not in positive and float(v) < 0:
+            raise RuntimeError(
+                f"op '{op}' key '{k}' must be >= 0 (got {v})")
+
+
 def _require(mut, key, op, *, expected_type=None, expected_len=None):
     """Extract a required key from a mutation dict, with a clean error message.
 
@@ -316,6 +340,13 @@ def _apply_set_camera_dof(obj, params):
         dof.focus_distance = float(focus)
     if fstop is not None:
         _finite_check("set_camera_dof", "aperture_fstop", fstop)
+        # wave-2b: fstop=0 makes the print's lens/(2*fstop) ZeroDivision
+        # AND is physically meaningless (inf aperture).
+        if float(fstop) <= 0:
+            raise RuntimeError(
+                f"op 'set_camera_dof' key 'aperture_fstop' must be > 0 "
+                f"(got {fstop}) — the aperture radius derives as "
+                f"lens/(2*fstop)")
         dof.aperture_fstop = float(fstop)
     print(f"[apply_patch] set_camera_dof: {obj.name} "
           f"focus_distance={dof.focus_distance:.6g} m, "
@@ -518,6 +549,9 @@ def _apply_place_on(obj, params):
     # sampler (the F2B-26 class). Validate at the param layer.
     clearance = params.get("clearance", 0.0)
     inset = params.get("inset", 0.0)
+    # wave-2b: a NaN contact_band reclassifies every classify_point sample
+    # 'outside' — the contact plane mis-refines silently.
+    _nonneg_mm("place_on", params, ("contact_band_mm",))
     for _key, _val in (("clearance", clearance), ("inset", inset)):
         if isinstance(_val, bool) or not isinstance(_val, (int, float)):
             raise RuntimeError(
@@ -575,6 +609,9 @@ def _apply_seat_at(obj, params):
     else:
         seat_mesh = None
     offset = params.get("offset")
+    # wave-2b: a NaN contact_band makes pair_contact's |gap| <= band
+    # never True — post_contact degrades silently.
+    _nonneg_mm("seat_at", params, ("contact_band_mm",))
     if offset is not None:
         # s18 B4: json.loads accepts NaN/Infinity — a NaN offset silently
         # seated the figure in a poisoned pose (and a bare string would
@@ -661,6 +698,7 @@ def _apply_audit(obj, params):
     if float(band) < 0.0:
         raise RuntimeError(
             f"op 'audit' key 'contact_band_mm' must be >= 0 (got {band})")
+    _nonneg_mm("audit", params, ("clearance_pad_mm",))
     band = float(band)
     # s18 B6: a typo'd scope id used to run the scene-wide audit, then
     # scope it down to 0 pairs — fail_on_penetration VACUOUSLY PASSED.
@@ -744,6 +782,8 @@ def _physics_warn(rep):
 
 
 def _apply_physics_settle(obj, params):
+    _nonneg_mm("physics_settle", params, ("tol_mm", "pad_mm",
+                                           "snap_cap_mm"))
     # F2B-23: [] and null used to be synonyms (both -> objs=None = settle
     # EVERY eligible mesh, the "almost never wanted" free-fall mode).
     # Refuse [] loudly; null/omitted keeps whole-scene semantics.
@@ -790,6 +830,8 @@ def _apply_physics_settle(obj, params):
 
 def _apply_physics_place(obj, params):
     import bpy as _bpy
+    _nonneg_mm("physics_place", params, ("tol_mm", "pad_mm",
+                                          "snap_cap_mm", "drop_mm"))
     target = _get_obj(params["id"], "physics_place")
     rep = _PP.place(target,
                     drop_mm=params.get("drop_mm", 30.0),
@@ -808,6 +850,7 @@ def _apply_physics_place(obj, params):
 
 
 def _apply_physics_oracle(obj, params):
+    _nonneg_mm("physics_oracle", params, ("tol_mm", "pad_mm"))
     import bpy as _bpy
     target = _get_obj(params["id"], "physics_oracle")
     # s18 B4: json.loads accepts NaN/Infinity — a NaN xyz target teleports
@@ -849,6 +892,8 @@ def _apply_physics_oracle(obj, params):
 
 
 def _apply_physics_gate(obj, params):
+    _nonneg_mm("physics_gate", params, ("tol_mm", "pad_mm",
+                                         "audit_pad_mm"))
     rep = _PP.gate(tol_mm=params.get("tol_mm", 1.0),
                    frames=params.get("frames", 45),
                    apply="none",
@@ -886,6 +931,7 @@ def _apply_seam_views(obj, params):
             "op 'seam_views' key 'res' must be [width, height] positive "
             f"integers (got {raw_res!r} — a bare string would become "
             f"per-character atoms)")
+    _nonneg_mm("seam_views", params, ("contact_band_mm", "fill_frac"))
     rep = _PL.seam_views(a, b, out_dir=params["out_dir"],
                          res=(int(raw_res[0]), int(raw_res[1])),
                          engine=params.get("engine", "workbench"),
@@ -909,6 +955,7 @@ def _apply_heat_bake(obj, params):
             "op 'heat_bake' key 'others' entries must be object names "
             f"(strings), got {raw_others!r}")
     others = [_get_obj(n, "heat_bake") for n in raw_others]
+    _nonneg_mm("heat_bake", params, ("yellow_mm", "green_mm"))
     rep = _PL.heat_bake(obj, others,
                         yellow_mm=params.get("yellow_mm", 10.0),
                         green_mm=params.get("green_mm", 50.0))
@@ -1764,6 +1811,13 @@ def main():
                   f"scene state SAVED to {args.save_blend} anyway "
                   f"(the aborting op's change may be incomplete — "
                   f"verify with physics_gate)", file=sys.stderr)
+        else:
+            # wave-2b: name the memory-only loss (the consumer believes the
+            # state carrier caught up otherwise).
+            print(f"[apply_patch] CHAIN ABORTED at mutation {i+1}/{total}; "
+                  f"NO --save-blend given — the applied work lives in "
+                  f"MEMORY only and dies with this process",
+                  file=sys.stderr)
 
     for i, mut in enumerate(mutations):
         try:

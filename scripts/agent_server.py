@@ -303,7 +303,9 @@ class AgentServerHandler(http.server.BaseHTTPRequestHandler):
                     self.wfile.write(b": ping\n\n")
                     self.wfile.flush()
                     time.sleep(1)
-        except (BrokenPipeError, ConnectionResetError):
+        except OSError:
+            # wave-2b: ConnectionAborted/timeout and friends also die here —
+            # a dead client must not traceback a daemon thread to stderr.
             pass
         finally:
             broker.unsubscribe(q)

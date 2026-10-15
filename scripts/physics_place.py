@@ -353,7 +353,9 @@ def _bake_scales(movers, env_objs, allow_bake):
                 o.data = o.data.copy()
                 o.data.name = o.data.name + ".SimBake"
                 copies.append(o.name)
-            o.data.transform(Matrix.Diagonal((s.x, s.y, s.z, 1.0)))
+            o.data.transform(Matrix.Diagonal((s.x, s.y, s.z, 1.0)),
+                             shape_keys=True)  # wave-2b: morph offsets
+                             # live in the pre-bake scale otherwise
             o.scale = (1.0, 1.0, 1.0)
             baked.append(o.name)
     if baked:

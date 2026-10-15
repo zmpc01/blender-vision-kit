@@ -139,6 +139,9 @@ def diff_manifests(before, after, tol=0.005):
     # report["removed"] stayed [] forever, so --expect-clean exited 0 on
     # unauthorized deletions (the verification tool's core category).
     report["removed"] = really_removed
+    # wave-2a: "added" was the same dead-key lie in mirror — fill it so
+    # the JSON contract is symmetric for report consumers.
+    report["added"] = really_added
     report["ok"] = True
     return report
 

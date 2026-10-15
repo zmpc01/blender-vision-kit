@@ -135,8 +135,20 @@ def main():
         # A static export still needs animate() too: it keys the frame
         # range + markers the hook reads for the timeline block.
         if hasattr(mod, "animate"):
+            # wave-2b: signature-bind split (the F2B-24 pattern) — a bare
+            # def animate(ctx) module used to TypeError here, get swallowed
+            # as a static-run NOTE, and the timeline block silently never
+            # keyed. Bare modules now actually run; genuine failures still
+            # NOTE (static) / fail-closed (animated).
             try:
-                mod.animate(ctx, start_frame=args.start, n_frames=args.frames)
+                import inspect as _inspect
+                try:
+                    _inspect.signature(mod.animate).bind(
+                        ctx, start_frame=args.start, n_frames=args.frames)
+                    mod.animate(ctx, start_frame=args.start,
+                                n_frames=args.frames)
+                except TypeError:
+                    mod.animate(ctx)
             except Exception as e:
                 if args.export_animation:
                     # D2 (session-18): an "animated" export whose animate()

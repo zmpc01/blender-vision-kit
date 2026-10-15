@@ -257,6 +257,18 @@ def render_angle(angle_label: str, out_path: str, *,
                 _snap[f"shading_{_a}"] = getattr(_blk, _a)
             except AttributeError:
                 pass
+    # wave-2a: the per-engine params also mutate — a cycles look then
+    # --save-blend baked device='CPU'/samples/denoising into the blend
+    # with the engine itself restored (hiding the leak one level down).
+    for _blk, _prefix, _attrs in (
+            (scene.eevee, "eevee_", ("taa_render_samples",)),
+            (scene.cycles, "cycles_", ("device", "samples",
+                                        "use_denoising"))):
+        for _a in _attrs:
+            try:
+                _snap[f"{_prefix}{_a}"] = getattr(_blk, _a)
+            except AttributeError:
+                pass
 
     def _restore_state():
         r = scene.render
@@ -277,6 +289,16 @@ def render_angle(angle_label: str, out_path: str, *,
                     setattr(scene.display.shading, _a, _snap[f"shading_{_a}"])
                 except AttributeError:
                     pass
+        for _blk, _prefix, _attrs in (
+                (scene.eevee, "eevee_", ("taa_render_samples",)),
+                (scene.cycles, "cycles_", ("device", "samples",
+                                            "use_denoising"))):
+            for _a in _attrs:
+                if f"{_prefix}{_a}" in _snap:
+                    try:
+                        setattr(_blk, _a, _snap[f"{_prefix}{_a}"])
+                    except AttributeError:
+                        pass
 
     # A8 (session-18): engine was validated AFTER the temp camera was
     # created — an unknown-engine raise leaked temp_*_cam + its target
@@ -311,7 +333,22 @@ def render_angle(angle_label: str, out_path: str, *,
         raise RuntimeError(f"Unknown angle: {angle_label}. "
                            f"Choose from: {list(VIEW_ANGLES.keys())}, 'active', 'custom'")
 
-    # Configure render
+    # Configure render. wave-2a: the risky enum writes (light/color_type
+    # raise TypeError on bad values AFTER engine is set) are trial-written
+    # and reverted FIRST, so a bad value raises before any state mutated.
+    if engine == "workbench":
+        for _key, _val in (("shading_light", light),
+                           ("shading_color_type", color_type)):
+            if _val is None:
+                continue
+            _attr = _key.split("_", 1)[1]
+            try:
+                setattr(scene.display.shading, _attr, _val)
+            except TypeError as e:
+                raise RuntimeError(
+                    f"render_angle: invalid workbench {_attr} {_val!r} "
+                    f"({e}) — no state was mutated") from None
+            setattr(scene.display.shading, _attr, _snap.get(_key, _val))
     if engine == "workbench":
         scene.render.engine = 'BLENDER_WORKBENCH'
         # Workbench-specific: solid shading with material colors visible.

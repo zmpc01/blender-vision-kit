@@ -432,8 +432,16 @@ def main():
             view_layer = bpy.context.view_layer
             view_layer.update()
         except BaseException:
+            # wave-2a: `layer` only rebinds AFTER the builder returns — a
+            # MID-BUILD raise left the partial objects unreachable here
+            # (the purge iterated zero objects). Sweep by the ANNOT prefix
+            # instead, which delete_annotation_layer also uses for its
+            # datablock purge.
             try:
-                annotate.delete_annotation_layer(layer)
+                import bpy as _bpy
+                for _o in list(_bpy.context.scene.objects):
+                    if _o.name.startswith(annotate.ANNOT_PREFIX):
+                        _bpy.data.objects.remove(_o, do_unlink=True)
             except Exception:
                 pass
             raise
