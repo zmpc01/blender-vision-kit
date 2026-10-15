@@ -301,7 +301,21 @@ def main():
         clear_scene()
         ctx = mod.build_scene()
         if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=1, n_frames=args.frames)
+            # s19-A5-twin (5th site of the F2B-24 bare-animate family —
+            # found by the s19 TD3 ground-truth probe, not by either audit
+            # round): a bare `def animate(ctx)` module (blessed by the
+            # preflight's B6 check) TypeError'd here raw, killing LOOK.
+            # Same bind-split as apply_patch/validate_scene/export_usd/
+            # export_gltf: bind in try, bare fallback in except, the real
+            # call in else (an in-body TypeError still propagates).
+            import inspect as _inspect
+            try:
+                _inspect.signature(mod.animate).bind(
+                    ctx, start_frame=1, n_frames=args.frames)
+            except TypeError:
+                mod.animate(ctx)
+            else:
+                mod.animate(ctx, start_frame=1, n_frames=args.frames)
 
     scene = bpy.context.scene
     if args.frame is not None:
