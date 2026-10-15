@@ -97,6 +97,8 @@ SUITES=(
   "test_s17_infra|tests/test_s17_infra.py|PY||0|\\[test_s17i\\] ALL PASS|session-17 wave-D infra regressions (this repo's infra fixes)"
   "x1_detection_matrix|tests/x1_detection_matrix.py|BL||0|\\[X1\\] ALL PASS|session-18 wave-E E4: BVH contact-audit regression fixture (bbox rows are the KNOWN-bad baseline — only BVH/binary-mismatch regressions fail)"
   "test_s18_eyes|tests/test_s18_eyes.py|BL||0|test_s18_eyes: ALL PASS|session-18 wave-E E2: look exit-4 / camera_intent / build_sfx vocabulary coverage"
+  "test_s18_wave_c|tests/test_s18_wave_c.py|BL||0|\\[S18C\\] ALL PASS|session-18 wave-C regressions (in-Blender: C1 rotation-key guard+rebase, C2 animated exclusion, C3/C4 modifiers+SimBake bake guards, C6/C7 skinned guards, C9 grid align-to-surface, C10 mode tokens, C11 contact discs, C12 prop_carry quaternion keys)"
+  "test_s18_wave_d|tests/test_s18_wave_d.py|BL||0|\\[S18D\\] ALL PASS|session-18 wave-D regressions (D1 threaded server, D3 RNA-filter op ids, D4 USD parity counts, D5 gate-5 CAST root, D6/D7 encode guards, D8 staleness matcher, D9 sfx negative frames, D10 watcher stability, D12 scene.json; MIXED suite — bpy-guarded sections degrade to textual under plain python3)"
 )
 
 loud_header() {
