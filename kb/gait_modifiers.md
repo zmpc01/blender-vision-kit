@@ -1,5 +1,7 @@
 # gait_modifiers — Funny-Walk Gait Modifier Engine
 
+> **r149 (M3):** the VK-local copy of this module was REMOVED — the canonical source is the vendored kit at `vendor/blender-crowd-kit/scripts/` (submodule pin; import via `scripts.crowd` / the kit tree). This page stays as the API reference; line-number citations below are historical.
+
 Scene-agnostic funny-walk primitives (kit scripts/gait_modifiers.py;
 tests: test_gait_modifiers.py). The scene contributes only DATA — its
 named modifier stacks and base-clip compositions — nothing

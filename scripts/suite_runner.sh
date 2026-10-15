@@ -100,6 +100,7 @@ SUITES=(
   "test_s18_wave_b|tests/test_s18_wave_b.py|BL||0|\\[test_s18b\\] ALL PASS|session-18 wave-B regressions (in-Blender: duplicate_object refuse, SystemExit chain-abort save, NaN param refuses, audit scope refuse, schema dof+exposure, validate_scene animate bind, split_mesh per-mode params)"
   "test_s18_wave_c|tests/test_s18_wave_c.py|BL||0|\\[S18C\\] ALL PASS|session-18 wave-C regressions (in-Blender: C1 rotation-key guard+rebase, C2 animated exclusion, C3/C4 modifiers+SimBake bake guards, C6/C7 skinned guards, C9 grid align-to-surface, C10 mode tokens, C11 contact discs, C12 prop_carry quaternion keys)"
   "test_s18_wave_d|tests/test_s18_wave_d.py|BL||0|\\[S18D\\] ALL PASS|session-18 wave-D regressions (D1 threaded server, D3 RNA-filter op ids, D4 USD parity counts, D5 gate-5 CAST root, D6/D7 encode guards, D8 staleness matcher, D9 sfx negative frames, D10 watcher stability, D12 scene.json; MIXED suite — bpy-guarded sections degrade to textual under plain python3)"
+  "test_crowd_e2e|tests/test_crowd_e2e.py|PY||0|\\[CROUDE2E\\] ALL PASS|M3 r149: crowd-kit end-to-end gate (wheel sha256+size vs README pin F2E-12, native import+version coherence, vendored submodule kit import+__version__ coherence, 5-agent bake complete into fresh tempdir; provision: blender_crowd_native importable per wheels/README law)"
 )
 
 loud_header() {

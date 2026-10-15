@@ -1,5 +1,7 @@
 # prop_carry — Generalized Prop Anchoring & Clamped Carry (law 110)
 
+> **r149 (M3):** the VK-local copy of this module was REMOVED — the canonical source is the vendored kit at `vendor/blender-crowd-kit/scripts/` (submodule pin; import via `scripts.crowd` / the kit tree). This page stays as the API reference; line-number citations below are historical.
+
 ## What it kills: PHANTOM OFFSETS
 A prop's parent-space anchor (matrix_parent_inverse or carry-local)
 captured while the scene is parked at a DIFFERENT frame than the world
