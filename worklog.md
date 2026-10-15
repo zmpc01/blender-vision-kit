@@ -3891,3 +3891,18 @@ Work Log:
 Stage Summary:
 - Films greenlit: tfog_1 THE EXPRESS (blue-hour fog rail platform; groups + DANGER blast + boarding queue) and tform_1 THE DRILL (golden-hour citadel; formation column via layers + bake_interaction beat)
 - Kit-fix candidates: composed-yaw re-derivation (bridge), empty-union assert + warnings capture (film drivers), BakeResult.dropped_fields (filed)
+
+---
+Task ID: 5-world (2 builders + principal gates)
+Agent: orchestrator + 2 general-purpose builders
+Task: world modules for tfog (island platform) + tform (citadel yard)
+
+Work Log:
+- tform_world.py (39e4a2a via sub-agent): 111 parts, 17/17 asserts, N gap corridor assert, consts exported
+- tfog_world.py (2b331de via sub-agent retry): 153 parts, 12/12 asserts, keyed-OFF slots for all practicals
+- principal looks: tform aerial/gap/colonnade/circle_mark — PASS (notes: dust box top seam, drums small)
+- tfog aerial/platform_w/board_close — PASS after probe-const fix (40→0.025 lamp law: the W-scale multiplier; fog multiplies emission — the tsquall near-field ceiling law reconfirmed); track_n vantage inside parked train (look artifact, not a bug)
+- express park position note: scene module must park express offstage W (tail on-stage at default park)
+
+Stage Summary:
+- both worlds PASS the principal visual gate; ladders carry the tuning notes
