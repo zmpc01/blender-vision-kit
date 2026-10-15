@@ -105,7 +105,7 @@ GROUP_MAX_SEP_M = 2.4
 # -> the crossing is N-S -> NORTH_SOUTH, the F-TS3 law).
 PORTAL = {
     "id": "center_door",
-    "center": (0.0, 4.0),
+    "center": (0.0, 3.0),
     "width_m": 4.0,
     "axis": "NORTH_SOUTH",
 }
