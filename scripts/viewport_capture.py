@@ -310,32 +310,18 @@ def render_angle(angle_label: str, out_path: str, *,
             f"cycles (normalize_engine_id maps spellings upstream of "
             f"this check)")
 
-    # Pick / create the camera
-    cleanup = None
-    if angle_label == "active":
-        if scene.camera is None:
-            raise RuntimeError("No active camera in scene — use a different --angles value")
-        cam = scene.camera
-    elif angle_label == "custom":
-        if custom_location is None:
-            raise RuntimeError("custom angle requires --custom-loc X,Y,Z")
-        cam, target_empty = _add_temp_camera(
-            "temp_custom_cam", custom_location, target, lens)
-        cleanup = lambda: _cleanup_temp_camera(cam, target_empty)
-    elif angle_label in VIEW_ANGLES:
-        loc = VIEW_ANGLES[angle_label][:3]
-        # Translate by target so the view orbits the scene center
-        loc = (loc[0] + target[0], loc[1] + target[1], loc[2] + target[2])
-        cam, target_empty = _add_temp_camera(
-            f"temp_{angle_label}_cam", loc, target, lens)
-        cleanup = lambda: _cleanup_temp_camera(cam, target_empty)
-    else:
-        raise RuntimeError(f"Unknown angle: {angle_label}. "
-                           f"Choose from: {list(VIEW_ANGLES.keys())}, 'active', 'custom'")
-
-    # Configure render. wave-2a: the risky enum writes (light/color_type
-    # raise TypeError on bad values AFTER engine is set) are trial-written
-    # and reverted FIRST, so a bad value raises before any state mutated.
+    # A2 (session-19): the wave-2a light/color_type trial-write used to
+    # sit AFTER the camera-creation section — a bad light=/color_type=
+    # raised with temp_*_cam + its target empty already leaked into the
+    # live scene (the A8 class re-opened on this fix's own path), and the
+    # whole configure block sat outside any try/finally, so a
+    # shadows/cavity/exposure TypeError leaked BOTH the temp camera AND
+    # the already-written engine/shading/view_transform state. The
+    # trial-write now runs HERE — nothing has been created or mutated
+    # yet (the revert below puts the snapshotted value back, so the real
+    # write still happens in the configure block) — and everything from
+    # camera creation onward lives inside ONE try/finally whose finally
+    # runs the full cleanup()/_restore_state() pairing on ANY raise.
     if engine == "workbench":
         for _key, _val in (("shading_light", light),
                            ("shading_color_type", color_type)):
@@ -349,72 +335,104 @@ def render_angle(angle_label: str, out_path: str, *,
                     f"render_angle: invalid workbench {_attr} {_val!r} "
                     f"({e}) — no state was mutated") from None
             setattr(scene.display.shading, _attr, _snap.get(_key, _val))
-    if engine == "workbench":
-        scene.render.engine = 'BLENDER_WORKBENCH'
-        # Workbench-specific: solid shading with material colors visible.
-        # Per session-5 worklog: OBJECT color_type shows flat gray, hiding
-        # material-based color coding. Use MATERIAL instead.
-        scene.display.shading.light = light or 'STUDIO'
-        # MATERIAL shows real material base colors (needed to verify
-        # color-coded previz assets); OBJECT only uses obj.color RGBA.
-        scene.display.shading.color_type = color_type or 'MATERIAL'
-        scene.display.shading.show_shadows = True if shadows is None else shadows
-        scene.display.shading.show_cavity = True if cavity is None else cavity
-        # Per session-5 worklog: AgX crushes low-chroma colors in previz.
-        # Use Standard so authored material colors read true.
-        try:
-            scene.view_settings.view_transform = 'Standard'
-        except AttributeError:
-            pass
-        if exposure is not None:
-            scene.view_settings.exposure = exposure
-    elif engine == "eevee":
-        from blender_kit import EEVEE_ENGINE_ID
-        scene.render.engine = EEVEE_ENGINE_ID
-        scene.eevee.taa_render_samples = samples
-        if exposure is not None:
-            scene.view_settings.exposure = exposure
-    elif engine == "cycles":
-        scene.render.engine = 'CYCLES'
-        scene.cycles.device = 'CPU'
-        scene.cycles.samples = samples
-        scene.cycles.use_denoising = True
 
-    scene.render.resolution_x = width
-    scene.render.resolution_y = height
-    scene.render.resolution_percentage = 100
-    scene.render.image_settings.file_format = 'PNG'
-    scene.render.image_settings.color_mode = 'RGB'
-    # A7 (session-18): a loaded .blend with border render enabled writes
-    # a cropped wrong-resolution PNG that passed every check. Tool
-    # renders are never border-cropped; force off (state restored in
-    # the finally below).
-    scene.render.use_border = False
-    scene.render.use_crop_to_border = False
-    scene.render.filepath = out_path
-
-    # Temporarily swap the scene's active camera. F-TD3: ALSO sweep the
-    # camera-bound timeline markers — bpy.ops.render.render prefers a
-    # camera-bound marker over scene.camera, so on every film scene the
-    # marker's shot cam hijacked this panel.
+    # Pick / create the camera (inside the try: any raise from here on
+    # must still reach the finally's cleanup + state restore)
+    cleanup = None
+    restore_markers = None
     orig_camera = scene.camera
-    restore_markers = _marker_camera_sweep(scene)
-    scene.camera = cam
-
     try:
+        if angle_label == "active":
+            if scene.camera is None:
+                raise RuntimeError("No active camera in scene — use a different --angles value")
+            cam = scene.camera
+        elif angle_label == "custom":
+            if custom_location is None:
+                raise RuntimeError("custom angle requires --custom-loc X,Y,Z")
+            cam, target_empty = _add_temp_camera(
+                "temp_custom_cam", custom_location, target, lens)
+            cleanup = lambda: _cleanup_temp_camera(cam, target_empty)
+        elif angle_label in VIEW_ANGLES:
+            loc = VIEW_ANGLES[angle_label][:3]
+            # Translate by target so the view orbits the scene center
+            loc = (loc[0] + target[0], loc[1] + target[1], loc[2] + target[2])
+            cam, target_empty = _add_temp_camera(
+                f"temp_{angle_label}_cam", loc, target, lens)
+            cleanup = lambda: _cleanup_temp_camera(cam, target_empty)
+        else:
+            raise RuntimeError(f"Unknown angle: {angle_label}. "
+                               f"Choose from: {list(VIEW_ANGLES.keys())}, 'active', 'custom'")
+
+        # Configure render. The risky light/color_type enum writes are
+        # trial-written ABOVE (pre-camera, pre-mutation); the real writes
+        # follow. A2: this block is now INSIDE the try, so a
+        # shadows/cavity/exposure/samples TypeError cannot strand the
+        # temp camera or the engine/shading state written so far.
+        if engine == "workbench":
+            scene.render.engine = 'BLENDER_WORKBENCH'
+            # Workbench-specific: solid shading with material colors visible.
+            # Per session-5 worklog: OBJECT color_type shows flat gray, hiding
+            # material-based color coding. Use MATERIAL instead.
+            scene.display.shading.light = light or 'STUDIO'
+            # MATERIAL shows real material base colors (needed to verify
+            # color-coded previz assets); OBJECT only uses obj.color RGBA.
+            scene.display.shading.color_type = color_type or 'MATERIAL'
+            scene.display.shading.show_shadows = True if shadows is None else shadows
+            scene.display.shading.show_cavity = True if cavity is None else cavity
+            # Per session-5 worklog: AgX crushes low-chroma colors in previz.
+            # Use Standard so authored material colors read true.
+            try:
+                scene.view_settings.view_transform = 'Standard'
+            except AttributeError:
+                pass
+            if exposure is not None:
+                scene.view_settings.exposure = exposure
+        elif engine == "eevee":
+            from blender_kit import EEVEE_ENGINE_ID
+            scene.render.engine = EEVEE_ENGINE_ID
+            scene.eevee.taa_render_samples = samples
+            if exposure is not None:
+                scene.view_settings.exposure = exposure
+        elif engine == "cycles":
+            scene.render.engine = 'CYCLES'
+            scene.cycles.device = 'CPU'
+            scene.cycles.samples = samples
+            scene.cycles.use_denoising = True
+
+        scene.render.resolution_x = width
+        scene.render.resolution_y = height
+        scene.render.resolution_percentage = 100
+        scene.render.image_settings.file_format = 'PNG'
+        scene.render.image_settings.color_mode = 'RGB'
+        # A7 (session-18): a loaded .blend with border render enabled writes
+        # a cropped wrong-resolution PNG that passed every check. Tool
+        # renders are never border-cropped; force off (state restored in
+        # the finally below).
+        scene.render.use_border = False
+        scene.render.use_crop_to_border = False
+        scene.render.filepath = out_path
+
+        # Temporarily swap the scene's active camera. F-TD3: ALSO sweep the
+        # camera-bound timeline markers — bpy.ops.render.render prefers a
+        # camera-bound marker over scene.camera, so on every film scene the
+        # marker's shot cam hijacked this panel.
+        restore_markers = _marker_camera_sweep(scene)
+        scene.camera = cam
+
         bpy.ops.render.render(write_still=True)
     finally:
         scene.camera = orig_camera
-        try:
-            restore_markers()
-        except Exception as e:  # noqa: BLE001 — restore must never mask the render error
-            # F5A-6: silent `pass` would PERMANENTLY lose the shot cut
-            # (the marker's camera binding) with no trace. Loud note;
-            # the binding can be re-set from the SHOTS table if it ever
-            # fires, but the agent must KNOW.
-            print(f"[viewport] WARNING: marker camera restore failed "
-                  f"({e!r}) — a shot cut binding may be lost; re-set it "
-                  f"from the scene's SHOTS table.", flush=True)
+        if restore_markers is not None:
+            try:
+                restore_markers()
+            except Exception as e:  # noqa: BLE001 — restore must never mask the render error
+                # F5A-6: silent `pass` would PERMANENTLY lose the shot cut
+                # (the marker's camera binding) with no trace. Loud note;
+                # the binding can be re-set from the SHOTS table if it ever
+                # fires, but the agent must KNOW.
+                print(f"[viewport] WARNING: marker camera restore failed "
+                      f"({e!r}) — a shot cut binding may be lost; re-set it "
+                      f"from the scene's SHOTS table.", flush=True)
         if cleanup:
             cleanup()
         _restore_state()

@@ -205,7 +205,6 @@ def _kd_at_rest(ctx, mat, counters, knockdowns, frame_at):
         counters[0] += 1
         # final keyed belt-local position (read the last location keys)
         ad = ob.animation_data
-        last_x, last_y = ob.location.x, ob.location.y
         last_f = 1
         if ad and ad.action:
             for fc in iter_fcurves(ad.action):

@@ -444,6 +444,17 @@ def main():
                         _bpy.data.objects.remove(_o, do_unlink=True)
             except Exception:
                 pass
+            # A3 (session-19): the object sweep above leaves the zero-user
+            # DATABLOCK residue behind (KIT_ANNOT_mat_* materials, KIT_ANNOT_*
+            # curves + meshes — the F2A-4 class, up to ~40 mesh datablocks
+            # per run). delete_annotation_layer purges all three families by
+            # the ANNOT prefix; {"objects": []} skips its (already-done)
+            # object sweep. Still best-effort: a cleanup error must never
+            # mask the original raise below.
+            try:
+                annotate.delete_annotation_layer({"objects": []})
+            except Exception:
+                pass
             raise
 
     try:

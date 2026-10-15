@@ -41,6 +41,14 @@
 #   * A suite file that does not exist yet (e.g. test_s17_wave_b.py from a
 #     parallel wave) is recorded as SKIP-NOT-FOUND, matching the battery
 #     doc's verdict class — never silently dropped.
+#   * Suite-requested SKIP sentinel (F7, session-19): a suite that could
+#     not run must exit 2 AND print a line matching `SUITE-SKIP:` OR
+#     `[<its own suite tag>] ...SKIP` — the tag is the SUITES row's name
+#     (also the log basename), e.g. test_usd_carrier's
+#     "[test_usd_carrier] SKIP: pxr not importable ...". The old loose
+#     `] SKIP` substring match counted ANY log line (blrun's own
+#     "[blrun] SKIP --warm-cache" note, a checker echoing the word) and
+#     re-classed genuine FAILs as SKIP — only the sentinel counts now.
 
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || exit 1
 
@@ -51,10 +59,12 @@ SKIP=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --list) LIST=1; shift ;;
-        --label) LABEL="$2"; shift 2 ;;
-        --timeout) TIMEOUT="$2"; shift 2 ;;
-        --only) ONLY+=("$2"); shift 2 ;;
-        --skip) SKIP+=("$2"); shift 2 ;;
+        # F3 (session-19): a value-taking flag as the LAST arg used to
+        # loop forever ($2 unset, `shift 2` a no-op — verified exit 124).
+        --label) [[ $# -ge 2 ]] || { echo "[suite] --label needs a value"; exit 2; }; LABEL="$2"; shift 2 ;;
+        --timeout) [[ $# -ge 2 ]] || { echo "[suite] --timeout needs a value"; exit 2; }; TIMEOUT="$2"; shift 2 ;;
+        --only) [[ $# -ge 2 ]] || { echo "[suite] --only needs a value"; exit 2; }; ONLY+=("$2"); shift 2 ;;
+        --skip) [[ $# -ge 2 ]] || { echo "[suite] --skip needs a value"; exit 2; }; SKIP+=("$2"); shift 2 ;;
         *) echo "[suite] unknown arg: $1 (see header)"; exit 2 ;;
     esac
 done
@@ -100,6 +110,7 @@ SUITES=(
   "test_s18_wave_b|tests/test_s18_wave_b.py|BL||0|\\[test_s18b\\] ALL PASS|session-18 wave-B regressions (in-Blender: duplicate_object refuse, SystemExit chain-abort save, NaN param refuses, audit scope refuse, schema dof+exposure, validate_scene animate bind, split_mesh per-mode params)"
   "test_s18_wave_c|tests/test_s18_wave_c.py|BL||0|\\[S18C\\] ALL PASS|session-18 wave-C regressions (in-Blender: C1 rotation-key guard+rebase, C2 animated exclusion, C3/C4 modifiers+SimBake bake guards, C6/C7 skinned guards, C9 grid align-to-surface, C10 mode tokens, C11 contact discs, C12 prop_carry quaternion keys)"
   "test_s18_wave_d|tests/test_s18_wave_d.py|BL||0|\\[S18D\\] ALL PASS|session-18 wave-D regressions (D1 threaded server, D3 RNA-filter op ids, D4 USD parity counts, D5 gate-5 CAST root, D6/D7 encode guards, D8 staleness matcher, D9 sfx negative frames, D10 watcher stability, D12 scene.json; MIXED suite — bpy-guarded sections degrade to textual under plain python3)"
+  "test_s19_wave_pins|tests/test_s19_wave_pins.py|BL||0|\\[test_s19p\\] ALL PASS|session-19 fix pins (red-by-construction; s18 A6 + s19 wave-A: NaN/_nonneg_mm/frames guards, set_rotation mode channel, override token, anim guards, align idempotence, fill_frac, heat_bake bands, sample/engine tokens, skinned snap_z, stale-depsgraph audit)"
 )
 
 loud_header() {
@@ -198,13 +209,15 @@ for row in "${SUITES[@]}"; do
     elif [[ $marker_ok -eq 0 ]]; then
         notable="exit ok but expected marker missing"
     fi
-    # E9 (session-18 wave-E): a suite that could not run (pxr-less etc.)
-    # exits 2 with its own '] SKIP' line — record SKIP, never FAIL (the
-    # pre-wave behavior was a guaranteed false-FAIL battery row).
-    if [[ $rc -eq 2 ]] && grep -Eq '\] SKIP' "$log" 2>/dev/null; then
-        notable="suite requested SKIP (exit 2 + '] SKIP' line in log)"
+    # E9 (session-18 wave-E) + F7 (session-19): a suite that could not
+    # run (pxr-less etc.) exits 2 with a dedicated skip SENTINEL — a log
+    # line matching `SUITE-SKIP:` or `[<its own suite tag>] ...SKIP`
+    # (see the header note). The old bare `] SKIP` substring matched ANY
+    # line (e.g. blrun's warm-cache note) and re-classed FAILs as SKIP.
+    if [[ $rc -eq 2 ]] && grep -Eq "SUITE-SKIP:|\[${name}\] .*SKIP" "$log" 2>/dev/null; then
+        notable="suite requested SKIP (exit 2 + sentinel line: 'SUITE-SKIP:' or '[${name}] …SKIP')"
         verdict="SKIP (suite-requested)"; NSKIP=$((NSKIP + 1))
-        echo "[suite]   SKIP (suite requested: exit 2 + SKIP line)"
+        echo "[suite]   SKIP (suite requested: exit 2 + sentinel line)"
     elif [[ $rc_ok -eq 1 && $marker_ok -eq 1 ]]; then
         verdict="**PASS**"; NPASS=$((NPASS + 1))
         echo "[suite]   PASS (exit=$rc, marker found)"
@@ -220,6 +233,15 @@ done
 # code the run ended DONE/exit 0 — indistinguishable from all-green.
 if [[ ${#ONLY[@]} -gt 0 && $((NPASS + NFAIL)) -eq 0 ]]; then
     echo "[suite] --only matched no suite: ${ONLY[*]}"
+    # F6 (session-19): a stale RESULTS.md from an earlier full run sits
+    # next to this dead run looking authoritative — overwrite it with a
+    # tombstone pointing at stdout before the exit-2.
+    {
+        echo "# Regression battery — ${LABEL} (suite_runner.sh)"
+        echo
+        echo "Run date: $(date -Is)"
+        echo "NO RESULTS — \`--only ${ONLY[*]}\` matched no suite (exit 2). See stdout."
+    } > "$RESULTS_MD"
     exit 2
 fi
 

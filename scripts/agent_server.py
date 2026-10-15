@@ -27,6 +27,7 @@ auto-refreshes the .glb when notified. This gives the user a live view
 of the agent's work without any manual refresh.
 """
 import argparse
+import functools
 import json
 import os
 import re
@@ -160,6 +161,25 @@ class FileWatcher:
 # HTTP request handler
 # ---------------------------------------------------------------------------
 
+def _dead_client_tolerant(fn):
+    """A11 (session-19): the short-lived request paths (_send_file/
+    _send_json/do_GET/do_POST) can raise BrokenPipeError/
+    ConnectionResetError when a client vanishes mid-response — the SSE
+    loop's `except OSError` (wave-2b) never sees them, and ThreadingMixIn
+    turns any uncaught handler error into a stderr traceback per dead
+    client. Swallow ONLY that exception pair here (NOT bare Exception —
+    real errors must stay visible) and mark the connection closed."""
+    @functools.wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except (BrokenPipeError, ConnectionResetError):
+            # dead client — the response cannot be delivered; drop it
+            self.close_connection = True
+            return None
+    return wrapper
+
+
 class AgentServerHandler(http.server.BaseHTTPRequestHandler):
     workdir = "/tmp/agent_session"  # set by main()
     viewer_dir = None  # set by main()
@@ -192,6 +212,7 @@ class AgentServerHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    @_dead_client_tolerant
     def do_GET(self):
         path = self.path.split("?")[0]
 
@@ -259,6 +280,7 @@ class AgentServerHandler(http.server.BaseHTTPRequestHandler):
 
         self.send_error(404, f"Unknown path: {path}")
 
+    @_dead_client_tolerant
     def do_POST(self):
         path = self.path.split("?")[0]
 
