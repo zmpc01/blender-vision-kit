@@ -44,6 +44,21 @@ if not os.path.exists(BLENDER_BIN):  # sibling fallback (agent-kit layout)
         BLENDER_BIN = ALT
 
 FIXTURE = os.path.join(tempfile.gettempdir(), "test_v7_camprobe_fixture.blend")
+# the look runs write their manifest under output/<fixture-base>/look
+MANIFEST = os.path.join(_REPO_ROOT, "output", "test_v7_camprobe_fixture",
+                        "look", "look_manifest.json")
+
+
+def _drop_stale_manifest():
+    """F8 (s19 triage): output/ is NOT wiped between battery runs, and the
+    old code read the manifest through `if os.path.exists(...)` fallbacks
+    (incl. a legacy output/look_test_v7 path) — so V7d-V7o could green on
+    the PREVIOUS battery's manifest when a look died before writing.
+    Delete-before-run: after each run_look the manifest must EXIST again
+    (a fresh write), else the checks fail loudly. Existence-after-delete
+    is the freshness proof; no mtime window needed."""
+    if os.path.exists(MANIFEST):
+        os.remove(MANIFEST)
 
 
 def check(label, got, expect, tol=None):
@@ -120,6 +135,7 @@ if __name__ == "__main__" and os.environ.get("V7_PARENT") is None:
         print(r.stderr[-2000:])
 
     # probe-only run at f1 (the wall blocks BlockedCam)
+    _drop_stale_manifest()
     r1 = run_look(["--frame", "1", "--angles", "none",
                    "--probe-camera", "BlockedCam,ClearCam,SideCam",
                    "--probe-camera", "NoSuchCam", "--no-fail-on-issues"])
@@ -129,17 +145,13 @@ if __name__ == "__main__" and os.environ.get("V7_PARENT") is None:
           and "object=OccluderWall" in r1.stdout, True)
     check("V7c ClearCam reads clear", "cam=ClearCam frame=1 status=clear"
           in r1.stdout.replace("[look] ", ""), True)
-    man1 = json.load(open(os.path.join(_REPO_ROOT, "output", "look_test_v7",
-                                       "look", "look_manifest.json"))) \
-        if os.path.exists(os.path.join(_REPO_ROOT, "output", "look_test_v7",
-                                       "look", "look_manifest.json")) else None
-    # the probe-only run writes its manifest under output/<base>/look
-    base1 = os.path.join(_REPO_ROOT, "output", "test_v7_camprobe_fixture",
-                         "look", "look_manifest.json")
-    man1 = json.load(open(base1)) if os.path.exists(base1) else man1
+    # F8: no fallback reads — the probe run must have freshly re-written
+    # the manifest we deleted above
+    man1 = json.load(open(MANIFEST)) if os.path.exists(MANIFEST) else None
     if man1 is None:
-        FAIL.append("V7-manifest missing")
-        print("manifest not found at", base1)
+        FAIL.append("V7-manifest missing after delete-before-run (run_look "
+                    "did not write it — look crashed pre-write?)")
+        print("manifest not found at", MANIFEST)
     else:
         rows = {r["camera"]: r for r in man1.get("camera_probes", [])}
         check("V7d manifest carries camera_probes", len(rows) >= 4, True)
@@ -155,25 +167,30 @@ if __name__ == "__main__" and os.environ.get("V7_PARENT") is None:
               rows.get("NoSuchCam", {}).get("status"), "missing")
 
     # probe at f24 (the wall slid off-ray: BlockedCam now sees the cube)
+    _drop_stale_manifest()
     r2 = run_look(["--frame", "24", "--angles", "none",
                    "--probe-camera", "BlockedCam", "--no-fail-on-issues"])
     check("V7k f24 probe exit 0", r2.returncode, 0)
-    base2 = os.path.join(_REPO_ROOT, "output", "test_v7_camprobe_fixture",
-                         "look", "look_manifest.json")
-    man2 = json.load(open(base2)) if os.path.exists(base2) else {}
+    if os.path.exists(MANIFEST):
+        man2 = json.load(open(MANIFEST))
+    else:
+        man2 = {}
+        FAIL.append("V7-manifest(f24) missing after delete-before-run")
     row2 = (man2.get("camera_probes") or [{}])[0]
     check("V7l f24 wall moved away — subject named",
           row2.get("object"), "SubjectCube")
     check("V7m f24 subject distance 4.4", row2.get("distance_m"), 4.4, tol=0.05)
 
     # render-path sanity: a normal (non-probe) run must still work
+    _drop_stale_manifest()   # F8: V7o must read r3's OWN manifest
     r3 = run_look(["--frame", "1", "--angles", "front",
                    "--w", "320", "--h", "240"])
     check("V7n normal look still exit 0", r3.returncode, 0)
     check("V7o normal manifest has empty camera_probes key",
-          json.load(open(base2)).get("camera_probes"), [])
+          json.load(open(MANIFEST)).get("camera_probes")
+          if os.path.exists(MANIFEST) else None, [])
 
-    results = {"suite": "V7 camprobe", "fail": FAIL, "n_cases": 14}
+    results = {"suite": "V7 camprobe", "fail": FAIL, "n_cases": 15}
     with open(OUT, "w") as f:
         json.dump(results, f, indent=2)
     print(f"[V7] {'ALL PASS' if not FAIL else 'FAILURES: ' + str(FAIL)}")

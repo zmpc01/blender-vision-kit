@@ -384,22 +384,19 @@ def main():
         empty_payload, empty_wrapper = assert_object_payload(stage, "TestEmpty", "EMPTY")
 
         # identityColor assertions (cube has material; sun has color; cam/empty may not)
+        # F2 (s19 triage): these three were WARN-gated try/excepts — a
+        # color regression could never fail the suite (only the unrelated
+        # payload roundtrip assert could). tol=2e-2 already absorbs the
+        # USD round-trip jitter (float3 carriers, ~1e-7 error), so assert
+        # DIRECTLY: an AssertionError propagates to main()'s
+        # except-AssertionError handler -> FAIL + exit 1.
         print("[test_usd_carrier] identityColor assertions:")
         # Cube: material diffuse_color (0.85, 0.2, 0.15)
-        try:
-            assert_identity_color(cube_wrapper, (0.85, 0.2, 0.15), tol=2e-2)
-        except AssertionError as e:
-            print(f"  [WARN] cube identityColor mismatch: {e}")
+        assert_identity_color(cube_wrapper, (0.85, 0.2, 0.15), tol=2e-2)
         # Cube_dot: material diffuse_color (0.1, 0.6, 0.9)
-        try:
-            assert_identity_color(cube_dot_wrapper, (0.1, 0.6, 0.9), tol=2e-2)
-        except AssertionError as e:
-            print(f"  [WARN] cube_dot identityColor mismatch: {e}")
+        assert_identity_color(cube_dot_wrapper, (0.1, 0.6, 0.9), tol=2e-2)
         # Sun: data.color (1.0, 0.95, 0.8)
-        try:
-            assert_identity_color(sun_wrapper, (1.0, 0.95, 0.8), tol=2e-2)
-        except AssertionError as e:
-            print(f"  [WARN] sun identityColor mismatch: {e}")
+        assert_identity_color(sun_wrapper, (1.0, 0.95, 0.8), tol=2e-2)
 
         # Verify cube's anchor_to (cube has no parent → "")
         assert cube_payload["anchor_to"] == "", \

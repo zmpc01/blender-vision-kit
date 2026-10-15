@@ -308,7 +308,13 @@ def main():
     # R6 yaw-90 the MUG on the table (round footprint: contact unchanged)
     def t6():
         crate.location.x -= 0.18
-        crate.location.z = 0.50 + 0.025 + 0.15
+        # F5 (s19 triage): housekeeping must RE-PLANT the crate exactly on
+        # the stool top (R5's own comment below: the stool top is 0.55 —
+        # snap_z bottom -> 0.50 + 0.05 depth — so the seated z is
+        # 0.50 + 0.05 + 0.15). The old 0.025 used the stool's PRE-snap
+        # top (0.525) and re-planted the exact 25mm penetration R5's fix
+        # had removed — R6 then ran on a planted-penetrating scene.
+        crate.location.z = 0.50 + 0.05 + 0.15
         mug.location = mug_home
         mug.rotation_euler = Euler((0, 0, math.radians(90)), 'XYZ')
         bpy.context.view_layer.update()

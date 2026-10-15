@@ -139,8 +139,45 @@ def test_suite_runner_list():
     n = len(re.findall(r"^\s*\d+\.\s+\S+", out, re.M))
     check("suite_runner.list_rc", r.returncode == 0,
           "rc=%r stderr=%r" % (r.returncode, r.stderr[:200]))
-    check("suite_runner.list_enumerates_battery", n >= 26,
-          "found %d suite entries, need >= 26" % n)
+    # F10 (s19 triage): the battery-count drift law. The count went stale
+    # in three documents at once (SKILL.md said 29, the runner header
+    # said 26+3, the real SUITES roster had 34 rows) while THIS floor
+    # (>=26) stayed green through all of it — a floor cannot catch a
+    # shrinking roster either. Pin the true count (>= 34 at the s19 tip;
+    # the count may legitimately GROW when a wave lands a suite) plus one
+    # representative name per family below. SKILL.md's battery line is
+    # the orchestrator's to fix — this test pins the roster truth.
+    check("suite_runner.list_enumerates_battery", n >= 34,
+          "found %d suite entries, need >= 34 (the s19 SUITES roster; "
+          "raise this pin in the same commit that lands a new suite — "
+          "and never let it shrink)" % n)
+    _families = (
+        ("core", "test_kit_scope"),
+        ("look-v1", "test_v1_look"),
+        ("look-v9", "test_v9_fixes_s16"),
+        ("placement-t2", "test_t2_stairs"),
+        ("diorama-t8", "t8_placement_diorama"),
+        ("chaos-t9", "t9_chaos_fuzz"),
+        ("export-t10", "test_t10_export"),
+        ("gridrefine-f17", "test_f17_gridrefine"),
+        ("levels-f22", "test_f22_levels"),
+        ("route-r7", "test_r7_route"),
+        ("seat-r8", "test_r8_seat"),
+        ("chunking-r9", "test_r9_chunking"),
+        ("usd-carrier", "test_usd_carrier"),
+        ("s17-wave-a", "test_s17_wave_a"),
+        ("s17-wave-b", "test_s17_wave_b"),
+        ("s17-infra", "test_s17_infra"),
+        ("x1-detection", "x1_detection_matrix"),
+        ("s18-eyes", "test_s18_eyes"),
+        ("s18-wave-b", "test_s18_wave_b"),
+        ("s18-wave-c", "test_s18_wave_c"),
+        ("s18-wave-d", "test_s18_wave_d"),
+    )
+    _missing = [member for _, member in _families if member not in out]
+    check("suite_runner.roster_family_representatives", not _missing,
+          "missing from --list: %s (a family dropped off the roster?)"
+          % _missing)
     check("suite_runner.reaping_law_header",
           "REAPING" in out.upper() and "foreground" in out.lower(),
           "--list must print the loud reaping-law header (SKILL.md §L181)")

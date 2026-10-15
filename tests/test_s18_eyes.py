@@ -13,12 +13,12 @@ the battery never touched (F-TS/s17 follow-ups).
      s17 marker sweep), never silently on the marker cam.
   3. build_sfx vocabulary (pure-python module — its own isolation
      contract says it NEVER runs inside the Blender session): importable
-     without bpy, the PATCHES table covers the documented vocabulary, and
-     a non-{name,frame}-shaped event is REJECTED rather than silently
-     skipped. Negative-frame (frame<0) rejection is D9's fix site (the
-     exporter's gate 15, wave-D) — see the '-- depends on 2-D' note in
-     test_3: until that lands the check records PENDING instead of
-     failing the battery row, and flips into a real assert afterwards.
+     without bpy, the PATCHES table covers the documented vocabulary, a
+     non-{name,frame}-shaped event is REJECTED rather than silently
+     skipped, and a negative-frame event is refused with ValueError (the
+     D9 fix, pinned behaviorally since s18-wave-D D9a — the old
+     '-- depends on 2-D' PENDING hatch here was dead-but-armed once that
+     landed, so it is a direct assert now).
 
 Run:   ./scripts/blrun.sh --background --python tests/test_s18_eyes.py --
 """
@@ -38,7 +38,7 @@ import bpy
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _KIT = os.path.dirname(_HERE)
 
-CHECKS = {"n": 0, "fail": [], "pending": []}
+CHECKS = {"n": 0, "fail": []}
 
 
 def _check(tag, cond, detail=""):
@@ -222,28 +222,24 @@ def test_3_build_sfx_vocabulary():
             _check("s18_3.malformed_event_rejected", True,
                    f"rejected: {type(e).__name__}")
 
-        # -- depends on 2-D: negative-frame rejection (D9). The fix site
-        # is the exporter's gate 15 (wave-D); until that lands,
-        # build_sfx.build() ACCEPTS frame<0 and misplaces/wraps the
-        # event (the exact bug class), so a born-red rejection assert
-        # would be a false alarm rather than coverage. Probe: once the
-        # rejection exists this asserts it loudly (and can fail); until
-        # then the check is recorded PENDING and this log carries the
-        # '-- depends on 2-D' marker for the orchestrator to sequence.
+        # D9 (session-18 wave-D, pinned behaviorally as D9a in
+        # test_s18_wave_d): build_sfx.build raises ValueError on negative
+        # frames BEFORE the decoder (the CPython negative-slice wraparound
+        # class). The PENDING escape hatch below used to probe-and-wait
+        # for that fix — dead-but-armed once it landed (a revert would
+        # have stayed green here while D9a went red). F4 (s19): direct
+        # expect-ValueError assert; no hatch, no PENDING plumbing.
         try:
             sfx.build(_events("neg.json",
                               [{"name": "door_slam", "frame": -12}]),
                       os.path.join(tmp, "neg.wav"))
-            rejected, why = False, ""
-        except Exception as e:  # noqa: BLE001
-            rejected, why = True, f"rejected: {type(e).__name__}: {e}"
-        if rejected:
-            _check("s18_3.negative_frame_rejected", True, why)
-        else:
-            print("[s18] NOTE '-- depends on 2-D': build_sfx still accepts "
-                  "frame=-12 (the D9 wraparound class) — gate-15 rejection "
-                  "not landed yet; recorded PENDING, not failed")
-            CHECKS["pending"].append("s18_3.negative_frame_rejected")
+            _check("s18_3.negative_frame_rejected", False,
+                   "frame=-12 accepted — the D9 wraparound class is back "
+                   "(decoder would drop the event past the timeline)")
+        except ValueError as e:
+            _check("s18_3.negative_frame_rejected",
+                   "negative" in str(e) and "frame -12" in str(e),
+                   f"rejected: {e}")
 
 
 def main():
@@ -256,8 +252,6 @@ def main():
     print("=" * 60)
     print(f"test_s18_eyes: {CHECKS['n'] - len(CHECKS['fail'])}/{CHECKS['n']} "
           "checks passed")
-    if CHECKS["pending"]:
-        print(f"PENDING (-- depends on 2-D): {CHECKS['pending']}")
     if CHECKS["fail"]:
         print(f"FAILED: {CHECKS['fail']}")
         print("test_s18_eyes: FAIL")

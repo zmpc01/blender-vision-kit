@@ -381,6 +381,26 @@ else:
     skip("D12b.scene_json_written", "bpy unavailable — source fallbacks above")
 
 # ===========================================================================
+# D11-pin (s19 wave-B): the export_usd.py carrier-stage fail-closed verify
+# — the only s18 wave fix with NO pin. register() swallows a failed hook
+# install and on_export is WARN-and-continue, so a carrier-less USD used
+# to ship exit 0; the fix verifies the previz:entity stage payload landed
+# in the WRITTEN file (the decoder is the oracle) and refuses to ship
+# otherwise. Textual pin under the suite's "(source)" honesty convention:
+# the verify lives inline in main() and a behavioral exercise needs a
+# full pxr round-trip export (covered end-to-end by test_usd_carrier's
+# stage-payload asserts — this pin guards the REFUSAL's existence).
+# ===========================================================================
+_eusd = _src("scripts/export_usd.py")
+check("D11 (source) carrier_stage_verify_refuses_empty",
+      "if not carrier_keys:" in _eusd
+      and "previz:entity stage payload did NOT" in _eusd
+      and "refusing to ship" in _eusd,
+      "export_usd must verify the previz:entity stage payload landed in "
+      "the written file and FAIL a carrier-less export (register() "
+      "swallows hook install failures; on_export is WARN-and-continue)")
+
+# ===========================================================================
 print("=" * 60)
 _summary = (f"test_s18_wave_d: {len(PASS)}/{len(PASS) + len(FAIL)} checks "
             f"passed (bpy={'yes' if HAVE_BPY else 'no'}")

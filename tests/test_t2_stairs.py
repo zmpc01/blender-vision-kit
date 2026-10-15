@@ -153,7 +153,41 @@ def main():
     txt, legend = PL.ascii_height_map(
         region=((-0.8, -0.2), (0.8, 1.5)), supports=[ground] + steps, grid=40)
     print(f"[T2] height map:\n{txt}\n{legend}")
-    check("asciimap.staircase", ("5" in txt or "6" in txt), True)
+    # F9 (s19 triage): the old check ("5" in txt or "6" in txt) was
+    # near-vacuous — any stray digit passed it. The staircase encodes
+    # deterministically (placement_lib.ascii_height_map: band =
+    # int((top_z - zmin)/(zmax - zmin)*15) over the support AABB z range,
+    # chars = _HEIGHT_CHARS): zmin=-0.10 (ground bottom), zmax=0.72
+    # (step4 top), so ground + the four step tops read as FIVE distinct
+    # chars, and down any in-stairs column they appear in DESCENDING step
+    # order (rows run far-y -> near-y = step4 first).
+    zmin, zmax = -0.10, 4 * 0.18
+
+    def _band_char(top_z):
+        return PL._HEIGHT_CHARS[int((top_z - zmin) / (zmax - zmin) * 15)]
+
+    # high step -> low step: F B 8 5 (ground is 1)
+    expected_step_chars = [_band_char(0.18 * i) for i in (4, 3, 2, 1)]
+    rows = txt.split("\n")
+    distinct = {c for c in txt if c not in ".\n"}
+    check("asciimap.distinct_bands", len(distinct) >= 4, True)
+    print(f"[T2] asciimap distinct bands={sorted(distinct)} "
+          f"(ground '{_band_char(0.0)}' + steps "
+          f"{''.join(reversed(expected_step_chars))})")
+    missing = [ch for ch in expected_step_chars if ch not in txt]
+    check("asciimap.step_bands_present", not missing, True)
+    print(f"[T2] asciimap missing step bands={missing}")
+    # column nearest x=0 (grid=40 over x[-0.8,0.8]: x = -0.8+1.6*(i+.5)/40,
+    # i=20 -> x=+0.02 — inside every step's x[-0.6,0.6])
+    col = "".join(row[20] for row in rows if len(row) > 20)
+    first_idx = {ch: col.find(ch) for ch in expected_step_chars}
+    ordered = all(first_idx[expected_step_chars[k]] != -1
+                  and first_idx[expected_step_chars[k]] <
+                  first_idx[expected_step_chars[k + 1]]
+                  for k in range(len(expected_step_chars) - 1))
+    check("asciimap.step_order_far_to_near", ordered, True)
+    print(f"[T2] asciimap col@x~0={col!r} first-idx={first_idx} "
+          f"(expect {'<'.join(expected_step_chars)})")
     R["ascii"] = {"map": txt, "legend": legend}
 
     # -- 6. multi-level: figure straddles steps 2 and 3 ---------------------
@@ -163,9 +197,24 @@ def main():
     r6 = PL.place_on(fig, steps[1], steps[2], clearance=0.0,
                      footprint='bottom')
     mn, _ = PL._aabb(fig)
+    # F1 (s19 triage): this is the multi-level FEATURE's whole point and
+    # asserted NOTHING (a regression to always-False multi_level stayed
+    # green). Report keys read from placement_lib.place_on (gotcha 11):
+    # multi_level flag; post_contact = one pair_contact row PER support
+    # (row["b"] = the support's name, row["state"] its contact verdict).
+    straddle_supports = {p.get("b") for p in r6["post_contact"]}
+    step3_row = next((p for p in r6["post_contact"]
+                      if p.get("b") == "Step3"), {})
     print(f"[T2] straddle: multi_level={r6['multi_level']} "
-          f"z_bottom={mn.z:.4f} (expect ~0.54 on step3) "
-          f"states={[p['state'] for p in r6['post_contact']]}")
+          f"z_bottom={mn.z:.4f} (expect ~{3 * 0.18:.2f} on step3) "
+          f"states={[p['state'] for p in r6['post_contact']]} "
+          f"supports={sorted(straddle_supports)}")
+    check("straddle.multi_level", r6["multi_level"], True)
+    check("straddle.bottom_z", round(mn.z, 4), round(3 * 0.18, 4),
+          tol=0.0015)
+    check("straddle.supports_named",
+          {"Step2", "Step3"}.issubset(straddle_supports), True)
+    check("straddle.step3_state", step3_row.get("state"), "TOUCHING")
     R["straddle"] = r6
 
     # -- 7. slope align orientation (code-review gate P0 regression) --------
