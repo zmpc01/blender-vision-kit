@@ -180,6 +180,13 @@ def _apply_set_material_color(obj, params):
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
     if bsdf is None:
         raise RuntimeError(f"No Principled BSDF in {mat.name}")
+    color = params.get("color")
+    if not isinstance(color, list):
+        # name the shape — the generic _require message ("must be list")
+        # made a consumer grep for the [r,g,b] contract in vain (s18 5i)
+        raise RuntimeError(
+            f"op 'set_material_color' key 'color' must be [r,g,b] or "
+            f"[r,g,b,a] numbers (got {color!r})")
     color = _require(params, "color", "set_material_color",
                      expected_type=list)
     # s18 B11: 'color' had NO shape/type/range validation — a bare string
@@ -1262,7 +1269,9 @@ def _apply_split_mesh(obj, params):
         allowed |= {"ack_risks", "ack_many_parts"}
     elif mode == "split-region":
         allowed |= {"new_id", "ack_risks"}
-    extra = set(params) - allowed - {"op", "id"}
+    # 'mode' is the SELECTOR — it is always legal regardless of its value
+    # (s18 battery: the L13 dry-run contract regression caught this).
+    extra = set(params) - allowed - {"op", "id", "mode"}
     if extra:
         raise RuntimeError(
             f"split_mesh: mode {mode!r} does not take param(s) "
@@ -1751,7 +1760,7 @@ def main():
             os.makedirs(os.path.dirname(os.path.abspath(args.save_blend)),
                         exist_ok=True)
             bpy.ops.wm.save_as_mainfile(filepath=args.save_blend)
-            print(f"[apply_patch] CHAIN ABORTED at mutation {i+1}; "
+            print(f"[apply_patch] CHAIN ABORTED at mutation {i+1}/{total}; "
                   f"scene state SAVED to {args.save_blend} anyway "
                   f"(the aborting op's change may be incomplete — "
                   f"verify with physics_gate)", file=sys.stderr)

@@ -143,7 +143,11 @@ def test_2_camera_intent_rows():
     outdir = "/tmp/test_s18_intent_out"
     shutil.rmtree(outdir, ignore_errors=True)
     r = _run_look(["--load-blend", blend, "--output", outdir,
-                   "--angles", "front", "--no-grid", "--no-annotate"])
+                   "--angles", "front", "--no-grid", "--no-annotate",
+                   # s18 fix: the fixture's default cube penetrates the
+                   # plane (validator P1) — this section asserts INTENT
+                   # rows, not exit purity; keep the look at exit 0.
+                   "--no-fail-on-issues"])
     _check("s18_2.exit0", r.returncode == 0,
            f"rc={r.returncode} tail={(r.stdout or '')[-300:]}")
     man_path = os.path.join(outdir, "look_manifest.json")

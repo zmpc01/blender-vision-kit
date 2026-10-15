@@ -286,13 +286,19 @@ def main():
                lambda pairs: (len(pairs) == 0, f"{len(pairs)} pairs"))
     # R5 offset-xy: crate half off the stool
     def t5():
-        crate.location.z = 0.50 + 0.025 + 0.15
+        # s18 fix (battery find): the stool top is at 0.55 (snap_z bottom
+        # -> 0.50 + 0.05 depth) — the old 0.675 seated the crate 25mm IN
+        # the stool (a planted penetration the no-op predicate masked
+        # since the round was written; E7's state predicate exposed it).
+        # 0.50 + 0.05 + 0.15 = bottom exactly on the stool top.
+        crate.location.z = 0.50 + 0.05 + 0.15
         crate.location.x += 0.18
         bpy.context.view_layer.update()
     _run_round("R5_offset", crate, stool, t5,
                # E7 (docstring row R5: 'TOUCHING or CLEAR — must not
                # crash'): the crate bottom is seated exactly on the
-               # stool top (0.675 - 0.15 == 0.525), half off in XY.
+               # stool top (0.70 - 0.15 == 0.55 == stool top), half off
+               # in XY.
                lambda pairs: (
                    bool(pairs) and all(p.get("state") in
                                        ("TOUCHING", "CLEAR")

@@ -221,9 +221,15 @@ expect_error("s18_2m.audit_negative_band_refused",
                   "contact_band_mm": -1.0}),
              "contact_band_mm", ">= 0")
 # the bite check: with a VALID band the gate still fails a penetrating
-# scene (proves the band comparison did not go all-False)
+# scene (proves the band comparison did not go all-False). s18 fix x2:
+# (1) same-spot cubes are exact-coplanar full overlap -> TOUCHING (the
+# coplanar contact law); (2) an AXIS-offset of identical boxes is also
+# blind — every vert of A lies ON B's boundary or outside it, so the
+# vert-sampling inside-test abstains and the coplanar edges abstain the
+# crossing test (documented classifier bound). Offset DIAGONALLY so a
+# vert of A lands strictly inside B -> unambiguous PENETRATING.
 add_mesh("PenA", (3, 0, 0.2))
-add_mesh("PenB", (3, 0, 0.2))    # same spot: interpenetrating
+add_mesh("PenB", (3.05, 0.05, 0.35))   # diagonal: strict inside-vert
 expect_error("s18_2n.audit_penetrating_still_bites",
              lambda: AP.apply_mutation(
                  {"op": "audit", "pairs": ["PenA,PenB"]}),

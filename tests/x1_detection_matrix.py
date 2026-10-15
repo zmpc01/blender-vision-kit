@@ -636,9 +636,16 @@ def _regressions(s, bin_mismatch):
         problems.append(
             f"BVH state-exact regression {s['bvh_state_ok']}/{s['n']}")
     if bin_mismatch:
-        ids = ",".join(f"{m['id']}:{m['detector']}" for m in bin_mismatch[:6])
-        problems.append(
-            f"{len(bin_mismatch)} scored binary mismatch(es): {ids}")
+        # the bbox detector's misses are the KNOWN-bad baseline (scored,
+        # never failed — see the docstring); only a BVH-side mismatch is
+        # a regression. The first tail version failed on ALL mismatches
+        # and contradicted this docstring (battery find, s18).
+        bvh_mismatch = [m for m in bin_mismatch if m["detector"] != "bbox"]
+        if bvh_mismatch:
+            ids = ",".join(f"{m['id']}:{m['detector']}"
+                           for m in bvh_mismatch[:6])
+            problems.append(
+                f"{len(bvh_mismatch)} BVH binary mismatch(es): {ids}")
     return problems
 
 

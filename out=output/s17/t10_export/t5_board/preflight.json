@@ -1,0 +1,28 @@
+{
+ "tool": "export_preflight (D19 REV-3)",
+ "module": "/home/z/repos/blender-vision-kit/scripts/t10_fixture_scene_board.py",
+ "flags": {
+  "skip_build": false,
+  "animate_dry": false
+ },
+ "checks": {
+  "import": "ok",
+  "S1": "ok",
+  "S2": "rejected",
+  "S3": "ok",
+  "S4": "ok",
+  "B": "skipped (Phase S rejected)"
+ },
+ "status": "rejected",
+ "rejections": [
+  "S2 BOARD['Hero']: entry must be a (MAIN, EXTRA) pair \u2014 missing the EXTRA slot at index 1 is the real drop case (the decoder NOTEs and drops the entry); got tuple(len=1). Fix: append an EXTRA element, e.g. (main, (0.25,)) \u2014 EXTRA may also be None/empty (offset 0.0)."
+ ],
+ "warnings": [],
+ "coverage": {
+  "shots": 2,
+  "cams": 2,
+  "board": 1,
+  "story_constants": 4,
+  "vacuous": false
+ }
+}

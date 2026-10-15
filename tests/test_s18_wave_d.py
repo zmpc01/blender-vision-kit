@@ -189,12 +189,13 @@ check("D9 (source) gate15_rejects_negative_frames",
 # ===========================================================================
 if KIT is not None:
     # legacy bare alias resolves through _RNA_OP_ALIASES
+    # (s18 fix: RNA types expose .bl_rna.identifier — there is no .idname)
     check("D3a.legacy_alias_resolves",
-          KIT._resolve_bpy_op("usd_export").get_rna_type().idname ==
-          bpy.ops.wm.usd_export.get_rna_type().idname)
+          KIT._resolve_bpy_op("usd_export").get_rna_type().bl_rna.identifier ==
+          bpy.ops.wm.usd_export.get_rna_type().bl_rna.identifier)
     check("D3b.module_path_resolves",
           KIT._resolve_bpy_op("wm.read_homefile").get_rna_type()
-          .idname.startswith("WM_OT"))
+          .bl_rna.identifier.startswith("WM_OT"))
     try:
         KIT._resolve_bpy_op("no.such.op")
         check("D3c.unknown_op_raises", False, "no AttributeError")

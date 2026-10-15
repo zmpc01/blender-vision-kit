@@ -259,7 +259,7 @@ check("C4b.copy_named_SimBake", c1.data.name.endswith(".SimBake"),
       c1.data.name)
 check("C4c.original_datablock_untouched",
       c2.data is not c1.data
-      and max((a.co - b.co).length for a, b in
+      and max((a.co - b).length for a, b in
               zip(c2.data.vertices, orig)) < 1e-9,
       "the SHARED datablock kept its pre-bake vertices")
 check("C4d.bake_landed_on_private_copy",
@@ -294,10 +294,16 @@ check("C4f.object_on_private_copy_after_settle",
 # ================================================================== C6
 # skinned guard: driver-posed and manually-posed armatures (zero anim)
 wipe()
-bpy.ops.object.armature_add(location=(0, 0, 0))
-arm_obj = bpy.context.active_object
-arm_obj.name = "RigDriver"
-eb = arm_obj.data.edit_bones[0]
+# s18 fix: ops.armature_add is context-shy in background mode (edit_bones
+# stayed empty) — build the rig through the data API, which is the
+# reliable path headless.
+arm_data = bpy.data.armatures.new("RigDriver_data")
+arm_obj = bpy.data.objects.new("RigDriver", arm_data)
+bpy.context.collection.objects.link(arm_obj)
+bpy.context.view_layer.objects.active = arm_obj
+arm_obj.select_set(True)
+bpy.ops.object.mode_set(mode='EDIT')
+eb = arm_data.edit_bones.new("Bone")
 eb.head = (0, 0, 0)
 eb.tail = (0, 0, 1)
 bpy.ops.object.mode_set(mode='OBJECT')
@@ -321,14 +327,22 @@ except RuntimeError as e:
 
 # manually-posed armature (no animation data AT ALL): only the C6
 # pose-matrix probe can catch this class
-bpy.ops.object.armature_add(location=(3, 0, 0))
-arm2 = bpy.context.active_object
-arm2.name = "RigManual"
-eb2 = arm2.data.edit_bones[0]
+arm2_data = bpy.data.armatures.new("RigManual_data")
+arm2 = bpy.data.objects.new("RigManual", arm2_data)
+arm2.location = (3, 0, 0)
+bpy.context.collection.objects.link(arm2)
+bpy.context.view_layer.objects.active = arm2
+arm2.select_set(True)
+bpy.ops.object.mode_set(mode='EDIT')
+eb2 = arm2_data.edit_bones.new("Bone")
 eb2.head = (3, 0, 0)
 eb2.tail = (3, 0, 1)
 bpy.ops.object.mode_set(mode='OBJECT')
 pb2 = arm2.pose.bones["Bone"]
+# s18 fix: pose bones default to QUATERNION mode — an euler set on a
+# quaternion-mode pose bone is ignored by the evaluator (the same class
+# C12 fixes for props) and the rig reads rest-pose, which it was.
+pb2.rotation_mode = 'XYZ'
 pb2.rotation_euler = (0.0, 0.6, 0.0)   # bent in place, zero keyframes
 bpy.ops.mesh.primitive_cube_add(location=(3, 0, 1.2))
 fig6b = bpy.context.active_object
