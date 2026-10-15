@@ -390,35 +390,25 @@ gait_modifiers.
 
 ## SESSION 17b LAWS (the fourth film: SQUALL — the storm-dusk regime; F-TS1..8)
 
-- **F-TS1: the film path now COMPOSES kit layers** (sidecar-gated
+- **F-TS1: the film path COMPOSES kit layers** (sidecar-gated
   read_tick splice + real z; unlayered stays byte-identical) with the
-  paired tripwire fix (the layout_composed meta marker + the
-  composed-aware ground-contact gate).
-- **THE MARKER-CAMERA LAW**: shot timeline markers override
-  scene.camera inside their span — every probe tool nulls them in a
-  finally (three ladder runs rendered one shot's pose before this
-  re-landed).
+  paired tripwire fix (layout_composed marker + composed-aware gate).
+- **THE MARKER-CAMERA LAW**: shot markers override scene.camera in
+  their span — every probe tool nulls them in a finally. (s19 film-
+  lane addendum: NULLED markers STILL flip scene.camera at frame_set —
+  DELETE + recreate is the only safe probe path.)
 - **THE AXIAL-CRANE LAW**: an opaque roof makes the packed interior
-  visible ONLY along the colonnade axis — no outside-above crane can
-  see under it; a wall blocks any low lens north-side too (the
-  smoke-still-before-framing law).
-- **THE RAGDOLL WALK-CLIP CLASS**: the physics layer moves the
-  ORIGIN; the mesh keeps the walk clip — the film fix is the
-  per-channel tumble overlay (rot_x/rot_y) AFTER removing bake2's
-  flat whole-euler x/y fcurves via the OWNING CHANNELBAG (5.2 slotted
-  actions: never action.fcurves).
-- **chase_frame="belt" is now a PIN, not a default** (the r109 flip
-  would silently re-band every film re-bake — F-TS2). Appended
-  populations: interval=1 + zone0-first + chase-last re-asserts
-  (F-TS4: the native reads ONE global interval from the ID-SORTED
-  populations[0]).
-- **THE SILENT-REPLACE LAW**: a python .replace() on a cam table
-  drifts silently — assert-guard every replace; the keepout row and
-  the camprobe cert are ONE edit (F-TS7: a stale row clamps a crowd
-  hole with no camera there).
+  visible ONLY along the colonnade axis (smoke-still-before-framing).
+- **THE RAGDOLL WALK-CLIP CLASS**: physics moves the ORIGIN; the mesh
+  keeps the walk clip — per-channel tumble overlay AFTER removing
+  bake2's flat whole-euler fcurves via the OWNING CHANNELBAG.
+- **chase_frame="belt" is a PIN, not a default** (F-TS2). Appended
+  populations: interval=1 + zone0-first + chase-last (F-TS4: the
+  native reads ONE global interval from the ID-SORTED populations[0]).
+- **THE SILENT-REPLACE LAW**: assert-guard every .replace() on a cam
+  table; the keepout row and the camprobe cert are ONE edit (F-TS7).
 - **The portal-axis naming trap (F-TS3)**: PortalAxis names the
-  CROSSING; NORTH_SOUTH = the wall at y=center.y. The emission
-  hijack (F-TS4) and the loader N-pin (F-TS5, expected_agents=) are
-  landed kit surfaces.
-- Ledger: docs/USABILITY_TS1_squall.md; the design of record:
+  CROSSING; NORTH_SOUTH = the wall at y=center.y. The loader N-pin
+  (F-TS5, expected_agents=) is a landed kit surface.
+- Ledger: docs/USABILITY_TS1_squall.md; design of record:
   docs/DESIGN_squall.md REV-3.
