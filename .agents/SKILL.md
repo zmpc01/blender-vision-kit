@@ -257,63 +257,53 @@ film recipe + export command + crowd bridge contract) · crowd_fields ·
 gait_modifiers.
 ## Session-12/13 meta (condensed — full: kb/tdawn_vision_film.md + docs/USABILITY_TD1* + USABILITY_R9.md)
 
-- F-TD5 exporter view-layer sync: LANDED (upstream + THIS tree session-16,
-  the sweep itself updates). D18 asset-partition: 10 measured laws in
-  docs/USABILITY_R9.md; chunks IMMUTABLE, new asset = new directory.
+- F-TD5 exporter view-layer sync LANDED; D18 asset-partition: 10
+  measured laws in docs/USABILITY_R9.md (chunks IMMUTABLE).
 - FACTORY-PURGE LAW: --factory-startup loads default Cube/Camera/Light
   into YOUR scene — purge at build_scene start.
 - Glow-surface law: dark-warm Base Color + saturated Emission Color set
-  independently (make_material pins them equal by design — F-TD11 kwargs).
-- Recession occlusion: when a subject "vanishes", ray-cast THROUGH it
-  (look --probe-camera) before doubting the animation; the fix is a
-  viewpoint move, not a retime.
-- NEVER run two blrun/EEVEE pipelines on one display (the second kills
-  the first's Xvfb silently); the flock makes it fail fast instead.
+  independently (make_material pins them equal — F-TD11 kwargs).
+- Recession occlusion: ray-cast THROUGH a "vanished" subject (look
+  --probe-camera) — the fix is a viewpoint move, not a retime.
+- NEVER run two blrun/EEVEE pipelines on one display (the flock makes
+  it fail fast instead).
 
 ## SESSION 14/15 LAWS (condensed — full: docs/USABILITY_TD1/TF1 + HANDOFF session-14/15)
 
 - daemonize.py (double-fork) is the ONLY background survivor; it chdirs
-  "/" — absolute paths + `bash -c "cd <repo> && cmd"`. Comments db dies
-  with sandboxes; the escape-repo export file is the durable user voice.
-- blrun carries a per-DISPLAY flock (exit 90 LOCK-HELD; BLRUN_FORCE=1
-  bypass; BLENDER_DISPLAY=:98 = a real second lane). Suites that NEST
-  blrun under an outer blrun MUST set BLRUN_FORCE=1 (session-16).
+  "/" — absolute paths. blrun carries a per-DISPLAY flock (exit 90;
+  BLRUN_FORCE=1 bypass — suites NESTING blrun MUST set it).
 - make_material(arg3=ROUGHNESS; emission via F-TD11 kwargs). look.py
-  --probe-camera on EVERY reframe. Keepout rows are (name,px,py,f0,f1
-  FRAMES) — seconds are INERT; verify keepouts_applied counts ROWS.
+  --probe-camera on EVERY reframe. Keepout rows (name,px,py,f0,f1
+  FRAMES) — seconds INERT; verify keepouts_applied counts ROWS.
 - Export-safe visibility = SCALE keys (hide_render does not export).
-- 5.2 slotted actions: use _iter_fcurves (channelbags), never
-  action.fcurves. Park vendor source meshes outside every frustum.
+- 5.2 slotted actions: use _iter_fcurves (channelbags). Park vendor
+  source meshes outside every frustum.
 - sfx events {name|kind, frame}; BEATS=(id,t_seconds,label) is the
-  CANONICAL agent-kit exporter's contract (this tree's exporter never
-  consumes it — validated shape-only by the preflight).
-- Rebase sides INVERT: --theirs = YOUR replayed commit. Re-render + diff
-  after every conflict resolution.
-- Night laws: emissive materials do not LIGHT; sky ladder 0.04 dead →
-  0.12 + practicals; saturated neon owns local radiance (give the hero
-  a warm anchor); SSR knob = eevee.use_raytracing. Near-field emission
-  ceiling is DISTANCE-dependent (~1.1-1.3 close, 1.9 far OK).
+  CANONICAL agent-kit exporter's contract (shape-only here).
+- Rebase sides INVERT: --theirs = YOUR replayed commit. Re-render +
+  diff after every conflict resolution.
+- Night laws: emissive materials do not LIGHT; sky ladder dead → 0.12
+  + practicals; saturated neon owns local radiance; near-field
+  emission ceiling is DISTANCE-dependent (~1.1-1.3 close, 1.9 far OK).
 - Chrome cannot play 21MB GLBs — verify via API + stills. The FLOW
   STRIP is the geometry-seam detector — run BEFORE cameras.
-- The governed-pair guard: land kit fix → tools/sync_shared.py --to
+- Governed-pair guard: land kit fix → tools/sync_shared.py --to
   <consumer> → commit BOTH (cross-repo drift fails loudly).
 
-## SESSION 15 FILM LAWS (recovered — the s16 merge dropped this block; full: docs/USABILITY_TF1_last_ferry.md)
+## SESSION 15 FILM LAWS (recovered; full: docs/USABILITY_TF1_last_ferry.md)
 
 - The native engine REFUSES barricade squares past the walkable edge
   (E_InvalidRange) — cap barricade centers at walkable−r.
-- F-TF6: kit mode has NO hero-lane pushout; HERO_LANES was DEAD DATA.
-  F-TG1's engine truth (arrived agents are GHOSTS) means any pushout
-  feature must define arrival semantics FIRST.
-- The bridge shape is a FEATURE: N is pinned per-film (tferry 129,
-  tgreen from its own contract) — never "fix" a pinned N to match a
-  stale constant.
-- Camera-work budget: a 12-shot film spends its budget on REFRAMES not
-  new cams; the tferry choke law (keyed cranes must actually move:
-  _cameras never keyed loc0→loc1 = the static 'crane' class).
-- Night pools: lamp gaps read as murky dead stretches — east band needed
-  two fills; the title card needs F-TD11 emission (make_material arg3
-  is ROUGHNESS).
+- F-TF6: kit mode has NO hero-lane pushout (HERO_LANES was DEAD DATA);
+  any pushout feature must define arrival semantics FIRST (F-TG1:
+  arrived agents are GHOSTS).
+- The bridge shape is a FEATURE: N is pinned per-film — never "fix" a
+  pinned N to match a stale constant.
+- Camera-work budget: REFRAMES not new cams; keyed cranes must actually
+  move (never-keyed loc0→loc1 = the static 'crane' class).
+- Night pools: lamp gaps read as murky dead stretches; the title card
+  needs F-TD11 emission (make_material arg3 is ROUGHNESS).
 
 ## SESSION 16 LAWS (the KIT-QUALITY wave — D19 export preflight + t10; full: docs/USABILITY_S16 + DESIGN_D19)
 
