@@ -49,6 +49,27 @@ independently.
 2. **M2-M3 (next 2-5 sessions)**: develop crowd features in blender-crowd-kit. The kit's `crowd_fields.py` + `gait_modifiers.py` + `prop_carry.py` stay duplicated until v1.
 3. **v1 milestone (M3 complete)**: vendor blender-crowd-kit back into blender-agent-kit as a git submodule at `vendor/blender-crowd-kit/`. Remove the duplicated `crowd_fields.py` + `gait_modifiers.py` + `prop_carry.py` from blender-agent-kit (they'll be in blender-crowd-kit's `scripts/`).
 
+**M3 EXECUTED (r149, 2026-10-15 — vision-kit integration):** the
+submodule is REAL at `vendor/blender-crowd-kit/` (pinned to the
+blender-crowd-kit main tip carrying the prop_carry adopt-back), the
+duplicated crowd siblings (`scripts/crowd_fields.py`,
+`scripts/gait_modifiers.py`, `scripts/blender_kit/prop_carry.py`) and
+their two self-tests are REMOVED from this repo, and
+`tests/test_crowd_e2e.py` (+ its `suite_runner.sh` PY row) gates the
+whole stack end-to-end. Naming note: the plan text above says
+"blender-agent-kit" because it was written on the parent before the
+fork — HERE it means this repo (blender-vision-kit). Consumption law
+(unchanged): the bake drivers resolve the crowd kit via env
+(`TFOG_/TSQUALL_/TGREEN_/TFERRY_CROWD_KIT`) or the sibling layout;
+the vendored path `vendor/blender-crowd-kit` is a first-class resolve
+target those env vars can point at. The thin-vendor wheel layer
+(`vendor/blender-crowd/addon/blender_crowd/wheels/`, F2E-12 sha256
+pin) is independent of the submodule and stays the Rust-free install
+path; `test_crowd_e2e.py` asserts BOTH layers report the same
+version. NOTE: `submodule update --init` needs network + a token for
+the private crowd-kit repo; without it, checks 3-4 of the e2e gate
+fail loud (the wheel layer, checks 1-2, is self-sufficient).
+
 ## How to use the crowd system from blender-agent-kit
 
 Until the v1 vendor:

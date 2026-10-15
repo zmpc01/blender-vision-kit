@@ -1,0 +1,3 @@
+[submodule "vendor/blender-crowd-kit"]
+	path = vendor/blender-crowd-kit
+	url = https://github.com/zmpc01/blender-crowd-kit.git

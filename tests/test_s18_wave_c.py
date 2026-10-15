@@ -44,7 +44,27 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import placement_lib as PL             # noqa: E402
 import physics_place as PP             # noqa: E402
 import contact_discs                   # noqa: E402
-from blender_kit import iter_fcurves, prop_carry as PC   # noqa: E402
+from blender_kit import iter_fcurves   # noqa: E402  (VK's own package)
+
+# M3 (r149): VK no longer duplicates prop_carry — load the VENDORED
+# kit's file explicitly. A sys.path repoint CANNOT work here:
+# blender_kit is a regular package already bound by contact_discs
+# above, so its __path__ is fixed and no longer contains prop_carry;
+# ordering the vendored dir first instead would shadow VK's whole
+# blender_kit. The PACKAGE-QUALIFIED spec name is load-bearing: the
+# vendored module does a lazy RELATIVE `from . import iter_fcurves`
+# inside carry_keys, which resolves against sys.modules["blender_kit"]
+# (= VK's package, iter_fcurves at blender_kit/__init__.py) only when
+# the spec name is "blender_kit.prop_carry" — a bare name dies with
+# "attempted relative import with no known parent package".
+import importlib.util as _ilu
+from pathlib import Path as _Path
+_pc_file = (_Path(__file__).resolve().parents[1]
+            / "vendor" / "blender-crowd-kit" / "scripts"
+            / "blender_kit" / "prop_carry.py")
+_pc_spec = _ilu.spec_from_file_location("blender_kit.prop_carry", _pc_file)
+PC = _ilu.module_from_spec(_pc_spec)
+_pc_spec.loader.exec_module(PC)
 
 PASS = []
 FAIL = []

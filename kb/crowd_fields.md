@@ -1,5 +1,7 @@
 # crowd_fields — Influence Fields + Relax PBD + Gait Phase Engine
 
+> **r149 (M3):** the VK-local copy of this module was REMOVED — the canonical source is the vendored kit at `vendor/blender-crowd-kit/scripts/` (submodule pin; import via `scripts.crowd` / the kit tree). This page stays as the API reference; line-number citations below are historical.
+
 Scene-agnostic crowd primitives (kit scripts/crowd_fields.py; tests:
 test_crowd_fields.py). The scene contributes only DATA (field tables,
 lane specs, modifier stacks) — nothing project-specific in the engine.
