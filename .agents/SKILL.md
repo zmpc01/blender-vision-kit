@@ -315,18 +315,16 @@ gait_modifiers.
   lane; film lanes export via the CANONICAL agent-kit copy. Pin WHICH
   exporter is under test before writing suite asserts.
 - **Decode-parity**: the REAL decoder is the oracle — assert both
-  drift directions; the checker owns error quality, the decoder truth.
-  A checker is never stricter than the decoder, but
+  drift directions; a checker is never stricter than the decoder, but
   None-where-decoder-raises IS a rejection.
 - **RNA-filter operator kwargs** (get_rna_type) — version-calibrated
-  kwarg sets rot.
-- **Subprocess tests**: direct binary + --python-use-system-env +
-  PYTHONPATH=scripts; fixtures go INTO scripts/; suites that nest blrun
-  carry BLRUN_FORCE=1.
+  kwarg sets rot. **Subprocess tests**: direct binary +
+  --python-use-system-env + PYTHONPATH=scripts; fixtures go INTO
+  scripts/; nested-blrun suites carry BLRUN_FORCE=1.
 - **Verify BOTH PATs at session start** (2-line curl).
-- **Audit-before-implement ROI**: 3 cheap read-only audits → 1 real bug
-  + the whole D19 spec. Cite file:line — but re-verify anchors by grep
-  before batch-editing them (they shift).
+- **Audit-before-implement ROI**: 3 cheap read-only audits → 1 real
+  bug + the whole D19 spec. Cite file:line — but re-verify anchors by
+  grep before batch-editing (they shift; symbol-cites are drift-proof).
 ## SESSION 16 LAWS (the third film — condensed; full: USABILITY_TG1 + DESIGN_green_light REV-4)
 
 - THE CAPACITY BOX IS AN ARRIVAL TRIGGER, NOT A CONTAINER: agents
