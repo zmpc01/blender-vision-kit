@@ -3920,3 +3920,19 @@ Work Log:
 
 Stage Summary:
 - session-19 open; audits launching; Blender 5.2.2 provisioning in parallel
+
+Task ID: 1-bootstrap (session-19)
+Agent: Super Z (main)
+Task: Fresh-sandbox bootstrap + context restore for the diversity round (films 5+6)
+
+Work Log:
+- Cloned 5 repos (escape-previz, vision-kit, crowd-kit, previz-review) to /home/z/work; both PATs verified 200/200.
+- Absorbed SKILL.md (29.9k), HANDOFF (s17b close), DESIGN_express REV-3 + DESIGN_drill REV-3 (session-18 left both films greenlit: tfog_1 THE EXPRESS blue-hour fog rail; tform_1 THE DRILL golden-hour citadel formations).
+- Session-18 state: tfog world+contract+bake driver done, chain GREEN through finish (npz payload 1cbcc818 — outputs gitignored, re-bake proves determinism); tform world only. NO scene modules, no cameras/ladders/stills/exports for either.
+- Crowd-kit session-33: v2.5→v3.0 directive (M4 lanes, foot IK, Bullet ragdoll) in-flight in the parallel lane; v2.0.0 tag c8029db verified.
+- Env: install.sh one-shot (Blender 5.2.2); native wheel 1.5.5 into /home/z/.venv; crowd_kit imports green.
+- Review server: bun install + db:push + s33_restore_comments (0 comments on the four films — user review round still open); daemonize.py double-fork survivor (nohup reaped, the law reconfirmed).
+
+Stage Summary:
+- Round plan: K1 composed-motion kit fix FIRST (the tform enabler) → tfog completion lane (scene→flow→cams→ladder→stills→export→stage) → tform full build (contract→bake→scene→stills→export→stage) → review waves → wrap. 50+ sub-agent orchestration target.
+>>>>>>> d3ec5e6 (session-19 bootstrap: context restored (tfog chain-green + tform world-only inherited); round plan = K1 fix + both films to staged)
