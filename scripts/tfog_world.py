@@ -38,8 +38,12 @@ Deviations / ambiguity resolutions (the tgreen ledger way):
    grid put panels INSIDE columns at x=+-5; shifted clear.
 5. Aspect discs hang on stems off the gantry beam underside (beam
    center z=4.5, discs z=3.95) -- mounted, not floating.
-6. Trains parked per the pinned roots (express spans x -128..15: its
-   tail already brushes the platform W end; the scene keys the slides).
+6. Trains parked per the pinned roots (express spans x -128..+7 at
+   the park: the HEAD -- the leading E end -- is the ON-STAGE end,
+   over the platform's E half; the tail is far offstage W. The scene
+   keys the slides. s19-B11: the old "-128..15 / tail brushes the
+   platform W end" note had the span end AND the head/tail roles
+   wrong).
 7. Ladder: TFOG_* are module CONSTANTS (density + 5 keyed OFF
    strengths); the scene module overrides BEFORE build_world, the
    tgreen/tsquall way. Lamp POINT lights ship energy 0.
@@ -60,6 +64,11 @@ from tdawn_actors import make_material
 # override BEFORE build_world -- the tgreen/tsquall law) --------------
 TFOG_FOG_DENSITY = 0.05    # Volume Scatter density in fog_box
 TFOG_LAMP_STRENGTH = 0.0   # sodium point lights, W-scale multiplier
+# The lamp W-scale multiplier (s19-B15e, named out of the worklog):
+# fog multiplies emission, so the ladder authors lamp strengths at
+# ~W/800 -- the probe-const law (a 40 W probe read as a blowout; 0.025
+# x 800 = 20 W reads as a sodium pool at blue hour; see tfog_world_look).
+TFOG_LAMP_W_SCALE = 800.0
 TFOG_STRIP_STRENGTH = 0.0  # canopy strip panels
 TFOG_GLYPH_STRENGTH = 0.0  # departure-board glyph rows
 TFOG_ASPECT_STRENGTH = 0.0  # gantry red/green discs
@@ -179,19 +188,29 @@ def _build_materials():
 
 
 def _fog_material():
-    """fog_box: pure Volume Scatter (density = the ladder constant)."""
+    """fog_box: pure Volume Scatter (density = the ladder constant).
+
+    s19-B7: the density is re-applied on the CACHED path too (the
+    tform_world._dust_material twin) -- a rebuild that skips the
+    orphan purge must not silently keep the previous rung's fog
+    density (the ladder overrides the module const, not the datablock).
+    """
     mat = bpy.data.materials.get("tfg_fog")
-    if mat is not None:
-        return mat
-    mat = bpy.data.materials.new("tfg_fog")
+    if mat is None:
+        mat = bpy.data.materials.new("tfg_fog")
     mat.use_nodes = True
     nt = mat.node_tree
-    nt.nodes.clear()
-    out = nt.nodes.new("ShaderNodeOutputMaterial")
-    sc = nt.nodes.new("ShaderNodeVolumeScatter")
-    sc.inputs["Color"].default_value = (0.70, 0.75, 0.85, 1.0)
+    for n in [n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"]:
+        nt.nodes.remove(n)              # pure volume, no surface shader
+    out = next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"), None)
+    if out is None:
+        out = nt.nodes.new("ShaderNodeOutputMaterial")
+    sc = next((n for n in nt.nodes if n.type == "VOLUME_SCATTER"), None)
+    if sc is None:
+        sc = nt.nodes.new("ShaderNodeVolumeScatter")
+        sc.inputs["Color"].default_value = (0.70, 0.75, 0.85, 1.0)
+        nt.links.new(sc.outputs["Volume"], out.inputs["Volume"])
     sc.inputs["Density"].default_value = TFOG_FOG_DENSITY
-    nt.links.new(sc.outputs["Volume"], out.inputs["Volume"])
     return mat
 
 
@@ -253,7 +272,7 @@ def build_world(scene):
     _box("canopy_roof", 2 * PLAT_X, 7.6, ROOF_T, (0.0, 0.0, ROOF_Z),
          mats["roof"])
     for ci, cx in enumerate(COL_XS, start=1):
-        _prim("cyl", (0.32, ROOF_Z - ROOF_T / 2 - 0.0),
+        _prim("cyl", (0.32, ROOF_Z - ROOF_T / 2),
               (cx, 0.0, (ROOF_Z - ROOF_T / 2) / 2), verts=12,
               mat=mats["column"], name=f"canopy_col_{ci}")
     for si, cx in enumerate(STRIP_XS, start=1):        # emissive OFF
@@ -271,7 +290,7 @@ def build_world(scene):
             _box(f"lamp_head_{li}", 0.34, 0.34, 0.14, (lx, ly, 3.03),
                  mats["lamp_head"])
             ld = bpy.data.lights.new(f"lamp_{li}", type='POINT')
-            ld.energy = TFOG_LAMP_STRENGTH * 800.0      # OFF
+            ld.energy = TFOG_LAMP_STRENGTH * TFOG_LAMP_W_SCALE   # OFF
             ld.color = (1.0, 0.62, 0.30)                # ~sodium
             ld.shadow_soft_size = 0.15
             lo = bpy.data.objects.new(f"lamp_{li}", ld)
@@ -283,7 +302,12 @@ def build_world(scene):
     _box("board_panel", 3.0, 0.15, 1.25, (0.0, 0.0, 2.625),
          mats["board"])               # z 2.0..3.25 -> meets roof 3.25
     for ri, gz in enumerate(GLYPH_ZS, start=1):
-        for tag, gy in (("n", 0.085), ("s", -0.085)):
+        # s19-B8: N face is y<0 (the module frame law in the docstring
+        # header: "N track/face is y<0, S face y>0"; tactile_n/ballast_n
+        # follow it) — the "n" glyph rows must sit on the board's
+        # N-facing side (-y), the "s" rows on the S-facing side (+y).
+        # The old tuple had them swapped against that frame.
+        for tag, gy in (("n", -0.085), ("s", 0.085)):
             _box(f"board_r{ri}_{tag}", 2.6, 0.02, 0.18,
                  (0.0, gy, gz), mats["glyph"])
             export[f"board_rows_{tag}"].append(f"board_r{ri}_{tag}")

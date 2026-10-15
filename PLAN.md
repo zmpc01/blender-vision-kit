@@ -154,8 +154,9 @@ code-level finding (--frames BLOCKER) remains valid.
 - [x] F18: place_on/snap_z on glTF vendor origins (origin >> centroid):
   doc the origin_offset_warning as load-bearing; set_location-style ops
   unsafe (R5 finding). CLOSED — law + warning shipped (AGENTS.md
-  origin_offset_warning marked LOAD-BEARING; placement_lib.py:775
-  emits it).
+  origin_offset_warning marked LOAD-BEARING;
+  placement_lib._origin_centroid_warn emits it — cited by symbol,
+  not line, after the anchor re-drifted; s19).
 - [x] F19: loose `split` on high-part-count meshes is blind-legal but
   semantically destructive — warn gate (dry-run N > 50 ->
   ack_many_parts:true) + AGENTS.md line. CLOSED session-16:
@@ -341,8 +342,9 @@ code-level finding (--frames BLOCKER) remains valid.
   (3) F-TF5 re-vendor (the governed sync); (4) F-TD9 (install.sh
   stale-tools Pillow probe — the fresh case self-healed again this
   session); (5) the older filings — the true remainder is F-TD1/2/3
-  (the make_material default is CLOSED — blender_kit/__init__.py:516
-  make_material pins Emission Color to the base rgb, :549).
+  (the make_material default is CLOSED — blender_kit.make_material
+  pins Emission Color to the base rgb via its guarded socket write,
+  and only touches Emission Strength when the caller asks).
 
 ## Session-16 receipts (the KIT-QUALITY wave — audit/test/refine, no film building)
 

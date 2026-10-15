@@ -1,9 +1,20 @@
-# DESIGN_express.md — Film 5: THE EXPRESS (tfog_1) — REV-2
+# DESIGN_express.md — Film 5: THE EXPRESS (tfog_1) — REV-3
 
 > Blue-hour fog rail platform. The crowd waits; the express does not stop;
 > the blast recoil is REAL (DANGER field, base bytes); the local train boards
 > by groups. REV-2 folds audit round 1 (2 P0s: the arrived-statue waiter
 > mechanism; the ingest fork).
+>
+> **s19 AMENDMENT (2026-10-15, audit wave-D — counts reconciled to the
+> contract):** scripts/tfog_contract.py pins the cache at **126 = 66
+> waiters + 51 cohorts + 9 doorq** (N_CACHE=126; loader pin override
+> 126, F-TS5). The chase lane is NOT a cached population: the two
+> heroes (LATE PASSENGER, STATIONMASTER) are Blender-side keyed actors
+> OUTSIDE the cache (the drill's branch-(a) law). The earlier
+> 66/42/18/9 = 135 cast table (and the 135 loader pin) was written
+> before the contract and is WRONG — §2, §5 and §6 below carry the
+> corrected numbers. (Doc-audit trail: counts amended, not silently
+> rewritten.)
 
 ## 0. Identity
 
@@ -57,12 +68,15 @@
 | pop | ingest order | count | role | notes |
 |-----|--------------|-------|------|-------|
 | waiters | 1st (owns envelope cap) | 66 | platform crowd | Navigate-graph bound with the HORIZON-ROUTE law (round-2 R1: the destination-pair option is DEAD — goals are spawn-sampled, never re-sampled): spawn band E ~x=18, the single destination's capacity_bounds rect at the W end — min(spawn→goal) ≥ 40 m so nobody arrives inside the film; zero-arrived assert at EVERY tick in [168,264] |
-| cohorts | 2nd | 42 | M6 groups: 14 × 3 | Navigate graph to door destinations; group cohesion additive (survives the field) |
-| door queue | 3rd | 18 | Sequence(QueueNode, Navigate) | portal at the center door (S face), 9 slots ON the platform, capacity 1; HOLDS through the blast (des_vel zeroed — the disciplined line) |
-| chase | last | 9 | keyed hero lane | LATE PASSENGER (keyed sprint) + STATIONMASTER (keyed lantern walk); 3 RB slots (CHASE_RB_INDICES pattern) |
+| cohorts | 2nd | 51 | M6 groups: 17 × 3 | Navigate graph to door destinations; group cohesion additive (survives the field) |
+| door queue | 3rd | 9 | Sequence(QueueNode, Navigate) | portal at the center door (S face), 9 slots ON the platform (1 agent/slot), capacity 1; HOLDS through the blast (des_vel zeroed — the disciplined line) |
+| chase | — (no cache pop) | 2 keyed | keyed hero lane | LATE PASSENGER (keyed sprint) + STATIONMASTER (keyed lantern walk); Blender-side keyed actors OUTSIDE the cache (the drill's branch-(a) law; N_CACHE excludes them) |
 
-Total declared: 135 (loader pin override 135 — F-TS5). Groups resolve
+Total declared: **126 cached = 66 + 51 + 9** (loader pin override 126 —
+F-TS5); the 2 keyed heroes live outside the cache. Groups resolve
 member ids from the probe bake (two-bake covenant; never rebuild).
+(s19 amendment: 66/42/18/9 = 135 was the pre-contract draft — the
+contract's POP_PLAN/N_CACHE are authoritative.)
 
 ## 3. The story spine (FRAMES, 1080 @ 24 fps)
 
@@ -108,7 +122,7 @@ member ids from the probe bake (two-bake covenant; never rebuild).
 - **Fog (audit P1 fold)**: ONE camera-prox volume box ~64×10×6 m hugging
   the platform (the 192 m box is KILLED); `volumetric_end` 25-40 m,
   `volumetric_tile_size` 8 (4 for the S3 close-up), minimal steps; world
-  volume OFF; OOM probe at world-gate (one frame with volume + 135
+  volume OFF; OOM probe at world-gate (one frame with volume + 126
   anchors + RSS check) BEFORE the ladder. The measured recipe becomes
   the film-5 SKILL law.
 - Express = 8-car dark wedge, lit window strip, keyed loc slide (N face);
@@ -120,7 +134,7 @@ member ids from the probe bake (two-bake covenant; never rebuild).
 
 ## 6. Scene module
 
-- Loader: `expected_agents=135`; palette W/E split (cool blue-gray /
+- Loader: `expected_agents=126`; palette W/E split (cool blue-gray /
   warm sodium); per-zone speed map driver (bench zone slow, aisle fast);
   crane: S5 blast cam or S8 arrival cam keyed loc0→loc1 (the crane law).
 - Cameras: 12 shots; keepout rows for ALL ground lenses inside the

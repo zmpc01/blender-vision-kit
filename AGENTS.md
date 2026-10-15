@@ -34,9 +34,10 @@ cp scripts/scene_template.py scripts/my_scene.py  # copy + edit build_scene()/an
 NOTE: the script filename IS the scene name — `scripts/my_scene.py` is
 addressed as `--scene my_scene` / `--scene-name my_scene` everywhere.
 A static scene (no animation) is fine: empty `animate()`'s body, or
-delete it (the template's `main()` guards the call with `hasattr` — on
-an older unguarded copy, delete the `main()` call line too) — look.py
-and the render path both handle scenes without animation.
+delete it (the template's `main()` guards the call with
+`if "animate" in globals():` — on an older unguarded copy, delete the
+`main()` call line too) — look.py and the render path both handle
+scenes without animation.
 
 ## THE VISION LOOP (this replaces the blind kit's perceive/critique loop)
 
@@ -213,8 +214,10 @@ cp viewer/index.html output/my_scene/
     sfx-stream conformance is gate 15; a BOARD whose every entry fails
     to decode is rejected by gate 4 (partial boards keep their NOTEs).
 (c) Marker NAMES are unconstrained (SHOT_* is fine) — the CAM_ contract
-    lives on the CAMERA OBJECT name (exporter:1151-1153 — the marker-bound
-    camera must startswith CAM_; verified at tip, session-17).
+    lives on the CAMERA OBJECT name (export_previz_package.py's
+    shot-camera bind gate — the marker-bound camera must startswith
+    CAM_; verified at tip, session-17; s19 re-point after the old
+    exporter:1151 anchor drifted).
 (d) manifest_diff.py before.json after.json for before/after
     look_manifest.json diffs; `--expect-clean` exits 1 on ANY
     difference (verify delegated work by DIFF, not by trust).
@@ -310,9 +313,11 @@ Full details: `/kb/placement_and_physics.md`. Headlines:
   WITNESSES why X can't sit; gate rejects scene-wide with a fix queue
 - `audit` pair states: PENETRATING (penetration_mm) / TOUCHING / NESTED /
   CLEAR (clearance_mm); audit only sees pairs within the 100 mm clearance
-  pad (placement_lib.py:611 — the pad is the real constant); beyond the
-  pad floaters appear in NO pair; use `physics_gate` or `look` verdict
-  for scene-wide floating. **LAW: exact-match the pair's `state` field
+  pad (placement_lib.audit_scene's `clearance_pad_mm=100.0` default —
+  the pad is the real constant; cited by symbol after the line anchor
+  re-drifted twice); beyond the pad floaters appear in NO pair; use
+  `physics_gate` or `look` verdict for scene-wide floating.
+  **LAW: exact-match the pair's `state` field
   (PENETRATING/TOUCHING/NESTED/CLEAR) — never `verdict`, which is the
   human string ("PENETRATING 7.8 mm — fix") and WILL drift**
 - **reference tokens**: `move_to` reference = `bottom-center` (default) |
@@ -709,8 +714,13 @@ cold-start, not pixels).
 
 ## Crowd system (sibling repo composition)
 
-The crowd simulation lives in **zmpc01/blender-crowd-kit** (pre-v1, M2);
-this kit ships no crowd code. Composition:
+The crowd SIMULATION ENGINE — agent population, bake, the controller —
+lives in **zmpc01/blender-crowd-kit** (pre-v1, M2). This kit ships no
+crowd sim engine of its own, but it DOES ship scene-agnostic crowd
+PRIMITIVES (see the KB links below): `scripts/crowd_fields.py` (signed
+influence fields + the relax PBD solver + the gait phase law, pure
+numpy) and `scripts/gait_modifiers.py` (funny-walk data-only modifier
+stacks). Composition (the sim/bake side):
 ```bash
 git clone https://github.com/zmpc01/blender-crowd-kit.git <sibling>
 # in your scene script, BEFORE importing crowd:
@@ -718,7 +728,9 @@ import sys; sys.path.insert(0, "<sibling>")
 from scripts.crowd import CrowdProject, Population, bake, apply_to_scene
 ```
 The variant's own `scripts/crowd/` stub was DELETED so the sibling import
-cannot be shadowed. Vision workflow for crowds: look.py grids at default
+cannot be shadowed (the top-level `crowd_fields.py`/`gait_modifiers.py`
+primitives are NOT that stub — they are kit-level, no sibling needed).
+Vision workflow for crowds: look.py grids at default
 resolutions for layout/density; keyframe contact sheets for gait motion;
 manifest/validator for agent counts and ground contact. NOTE: a red flag
 box storm on instanced crowd agents usually means validator bbox overlaps

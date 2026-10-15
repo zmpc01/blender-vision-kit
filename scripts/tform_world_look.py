@@ -17,10 +17,11 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import tform_world as W  # noqa: E402
-from blender_kit import clear_scene  # noqa: E402
+from blender_kit import clear_scene, normalize_engine_id  # noqa: E402
+# (s19-B15b: normalize_engine_id -- no hardcoded BLENDER_EEVEE;
+#  s19-B15c: the output mkdir moves into main(), import stays clean)
 
 OUT = HERE.parent / "output" / "tform_world_look"
-OUT.mkdir(parents=True, exist_ok=True)
 
 
 def _cam(name, loc, aim, lens=35.0):
@@ -37,12 +38,13 @@ def _cam(name, loc, aim, lens=35.0):
 
 
 def main():
+    OUT.mkdir(parents=True, exist_ok=True)  # import stays side-effect-free
     clear_scene()
     ctx = W.build_world(bpy.context.scene)
     scene = bpy.context.scene
     scene.render.resolution_x = 640
     scene.render.resolution_y = 360
-    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.engine = normalize_engine_id("BLENDER_EEVEE")
     scene.view_settings.view_transform = "Standard"
     # golden-hour preview: LOW warm sun raking across the yard + warm sky
     sun = bpy.data.lights.new("TFORM_previz_sun", "SUN")

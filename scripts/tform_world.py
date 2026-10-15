@@ -21,9 +21,22 @@ OUTSIDE the yard rect (deviation 1). Gap x -3..3 through the N wall
 behind it. Colonnade columns 0.8 m square centered on y=-20.
 
 build_world(scene) -> context dict: {"parts", "mats", "consts",
-"pennants", "counts"}; CONSTS are the crowd-side walkable-math inputs
+"pennants", "counts"}. The CONSTS are the RAW geometry frame
 (yard_min/yard_max/gap_x_range/circle_center/circle_r/colonnade_y/
 column_xs + wall/gate extras).
+
+s19-B13 -- READ BEFORE AUTHORING THE tform CONTRACT (the contract
+module does not exist yet): the crowd-side walkable is NOT
+yard_min/yard_max. DESIGN_drill pins "walkable = the yard rect PULLED
+SHORT of the column faces by half-width + inflation margin; columns =
+Blocked squares FULLY inside the walkable", and the colonnade columns
+STAND ON y=-20 (colonnade_y; column faces reach y -20.4..-19.6 across
+the raw S edge). A walkable that runs to the raw edges would put the
+column Blocked squares ON/OVER the boundary -> the E_InvalidRange
+trap. Derive the walkable from these inputs (pull the S edge north of
+the column faces by the inflation margin; keep N/E/W pulled short of
+the wall inner faces for the same reason) -- the raw consts arm that
+math, they are not the answer.
 
 Deviations / ambiguity resolutions (recorded, the tgreen way):
 1. "Walls N (y=20), E (x=28), W (x=-28)" read as the wall LINE standing
@@ -129,6 +142,17 @@ COBBLE_B = (0.21, 0.16, 0.115)
 # the arch springing (voussoir undersides >= 4.0)
 GAP_CORRIDOR = ((GAP_X0, GAP_X1), (19.0, 21.0), (0.0, 3.9))
 GAP_EPS = 1e-3   # 1 mm: a boundary-face touch is not a "block"
+
+# Factory-default object names (s19-B15a, the tfog_world pattern):
+# EXACT stems, NOT prefixes -- a scene-side "Cube_hall" or "Camera_rig"
+# must survive a rebuild purge. Only bare factory names and their
+# Blender numeric duplicates ("Cube.001") match _is_factory_name().
+FACTORY_NAMES = {"Cube", "Camera", "Light", "Lamp"}
+
+
+def _is_factory_name(name):
+    stem, _, suffix = name.partition(".")
+    return stem in FACTORY_NAMES and (not suffix or suffix.isdigit())
 
 
 def _box(name, sx, sy, sz, loc, mat):
@@ -290,10 +314,13 @@ def _build_materials():
 
 def build_world(scene):
     """Build the citadel parade yard; returns the context dict."""
-    # the FACTORY-PURGE LAW at scene level (no Cube/Camera/Light
-    # survives; the scene module may call this on a factory scene)
+    # the FACTORY-PURGE LAW at scene level (no factory default
+    # survives; the scene module may call this on a factory scene).
+    # s19-B15a: EXACT factory names only (the tfog_world FACTORY_NAMES
+    # pattern) -- the old startswith("Cube"/"Camera"/...) prefix purge
+    # would delete SCENE-SIDE objects sharing those stems on a rebuild.
     for ob in list(bpy.data.objects):
-        if ob.name.startswith(("Cube", "Camera", "Light", "Lamp")):
+        if _is_factory_name(ob.name):
             bpy.data.objects.remove(ob, do_unlink=True)
 
     mats = _build_materials()
@@ -399,6 +426,12 @@ def build_world(scene):
     created = [ob for ob in scene.objects if ob.name not in pre]
 
     consts = {
+        # s19-B13: RAW geometry frame, NOT the crowd walkable. The
+        # colonnade columns stand ON y=-20, so a walkable pulled to
+        # these edges puts the column Blocked squares ON the boundary
+        # (the E_InvalidRange trap). The (future) tform contract module
+        # must derive the walkable PULLED SHORT of the column faces
+        # (DESIGN_drill: columns = Blocked squares FULLY inside).
         "yard_min": (YARD_X0, YARD_Y0),
         "yard_max": (YARD_X1, YARD_Y1),
         "gap_x_range": (GAP_X0, GAP_X1),
@@ -473,9 +506,11 @@ def _qa(ctx):
     fails += _ok("budget", len(parts) < 200,
                  f"{len(parts)} parts (<200)")
 
-    # --- QA1: factory purge (no Cube/Camera/Light survives) ------------
+    # --- QA1: factory purge (no factory default survives; the SAME
+    # exact-name predicate as the build_world purge, s19-B15a -- a
+    # prefix check here would false-alarm on scene-side stems) --------
     factory = [ob.name for ob in scene.objects
-               if ob.name.startswith(("Cube", "Camera", "Light", "Lamp"))]
+               if _is_factory_name(ob.name)]
     fails += _ok("factory purge", not factory,
                  f"{len(factory)} factory survivors {factory}")
     owns = set(ob.name for ob in scene.objects) == set(names)

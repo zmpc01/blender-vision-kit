@@ -1,13 +1,13 @@
 """
-scene_test_subagent.py — sub-agent test scene.
+scene_subagent_test.py — sub-agent test scene.
 
 A rotating dark-wood pedestal with a bouncing gold torus on top, three
 small colored spheres arranged in a triangle around the pedestal base,
 a dramatic key sun + soft fill area light, a 50mm camera at (4, -4, 3),
 and a procedural Nishita sky world. 24-frame animation.
 
-Usage:
-    blrun.sh --background --python scripts/scene_test_subagent.py -- \\
+Usage (this file lives in examples/, NOT scripts/):
+    ./scripts/blrun.sh --background --python examples/scene_subagent_test.py -- \\
         --output /tmp/subagent_test --dry-run --scene-name subagent_test
 """
 import math
@@ -214,9 +214,13 @@ def animate(ctx, *, start_frame=1, n_frames=24):
     torus.keyframe_insert("rotation_euler", index=0)
 
     # ---- Bezier easing on all keyframes ---------------------------------
+    # iter_fcurves (NOT raw .action.fcurves): Blender 5.x slotted actions
+    # keep the fcurves in the channelbag — the raw attribute AttributeErrors
+    # on the kit-default Blender (s19-C1; the scene_v2_balanced tail).
+    from blender_kit import iter_fcurves
     for obj in (pedestal, torus):
         if obj.animation_data and obj.animation_data.action:
-            for fcurve in obj.animation_data.action.fcurves:
+            for fcurve in iter_fcurves(obj.animation_data.action):
                 for kp in fcurve.keyframe_points:
                     kp.interpolation = 'BEZIER'
                     kp.easing = 'EASE_IN_OUT'
@@ -231,7 +235,7 @@ def animate(ctx, *, start_frame=1, n_frames=24):
 def main():
     p = common_parser()
     args = p.parse_args(script_argv())
-    print(f"[scene_test_subagent] args: {args}")
+    print(f"[scene_subagent_test] args: {args}")
     ctx = build_scene()
     animate(ctx, start_frame=args.start, n_frames=args.frames)
     configure_render(args)

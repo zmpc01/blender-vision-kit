@@ -5,7 +5,7 @@
 | Engine | Resolution | Samples | ~Time/frame | Notes |
 |--------|-----------|---------|-------------|-------|
 | Workbench AA OFF | 960×540 | n/a | ~0.05s | vid2vid guidance default |
-| Workbench AA OFF | 240×135 | n/a | ~0.2s | previz quality |
+| Workbench AA OFF | 240×135 | n/a | ~0.2s | UPSTREAM's previz preset (this variant: 480×270 — blender_kit QUALITY["previz"]; no separate timing measured) |
 | Workbench FXAA | 960×540 | n/a | ~0.14s | human-reviewed stills |
 | Workbench MSAA 8 | 960×540 | n/a | ~0.84s | final delivery (kills sub-pixel crawl) |
 | EEVEE | 320×180 | 8 | ~0.5s warm | draft quality (28s cold) |

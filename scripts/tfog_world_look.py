@@ -18,10 +18,13 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import tfog_world as W  # noqa: E402
-from blender_kit import clear_scene  # noqa: E402  (the factory-purge law)
+from blender_kit import clear_scene, normalize_engine_id  # noqa: E402
+# (clear_scene = the factory-purge law; normalize_engine_id = the
+# version-safe engine id -- no hardcoded BLENDER_EEVEE, s19-B15b)
 
 OUT = HERE.parent / "output" / "tfog_world_look"
-OUT.mkdir(parents=True, exist_ok=True)
+# s19-B15c: NO mkdir at import time (imports must stay side-effect-free);
+# main() creates the dir right before the first render.
 
 
 def _cam(name, loc, aim, lens=35.0):
@@ -38,6 +41,7 @@ def _cam(name, loc, aim, lens=35.0):
 
 
 def main():
+    OUT.mkdir(parents=True, exist_ok=True)  # import stays side-effect-free
     clear_scene()  # the factory-startup purge (the default Cube class)
     # practicals ON for the probe: flip the world's keyed-OFF emission
     # consts BEFORE the build (build_world reads them at build time).
@@ -50,7 +54,7 @@ def main():
     scene = bpy.context.scene
     scene.render.resolution_x = 640
     scene.render.resolution_y = 360
-    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.engine = normalize_engine_id("BLENDER_EEVEE")
     scene.view_settings.view_transform = "Standard"
     # blue-hour preview world: deep blue ambient (the ladder refines later)
     world = bpy.data.worlds.new("TFOG_bluehour_preview")
