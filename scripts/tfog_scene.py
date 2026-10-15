@@ -151,7 +151,8 @@ CAMS_V1 = [
     # S5: THE KEYED CRANE (the blast cam): aerial oblique off the N
     # face, dollies E with the pass (loc0 -> loc1, both keyed)
     ("CAM_S5",  (-14.0, -12.0, 9.0), (14.0, -12.0, 7.0), 35,
-     (0.0, -3.0, 0.8), False, 0.0),
+     (8.0, -2.5, 0.8), False, 0.0),   # aim re-centered on the pressed crowd + the
+                                      # N track (the streak reads via the lit windows)
     # S6: the recoil wide at the CONTRACT keepout spot (row 528..672)
     ("CAM_S6",  (-9.0, -2.2, 2.2), (-9.0, -2.2, 2.2), 30,
      (3.0, 0.2, 0.7), False, 0.0),   # S6h (round-3 cert: the pressed mass + the board + depth)
@@ -772,6 +773,16 @@ def build_scene():
     W.TFOG_STRIP_STRENGTH = 0.50    # the cool canopy strips, dim
     parts = W.build_world(scene)
     ctx["parts"] = parts
+
+    # the blue-hour sky (the LADDER verdict, session-19: sky1.0 deep
+    # blue — the world defers the sky to the scene deliberately; the
+    # practicals punch THROUGH it, the ratio law)
+    _sky = bpy.data.worlds.new("TFG.BlueHour")
+    _sky.use_nodes = True
+    _bg = _sky.node_tree.nodes.get("Background")
+    _bg.inputs["Color"].default_value = (0.05, 0.09, 0.20, 1.0)
+    _bg.inputs["Strength"].default_value = 1.0
+    scene.world = _sky
 
     # the sodium pools ride the ladder override (built ON)
     for lamp_name in parts["export"]["lamps"]:

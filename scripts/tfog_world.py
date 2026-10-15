@@ -62,7 +62,10 @@ from tdawn_actors import make_material
 
 # --- the fog ladder (module CONSTANTS; the scene module sweeps by
 # override BEFORE build_world -- the tgreen/tsquall law) --------------
-TFOG_FOG_DENSITY = 0.05    # Volume Scatter density in fog_box
+TFOG_FOG_DENSITY = 0.028   # Volume Scatter density in fog_box
+                           # (session-19 stills gate: 0.05 swallowed the S5
+                           # blast wide at 15 m — the beat died in haze;
+                           # 0.028 keeps the pools + reads the crowd)
 TFOG_LAMP_STRENGTH = 0.0   # sodium point lights, W-scale multiplier
 # The lamp W-scale multiplier (s19-B15e, named out of the worklog):
 # fog multiplies emission, so the ladder authors lamp strengths at
