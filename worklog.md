@@ -3935,3 +3935,25 @@ Work Log:
 
 Stage Summary:
 - Round plan: K1 composed-motion kit fix FIRST (the tform enabler) → tfog completion lane (scene→flow→cams→ladder→stills→export→stage) → tform full build (contract→bake→scene→stills→export→stage) → review waves → wrap. 50+ sub-agent orchestration target.
+
+---
+Task ID: session-19 (the AUDIT lane — third exhaustion round + native-vision e2e)
+Agent: Super Z (main orchestrator) + 6 wave-1 auditors + 3 fix waves (B/C/D) + 1 wave-2 verifier
+
+Task: user mandate — "another deep audit on the latest till you exhaust findings (only <p3 left)"; NEW this round: "use your native vision to check ground truth in e2e tests yourself besides sub-agent"
+
+Work Log:
+- restored on tip 0edf1aa (s18 wave-3); both PATs verified; .env + _sess19_env_setup.sh; wave-1 = SIX fresh-context auditors (A s18-fix regression, B film modules, C consumer docs, D P3-closure prep, E mutation surface, F test integrity) → docs/audit_s19/wave1_triage.md: 6×P1, ~17×P2, ~30×P3; auditor D found s18 had already closed 13/14 of its open P3s (only F8 re-drifted)
+- wave-A (mine): E1 stale-depsgraph prefilter (view_layer.update ×3 — the [set_location→audit] false-PASS class), E2 set_rotation mode-channel, E3 override token validation, A1 export_usd un-masked bind-split, A5 export_gltf twin, B1 tfog finish groups-cache (the S9 beat was silently absent from the deliverable), E4 set_* anim guards + PARAM_DOCS, E6/E7 seam_views, E9 align idempotence (delta-compose), E12 refine dead-math revived, B3 queue slots off lamp2 + dest box + the BLOCKED gates, plus ~15 P3s — gotcha-13 struck twice (display mangle; the parser is the truth) and one REAL syntax error was mine (an assert continuation) — caught by ast.parse before any run
+- wave-B (sub-agent, timed out but landed everything): test-integrity fixes + test_s19_wave_pins (the A6 lesson: the s18 fixes were UNPINNED — reverting them failed no tests; now ~20 red-by-construction pins). One pin needed a fixture fix (the E1 pin moved the mover FULLY inside the wall → NESTED = severity info; partial overlap now PENETRATING)
+- wave-C (sub-agent): A2 trial-write before camera creation + full try/finally, A3 datablock residue purge on the raise path, A11 dead-client decorator, F3 runner value-guards (the infinite-loop), F6 tombstone, F7 SKIP sentinel (the '] SKIP' substring could reclassify a genuine FAIL), mock-bpy harness verified the viewport fix 11-failures-red→green
+- wave-D (sub-agent): doc-drift batch (symbol-cites after the :611 cite re-drifted TWICE), DESIGN_express reconciled to the 126-pin (the F-TS5 trap defused for the next agent), world-module batch (fog density re-apply, glyph N/S law, factory-purge exact-stem, side-effect-free imports)
+- battery: 35/35 ALL GREEN (the first complete receipt including the pin suite; needed the tools/blender symlink — BLENDER_BIN override skips it, a fresh-sandbox trap)
+- NATIVE-VISION E2E (the new mandate, principal-eye only): smoke/s19_td3_probe.py — every look panel shows the INTENDED view (no marker hijack) and camera_intent rows name marker_cam_at_frame='CamMarker' while rendered_cam stays the temp panel; smoke/s19_motion_probe.py — six filmstrip cells show six DISTINCT poses (the A2 fix eye-verified) + motion_grid trajectory/onion laws read. The eye probes found the 5TH bare-animate site (look.py:304) BOTH audit rounds missed
+- wave-2 (fresh-context verifier on the whole s19 diff): wave HOLDS (parity 39/39 live-replicated; E9/E12 math sound; pins honest). Closed same-session: P2 set_location rebase world→basis delta; AXIS_ANGLE dup twin; E14 refusal; ALL bare-animate sites via blender_kit.call_scene_animate (6 more raw sites)
+- the P1 alarm RESOLVED by probe: the film lane's "socket-level keyframe_insert silently no-ops" is REFUTED — it works (ret=True) but lands fcurves on the NODE_TREE's animation_data (5.x node_tree = an ID block; RGBA keys 4 channels); single-owner (mat-only) reads false-negative. The three older films' beats are ALIVE — no re-bake. smoke/s19_socket_probe.py is the receipt
+
+Stage Summary:
+- tip 84cd8d3 (rebased over the film lane's 3bd04ec/73f6633 twice, zero force); battery 35/35; every ≥P2 finding from wave-1 closed with pins or honest debts documented in the triage close-status
+- the round's meta: (1) display-mangle strikes even repr() — believe the parser; (2) one REAL syntax error survived to commit because edits landed between parse checks — parse BEFORE every commit; (3) Edit+Bash in one parallel block = the file-race twice; (4) the single-owner-read trap (node_tree ID) is gotcha-11's family; (5) fresh-sandbox: install.sh BLENDER_BIN override skips the tools/blender symlink the battery needs
+- coordination: the film lane (tfog scene GREEN + flow strip GREEN + their 3 new probe laws: nulled-markers still flip scene.camera at frame_set → DELETE+recreate is the only safe probe path; scene.collection.objects is direct-members-only; workbench renders fog-volume surfaces opaque) — all absorbed in their commit messages; the lane should rebase onto 84cd8d3 for the B1 finish fix + 126-pin docs before staging exports

@@ -51,3 +51,14 @@ B=tests, C=infra, D=docs+world modules. Status appended on close.
 
 ## Verified-clean highlights (auditors)
 - PARAM_DOCS↔handler parity 39/39 (live AST replica); NaN finite-guard family CLOSED on the finite dimension; token validation family nearly complete (gaps: sample/override/engines); parent-space + basis-delta laws correct; channelbag law clean; snapshot/restore pairing sound except the two windows (A2/E6); classifier/float32 guards sound; marker-camera/axial-crane/keepout/sfx/BEATS contracts verified across all six film modules; battery roster 34 rows no dups, all suites independent fail paths.
+
+---
+## CLOSE STATUS (appended session-19 wrap)
+
+All P1 + P2 fixed and battery-green (35/35) unless noted. P1s: E1/E2/E3/A1/C1/B1 — all fixed (C1 via wave-D's example fix; B1 via the finish groups-cache fix, re-runnable by the film lane pre-stage). P2s: A2/A3/A4/A5/A6/A10/B2/B3/B4(fence documented — ids are 64-bit hashes, no namespace exists)/B5(bridge defaults verified: matched; call shape now explicit + keepouts_applied counts-ROWS assert)/B6/E4/E5/E6/E7/E8/E9/F1/F2/F3/C2/C3/C4 — fixed. P3s: A7/A8/A9/A11/E10/E11/E12/E13/E15/E16/E17/E18/E19/E20/B7/B8/B10/B11/B13/B15/C5/C6(F8 symbol-cited + PLAN siblings)/C7/D11-pin/F4/F5/F6/F7/F8/F9/F10 — fixed. E14: REFUSED (footprint='grid'+inset raises until the grid branch insets — caught as DROPPED by wave-2). B12: closed by contract-owner note (film lane).
+
+Wave-2 verification (fresh-context agent on the whole s19 diff): wave HOLDS — parity 39/39, E9/E12 math sound, pins honest. Its findings closed same-session: P2 set_location rebase now converts via _world_delta_to_local (the parented case); AXIS_ANGLE duplicate twin; the bare-animate family closed at ALL sites via blender_kit.call_scene_animate (6 raw sites survived the waves).
+
+THE EMISSION-LAW PROBE (smoke/s19_socket_probe.py) resolved wave-2's P1 as REFUTED-with-a-better-law: socket-level keyframe_insert WORKS on 5.2.2 (ret=True) but lands fcurves on the NODE_TREE's own animation_data (5.x node_tree = an ID block; RGBA sockets key 4 channels). The three older films' beats are ALIVE — no re-bake. Durable law: material-node animation reads MUST check BOTH owners (mat + node_tree) — a single-owner read false-negatives (the same class as gotcha 11).
+
+Still-open (honest debts, <P3-class or lane-owned): E12's 0.05m unconditional refine floor on huge flat supports (kb note owed); B5's cosmetic ctx first-arg divergence (traceability-only per the bridge); the un-pinned s19 fixes (A2/A3/A5/A11/E5/E6/E7/E12/E13/E16-E19 + all film/infra rows) — the A6 lesson recurs; wave-D's scene-module purge-prefix finding (scene_squall/green_light/last_ferry share the broad startswith purge — film lane's files).

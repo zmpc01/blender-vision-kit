@@ -1,11 +1,81 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
-> Session 17b close: 2026-10-14. HEAD = the SQUALL round (the fourth
-> film) + the F-TS kit wave. The full state chain: this block → the
-> session-16 blocks below → docs/USABILITY_TS1_squall.md +
-> docs/DESIGN_squall.md REV-3 + .agents/SKILL.md (SESSION 17b LAWS).
+> Session 19 close: 2026-10-15. HEAD = the THIRD audit-exhaustion round
+> (six fresh auditors + fix waves A–D + wave-2 verification, battery
+> 35/35) + the principal's NATIVE-VISION e2e probes. This block → the
+> session-18 gap note → the session-17b block below → docs/audit_s19/
+> wave1_triage.md (with close statuses) + docs/audit_s18/wave1_triage.md
+> + .agents/SKILL.md (SESSION 19 LAWS).
 
-## Session-17b close state (NEWEST — read this first)
+## Session-19 close state (NEWEST — read this first)
+
+- **The exhaustion mandate is met at tip 84cd8d3**: wave-1 (six
+  fresh-context auditors) → 6×P1 + ~17×P2 + ~30×P3; ALL ≥P2 fixed with
+  the battery green (35 suites — the pin suite registered). Wave-2
+  (adversarial verifier on the whole s19 diff) ruled the wave HOLDS;
+  its findings (a P2 rebase-delta bug, missed twins, 6 more raw
+  animate sites, the E14 drop) were closed SAME-SESSION. Honest debts
+  (<P3 / lane-owned) are listed in the triage's CLOSE STATUS block.
+- **The headline fixes**: E1 stale-depsgraph audit false-PASS
+  ([set_location→audit] chains branched on the PRE-move pose);
+  E2/E4 set_rotation/set_* write the mode's real channel + animation
+  guards (the glTF silent-no-op class); E3 override-token validation;
+  B1 tfog finish exported the PROBE cache (the S9 cohesion beat was
+  absent from the deliverable — FILM LANE: re-run finish before
+  staging); B3 queue slots off lamp2; E9 place_on align idempotence;
+  E12 refine dead-math revived; test_s19_wave_pins (the s18 fixes were
+  UNPINNED — reverting them failed no tests; now ~20 pins).
+- **The bare-animate family is CLOSED at every site** via
+  `blender_kit.call_scene_animate` (bind in try / bare fallback / the
+  real call OUTSIDE the bind try — an in-body TypeError must
+  propagate). Nine call sites total now use it or an equivalent
+  bind-split.
+- **THE 5.x NODE_OWNER LAW (the round's biggest trap resolved)**:
+  material-node keyframe_insert WORKS on 5.2.2 but lands fcurves on
+  the NODE_TREE's own animation_data (node_tree = an ID block; RGBA
+  sockets key 4 channels). A mat-only fcurve check false-negatives —
+  ALWAYS read BOTH owners (mat + node_tree). Receipt:
+  smoke/s19_socket_probe.py (the film lane's "socket-level no-op"
+  claim REFUTED — the three older films' emission beats are ALIVE, no
+  re-bake; their landed dual-owner assert is the correct pattern).
+- **The native-vision e2e lane worked**: smoke/s19_td3_probe.py (the
+  F-TD3 sweep eye-verified: no panel hijack + camera_intent rows name
+  the would-be hijacker) and smoke/s19_motion_probe.py (the A2
+  filmstrip fix eye-verified: six cells, six distinct poses). The eye
+  probes found look.py's bare-animate crash — the 5th family site —
+  that BOTH audit rounds missed. KEEP this pattern: sub-agents audit
+  code; the principal renders and LOOKS.
+- **Fresh-sandbox traps hit this session**: install.sh's BLENDER_BIN
+  override skips the `tools/blender` symlink the battery's blrun needs
+  (ln -sfn the extracted dir); Edit+Bash in one parallel block races
+  the file to disk (twice — serialize them); display-mangle survives
+  even repr() — ast.parse is the only truth, and parse BEFORE every
+  commit (one real assert-continuation syntax error survived to a
+  commit because the parse check was skipped).
+- **The film lane** (parallel, same repo): tfog scene module GREEN +
+  flow strip GREEN (3bd04ec, 73f6633 — absorbed by rebase, zero
+  force). Their new probe laws: nulled markers STILL flip scene.camera
+  at frame_set (DELETE+recreate is the only safe probe path);
+  scene.collection.objects is direct-members-only; workbench renders
+  fog-volume surfaces opaque from above. Next for them: rebase onto
+  the s19 tip, re-run tfog finish (the B1 fix), stage exports.
+- **Open queues for the next session**: the un-pinned s19 fixes (the
+  A6 lesson recurs — see the triage's close-status list); wave-D's
+  scene-module purge-prefix finding (scene_squall/green_light/
+  last_ferry broad startswith purge — film lane's files); E12's 0.05m
+  refine-floor kb note; the film lane's K1 composed-motion fix
+  (crowd-kit) + tform build.
+
+## Session-18 state (the gap — folded into the s19 wrap)
+
+The s18 session ended after its wave-3 (0edf1aa) + the tfog chain
+green WITHOUT a close ceremony: no HANDOFF block, no PLAN receipts, no
+worklog close, no final bundle. Its audit round: docs/audit_s18/
+wave1_triage.md (six auditors on ee8034e; wave-3 commit = the close
+record). Its P3 list was verified 13/14 ALREADY-CLOSED by the s19
+round (only F8 had re-drifted). The s19 wrap documents both sessions.
+
+## Session-17b close state (read second)
 
 - **FOUR films live in previz-review** (comments ON, the server UP
   via daemonize): **tsquall_1 rev 2** (SQUALL — storm-dusk market:

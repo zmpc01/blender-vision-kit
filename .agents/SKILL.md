@@ -340,18 +340,14 @@ gait_modifiers.
 ## SESSION 16 LAWS (the third film — condensed; full: USABILITY_TG1 + DESIGN_green_light REV-4)
 
 - THE CAPACITY BOX IS AN ARRIVAL TRIGGER, NOT A CONTAINER: agents
-  freeze (GHOST) the moment they ENTER the box — design converge
-  films FROM the box mechanics; plaza-scale barricades there seal a
-  nav pocket → UnreachableDestination.
-- The speed envelope is PER-FILM (populations[0].mu+3σ caps ALL
-  agents); NO delayed emission exists; the x-sign palette split is
-  SCENE-SIDE (V5 zones spawn symmetric E+W strips).
-- AgX-noon: the wash is the SKY AMBIENT — tune the direct:ambient
-  RATIO (sun5/sky0.15 won); white cards need a DARK field; glyph
-  emission sweep 1.9/3.9/5.5.
-- The clone-seam law: a sed-cloned tool rendered the PARENT'S film —
-  grep the clone for the parent's scene module before running; the
-  spawn-band vs dressing seam: dress BEYOND the walkable's tail.
+  GHOST on ENTER — design converge films FROM the box mechanics;
+  plaza-scale barricades there seal a nav pocket.
+- Speed envelope is PER-FILM (populations[0].mu+3σ caps ALL); NO
+  delayed emission; the x-sign palette split is SCENE-SIDE.
+- AgX-noon: the wash is SKY AMBIENT — tune the direct:ambient RATIO;
+  white cards need a DARK field; glyph emission sweep 1.9/3.9/5.5.
+- Clone-seam law: grep a sed-cloned tool for the PARENT'S scene module
+  before running; dress BEYOND the walkable's tail.
 
 
 ## SESSION 17 LAWS (the second KIT-QUALITY wave — 88 findings, all ≥P2 fixed)
@@ -370,9 +366,38 @@ gait_modifiers.
   settings (it dropped the previz:entity carrier).
 - _skinned_guard must check the ARMATURE's animation (the rig poses the
   mesh even when the mesh object has none).
-- Battery = suite_runner.sh (29 suites); run --only batches in ONE
-  foreground call. Red-by-construction fixtures surface when their
-  masking failure (rc=90) heals — re-check expectations after unmasking.
+- Battery = suite_runner.sh (35 suites incl. the s19 pins); run --only
+  batches in ONE foreground call. Red-by-construction fixtures surface
+  when their masking failure heals — re-check expectations after
+  unmasking. Fix waves carry PINS or they are UNPINNED (s18 A6: the
+  whole wave was revert-silent; test_s19_wave_pins is the pattern).
+
+
+## SESSION 19 LAWS (the third exhaustion round + the native-vision e2e lane)
+
+- STALE-DEPSGRAPH PREFILTERS: every AABB prefilter that reads
+  matrix_world (pair_contact / audit_scene / seam_views) needs
+  view_layer.update() at entry — [set_location→audit] branched on the
+  PRE-move pose and false-PASSED the gate (F2B-21 class, 3 sites).
+- set_* ops now share the solver contract: write the rotation_mode's
+  REAL channel (QUATERNION included), guard animation, validate
+  override tokens ("rebase" was a fail-open lie). Rebases convert
+  world deltas via _world_delta_to_local / _world_rotation_delta_to_basis.
+- call_scene_animate is THE one animate dispatch — bind in try, bare
+  fallback, the call OUTSIDE the bind try (an in-body TypeError must
+  propagate; masking re-ran modules and duplicated side effects).
+- 5.x NODE_OWNER LAW: material-node keys land on the NODE_TREE's
+  animation_data (node_tree = an ID block; RGBA = 4 channels) — read
+  BOTH owners or false-negative (socket-level keying WORKS; the
+  "silent no-op" claim was a single-owner-read artifact).
+- THE NATIVE-VISION E2E LANE WORKS: sub-agents audit code; the
+  PRINCIPAL renders and LOOKS (smoke/s19_td3_probe, s19_motion_probe).
+  The eye probes caught the 5th bare-animate site both audit rounds
+  missed. Keep eye-probes standing for every silent-wrong-render fix.
+- Sandbox: install.sh BLENDER_BIN override skips the tools/blender
+  symlink the battery needs; Edit+Bash in one parallel block races
+  files to disk (serialize); display-mangle survives even repr() —
+  ast.parse before EVERY commit (a real syntax error shipped once).
 
 
 ## SESSION 17b LAWS (the fourth film: SQUALL — the storm-dusk regime; F-TS1..8)

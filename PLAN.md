@@ -452,3 +452,13 @@ code-level finding (--frames BLOCKER) remains valid.
 - [ ] the honest-scope files (when a scenario needs them): SPEED/
       GOAL/DISABLE layers are VIEW-invisible (the F-TS1 ledger); a
       VIEW channel extension is a previz-side pinned-contract change
+
+## Session-19 receipts (the THIRD audit-exhaustion round + native-vision e2e — 2026-10-15)
+
+- Wave-1: SIX fresh-context auditors on 0edf1aa → docs/audit_s19/wave1_triage.md (6×P1, ~17×P2, ~30×P3). Auditor-D verified the s18 P3 list 13/14 already closed (F8 re-drifted; symbol-cites now the law).
+- Waves A(me)/B(tests+pins)/C(infra)/D(docs+worlds) closed every ≥P2; wave-2 adversarial verification ruled the wave HOLDS and its findings were closed same-session; battery 35/35 (first receipt incl. the pin suite).
+- The 5.x NODE_OWNER law (smoke/s19_socket_probe.py): material-node keys land on the NODE_TREE's animation_data — read BOTH owners; the film lane's no-op claim refuted, the three older films need no re-bake.
+- Native-vision e2e (the new mandate): F-TD3 sweep + A2 filmstrip eye-verified via smoke/s19_td3_probe.py + smoke/s19_motion_probe.py; the eye probes found look.py's bare-animate crash that both audit rounds missed.
+- The bare-animate family closed at ALL sites via blender_kit.call_scene_animate.
+- Coordination: the film lane's tfog scene + flow strip (3bd04ec, 73f6633) rebased under twice, zero force; the lane needs the B1 finish fix + 126-pin docs before staging.
+- Debts → next session: un-pinned s19 fixes; scene-module purge-prefix class; E12 kb note; K1 + tform (film lane).
