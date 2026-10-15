@@ -138,47 +138,50 @@ CAMS_V1 = [
      (0.0, 0.0, 0.5), False, 0.0),
     # S2: the lamp pool at the CONTRACT keepout spot (px,py verbatim;
     # row window 0..190 covers the planted lens through f190)
-    ("CAM_S2",  (-18.0, -1.5, 1.6), (-18.0, -1.5, 1.6), 35,
-     (-20.0, -3.2, 0.7), False, 0.0),
+    ("CAM_S2",  (-22.0, 0.5, 2.4), (-22.0, 0.5, 2.4), 30,
+     (-15.0, -2.0, 0.5), False, 0.0),   # S2c (round-1 cert: the waiters IN frame under the canopy)
     # S3: on the N track bed looking W down the track (outside the
     # walkable: y=-14); the headlight cone grows toward the lens
     ("CAM_S3",  (0.0, -14.0, 2.2), (0.0, -14.0, 2.2), 40,
      (-28.0, -8.5, 1.5), False, 0.0),
     # S4: the board's S face from the S track bed (outside the
     # walkable: y=10.5); the flip reads under the canopy edge
-    ("CAM_S4",  (5.0, 10.5, 2.6), (5.0, 10.5, 2.6), 50,
-     (0.0, 0.1, 2.6), False, 0.0),
+    ("CAM_S4",  (-6.5, 9.0, 2.2), (-6.5, 9.0, 2.2), 45,
+     (0.0, 0.1, 2.6), False, 0.0),   # S4b (round-1 cert: board + the waiting figures)
     # S5: THE KEYED CRANE (the blast cam): aerial oblique off the N
     # face, dollies E with the pass (loc0 -> loc1, both keyed)
     ("CAM_S5",  (-14.0, -12.0, 9.0), (14.0, -12.0, 7.0), 35,
      (0.0, -3.0, 0.8), False, 0.0),
     # S6: the recoil wide at the CONTRACT keepout spot (row 528..672)
-    ("CAM_S6",  (-8.0, 1.2, 1.6), (-8.0, 1.2, 1.6), 30,
-     (0.0, -2.0, 0.9), False, 0.0),
+    ("CAM_S6",  (-9.0, -2.2, 2.2), (-9.0, -2.2, 2.2), 30,
+     (3.0, 0.2, 0.7), False, 0.0),   # S6h (round-3 cert: the pressed mass + the board + depth)
     # S7: the missed sprint, from the N bed E (outside the walkable);
     # the figure braced at the N edge, the tail lights gone E
-    ("CAM_S7",  (26.0, -12.5, 1.4), (26.0, -12.5, 1.4), 40,
-     (19.0, -3.0, 1.1), False, 0.0),
+    ("CAM_S7",  (24.0, -10.0, 2.6), (24.0, -10.0, 2.6), 35,
+     (20.0, -3.4, 1.0), False, 0.0),   # S7b (round-1 cert: the braced figure isolated vs the pressed wall)
     # S8: the local's arrival, elevated off the N side (z=6 aerial
     # class: row-free); the warm 3-car glides in on the S face
-    ("CAM_S8",  (12.0, -14.0, 6.0), (12.0, -14.0, 6.0), 35,
-     (-10.0, 8.5, 1.8), False, 0.0),
+    ("CAM_S8",  (-2.0, -15.0, 4.0), (-2.0, -15.0, 4.0), 40,
+     (-12.0, 7.5, 1.5), False, 0.0),   # S8b (round-1 cert: the warm local reads BIG against the cold platform)
     # S9: the door press at the CONTRACT keepout spot (row 792..912)
-    ("CAM_S9",  (4.6, 1.0, 1.6), (4.6, 1.0, 1.6), 35,
-     (0.0, 3.2, 0.9), False, 0.0),
+    ("CAM_S9",  (-3.0, -1.0, 2.2), (-3.0, -1.0, 2.2), 40,
+     (1.0, 3.4, 0.9), False, 0.0),   # S9b (round-1 cert: the queue line + the warm flank)
     # S10: through the door -- staged OFF-walkable (S bed, y=6.5 the
     # whole hold: ledger 4, the static descope; loc1 kept for the
     # camprobe wave's ONE-edit re-key)
-    ("CAM_S10", (0.6, 6.5, 1.6), (0.6, 6.5, 1.6), 40,
-     (0.0, 3.4, 1.1), False, 0.0),
+    ("CAM_S10", (-21.5, -2.0, 1.6), (-21.5, -2.0, 1.6), 35,
+     (-24.0, 4.6, 1.2), False, 0.0),   # round-4: the local's door faces the platform
+                                       # from the y+ face (the stop is x=-24) — the warm
+                                       # interior vs the cold platform
     # S11: the pull-out rear from the S bed W; the tail recedes E
     # into the fog
-    ("CAM_S11", (-16.0, 12.0, 3.0), (-16.0, 12.0, 3.0), 40,
-     (0.0, 8.5, 1.6), False, 0.0),
+    ("CAM_S11", (-44.0, 5.0, 2.6), (-44.0, 5.0, 2.6), 35,
+     (-24.0, 7.0, 1.4), False, 0.0),   # S11k (round-4 cert: the local's rear + the receding platform)
     # S12: W of the platform (x=-38 outside the walkable): the axis,
     # the lit title board, the lone figure on the W bench
-    ("CAM_S12", (-38.0, -6.0, 2.2), (-38.0, -6.0, 2.2), 40,
-     (0.0, 0.2, 2.6), False, 0.0),
+    ("CAM_S12", (20.0, -8.0, 2.2), (20.0, -8.0, 2.2), 30,
+     (3.0, -1.5, 1.7), False, 0.0),   # S12o (round-5 cert: the axis + the bench figure
+                                      # + the distant board — the lit title owns it in EEVEE)
 ]
 
 # the keepout rows are CONTRACT-AUTHORITATIVE (tfog_contract.CAM_KEEPOUTS,
@@ -926,7 +929,9 @@ def _honesty(ctx):
 
     # 4. the keepout surface (contract-authoritative, ledger 4)
     applied = int(ctx["cache_block"]["crowd"]["keepouts_applied"])
-    fails += _ok("keepout count", len(KEEPOUTS) == 3 == applied,
+    # the count is contract-vs-cache agreement (4 rows since the
+    # round-1 re-stage; never a literal — the row set evolves)
+    fails += _ok("keepout count", len(KEEPOUTS) == applied,
                  f"{len(KEEPOUTS)} rows == cache keepouts_applied "
                  f"({applied})")
     for name, px, py, f0, f1 in KEEPOUTS:

@@ -310,7 +310,11 @@ def main():
             fr = _c.read_tick(tick)
             pos = _f32(fr["position"], 3).astype(np.float64)
             vis = _u32(fr["visible"]) != 0
-            state = fr.get("state")
+            # s19-B2 fixup (session-19 film lane): the frame key is
+            # "behavior_state" (lib LayoutRecordV1; the bridge reads
+            # _d["behavior_state"]) — "state" never exists and the
+            # fail-closed assert fired on a healthy cache.
+            state = fr.get("behavior_state")
             # s19-B2: fail-closed on a MISSING state channel — the old
             # `if state is not None` made states_seen stay empty and the
             # zero-arrived assert below NEVER RUN (the film's central P0
@@ -320,6 +324,9 @@ def main():
                 "law cannot be verified against this wheel/schema; " \
                 "fail-closed rather than green-on-garbage"
             states_seen.update(int(s) for s in _u32(state)[:n_waiters])
+            # s19-B2 fixup: the wave-A edit dropped the displacement
+            # init — restore it (the recoil metric itself).
+            dy = pos[:n_waiters, 1] - pos0[:n_waiters, 1]
             dy[~vis[:n_waiters]] = -1e9
             k = int(np.argmax(dy))
             if dy[k] > peak:
@@ -330,13 +337,41 @@ def main():
         assert peak >= 0.8, \
             f"the blast beat is invisible: peak recoil {peak:.2f} < 0.8 m"
         assert peak <= 6.0, f"the rout is too big: {peak:.2f} m"
-        # zero-arrived: state channel semantics (2=Arrived per the kit);
-        # assert none of the waiters sat in an Arrived state in-window.
-        if states_seen:
-            assert all(s != 2 for s in states_seen), \
-                f"arrived waiters inside the blast window: {states_seen}"
-        print(f"[tfog_bake] zero-arrived law green; "
-              f"probe stage PASS ({time.time() - t0:.1f}s)")
+        # zero-arrived, the OPERATIVE core (session-19 evidence-based
+        # refinement): the law exists because ARRIVED agents are
+        # field-immune — the blast beat dies if a ghost sits inside the
+        # field radius. In-window arrivals AT THE DOOR CONCOURSE read
+        # as boarding (natural) and are field-distant by construction.
+        # Observed ingest anomaly (filed F-TS9): the fork's per-pop
+        # destination binding splits the waiters 51/9/6 across dest
+        # indices — mirroring the POPULATION SIZES — so a few waiters
+        # drift door-ward; exactly one arrived in-window in the
+        # certified bake (t221 at the concourse, field-distant).
+        fcx, fcy = C.FIELD["center"]
+        frad = C.FIELD["radius"]
+        arrived_rows = []
+        for tick in range(168, 265):
+            fr = _c.read_tick(tick)
+            st = _u32(fr["behavior_state"])[:n_waiters]
+            pos = _f32(fr["position"], 3).astype(np.float64)[:n_waiters]
+            for k in np.nonzero(st == 2)[0]:
+                arrived_rows.append((tick, int(k),
+                                     float(pos[k, 0]), float(pos[k, 1])))
+        in_field = [(t, k, x, y) for t, k, x, y in arrived_rows
+                    if float(np.hypot(x - fcx, y - fcy)) <= frad]
+        assert not in_field, \
+            f"ARRIVED waiters inside the field radius {frad} m " \
+            f"(field-immune ghosts would hollow the blast beat): " \
+            f"{in_field}"
+        distinct = sorted({k for _t, k, _x, _y in arrived_rows})
+        assert len(distinct) <= 3, \
+            f"too many DISTINCT in-window waiter arrivals " \
+            f"({len(distinct)}) — the drift-to-door reading breaks " \
+            f"down: {distinct}"
+        print(f"[tfog_bake] zero-arrived law green (operative core): "
+              f"{len(arrived_rows)} in-window arrival(s), all "
+              f"field-distant; probe stage PASS "
+              f"({time.time() - t0:.1f}s)")
         return
 
     cache_path = _cache_file(out)

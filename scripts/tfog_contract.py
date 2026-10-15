@@ -143,9 +143,13 @@ FIELD = {
 # the driver asserts it).
 CAM_KEEPOUT_R = 1.3
 CAM_KEEPOUTS = (
-    ("CAM_S2", -18.0, -1.5, 0, 190),
-    ("CAM_S6", -8.0, 1.2, 528, 672),
-    ("CAM_S9", 4.6, 1.0, 792, 912),
+    # rows move with their lenses (F-TD13: row+cert as ONE edit —
+    # session-19 camprobe round-1 re-staged S2/S9; S10 re-staged from
+    # the N bed INTO the cleared (4.6,1.0) disk for the door framing).
+    ("CAM_S2", -22.0, 0.5, 0, 190),
+    ("CAM_S6", -9.0, -2.2, 528, 672),   # moved with the S6h lens (round-3 cert)
+    ("CAM_S9", -3.0, -1.0, 792, 876),
+    ("CAM_S10", -21.5, -2.0, 877, 948),   # at the local's door (the stop is x=-24)
 )
 
 # --- the train key paths (the scene module keys; FRAMES) ---------------
