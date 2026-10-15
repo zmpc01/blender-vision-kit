@@ -302,6 +302,12 @@ def main():
     cache_path = _cache_file(out)
 
     if args.stage == "groups":
+        # the native bake refuses an existing cache: the later stages
+        # bake into SIBLING dirs (probe/, groups/) under --out.
+        out = out / "groups_fresh"
+        if out.exists():
+            raise SystemExit(f"[tfog_bake] {out} exists -- rm it first")
+        out.mkdir(parents=True)
         # the keepout-intersect assert (round-2 R5): keepout circles must
         # not touch the queue slots or the door destination capacity box.
         import math
@@ -350,7 +356,7 @@ def main():
         # the film is TRUE WORLD-MODE: no belt transform (the audit
         # fork); rows stay in world meters.
     )
-    ctx = bridge.to_previz_ctx(cache_path, scene, str(out / "cache_ctx.json"))
+    ctx = bridge.to_previz_ctx(cache_path, scene, digest=digest)
     ctx["cast"] = {
         "heroes": [
             {"name": "late_passenger", "kind": "actor", "lane": "sprint"},
