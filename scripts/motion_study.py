@@ -466,6 +466,15 @@ def main():
         # restore reals, strip the motion layer, filmstrip the raw scene
         for o in real_hidden:
             o.hide_render = False
+        # s18 e2e find: the grid loop's LAST _set_layer_visibility(False)
+        # leaves the ONION ghosts render-visible — the "raw scene" strip
+        # then rendered the frozen ghost STACK (cells read identical; the
+        # real, animated subject hid underneath). Actually strip the
+        # motion layer before the strip render (made objects are deleted
+        # in the finally, so hiding here is safe).
+        for o in made:
+            o.hide_render = True
+        bpy.context.view_layer.update()
         strip = None
         if not args.no_filmstrip:
             strip = filmstrip(frames, outdir, w, h, args.engine)

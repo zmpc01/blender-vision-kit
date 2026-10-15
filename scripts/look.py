@@ -146,7 +146,7 @@ def _probe_cam_names(scene, requested_items):
     return [(n, by_name.get(n)) for n in names]
 
 
-def _manifest() -> dict:
+def _manifest(probe_only: bool = False) -> dict:
     """Compact object-id manifest: the ids the next patch needs."""
     # world_bbox law: matrices/bound_box are evaluated lazily — right
     # after in-process mutation they are STALE (a 45°-yawed cube reads
@@ -564,7 +564,7 @@ def main():
                       f"{r['w']}x{r['h']} luma={r['luma_mean']} "
                       f"clipped={r['clipped_pct']}% dark={r['dark_pct']}% "
                       f"subject={r['subject_pct']}%{fl}")
-        man = _manifest()
+        man = _manifest(probe_only=probe_only)
         mesh_rows = [m for m in man if m["type"] == "MESH"]
         print(f"[look] manifest ({len(man)} objects; meshes {len(mesh_rows)}):")
         for m in man[:24]:
