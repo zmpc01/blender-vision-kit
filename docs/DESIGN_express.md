@@ -56,7 +56,7 @@
 
 | pop | ingest order | count | role | notes |
 |-----|--------------|-------|------|-------|
-| waiters | 1st (owns envelope cap) | 66 | platform crowd | Navigate-graph bound with an UN-ARRIVED mechanism (alternating destination pair / horizon-length route); probe-asserts ZERO arrived waiters at tick 168 |
+| waiters | 1st (owns envelope cap) | 66 | platform crowd | Navigate-graph bound with the HORIZON-ROUTE law (round-2 R1: the destination-pair option is DEAD — goals are spawn-sampled, never re-sampled): spawn band E ~x=18, the single destination's capacity_bounds rect at the W end — min(spawn→goal) ≥ 40 m so nobody arrives inside the film; zero-arrived assert at EVERY tick in [168,264] |
 | cohorts | 2nd | 42 | M6 groups: 14 × 3 | Navigate graph to door destinations; group cohesion additive (survives the field) |
 | door queue | 3rd | 18 | Sequence(QueueNode, Navigate) | portal at the center door (S face), 9 slots ON the platform, capacity 1; HOLDS through the blast (des_vel zeroed — the disciplined line) |
 | chase | last | 9 | keyed hero lane | LATE PASSENGER (keyed sprint) + STATIONMASTER (keyed lantern walk); 3 RB slots (CHASE_RB_INDICES pattern) |
@@ -81,9 +81,13 @@ member ids from the probe bake (two-bake covenant; never rebuild).
   (interval=1, zone0-first, chase-last; waiters=populations[0]) → ids;
   group member resolution; **the recoil probe**: max N-edge displacement
   of UN-ARRIVED waiters inside the window in cache bytes (deterministic
-  verdict) + the zero-arrived assert at tick 168; the field magnitude is
-  tuned HERE (start strength 3.5 m/s, radius 7.5, SMOOTH; target a 1-2 m
-  press-back at the edge band).
+  verdict) + the zero-arrived assert at EVERY tick in [168,264]; the
+  field magnitude is tuned HERE (strength 3.5 m/s, radius 7.5, SMOOTH;
+  target a 1-2 m press-back at the edge band); **field center pinned
+  (round-2 R2): on the N face at the S5 camera x-band, radius 7.5
+  covers the full 8 m platform depth there**; keepout circles
+  (r=1.3+agent_r) asserted ∩ queue slots / door destinations = ∅
+  (round-2 R5 — the clamp is post-splice and hard-pushes xy).
 - **Stage groups**: `dataclasses.replace` + groups + queue + graphs;
   re-assert interval/order pins (F-TS4); final bake; fresh dirs; pin
   sha256 per stage.
@@ -157,7 +161,14 @@ member ids from the probe bake (two-bake covenant; never rebuild).
 11. S11 — pull-out rear: fog swallows the tail lights; doorway ghosts
 12. S12 — title: `EXPRESS — PASSING WITHOUT STOP`
 
-## 10. Resolved questions (audit round 1)
+## 10. Round-2 folds (REV-3)
+
+- R1: horizon-route law replaces the destination pair; zero-arrived
+  asserts every tick in [168,264].
+- R2: DANGER center pinned on the N face at the S5 x-band.
+- R5: keepout ∩ {queue slots, door dests} = ∅ assert in the driver.
+
+## 11. Resolved questions (audit round 1)
 
 - RQ1: t_active = seconds — design consistent; strength is m/s; probe
   asserts magnitude.

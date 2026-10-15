@@ -41,19 +41,30 @@
 - **No mid-film seam (P0)**: the dispersal layer extends to tick 539,
   marching the column out the north gap; the film ends before any
   layer-end exists.
-- **The moonwalk law (P0)**: TRANSFORM writes position only — composed
-  velocity stays BASE. The film needs BOTH: (a) K1 (§7) re-derives
-  composed SPEED (and YAW) from composed position deltas inside composed
-  windows, AND (b) the wheel is TIMED to the walk speed so slot speed ≡
-  base walk speed (the honest-motion belt and braces).
-- **The wheel spec (P1 folds)**: 2 ranks × 12 at 1.0 m; pivot = the
-  column's geometric center slot; slot_i(t) = P + R(θ_t)·(s_i − P); ω =
-  Θ/T with **max |v_slot| ≤ walk speed (1.3 m/s)** → 90° wheel ≈ 83 ticks
-  at r_max≈5.7 m; per-tick absolute samples; monotone-by-angle slot
-  assignment for the circle/dispersal re-forms; probe-stage assert:
-  min pairwise slot distance ≥ 0.7 m at every sampled tick; the swept
-  annulus stays ≥ 1.5 m clear of the colonnade shade line and the dais
-  inlay (layers and sim agents do not collide with each other either).
+- **The moonwalk law (P0 + round-2 R3)**: TRANSFORM writes position
+  only — composed velocity AND composed PHASE stay BASE, and bake2 legs
+  are PHASE-driven (`swing = f(phase)`; base phase is frozen under
+  layer windows because advance is displacement-driven). The film needs
+  ALL of: (a) **K1 (§7) re-derives composed SPEED + YAW + PHASE** from
+  composed position deltas inside composed windows (φ_t = φ_{t−1} +
+  |Δp|/stride, seeded from the pre-window base phase, EXCLUDING rows
+  whose clip/phase came from interaction Animation edits — the
+  officers' authored pin is protected), AND (b) the wheel is TIMED to
+  the walk speed so slot speed ≡ base walk speed (belt and braces).
+- **The wheel spec (P1 folds + round-2 R4 exact numbers)**: 12 slots on
+  the line (half-span **5.5 m**, spacing 1.0 m), 2 ranks deep (half
+  **0.5 m**); **pivot = the 2×12 formation CENTROID (between files 6/7
+  and the ranks) — a slot pivot breaks the walk-speed law
+  (r=6.083 → 1.39 m/s)**; r_max = √(5.5²+0.5²) = **5.523 m**; window
+  [169,251] = 83 samples = 82 intervals → ω = (π/2)/82 =
+  **0.019157 rad/tick (0.2299 rad/s)**; v_max = 0.2299×5.523 =
+  **1.270 ≤ 1.3** ✓; per-tick outer-slot step 0.106 m; rigid rotation
+  preserves all pairwise distances (min spacing stays 1.0 m); per-tick
+  absolute samples; monotone-by-angle slot assignment for the
+  circle/dispersal re-forms; **spacing assert ≥ 0.7 m at EVERY sampled
+  tick of EVERY layered phase (round-2 R6 — the pinch phase is the
+  dispersal morph, not the wheel)**; the swept annulus stays ≥ 1.5 m
+  clear of the colonnade shade line and the dais inlay.
 - **bake_interaction (5-b recipe)**: request (2 participants, root
   constraints covering the interval, ≥1 contact, live blake3
   base_cache_hash, worker_protocol "authored-paired-clip-v1") + layer
@@ -93,11 +104,11 @@ for both keyed heroes + the two officers (resolved Zed names).
 |-------|-------|-------------|
 | march-in | 0-119 | BASE sim (spawn at the gap, destinations at the assembly area) |
 | assembly dress | 120-168 | halt-in-place PIN at measured positions [120,131] → dress TRANSFORM to the 2×12 line [132,168] |
-| the wheel | 169-251 | TRANSFORM wheel, 90°, ω ≤ 0.228 rad/s, center pivot |
+| the wheel | 169-251 | TRANSFORM wheel, 90°, ω = 0.019157 rad/tick, CENTROID pivot (R4) |
 | halt | 252-299 | PIN at the halt slots |
 | circle re-form | 300-360 | TRANSFORM to the ring (monotone-by-angle; chord 1.05 m) |
 | circle hold | 361-420 | PIN ring (the officers' beat lives here) |
-| dispersal march | 421-539 | TRANSFORM from ring slots out through the north gap (line abreast → file), ending past the gap |
+| dispersal march | 421-539 | TRANSFORM from ring slots out through the north gap at **1.55 m/s attention-march (round-2 R7: the phase-honest speed via K1-phase; end-state = head past the gap, tail stringing back mid-yard — S12 reframed as the streaming column)** |
 
 | beat | frames | content |
 |------|--------|---------|
@@ -107,7 +118,7 @@ for both keyed heroes + the two officers (resolved Zed names).
 | S6 halt + circle | 504-720 | HALT snap → the ring re-forms around the circle mark |
 | S7 the officers' beat | 720-840 | the officers converge (measured arrival), clasp hold; the ring holds |
 | S8-S9 break-off | 840-960 | the ring breaks to the dispersal line and marches out (ALL layered, no seam) |
-| S10-S12 colors + last | 960-1080 | the standard-bearer crosses foreground (keyed); the yard empties of cache agents (dispersal completes past the gap); final aerial: long shadows + the dark circle mark |
+| S10-S12 colors + the outgoing column | 960-1080 | the standard-bearer crosses foreground (keyed); the column STREAMS OUT through the gap (tail mid-yard at the cut); final aerial: long shadows + the dark circle mark + the departing file |
 
 ## 4. Crowd plan (bake stages)
 
@@ -119,7 +130,9 @@ for both keyed heroes + the two officers (resolved Zed names).
 - **Stage layers**: apply the 144 drill layers (dress 24 + wheel 24 +
   halt 24 + circle 24 + hold 24 + dispersal 24) via
   `apply_layout_overrides`; `inspect_layout.conflicts == []` asserted at
-  every boundary tick (not once).
+  every boundary tick (not once); **keepout circles asserted ∩ layer
+  samples = ∅ (round-2 R5 — the post-splice clamp would corrupt the
+  formation after the pre-clamp asserts)**.
 - **Stage interaction**: resolve officer ids + arrival tick; author
   request/layer/motion from the SAME cache numbers; `bake_interaction`;
   assert receipt + sidecar layer count == 2×window; unique (agent,tick).
@@ -155,15 +168,17 @@ for both keyed heroes + the two officers (resolved Zed names).
 
 ## 7. Kit lanes (this round's fixes, dependency-ordered)
 
-- **K1 — composed-SPEED + composed-YAW (crowd-kit previz_bridge)**:
-  inside the F-TS1 composed windows, re-derive per-agent SPEED and YAW
-  from composed position deltas: speed = |Δp|·tick_hz (smoothed 3-tick),
-  yaw = atan2(Δ) with **zero-delta → HOLD the last derived yaw (temporal
-  carry — never base yaw)**, speed floor semantics preserved (held at
-  the last nonzero value during zero-delta), meta flag
-  `layout_composed_motion`, unlayered byte-identity unchanged, tests
-  (r054 + TS1 suites + a wheel-facing assert). THE enabler for honest
-  wheel motion. Design audited before landing.
+- **K1 — composed-SPEED + YAW + PHASE (crowd-kit previz_bridge)**:
+  inside the F-TS1 composed windows, re-derive per-agent SPEED, YAW and
+  PHASE from composed position deltas (computed on POST-clamp xy):
+  speed = |Δp|·tick_hz (smoothed 3-tick); yaw = atan2(Δ) with
+  **zero-delta → HOLD the last derived yaw (temporal carry), seeded
+  ONCE from the pre-window base yaw (round-2 R8)**; **phase =
+  φ_{t−1} + |Δp|/stride, seeded from the pre-window base phase,
+  EXCLUDING interaction-edited rows (round-2 R3)**; meta flag
+  `layout_composed_motion`; unlayered byte-identity unchanged; belt
+  path guard comment; tests (r054 + TS1 + a wheel-facing + a
+  phase-advance assert). THE enabler for honest layered motion.
 - **K2 — driver asserts (vision-kit film drivers)**: empty-union splice
   assert; bake-warnings capture; conflicts==[] at boundaries; the
   clip_source receipt assert.
@@ -176,7 +191,14 @@ for both keyed heroes + the two officers (resolved Zed names).
   resolved officer names + keyed heroes; naming law; sfx fail-closed);
   stage into the review app (comments ON), filmstrips + stills.
 
-## 9. Resolved questions (audit round 1)
+## 9. Round-2 folds (REV-3)
+
+- R1-R8 consumed: R4 (centroid pivot + exact ω/r_max), R3 (K1 phase),
+  R5 (keepout∩samples), R6 (spacing assert every phase), R7 (dispersal
+  1.55 m/s + S12 reframe), R8 (yaw seed), R2 (field center — express
+  doc), R1 (horizon route — express doc).
+
+## 10. Resolved questions (audit round 1)
 
 - RQ1: no mid-film seam (dispersal to 539).
 - RQ2: K1 = speed + yaw re-derivation; wheel ALSO timed to walk speed.
