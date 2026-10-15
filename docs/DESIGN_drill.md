@@ -1,198 +1,196 @@
-# DESIGN_drill.md — Film 6: THE DRILL (tform_1) — REV-1
+# DESIGN_drill.md — Film 6: THE DRILL (tform_1) — REV-2
 
 > Golden-hour citadel parade yard. A 24-agent drill column assembles,
-> wheels across the yard in formation (TRANSFORM-sample layers — the
-> first film-consumption of formation presets made REAL), halts, forms
-> the circle, the officers' beat (bake_interaction), breaks off. The
-> LOW RAKING SUN is the new regime; the formation layers are the kit
-> showcase.
+> wheels across the yard in formation (per-agent TRANSFORM-sample layers),
+> halts, forms the circle, the officers' beat (bake_interaction), breaks
+> off and marches out — the layers NEVER end mid-film. REV-2 folds audit
+> round 1 (3 P0s: mid-film seam; wheel moonwalk; phase-table undercount).
 
 ## 0. Identity
 
-- **Film**: tform_1, title **THE DRILL** (the banner + drum platform).
-- **Regime (new)**: GOLDEN HOUR — sun elevation ~6°, warm raking key,
-  LONG shadows across stone, dust motes in the beam. The one sun regime
-  the trilogy never touched (tdawn night / tferry dusk-afterglow /
-  tgreen noon / tsquall storm-dusk).
-- **Setting (new)**: a stone citadel parade yard — fortress wall with
-  battlements, an inner colonnade (the tsquall axial-vantage class),
-  drum platform, banner poles, cobbled ground. Closed-yard geometry
-  (the camera mostly INSIDE, walls outside).
-- **Time**: 540 ticks @ 12 Hz = 45 s, 12 shots.
+- **Film**: tform_1, title **THE DRILL** (banner + drum platform).
+- **Regime (new)**: GOLDEN HOUR — sun elevation ~6°, warm raking key, LONG
+  shadows, low dust. Ladder axes: elevation {4,6,9}° × azimuth {raking /
+  against} × **sky_strength {1.0, 0.4, 0.15}** × dust {on, off};
+  exposure = late tie-breaker only (the tgolden analog of the tsquall
+  sun5/sky0.15 pin — expect sun-full/sky~0.15-0.4 + warm bounce).
+- **Setting**: stone citadel parade yard ~56×40 m; fortress wall N/E/W
+  with battlements (6 m); inner colonnade along S (columns 4.5 m — shade
+  line + the axial-vantage class); drum platform = a ≤0.05 m stone inlay
+  (the planar-sim law: no risers) with drummers on the ground beside it;
+  4 banner poles; the circle mark = darker stone ring inlay (r=4 m).
+  **Walkable = the yard rect pulled short of the column faces by
+  half-width + inflation margin; columns = Blocked squares fully inside
+  the walkable; the inlays are visual-only** (no blocked squares past the
+  walkable edge — the E_InvalidRange class).
+- **Timeline law (the ×2 law)**: cache 541 ticks @ 12 Hz; film 24 fps /
+  1080 frames; **1 tick = 2 frames**; all exported surfaces in FRAMES.
 
-## 1. Pinned laws this film inherits (research wave 5-a/b/c)
+## 1. Pinned laws (research wave + audit round 1 folds)
 
-- **Formation emulation recipe (5-a)**: formation presets are meters
-  (leader-relative line/V; center-relative circle) — validation only;
-  REAL slots come from OUR math: per-agent layers.
-  - HOLDS: one PIN layer per agent (`position:[x,y,0]`, single payload —
-    never one layer for many agents).
-  - MARCH/WHEEL: one TRANSFORM layer per agent, payload
-    `{"operation":"absolute","samples":[{"tick","translation":[x,y,0]}...]}`,
-    samples at EVERY tick in range (piecewise-CONSTANT hold — no interp),
-    sample ticks strictly inside the layer tick_range.
-  - Layer names unique across the WHOLE stack (`drill{n}_{kind}_a{id}`);
-    distinct `priority` per phase; ranges ABUT exactly (t1+1 after t1) —
-    boundary positions must MATCH or the column teleports.
-  - Legs keep playing (clip flows through); **YAW NEVER COMPOSES** —
-    the film needs the composed-yaw kit fix (§7 K1) or facing stays base.
-- **No layer cap** (24 agents × ~5 phases ≈ 120 layers fine).
-- **First-frame law**: target ids from `agent_ids(cache)` at tick_start;
-  drill pop emits interval=1 (all visible at tick 0).
-- **bake_interaction (5-b)**: hand-authorable — request (participants ≥2,
-  root_constraints covering [tick_start,tick_end], contact_constraints
-  non-empty, `base_cache_hash` = live blake3, `worker_protocol`
-  "authored-paired-clip-v1") + layer (edits = per-(agent,tick)
-  AnimationEdit, unique (agent,tick), provenance EXACT-match) + motion
-  (7 keys, root samples within 0.25 m/10° of the request path — author
-  both from the same numbers; contacts evidence `distance_m ≤ 0.15`,
-  `required=True` needs observed match). Lands as `animation_fix`
-  layers → film VISIBLE for phase always, clip only with
-  `clip_source="channel"` (vocabulary {0,1,2}).
-  THE BEAT: two officers converge (base-sim staged), hold clip 0 idle
-  across the clasp window (per-tick edits), `clip_source="channel"` on
-  the whole film's to_previz_cache. NOT a skeletal salute — honest note
-  in the delivery.
-- **Gate law**: the composed-aware ground-contact gate exempts the whole
-  declared union window (marker `layout_composed`); TRANSFORM z-lifts
-  would trip OUTSIDE the window — this film stays PLANAR (z=0) so the
-  gate's planar teeth never engage. Keep every layer inside the export
-  window (the empty-union vanish law: driver asserts the splice ran).
-- **12 Hz cache law**; fresh-dir law; pin sha256 per stage.
+- **Layers**: one layer per agent; PIN holds single position; TRANSFORM
+  samples `{"operation":"absolute","samples":[{tick,translation:[x,y,0]}…]}`,
+  ABSOLUTE cache ticks, one sample PER TICK, strictly inside the layer
+  range; layer names unique across the whole stack; ranges ABUT exactly;
+  `conflicts == []` asserted at EVERY phase boundary (priorities stay
+  equal — no overlap resolution is expected; a conflict = authoring bug).
+- **Continuity law (base↔layer included)**: every boundary — base→layer,
+  layer→layer, layer→base — position-continuous within one tick step;
+  the assembly PIN payload = each agent's MEASURED base position at the
+  pre-tick (halt-in-place, zero teleport) then a short dress TRANSFORM.
+- **No mid-film seam (P0)**: the dispersal layer extends to tick 539,
+  marching the column out the north gap; the film ends before any
+  layer-end exists.
+- **The moonwalk law (P0)**: TRANSFORM writes position only — composed
+  velocity stays BASE. The film needs BOTH: (a) K1 (§7) re-derives
+  composed SPEED (and YAW) from composed position deltas inside composed
+  windows, AND (b) the wheel is TIMED to the walk speed so slot speed ≡
+  base walk speed (the honest-motion belt and braces).
+- **The wheel spec (P1 folds)**: 2 ranks × 12 at 1.0 m; pivot = the
+  column's geometric center slot; slot_i(t) = P + R(θ_t)·(s_i − P); ω =
+  Θ/T with **max |v_slot| ≤ walk speed (1.3 m/s)** → 90° wheel ≈ 83 ticks
+  at r_max≈5.7 m; per-tick absolute samples; monotone-by-angle slot
+  assignment for the circle/dispersal re-forms; probe-stage assert:
+  min pairwise slot distance ≥ 0.7 m at every sampled tick; the swept
+  annulus stays ≥ 1.5 m clear of the colonnade shade line and the dais
+  inlay (layers and sim agents do not collide with each other either).
+- **bake_interaction (5-b recipe)**: request (2 participants, root
+  constraints covering the interval, ≥1 contact, live blake3
+  base_cache_hash, worker_protocol "authored-paired-clip-v1") + layer
+  (edits per (agent,tick), unique pairs, provenance exact-match) + motion
+  (7 keys; root samples from the SAME numbers; contact evidence
+  distance_m ≤ 0.15). Officers' beat: converge sub-window = phase FLOWS
+  (cache-read per tick); clasp-hold sub-window = phase PINNED neutral
+  (a held stance — not a floor-rate shuffle). 2×window-ticks layers.
+- **clip_source="channel"**: the film bake module calls
+  `bridge.to_previz_cache(..., clip_source="channel")` DIRECTLY (never
+  the crowd_kit CLI — it hard-codes speed_band); receipt assert
+  `digest["clip_source"]=="channel"`; the mapping probe asserts clip
+  rows ∈ mapped vocabulary and the officers' hold window reads clip 0.
+- 12 Hz law; fresh-dir law; pin sha256 per stage; compose cost measured
+  (order 1-3 s one-time in the bridge; no per-frame cost).
 
 ## 2. Cast (contract-authoritative counts)
 
 | pop | count | role | notes |
 |-----|-------|------|-------|
-| drill | 24 | THE column | own population, interval=1, spawn at the north barracks gap |
-| watchers | 72 | citizens on the colonnade shade line | v1 wander between shaded destinations (slow mu) |
-| drummers | 4 | on the drum platform, HoldPosition graph | visual + sfx anchor |
-| officers | 2 | the bake_interaction pair | converges mid-yard for the ceremony beat |
-| chase | 6 | keyed hero lane | the STANDARD-BEARER (keyed, carries the banner across the yard) + the CAPTAIN (keyed) |
+| drill | 24 | THE column (2×12) | own population, interval=1, spawns at the north barracks gap; base march toward the yard; dispersal marches them OUT through the same gap |
+| watchers | 72 | colonnade shade line | slow-mu Navigate between shaded destinations |
+| drummers | 4 | HoldPosition graph | on the ground beside the dais inlay (E side) |
+| officers | 2 | the bake_interaction pair | TWO 1-agent pops with adjacent destination boxes (~0.9 m apart, facing); arrival = the stop (ghost law reads as standing); beat window = MEASURED arrival tick |
 
-Total declared: 108 (a SMALLER film than the trilogy — deliberate: the
-formation layers are per-agent; 24-agent precision is the stress, not
-raw count; the yard reads fuller via the colonnade watchers + long
-shadows). Loader pin override 108 — F-TS5.
+Cache total: **102** (loader pin override 102 — F-TS5).
+**Keyed heroes (branch (a) — OUTSIDE the cache)**: the STANDARD-BEARER
+(Blender-side keyed actor mesh, NOT a cache agent) carries the banner via
+prop_carry path-rebasing (`carry_keys` along the hero's per-frame world
+path; verify_riding + gate 14 green); the CAPTAIN is the second keyed
+actor. No double-drive risk (the cache never references them). CAST rows
+for both keyed heroes + the two officers (resolved Zed names).
 
-## 3. The story spine (45 s)
+## 3. The story spine (TICKS @ 12 Hz; exported surfaces ×2 = frames)
 
-| beat | ticks | content |
-|------|-------|---------|
-| S1-S2 yard establish | 0-96 | golden raking light, long shadows; watchers file along the colonnade; the banner reads `INSPECTION DAY` |
-| S3 assembly | 96-168 | the drill squad marches in from the north gap (base sim), takes the LINE (PIN layers t≈120-168) |
-| S4-S5 the wheel | 168-288 | the column WHEELS across the yard — TRANSFORM samples per agent along the arc (the signature move; drum beat on the sfx spine) |
-| S6 halt + circle | 288-360 | HALT (PIN), then re-form to the CIRCLE (TRANSFORM to ring slots around the officers' point) |
-| S7 the officers' beat | 360-408 | the two officers (base-sim convergence) meet center; bake_interaction idle-hold (clip 0) — the clasp; the squad holds the circle |
-| S8-S9 break-off | 408-480 | the circle breaks to the dispersal line (TRANSFORM), then layers END → base resumes down the yard (film cut hides the seam: S9 is a close shot during the transition) |
-| S10-S12 colors + depart | 480-540 | the standard-bearer crosses foreground (keyed); the yard empties; final wide: long shadows, the empty circle of disturbed dust (the circle mark = a darker stone ring prop, readable from the aerial) |
+| phase | ticks | layer state |
+|-------|-------|-------------|
+| march-in | 0-119 | BASE sim (spawn at the gap, destinations at the assembly area) |
+| assembly dress | 120-168 | halt-in-place PIN at measured positions [120,131] → dress TRANSFORM to the 2×12 line [132,168] |
+| the wheel | 169-251 | TRANSFORM wheel, 90°, ω ≤ 0.228 rad/s, center pivot |
+| halt | 252-299 | PIN at the halt slots |
+| circle re-form | 300-360 | TRANSFORM to the ring (monotone-by-angle; chord 1.05 m) |
+| circle hold | 361-420 | PIN ring (the officers' beat lives here) |
+| dispersal march | 421-539 | TRANSFORM from ring slots out through the north gap (line abreast → file), ending past the gap |
+
+| beat | frames | content |
+|------|--------|---------|
+| S1-S2 yard | 0-192 | golden raking light, long shadows; watchers file the shade line; banner `INSPECTION DAY` |
+| S3 assembly | 192-336 | the squad marches in, halts, dresses ranks |
+| S4-S5 the wheel | 336-504 | the column wheels across the yard (drum cadence on the sfx spine) |
+| S6 halt + circle | 504-720 | HALT snap → the ring re-forms around the circle mark |
+| S7 the officers' beat | 720-840 | the officers converge (measured arrival), clasp hold; the ring holds |
+| S8-S9 break-off | 840-960 | the ring breaks to the dispersal line and marches out (ALL layered, no seam) |
+| S10-S12 colors + last | 960-1080 | the standard-bearer crosses foreground (keyed); the yard empties of cache agents (dispersal completes past the gap); final aerial: long shadows + the dark circle mark |
 
 ## 4. Crowd plan (bake stages)
 
-- **Stage probe**: base bake (108, interval=1, pins) → ids; the wheel-slot
-  math rehearsal (slots computed from formation presets + anchor reads at
-  phase anchor ticks — `read_agent_at_tick` composed reads); assert the
-  officers' convergence (spawn-box math so their base paths actually meet
-  — the tsquall faller-picker pattern: measure, then place the beat where
-  the sim agrees).
-- **Stage layers**: apply the ~120 drill layers (holds/wheel/circle/
-  dispersal) via `apply_layout_overrides` on the FINISHED bake (after
-  groups… NO groups in this film — the drill is layer-precision, the
-  watchers are base sim; queue not needed; graphs: HoldPosition for the
-  drummers only). Re-assert inspect_layout conflicts == [].
-- **Stage interaction**: resolve officer ids + their convergence tick from
-  the cache; author request/layer/motion (the 5-b recipe, numbers from
-  the SAME cache read); `bake_interaction`; assert receipt + sidecar
-  layers count == 2×window_ticks.
-- **Stage finish**: composed npz with `clip_source="channel"` (PROBE the
-  mapping first: assert clip rows ∈ {0,1,2} mapped and the officers' hold
-  window reads clip-0/idle); cast list; sfx rows (drum events authored +
-  read_events if any graph events exist).
-- Determinism: fresh dirs, pins recorded; the layers are pure functions
-  of the base bake → re-bake reproducibility asserted (re-apply on a
-  fresh clone dir, byte-compare the npz).
+- **Stage probe**: base bake (102, interval=1, pins) → ids; MEASURED
+  positions at phase anchor ticks (`read_agent_at_tick`); the officers'
+  arrival ticks; the wheel-slot rehearsal (spacing assert ≥ 0.7 m at
+  every sampled tick; annulus clearance assert); the assembly-geometry
+  check (the march window covers the gap→line distance at walk speed).
+- **Stage layers**: apply the 144 drill layers (dress 24 + wheel 24 +
+  halt 24 + circle 24 + hold 24 + dispersal 24) via
+  `apply_layout_overrides`; `inspect_layout.conflicts == []` asserted at
+  every boundary tick (not once).
+- **Stage interaction**: resolve officer ids + arrival tick; author
+  request/layer/motion from the SAME cache numbers; `bake_interaction`;
+  assert receipt + sidecar layer count == 2×window; unique (agent,tick).
+- **Stage finish**: composed npz with `clip_source="channel"` + the
+  mapping probe; cast list; sfx rows (drum cadence authored on the wheel
+  + halt crack + clasp beat + dispersal wash); determinism: re-apply the
+  full layer set on a fresh clone dir → byte-compare the npz.
 
 ## 5. World module (sub-agent build, my visual gate)
 
-- Yard ~56×40 m cobbled plane (two-tone cobble checker, warm); fortress
-  wall N+E+W with battlements (modest height 6 m), inner colonnade along
-  S (columns 4.5 m — the axial vantage + shade line for watchers); drum
-  platform (2 m, E side); 4 banner poles with pennants (wind keys);
-  the circle mark: a darker stone ring inlay (r=4 m) center-yard (the
-  ceremony spot, also the final-shot payoff); dust = a light volume box
-  LOW (2 m) + the golden sun; sky = MULTIPLE_SCATTERING low-sun preset
-  candidates in the ladder; distant hills silhouette plane (N beyond
-  wall) for the aerial.
-- NO opaque roof over the yard (the tsquall axial-crane law — keep
-  aerials legal); the colonnade is the shaded edge, not a lid.
+- Yard 56×40 m cobbled (two-tone warm checker); fortress walls N/E/W +
+  battlements; colonnade S (columns 4.5 m, Blocked squares inside the
+  walkable); dais inlay ≤0.05 m; circle-mark ring inlay (r=4 m); 4
+  banner poles with pennants (wind keys); dust = LOW-density volume box
+  2 m (the washed-pastel class guard: dust low until the aerial proves
+  otherwise); distant hills silhouette N; NO roof over the yard.
 - Lowercase wiring; factory purge at scene level; grounding plane.
 
 ## 6. Scene module
 
-- Loader: `expected_agents=108`; palette: drill = deep ceremonial blue +
-  gold trim (readable against warm stone), watchers = muted earth tones,
-  officers = black+gold, standard-bearer = the banner carrier.
-- Cameras: 12 shots. Drafts: S1 aerial NE (sun-side), S2 colonnade shade
-  line (watchers + shafts), S3 assembly from the gap, S4 the wheel WIDE
-  (the signature: whole column mid-arc, long shadows sweeping), S5 wheel
-  CLOSE (feet + shadow sweep), S6 halt snap (the instant of PIN), S7
-  officers' beat (tight pair, warm backlit), S8 circle overhead (the
-  ring readable), S9 break-off close (the cut point), S10 standard-bearer
-  crossing (keyed, foreground column), S11 emptying yard wide, S12 final
-  aerial: the dark circle mark + long shadows + departing column.
-- Crane: S4→S5 wheel crane (keyed loc0→loc1); keepout rows coupled
-  (F-TD13).
-- sfx spine: drum cadence (authored, ticks from the wheel), halt crack,
-  the clasp beat (soft), dispersal wash, banner flutter. Fail-closed gate.
+- Loader: `expected_agents=102`; palette: drill deep ceremonial blue +
+  gold; watchers muted earth; officers black+gold; keyed heroes own
+  materials.
+- Cameras: 12 shots (probe-driver adjudicates): S1 aerial NE sun-side;
+  S2 colonnade shade line; S3 assembly from the gap; S4 wheel WIDE (the
+  signature: whole column mid-arc, shadows sweeping); S5 wheel CLOSE
+  (feet + shadow sweep); S6 halt snap; S7 officers' beat (tight pair,
+  warm backlit); S8 circle overhead (the ring readable); S9 break-off
+  close; S10 standard-bearer crossing (keyed, foreground column; keepout
+  row + camprobe cert as ONE edit); S11 emptying yard wide; S12 final
+  aerial (the mark + long shadows). Crane: S4→S5 keyed loc0→loc1.
+- sfx spine fail-closed.
 
-## 7. Kit lanes (this round's fixes, ordered by dependency)
+## 7. Kit lanes (this round's fixes, dependency-ordered)
 
-- **K1 — composed-yaw (crowd-kit previz_bridge)**: inside the F-TS1
-  composed windows, re-derive yaw from composed position DELTAS
-  (smoothed; zero-delta → keep base yaw; speed < 0.3 → hold) + meta
-  flag `layout_composed_yaw` + tests (unlayered byte-identity unchanged;
-  wheel-facing assert). THE enabler for the wheel's readability.
-  Design reviewed by audit before landing.
+- **K1 — composed-SPEED + composed-YAW (crowd-kit previz_bridge)**:
+  inside the F-TS1 composed windows, re-derive per-agent SPEED and YAW
+  from composed position deltas: speed = |Δp|·tick_hz (smoothed 3-tick),
+  yaw = atan2(Δ) with **zero-delta → HOLD the last derived yaw (temporal
+  carry — never base yaw)**, speed floor semantics preserved (held at
+  the last nonzero value during zero-delta), meta flag
+  `layout_composed_motion`, unlayered byte-identity unchanged, tests
+  (r054 + TS1 suites + a wheel-facing assert). THE enabler for honest
+  wheel motion. Design audited before landing.
 - **K2 — driver asserts (vision-kit film drivers)**: empty-union splice
-  assert (the stdout-warn vanish law); warnings-capture around bake for
-  field-drop accounting (film 5); layer-conflict assert.
-- **K3 — filed, not landed**: `BakeResult.dropped_fields`; formations→
-  layers helper promotion (film-side module this round; promote to the
-  kit only if the audit argues it is general).
+  assert; bake-warnings capture; conflicts==[] at boundaries; the
+  clip_source receipt assert.
+- **K3 — filed, not landed**: BakeResult.dropped_fields;
+  formations→layers helper promotion.
 
-## 8. Light ladder (my eye)
+## 8. Export + stage
 
-- Sun elevation 4°/6°/9° × azimuth (raking across the wheel axis vs
-  against it) × dust density 2 steps — ONE wheel-mid frame + one aerial.
-  Decide on: shadow LENGTH readability (the film's visual currency),
-  faces not crushed (fill via the warm bounce from the cobble — the
-  direct:ambient ratio law at golden hour), Standard-transform gates.
+- `tform_1` rev 1 through preflight (B3 span at build; CAST rows from
+  resolved officer names + keyed heroes; naming law; sfx fail-closed);
+  stage into the review app (comments ON), filmstrips + stills.
 
-## 9. Shot list (12)
+## 9. Resolved questions (audit round 1)
 
-As §6 drafts; the camprobe driver adjudicates (3+ candidates per failing
-shot, the tsquall pattern). The S4 wheel-wide is the poster frame
-candidate; S12 is the payoff frame.
-
-## 10. Open questions for the audit round
-
-- OQ1: wheel math — rigid-body arc around a moving pivot; verify the
-  per-agent per-tick slot paths stay inside the yard bounds and the
-  phase-boundary continuity (assembly-end == wheel-start positions).
-- OQ2: does `clip_source="channel"` break the WATCHERS' clips (they are
-  base 1/2 — mapped fine) and the keyed heroes (keyed RB lanes are
-  Blender-side, not cache clips — confirm no interference).
-- OQ3: the officers' convergence — can two v1 wanderers realistically
-  meet center? If not: spawn them as a tiny population with destinations
-  at the circle mark (spawn-side destination assignment — the SKILL #87
-  law) — CONFIRM destination-boxes overlap the mark.
-- OQ4: 24 PIN layers + 24×3 TRANSFORM layers + 48 interaction edits —
-  sidecar size + compose cost per tick (read_tick × 540) — measure.
-- OQ5: the banner-carry — the standard-bearer is a KEYED hero carrying a
-  banner prop (prop_carry law, the kit's animated-prop placement rules) —
-  confirm the PATH-REBASING law applies (the s5 law: animated-prop
-  placement needs path rebasing, not current-frame re-keying).
-- OQ6: drummers' HoldPosition graph on a 2 m platform — agent z on the
-  platform vs the planar sim (z=0 law): the drum platform must be
-  GROUND-LEVEL (a dais 0.15 m, not 2 m) or the drummers bake at z=0
-  under it — CONFIRM and design accordingly.
+- RQ1: no mid-film seam (dispersal to 539).
+- RQ2: K1 = speed + yaw re-derivation; wheel ALSO timed to walk speed.
+- RQ3: full phase table (§3) with all PIN phases; conflicts asserts.
+- RQ4: base↔layer continuity via measured halt-in-place.
+- RQ5: wheel = 2×12, center pivot, ω from the walk-speed law.
+- RQ6: absolute ticks; operation absolute asserted in the builder.
+- RQ7: K1 yaw temporal carry; ring faces center for free (monotone
+  radial approach).
+- RQ8: officers' beat = flow-then-pin phases; honest note in delivery.
+- RQ9: officers = two 1-agent pops, adjacent boxes; measured window.
+- RQ10: clip_source="channel" via direct bridge call + asserts.
+- RQ11: walkable short of columns; columns Blocked inside; dais inlay.
+- RQ12: ladder adds sky_strength axis.
+- RQ13: heroes = keyed actors outside the cache (branch (a)).
+- RQ14: compose cost recorded (1-3 s one-time); no 10K-tick films
+  without re-measurement.

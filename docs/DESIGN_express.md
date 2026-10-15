@@ -1,8 +1,9 @@
-# DESIGN_express.md — Film 5: THE EXPRESS (tfog_1) — REV-1
+# DESIGN_express.md — Film 5: THE EXPRESS (tfog_1) — REV-2
 
 > Blue-hour fog rail platform. The crowd waits; the express does not stop;
 > the blast recoil is REAL (DANGER field, base bytes); the local train boards
-> by groups. The fog regime is the film's reason to exist.
+> by groups. REV-2 folds audit round 1 (2 P0s: the arrived-statue waiter
+> mechanism; the ingest fork).
 
 ## 0. Identity
 
@@ -10,170 +11,161 @@
   card: `EXPRESS  PASSING WITHOUT STOP`).
 - **Regime (new)**: BLUE HOUR + GROUND FOG — deep-blue ambient gradient,
   sodium platform lamps (warm pools), the express headlight cutting a
-  volumetric cone through fog. Nothing in the trilogy touched volumetrics
-  or a sub-dawn sky.
+  volumetric cone through fog.
 - **Setting (new)**: an island rail platform — canopy, benches, lamp posts,
-  departure board, two track faces (the express face + the local face).
-  Different geometry class from dock/ferry/plaza/arcade: LONG-THIN with a
-  hard platform edge.
-- **Time**: 540 ticks @ 12 Hz = 45 s, 12 shots (the standing film shape).
+  double-sided departure board, TWO track faces (express = N face, local =
+  S face). Long-thin geometry with a hard edge.
+- **Timeline law (the ×2 law)**: cache 541 ticks @ 12 Hz = 45 s; the film
+  runs 24 fps / 1080 frames; **1 tick = 2 frames**. ALL exported surfaces
+  (shot spans, sfx frames, keepout rows, keyed board flips, train slides)
+  are authored in FRAMES. `t_active` stays seconds (14 s = tick 168 =
+  frame 336 — consistent).
 
-## 1. Pinned laws this film inherits (research wave 5-a/b/c, this session)
+## 1. Pinned laws this film inherits (research wave 5-a/b/c + audit round 1)
 
-- **DANGER force fields are base-bytes VISIBLE** (no layer; fields_adapter
-  ATTRACTION/REPULSION/DANGER with static center + strength>0 serialize
-  into IR `fields`, the Rust bias applies per tick pre-steer). CAVEATS:
-  explicit `t_active` REQUIRED (kit default `(0,45)` deactivates at 45 s —
-  our window must be in SECONDS not ticks and must cover the blast);
-  fields are ADVISORY under behavior graphs — the waiting crowd must be
-  graph-light near the edge; driver captures `warnings.warn` drop
-  accounting (FLOW/source_object drops are warnings-only).
-- **Groups are runtime REAL** (shared destination + cohesion) on the v2
-  path. Cohorts = families boarding the local together.
-- **Queues runtime REAL** (portal + slots + admission) — the boarding
-  press at the local's door reuses the tsquall pattern as a SECONDARY beat.
-- **VIEW-invisible kinds** (do not design around them): GOAL, SPEED,
-  TIMING, APPEARANCE, RENDER_TIER, GROUP layers, plus DISABLE/HIDE
-  (partial: speed-0 statue). The film's sim story must live in BASE bytes.
-- **Fidelity profile is SKIPPED** (m5_background_10_90 is v1-path only and
-  the film reads no render_tier channel — dead zeros; honest scope note).
-- **12 Hz cache law** (to_previz_cache refuses non-12 Hz).
-- **F-TS5 loader override** (`expected_agents=`) + F-TS2 belt pins
-  (`chase_frame="belt"`, interval=1, zone0-first, chase-last).
-- **The marker-camera law** (probe tools null shot markers in `finally`).
-- **The 3GB EEVEE law**: fog = ONE volume box hugging the platform, capped
-  resolution/steps; one EEVEE process at a time; blrun.sh only.
+- **DANGER fields are base-bytes VISIBLE**; `strength` is a desired-velocity
+  in m/s at field center (added to des_vel, clamped to max_speed — NOT a
+  force); falloff SMOOTH; `t_active` = (start_s, end_s) seconds inclusive;
+  kit-default `(0,45)` trap avoided by explicit window.
+- **The bias is scene-global pre-controller; the wash is per-population**:
+  graph-free pops keep the bias; Navigate-bound pops keep it; Queue/Hold/
+  Wait/Reserve zero des_vel (a queue HOLDS through the blast — discipline
+  contrast, by design); **arrived agents are field-immune** (the P0 law:
+  the blast crowd must be un-arrived at tick 168).
+- **The ingest fork (P0)**: this film authors a CUSTOM CrowdScene (an
+  island platform fits NO hard-coded ingest band — belt mode hard-codes
+  walkable south edge y=-6, world mode spawn strip y[16,22]). The driver
+  pins `project_id=PREVIZ_PROJECT_PIN`, `tick_hz=12`, per-pop
+  `emission_interval_ticks=1` and re-asserts the ingest-contract laws
+  (12Hz / 541 ticks / 24 fps / 1080 frames / seed) manually.
+- Groups runtime REAL; queue slots raw meters (never validated inside the
+  walkable — author them ON the platform); PortalAxis names the CROSSING
+  (NORTH_SOUTH = wall at constant y — correct for the E-W door face).
+- VIEW-invisible kinds: GOAL, SPEED, TIMING, APPEARANCE, RENDER_TIER,
+  GROUP layers. The film is LAYER-FREE by design (fields + base bytes).
+- 12 Hz cache law; F-TS5 loader override; F-TS2 belt pins re-asserted
+  post-replace (interval=1, zone0-first, chase-last); envelope cap owner =
+  ingest-order populations[0] (waiters own the cap — mu chosen moderate).
+- The express cannot drive the field by motion (source_object fields are
+  bake-dropped with a warnings-only accounting): the recoil is a STATIC
+  window-synchronized field, not a pressure wave. The driver captures
+  bake warnings (drop accounting + the default-window warning).
+- 3GB EEVEE law; marker-camera law; factory purge; lowercase wiring.
 
 ## 2. Cast (contract-authoritative counts)
 
-| pop | count | role | notes |
-|-----|-------|------|-------|
-| waiters | 66 | platform crowd, bench-standers + drifters | spawn across platform, v1-ish wander between two calm destinations |
-| cohorts | 42 | M6 groups: 14 groups × 3 members | shared destinations = the three local-door zones (group cohesion law) |
-| door queue | 18 | the boarding queue | Queue off the center-door portal, 9 slots, capacity 1 |
-| chase | 9 | keyed hero lane | the LATE PASSENGER (keyed runner) + the STATIONMASTER (keyed walker w/ lantern) anchors |
+| pop | ingest order | count | role | notes |
+|-----|--------------|-------|------|-------|
+| waiters | 1st (owns envelope cap) | 66 | platform crowd | Navigate-graph bound with an UN-ARRIVED mechanism (alternating destination pair / horizon-length route); probe-asserts ZERO arrived waiters at tick 168 |
+| cohorts | 2nd | 42 | M6 groups: 14 × 3 | Navigate graph to door destinations; group cohesion additive (survives the field) |
+| door queue | 3rd | 18 | Sequence(QueueNode, Navigate) | portal at the center door (S face), 9 slots ON the platform, capacity 1; HOLDS through the blast (des_vel zeroed — the disciplined line) |
+| chase | last | 9 | keyed hero lane | LATE PASSENGER (keyed sprint) + STATIONMASTER (keyed lantern walk); 3 RB slots (CHASE_RB_INDICES pattern) |
 
-Total declared: 135 (the trilogy shape; loader pin override 135 — F-TS5).
-The two keyed heroes are 3 RB slots per the loader law (126 crowd + anchors).
-Exact per-pop group member lists resolve from the base bake via
-`agent_ids` (two-bake covenant; NEVER rebuild the scene).
+Total declared: 135 (loader pin override 135 — F-TS5). Groups resolve
+member ids from the probe bake (two-bake covenant; never rebuild).
 
-## 3. The story spine (45 s)
+## 3. The story spine (FRAMES, 1080 @ 24 fps)
 
-| beat | ticks (12 Hz) | content |
-|------|---------------|---------|
-| S1-S2 establish | 0-96 | blue-hour platform, fog pools under sodium lamps; the board flips to `EXPRESS APPROACHING`; waiters drift |
-| S3-S4 the wind | 96-168 | express headlight flares through fog (world-side: headlight keyframe); crowd begins to press BACK (implicit) |
-| S5 blast | 168-264 | the express passes THROUGH at speed (train prop slide, no stop): the DANGER field window fires — crowd recoil from the edge is REAL base-sim displacement; keyed late-passenger sprints against it, misses |
-| S6-S7 exhale | 264-336 | fog closes, dust settles; the board flips `LOCAL ARRIVING`; cohorts regroup (cohesion) |
-| S8-S10 local + boarding | 336-456 | the local slides in and STOPS; door queue admits (read_events → sfx bell); cohorts board via shared destinations |
-| S11-S12 depart | 456-540 | the local pulls out; platform nearly empty; the late passenger alone on the bench; board: `EXPRESS — PASSING WITHOUT STOP` (title card) |
+| beat | frames | content |
+|------|--------|---------|
+| S1-S2 establish | 0-192 | blue-hour platform, fog pools under sodium lamps; board flips `EXPRESS APPROACHING` (keyed emission flip, tferry pattern); waiters drift (Navigate, un-arrived) |
+| S3-S4 the wind | 192-336 | express headlight flares through fog (keyed lamp + emission); the board flickers; crowd begins to slow |
+| S5 blast | 336-528 | the express slides THROUGH N-face at speed (keyed loc path); DANGER window (t=14-22s = frames 336-528) — the loose crowd presses BACK from the N edge (real base displacement); the queue HOLDS; keyed late passenger sprints against it, misses |
+| S6-S7 exhale | 528-672 | fog closes; the recoil decays (field window ends); cohorts regroup (cohesion); board flips `LOCAL ARRIVING` |
+| S8-S10 local + boarding | 672-912 | the local decelerates in and STOPS at the S face (keyed path); door bell (read_events or authored); queue admits; cohorts board via shared door destinations; arrival ghosts read as boarded silhouettes IN the dark doorway (framing law: door zone visually dark interior; scale-key hide available) |
+| S11-S12 depart | 912-1080 | the local pulls out; platform nearly empty; the late passenger alone on the bench; board: `EXPRESS — PASSING WITHOUT STOP` (title) |
 
-The late passenger's sprint is keyed (hero lane, tgreen/tsquall pattern);
-the blast recoil carries the drama WITHOUT keys — the honest sim beat.
+## 4. Crowd plan (bake stages, tsquall pattern + the audit folds)
 
-## 4. Crowd plan (bake stages, the tsquall pattern)
-
-- **Stage probe**: base bake ONLY (135 declared, interval=1, zone0-first,
-  chase-last pins) → `agent_ids`, group member resolution, the DANGER
-  recoil probe (measure max edge displacement during the window in cache
-  bytes — deterministic verdict, no eye needed).
-- **Stage groups**: `dataclasses.replace` + groups (14 × 3) + the Queue +
-  graphs (queue graph on the 18; door destinations for cohorts; the
-  waiters stay graph-free for clean DANGER response) → final bake.
-- **Stage finish**: read_events (QUEUE_ADMITTED/RELEASED) → sfx rows;
-  cast list; composed npz (F-TS1 path, no transform layers in this film —
-  physics absent too unless a slip beat earns its place — NO, keep film 5
-  layer-free: the layers are film 6's showcase; film 5's new surface is
-  FIELDS + the fog regime).
-- **DANGER field spec**: center on the express track face mid-platform,
-  radius ~7 m, DANGER strength strong, `t_active=(14.0, 22.0)` seconds
-  (the blast window) — VERIFY the seconds-vs-ticks unit at build (audit
-  flagged fields_adapter t_active units; pin with a probe assert).
-- Determinism pins: fresh bake dirs, pin sha256 recorded per stage.
+- **Stage probe**: custom CrowdScene (ingest fork pins) → base bake
+  (interval=1, zone0-first, chase-last; waiters=populations[0]) → ids;
+  group member resolution; **the recoil probe**: max N-edge displacement
+  of UN-ARRIVED waiters inside the window in cache bytes (deterministic
+  verdict) + the zero-arrived assert at tick 168; the field magnitude is
+  tuned HERE (start strength 3.5 m/s, radius 7.5, SMOOTH; target a 1-2 m
+  press-back at the edge band).
+- **Stage groups**: `dataclasses.replace` + groups + queue + graphs;
+  re-assert interval/order pins (F-TS4); final bake; fresh dirs; pin
+  sha256 per stage.
+- **Stage finish**: read_events (QUEUE_ADMITTED/RELEASED) → sfx rows
+  (frames = tick×2); cast list; composed npz (unlayered path — byte-law
+  untouched); bake warnings captured.
+- Displacement probe filters to un-arrived slots (the decide.rs:114 law).
 
 ## 5. World module (sub-agent build, my visual gate)
 
-- Island platform ~64×8 m at z=0.9 (platform height), two track beds at
-  z=0 flanking; canopy on columns over the platform; 6 sodium lamp posts;
-  benches; the departure board (double-sided, glyph rows); fog volume box
-  (192×24×10 m around the whole set, density tuned in the ladder); sky =
-  MULTIPLE_SCATTERING blue-hour (sun below horizon or deep-blue preset —
-  the ladder decides); express train = 8-car dark wedge with lit window
-  strip (slides through, 30+ m/s); local train = 3-car warm-lit, decel
-  stop, dwell, accel out. Track rails (glossy dark), ballast strip,
-  distant signal gantry with red/green aspects (the glyph-color spine).
-- Naming/consts: lowercase internal wiring (the exporter's
-  unmapped-constant gate). Factory purge at scene-module level (caller
-  purges law).
-- Visual gate: 3-angle world probes (workbench first, then Standard
-  previz-transform EEVEE) — the tsquall gate pattern; the CUBE law check
-  (factory-purge).
+- **z INVERTED (audit P0-follow)**: platform top z=0 (64×8 m slab); track
+  beds z=-0.9 N and S (rails, ballast, sleepers); canopy on columns over
+  the platform; 6 sodium lamp posts; benches; double-sided departure
+  board; **inset Blocked strips along BOTH platform faces** (the 0.9 m
+  edge containment; centers ≤ walkable−r law); distant signal gantry
+  (red/green aspects — the glyph-color spine); no roof over the track
+  faces (aerials stay legal; the canopy is the S1 axial-crane class).
+- **Fog (audit P1 fold)**: ONE camera-prox volume box ~64×10×6 m hugging
+  the platform (the 192 m box is KILLED); `volumetric_end` 25-40 m,
+  `volumetric_tile_size` 8 (4 for the S3 close-up), minimal steps; world
+  volume OFF; OOM probe at world-gate (one frame with volume + 135
+  anchors + RSS check) BEFORE the ladder. The measured recipe becomes
+  the film-5 SKILL law.
+- Express = 8-car dark wedge, lit window strip, keyed loc slide (N face);
+  local = 3-car warm-lit, keyed decel-stop-depart path (S face).
+  **Export probe (audit P2 fold)**: no translating large prop exists in
+  any prior film — world-gate asserts export→reimport key survival for
+  both trains before the stills stage.
+- Sky: blue-hour candidates in the ladder; sodium practicals warm pools.
 
 ## 6. Scene module
 
-- Loader: `expected_agents=135` pin override; 126 crowd + keyed anchors;
-  x-sign-free palette (platform split W/E: cool blue-gray / warm sodium
-  tints); storm → no; per-zone speed map driver (bench zone slow, aisle
-  fast).
-- Cameras: 12 shots. Draft vantages (probe-driver adjudicates):
-  S1 aerial SE down the platform axis (the LONG-THIN geometry law —
-  the colonnade-axial class from tsquall applies: an opaque canopy may
-  demand the along-axis crane), S2 lamp-pool close, S3 headlight through
-  fog (the signature candidate), S4 the board close-up, S5 low blast
-  (platform end, train streaking), S6 recoil wide, S7 bench exhale,
-  S8 local arrival front, S9 door press, S10 interior through door,
-  S11 pull-out rear, S12 title board + empty platform.
-- Crane: the S5→S6 recoil pair or S8→S9 arrival pair gets the keyed
-  crane (loc0→loc1 keyed — the crane law).
-- sfx spine: events from read_events + authored beats (express pass rumble
-  = rail clatter bed, the board flip tick, door bell, brake squeal, depart
-  drone). `sfx_events.json` exporter gate fail-closed.
+- Loader: `expected_agents=135`; palette W/E split (cool blue-gray /
+  warm sodium); per-zone speed map driver (bench zone slow, aisle fast);
+  crane: S5 blast cam or S8 arrival cam keyed loc0→loc1 (the crane law).
+- Cameras: 12 shots; keepout rows for ALL ground lenses inside the
+  walkable + the S10 swept-span moving cam (F-TD13/F20/F-TS7: row +
+  camprobe cert move as ONE edit); CAST rows for LATE PASSENGER +
+  STATIONMASTER (rename-law pairing; 3 RB slots).
+- sfx spine: rail clatter bed (the blast), brake squeal, board flip tick,
+  door bell (event-driven), depart drone. Fail-closed gate.
+- **Flow strip FIRST** (the seam detector, before cameras); clone-seam
+  hygiene grep for any cloned runner.
 
-## 7. Light ladder (my eye, EEVEE, Standard transform for gates)
+## 7. Light ladder (my eye, EEVEE, Standard transform gates)
 
-- Blue-hour sky: 3 candidates (deep-blue preset / sun at -4° / sun at -8°)
-  × fog density 3 steps (0.02/0.05/0.09) on ONE critical frame (the S3
-  headlight) + one wide. Sodium lamps: 3 intensities. Decide on the
-  headlight-vs-ambient separation (the direct:ambient ratio law
-  generalizes: the headlight must OWN the frame; sky ambient must sit
-  back). Metrics travel with images (image_metrics luma/contrast).
+- Blue-hour sky 3 candidates × fog density 3 steps on the S3 headlight
+  frame + one wide; sodium 3 intensities; decide on headlight-vs-ambient
+  separation (the ratio law: the headlight OWNS the frame). Metrics
+  travel with the images.
 
 ## 8. Export + stage
 
-- `tfog_1` rev 1 through preflight (D19): B3 span set at build time (the
-  tsquall law); characters registry (CAST table in ctx); naming law;
-  keepout rows COUPLED to any moving camera (F-TD13) — the S5 blast cam
-  and the S8 arrival cam need keepout review; outboard cams delete rows.
-- Stage into the review app (comments ON), filmstrips + stills per the
-  staging convention.
+- `tfog_1` rev 1 through preflight (B3 span set at build time; characters
+  registry; naming law; sfx fail-closed). Stage into the review app
+  (comments ON), filmstrips + stills.
 
-## 9. Shot list (12)
+## 9. Shot list (12) — FRAMES
 
 1. S1 — aerial platform axis, blue hour establish
 2. S2 — sodium lamp pool, waiters drift
 3. S3 — headlight cone through fog (signature)
 4. S4 — departure board `EXPRESS APPROACHING`
-5. S5 — the blast: train streaks, crowd recoils (DANGER beat)
+5. S5 — the blast: train streaks, crowd presses back, queue holds
 6. S6 — recoil wide: the platform holds its breath
-7. S7 — the missed sprint: late passenger at the edge, express gone
-8. S8 — the local arrives (headlight differs: warm, slower)
-9. S9 — door press: queue + cohorts (group cohesion readable)
-10. S10 — through the door: warm interior vs cold platform
-11. S11 — pull-out rear: fog swallows the tail lights
-12. S12 — title: `EXPRESS — PASSING WITHOUT STOP` on the board
+7. S7 — the missed sprint: late passenger at the edge
+8. S8 — the local arrives (warm headlight, slower)
+9. S9 — door press: queue + cohorts (cohesion readable)
+10. S10 — through the door: warm interior vs cold platform (moving cam,
+     swept keepout)
+11. S11 — pull-out rear: fog swallows the tail lights; doorway ghosts
+12. S12 — title: `EXPRESS — PASSING WITHOUT STOP`
 
-## 10. Open questions for the audit round
+## 10. Resolved questions (audit round 1)
 
-- OQ1: t_active units (seconds vs ticks) — pin from source + probe assert.
-- OQ2: DANGER under v2-path groups-only scenes — does the cohesion
-  controller wash the recoil? Probe-assert the edge displacement.
-- OQ3: bench SITTING — the kit has no sit clip (0/1/2 only): benches are
-  atmosphere, sitters must NOT be attempted (honest scope) — confirm no
-  fake-sit pattern is proposed.
-- OQ4: fog cost — is a 192m volume box inside the 3GB law with 135
-  capsule agents? Probe early (world-gate stage).
-- OQ5: the board glyph row mechanism — reuse the tgreen glyph spine
-  pattern (emissive text planes keyed), confirm no new exporter surface.
-- OQ6: the express train prop motion — scene-side keyed slide (exporter
-  carries it fine) vs crowd-side (never) — confirm scene-side keyed.
+- RQ1: t_active = seconds — design consistent; strength is m/s; probe
+  asserts magnitude.
+- RQ2: wash is per-population; waiters Navigate-bound + un-arrived law.
+- RQ3: portal = driver-side declaration (tsquall shape), NORTH_SOUTH axis.
+- RQ4: ingest fork adopted (custom scene + manual pins); z inverted;
+  Blocked edge strips.
+- RQ5: keyed trains = new export surface; world-gate key-survival probe.
+- RQ6: fog recipe + OOM probe at world-gate.
+- RQ7: queue holds through the blast (discipline contrast, by design);
+  boarding ghosts framed as doorway silhouettes.
