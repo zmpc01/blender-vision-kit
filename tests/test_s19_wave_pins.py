@@ -354,10 +354,14 @@ expect_error("pin_m.snap_z_skinned_guard_refuses",
 # pair_contact read matrix_world BEFORE the first depsgraph flush: a
 # [set_location -> audit] chain branched the AABB prefilter on the
 # PRE-move pose -> moved-into-wall classified CLEAR -> fail_on_penetration
-# FALSE-PASS. Pre-move the pair is 4.8m apart (a vacuous CLEAR); post-move
-# E1Mover sits strictly inside E1Wall.
+# FALSE-PASS. Pre-move the pair is 2.7m apart (a vacuous CLEAR); post-move
+# E1Mover PARTIALLY overlaps E1Wall's x=4.5 face (mover spans 4.45..4.95
+# against the wall's 4.5..5.5) — face pairs + contained verts =
+# PENETRATING. A FULLY-inside pose would classify NESTED (severity=info,
+# the legitimate nested-container state — fail_on_penetration rightly
+# does not abort on it).
 run_op({"op": "set_location", "id": "E1Mover",
-        "location": [5.05, 0.05, 0.5]})
+        "location": [4.7, 0.05, 0.5]})
 expect_error("pin_n.post_move_audit_bites",
              lambda: run_op({"op": "audit", "pairs": ["E1Mover,E1Wall"]}),
              "penetration detected")
