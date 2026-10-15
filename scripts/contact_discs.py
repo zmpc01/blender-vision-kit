@@ -216,7 +216,10 @@ def _kd_at_rest(ctx, mat, counters, knockdowns, frame_at):
         scene = ctx["scene"]
         scene.frame_set(int(last_f))
         bpy.context.view_layer.update()
-        last_y = ob.location.y     # evaluated final belt-local y
+        last_x = ob.location.x     # C11 (session-18): BOTH reads AFTER the
+        last_y = ob.location.y     # frame_set — the pre-set last_x was the
+        # parked frame's residue (constant-extrapolation accident); any
+        # post-knockdown x keying or parent-driven motion staled it.
         d.location = (last_x, last_y, DISC_Z + (i % 8) * JITTER)
         # scale-ON at the rest frame (transient lifecycle)
         f_rest = int(last_f)

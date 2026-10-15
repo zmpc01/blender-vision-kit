@@ -130,6 +130,11 @@ def carry_keys(prop, scene, *, frames, desired_world, blend_from,
     # pass 2: compose + key (frames, then blend_to with exact identity
     # if it is not already the last frame — the catch frame MUST be
     # keyed even when it lies outside the caller's frame window)
+    # C12 (session-18): key the channel the prop actually EVALUATES —
+    # a QUATERNION-mode prop (glTF imports set this) ignores euler
+    # fcurves entirely, so orientation silently never animated.
+    rot_path = ("rotation_quaternion"
+                if prop.rotation_mode == 'QUATERNION' else "rotation_euler")
     span = float(blend_to - blend_from)
     keyed = list(frames)
     if keyed[-1] < blend_to:
@@ -140,7 +145,7 @@ def carry_keys(prop, scene, *, frames, desired_world, blend_from,
         if f == blend_to and f not in frames:
             prop.matrix_basis = _IDENTITY     # the exact catch state
             prop.keyframe_insert(data_path="location", frame=f)
-            prop.keyframe_insert(data_path="rotation_euler", frame=f)
+            prop.keyframe_insert(data_path=rot_path, frame=f)
             continue
         des = desired_world()
         t = 0.0 if f <= blend_from else min(1.0, (f - blend_from) / span)
@@ -148,14 +153,14 @@ def carry_keys(prop, scene, *, frames, desired_world, blend_from,
             des = des.lerp(W0.get(f, prop.matrix_world.copy()), t)
         prop.matrix_basis = W0[f].inverted() @ des
         prop.keyframe_insert(data_path="location", frame=f)
-        prop.keyframe_insert(data_path="rotation_euler", frame=f)
+        prop.keyframe_insert(data_path=rot_path, frame=f)
 
     # terminal identity key: pin the range + the held state (law 106)
     scene.frame_set(end_frame)
     live_update(scene, updates)
     prop.matrix_basis = _IDENTITY
     prop.keyframe_insert(data_path="location", frame=end_frame)
-    prop.keyframe_insert(data_path="rotation_euler", frame=end_frame)
+    prop.keyframe_insert(data_path=rot_path, frame=end_frame)
 
     ad = prop.animation_data
     if ad and ad.action:
