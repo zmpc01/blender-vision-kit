@@ -1265,6 +1265,15 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
             f"(min — wells/insets; the audit will report the intended "
             f"penetration), 'p25', 'p50', 'p75' (support-height "
             f"percentiles).")
+    if footprint == 'grid' and inset:
+        # s19-E14 (dropped from the s18 wave, caught by the wave-2
+        # verification): the grid branch built its lattice over the FULL
+        # bbox and never applied the inset box — accepted-but-unimplemented
+        # = the fail-open-lie law. Refuse until the grid branch insets.
+        raise RuntimeError(
+            f"place_on: footprint='grid' does not support inset={inset!r} "
+            f"yet — the grid lattice samples the full bbox. Use the "
+            f"default 'bottom' footprint with inset, or drop the inset.")
     if keep_xy is not True:
         raise RuntimeError(
             "place_on: keep_xy=False is refused (F2B-4: accepted-but-"

@@ -218,8 +218,13 @@ def _apply_set_location(obj, params):
     obj.location = tuple(loc)
     if chans and override == "keyframe":
         bpy.context.view_layer.update()
+        # s19-wave2 P2: location fcurves are BASIS-space (the F2B-8 law) —
+        # feeding the raw WORLD delta shifted every key wrong under a
+        # rotated/scaled parent (the rebased move silently landed
+        # misposed). Convert exactly like the solvers do.
         n, names = _PL._rebase_location_keys(
-            obj, obj.matrix_world.translation - _world_before)
+            obj, _PL._world_delta_to_local(
+                obj, obj.matrix_world.translation - _world_before))
         print(f"[apply_patch] set_location: rebased {n} location "
               f"keyframes ({', '.join(names)})")
 
@@ -410,6 +415,16 @@ def _apply_duplicate_object(obj, params):
     if "rotation_deg" in params:
         _finite_check("duplicate_object", "rotation_deg", params["rotation_deg"])
         # s19-E2 twin: write the channel the copy's rotation_mode uses.
+        # s19-wave2 P3 twin: the copy path had the QUATERNION branch but
+        # not the AXIS_ANGLE refusal its set_rotation twin has — an
+        # AXIS_ANGLE source silently got stored-but-unused rotation_euler
+        # (the E2 class survives on the copy path).
+        if new_obj.rotation_mode == 'AXIS_ANGLE':
+            raise RuntimeError(
+                f"duplicate_object: '{new_id}' inherits "
+                f"rotation_mode='AXIS_ANGLE' from '{obj.name}' — the "
+                f"rotation_deg param cannot be honored (switch the object "
+                f"to EULER or QUATERNION first, or drop rotation_deg)")
         if new_obj.rotation_mode == 'QUATERNION':
             from mathutils import Euler
             new_obj.rotation_quaternion = Euler(

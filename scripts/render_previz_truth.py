@@ -44,7 +44,8 @@ import bpy
 from mathutils import Vector
 from bpy_extras.object_utils import world_to_camera_view
 
-from blender_kit import normalize_engine_id, script_argv, atmo_objects
+from blender_kit import (normalize_engine_id, script_argv, atmo_objects,
+                         call_scene_animate)  # s19-wave2
 
 
 def _parse_size(s: str) -> tuple[int, int]:
@@ -210,8 +211,7 @@ def main() -> None:
         print(f"[truth] hero rig override: HERO_MODE = {args.hero_rig}",
               flush=True)
     ctx = mod.build_scene()
-    if hasattr(mod, "animate"):
-        mod.animate(ctx, start_frame=1, n_frames=None)
+    call_scene_animate(mod, ctx, 1, None)  # s19-wave2 bind-split
     scene = ctx["scene"]
 
     atmo = _apply_mode(scene, args.mode)

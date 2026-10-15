@@ -66,12 +66,12 @@ def _load(args):
     if args.load_blend:
         bpy.ops.wm.open_mainfile(filepath=args.load_blend)
     elif args.scene:
-        from blender_kit import safe_import_scene, clear_scene
+        from blender_kit import (safe_import_scene, clear_scene,
+                                 call_scene_animate)  # s19-wave2
         mod = safe_import_scene(args.scene)
         clear_scene()
         ctx = mod.build_scene()
-        if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=1, n_frames=args.frames)
+        call_scene_animate(mod, ctx, 1, args.frames)  # s19-wave2 bind-split
     else:
         print("[scan] ERROR: need --scene or --load-blend")
         sys.exit(1)

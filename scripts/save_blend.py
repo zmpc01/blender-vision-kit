@@ -13,7 +13,7 @@ from scripts/ (PYTHONPATH is set by blrun.sh).
 """
 import argparse
 import importlib
-from blender_kit import safe_import_scene
+from blender_kit import safe_import_scene, call_scene_animate  # s19-wave2
 import os
 import sys
 
@@ -56,8 +56,8 @@ def main():
         mod = safe_import_scene(args.scene)
 
         ctx = mod.build_scene()
-        if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=args.start, n_frames=args.frames)
+        call_scene_animate(mod, ctx, args.start,
+                           args.frames)  # s19-wave2 bind-split
 
     # Save .blend
     os.makedirs(os.path.dirname(os.path.abspath(args.blend_out)), exist_ok=True)

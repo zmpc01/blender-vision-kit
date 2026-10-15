@@ -561,6 +561,30 @@ def clear_scene() -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
+def call_scene_animate(mod, ctx, start_frame=1, n_frames=24) -> None:
+    """The ONE animate dispatch for scripts that run a scene module.
+
+    s19-wave2: six raw call sites survived outside the five scripts that
+    already got bind-splits (apply_patch / validate_scene / export_usd /
+    export_gltf / look). A bare `def animate(ctx)` module — blessed by
+    the export preflight's B6 check — TypeError'd the raw full-kwarg
+    call. Contract (the A1 lesson, learned the hard way in export_usd):
+    bind in try, bare fallback in except, the real call OUTSIDE the bind
+    try — an in-body TypeError must propagate, not re-run the module
+    (a re-run duplicates markers/keyframes and masks the genuine error).
+    """
+    import inspect
+    if not hasattr(mod, "animate"):
+        return
+    try:
+        inspect.signature(mod.animate).bind(
+            ctx, start_frame=start_frame, n_frames=n_frames)
+    except TypeError:
+        mod.animate(ctx)
+    else:
+        mod.animate(ctx, start_frame=start_frame, n_frames=n_frames)
+
+
 def _safe_socket_set(bsdf, name: str, value) -> bool:
     """Set a socket input if it exists; return False instead of raising.
 

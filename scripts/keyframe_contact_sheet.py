@@ -72,8 +72,8 @@ def main():
     mod = safe_import_scene(args.scene)
     clear_scene()
     ctx = mod.build_scene()
-    if hasattr(mod, "animate"):
-        mod.animate(ctx, start_frame=1, n_frames=24)
+    from blender_kit import call_scene_animate  # s19-wave2: bind-split
+    call_scene_animate(mod, ctx, 1, 24)
 
     scene = bpy.context.scene
     start = args.start if args.start is not None else scene.frame_start

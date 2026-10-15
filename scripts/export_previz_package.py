@@ -1433,7 +1433,16 @@ def main() -> None:
         if "n_frames" in _p and isinstance(_p["n_frames"].default, int):
             mod.animate(ctx)
         else:
-            mod.animate(ctx, start_frame=1, n_frames=None)
+            # s19-wave2: a BARE animate(ctx) module (preflight B6 blesses
+            # it) TypeError'd the full-sentinel call raw. Bind-split: the
+            # bare fallback, the real call outside the bind try.
+            try:
+                _inspect.signature(mod.animate).bind(
+                    ctx, start_frame=1, n_frames=None)
+            except TypeError:
+                mod.animate(ctx)
+            else:
+                mod.animate(ctx, start_frame=1, n_frames=None)
     # Template-family ctx dicts carry object refs only; crowd modules add
     # "scene". Fall back to the live scene for the former (F10, same wave).
     scene = ctx.get("scene") or bpy.context.scene
