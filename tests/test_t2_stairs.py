@@ -195,6 +195,8 @@ def main():
     with open(OUT, "w") as f:
         json.dump({"fail": FAILS, "results": R}, f, indent=2, default=str)
     print(f"[T2] {verdict}")
+    if FAILS:              # E5: the battery must read FAILURES as exit 1
+        sys.exit(1)
 
 
 main()

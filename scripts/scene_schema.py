@@ -92,14 +92,28 @@ def _light_to_dict(obj):
 
 
 def _camera_to_dict(obj):
-    """Extract camera-specific info."""
+    """Extract camera-specific info.
+
+    s18 B8: camera DoF was unexported — apply_patch's set_camera_dof
+    wrote use_dof/focus_distance/aperture_fstop and the read path (this
+    schema) showed nothing, so patch authors could not see or preserve
+    DoF state. Additive "dof" block, plain floats (stable-shape
+    discipline); present for every camera (use_dof False = off)."""
     cam = obj.data
-    return {
+    out = {
         "lens_mm": round(cam.lens, 2),
         "sensor_width_mm": round(cam.sensor_width, 2),
         "clip_start": round(cam.clip_start, 4),
         "clip_end": round(cam.clip_end, 4),
     }
+    dof = getattr(cam, "dof", None)
+    if dof is not None:
+        out["dof"] = {
+            "use_dof": bool(dof.use_dof),
+            "focus_distance": round(float(dof.focus_distance), 4),
+            "aperture_fstop": round(float(dof.aperture_fstop), 3),
+        }
+    return out
 
 
 def _animation_to_dict(obj):
@@ -198,6 +212,11 @@ def export_scene_schema(*, with_bounds: bool = False) -> dict:
     # F2B-27: version bumped with the additive fields (kit_props /
     # hide_render / modifiers / world content) so consumers can detect
     # the richer export. All new keys are additive.
+    # s18 B8: scene exposure (written by apply_patch's set_exposure) was
+    # unexported too — the write path was invisible to the read path.
+    # Additive key, plain float; shipped under schema_version "1.1"
+    # (the s17 battery pins that string — a bump is the orchestrator's
+    # coordinated call, not a wave-local one).
     schema = {
         "schema_version": "1.1",
         "blender_version": bpy.app.version_string,
@@ -206,6 +225,7 @@ def export_scene_schema(*, with_bounds: bool = False) -> dict:
         "fps": scene.render.fps,
         "engine": scene.render.engine,
         "resolution": [scene.render.resolution_x, scene.render.resolution_y],
+        "exposure": round(float(scene.view_settings.exposure), 4),
         "world": None,
         "objects": [],
         "active_camera": scene.camera.name if scene.camera else None,

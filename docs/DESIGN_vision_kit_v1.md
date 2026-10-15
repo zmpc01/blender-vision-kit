@@ -111,7 +111,7 @@ three; ~10–20s saved per iteration):
 blrun.sh --background --python scripts/look.py -- \
   --load-blend s.blend | --scene my_scene \
   [--angles front,side,top,persp] [--engine workbench] [--frame N] \
-  [--grid | --no-grid] [--annotate | --no-annotate] [--labels N] \
+  [--no-grid] [--no-annotate] [--labels N] \
   [--closeup Object] [--output output/scene/look]
 ```
 - **Default state carrier is `--load-blend`** (5-a Q7-1: `--scene`
@@ -138,7 +138,8 @@ blrun.sh --background --python scripts/look.py -- \
 ### D5 — Annotated renders (default ON in look.py; `--no-annotate` to strip)
 (5-a amendments: labels capped; boxes tied to validator run; overlay
 persistence banned.)
-- 1m ground-grid lines + axis gnomon at origin — real thin-box geometry
+- 1m ground-grid lines + axis gnomon SW-offset at (center − 1.5, −1.5)
+  — real thin-box geometry
   (~50 LOC; empties don't render in workbench). Kills chirality/scale
   misreads (pairs with L2).
 - Object index labels: **top-N by bbox diagonal (default 8, `--labels N`

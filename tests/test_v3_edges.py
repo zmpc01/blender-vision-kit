@@ -24,6 +24,7 @@ Run:
   ./scripts/blrun.sh --background --python tests/test_v3_edges.py --
 """
 import os
+import re
 import subprocess
 import sys
 
@@ -63,6 +64,52 @@ def _no_traceback(out):
     return "Traceback (most recent call last" not in out
 
 
+# E1: the policy's (b) branch — a CLEAN one-line reason. The kit tools
+# print their failure as a single `[motion] ERROR: ...` / `[scan] ERROR:
+# ...` line (a nested blrun prefixes blender's copy of it with
+# '[blender] '); both spellings are accepted.
+_CLEAN_REASON_RE = re.compile(
+    r"^\[blender\] \[(?:motion|scan)\] ERROR: (\S.*)$"
+    r"|^\[(?:motion|scan)\] ERROR: (\S.*)$")
+# empty exception wording: a bare exception name (optionally colon-terminated)
+# with no reason text — the traceback-adjacent class the policy forbids
+_BARE_EXC_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception|Interrupt)\s*:?|Error\s*:?")
+
+
+def _one_line_reason(out):
+    """Return the tool's one-line clean reason, or None.
+
+    The failure output (stderr+stdout combined, stripped) must carry
+    exactly one clean-reason token — a `[motion]`/`[scan] ERROR: ...` line —
+    whose wording is non-empty (<= 1 line, well inside the policy's <= 3),
+    and is NOT empty exception wording (a bare exception name with nothing
+    after it). A multi-line spill fails via the traceback sibling check
+    and the exactly-one-token rule; rc != 0 without any clean-reason
+    token fails here instead of tautologically passing.
+    """
+    lines = out.splitlines()
+    hits = []
+    for i, ln in enumerate(lines):
+        m = _CLEAN_REASON_RE.match(ln.strip())
+        if m:
+            hits.append((i, (m.group(1) or m.group(2)).strip()))
+    if len(hits) != 1:
+        return None
+    reason = hits[0][1]
+    if not reason or _BARE_EXC_RE.fullmatch(reason):
+        return None
+    return reason
+
+
+def _exits_cleanly(rc, out):
+    """Policy line 8 as a real contract: rc == 0, OR rc != 0 with no raw
+    traceback AND a one-line clean reason (E1 — replaces the old
+    `rc == 0 or (rc != 0 and no traceback)` tautology, which duplicated
+    the sibling no-traceback check and could not fail independently)."""
+    return rc == 0 or (rc != 0 and _no_traceback(out)
+                       and _one_line_reason(out) is not None)
+
+
 def main():
     out_root = os.path.join(KIT, "output", "edges")
     os.makedirs(out_root, exist_ok=True)
@@ -98,35 +145,39 @@ def main():
     _check("C4 exit 0-or-3 (P1 floating is correct)", rc in (0, 3), f"rc={rc}")
     _check("C4 manifest sees Tower", "Tower" in out)
     _check("C4 floating law enforced",
-           "P1=1" in out and "floating" in out)
+           re.search(r"\bP1=1\b", out) is not None and "floating" in out)
 
     print("== D1: motion_study --frames 1 ==")
     rc, out = _blrun("motion_study.py", "--scene", "edge_anim", "--frames", "1",
                      "--out", os.path.join(out_root, "motion_f1"))
     _check("D1 no traceback", _no_traceback(out), out[-400:])
-    _check("D1 exits cleanly", rc == 0 or (rc != 0 and "Traceback" not in out),
-           f"rc={rc}")
+    reason = _one_line_reason(out)
+    _check("D1 exits cleanly (0, or nonzero + one-line clean reason)",
+           _exits_cleanly(rc, out), f"rc={rc} reason={reason!r}")
 
     print("== D2: motion_study --frames 2 ==")
     rc, out = _blrun("motion_study.py", "--scene", "edge_anim", "--frames", "2",
                      "--out", os.path.join(out_root, "motion_f2"))
     _check("D2 no traceback", _no_traceback(out), out[-400:])
-    _check("D2 exits cleanly", rc == 0 or (rc != 0 and "Traceback" not in out),
-           f"rc={rc}")
+    reason = _one_line_reason(out)
+    _check("D2 exits cleanly (0, or nonzero + one-line clean reason)",
+           _exits_cleanly(rc, out), f"rc={rc} reason={reason!r}")
 
     print("== D3: transient_scan --frames 1 ==")
     rc, out = _blrun("transient_scan.py", "--scene", "edge_anim", "--frames", "1",
                      "--out", os.path.join(out_root, "scan_f1"))
     _check("D3 no traceback", _no_traceback(out), out[-400:])
-    _check("D3 exits cleanly", rc == 0 or (rc != 0 and "Traceback" not in out),
-           f"rc={rc}")
+    reason = _one_line_reason(out)
+    _check("D3 exits cleanly (0, or nonzero + one-line clean reason)",
+           _exits_cleanly(rc, out), f"rc={rc} reason={reason!r}")
 
     print("== D4: transient_scan --frames 2 ==")
     rc, out = _blrun("transient_scan.py", "--scene", "edge_anim", "--frames", "2",
                      "--out", os.path.join(out_root, "scan_f2"))
     _check("D4 no traceback", _no_traceback(out), out[-400:])
-    _check("D4 exits cleanly", rc == 0 or (rc != 0 and "Traceback" not in out),
-           f"rc={rc}")
+    reason = _one_line_reason(out)
+    _check("D4 exits cleanly (0, or nonzero + one-line clean reason)",
+           _exits_cleanly(rc, out), f"rc={rc} reason={reason!r}")
 
     print(f"\nEDGES: {CHECKS['n'] - len(CHECKS['fail'])}/{CHECKS['n']} PASS")
     if CHECKS["fail"]:

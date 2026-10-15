@@ -46,7 +46,8 @@
   documentation in the crowd-kit lane's FEATURE_REFERENCE when that
   lane resumes).
 - **The remotes posture**: GitHub canonical (main); GitLab mirrors
-  the clean lineage as main-gh (the raw pre-redaction main stays
+  the clean lineage as github-canonical (per-session archive branches
+  github-canonical-sNN when non-FF; the raw pre-redaction main stays
   GitLab-only — the push-protection protocol from session 16; do NOT
   merge the two lineages).
 - Laws distilled: .agents/SKILL.md SESSION 17b LAWS (29.9k/30k cap).

@@ -503,20 +503,48 @@ def _glb_prop_proximity_audit(gltf, blob, fps: float,
     return issues
 
 
-def _latest_scene_module(scripts_dir: str) -> str | None:
-    """Newest scene_escape_vN[.M].py by version number (ignores the
-    unversioned scene_escape.py base module)."""
+# D8 (session-18): demo/template modules excluded from the version-drift
+# family. The old matcher's regex only matched scene_escape_v* — zero such
+# files exist in the tree today — so the gate was structurally vacuous for
+# every current film module.
+_STALENESS_EXCLUDE = {
+    "scene_template",     # template family (docs say: copy me, don't ship me)
+    "scene_cli_demo",     # CLI demo fixture (tests/scene_cli_demo.py)
+}
+
+
+def _scene_module_candidates(scripts_dir: str) -> dict[str, float]:
+    """The version-drift family (D8): every scripts/scene_*.py MINUS the
+    template/demo exclusions and fixture conventions.
+
+    Returns {module_name: mtime}. Excluded from candidacy:
+      - names starting with '_' (fixture convention),
+      - names containing 'fixture' (t10 writes t10_fixture_*.py INTO
+        scripts/ — the export suite's fixture flow must stay green; those
+        names never match the scene_* glob anyway, this is belt),
+      - the demo/template set in _STALENESS_EXCLUDE.
+    """
     import glob as _glob
-    best, best_key = None, (-1, -1)
-    for p in _glob.glob(os.path.join(scripts_dir, "scene_escape_v*.py")):
+    out: dict[str, float] = {}
+    for p in _glob.glob(os.path.join(scripts_dir, "scene_*.py")):
         base = os.path.basename(p)[:-3]
-        m = re.fullmatch(r"scene_escape_v(\d+)(?:_(\d+))?", base)
-        if not m:
+        if base.startswith("_") or "fixture" in base \
+                or base in _STALENESS_EXCLUDE:
             continue
-        key = (int(m.group(1)), int(m.group(2) or 0))
-        if key > best_key:
-            best_key, best = key, base
-    return best
+        out[base] = os.path.getmtime(p)
+    return out
+
+
+def _latest_scene_module(scripts_dir: str) -> str | None:
+    """Newest scene module of the drift family (D8): mtime ordering, ties
+    broken lexicographically for determinism. The legacy regex matched only
+    scene_escape_vN[.M] — kept covered (scene_escape_v*.py still matches the
+    scene_* glob) but the family is now the generic scene_*.py scan, so the
+    current film modules are drift-comparable again."""
+    cands = _scene_module_candidates(scripts_dir)
+    if not cands:
+        return None
+    return max(cands, key=lambda n: (cands[n], n))
 
 
 def _r3(x):
@@ -733,6 +761,65 @@ def _collect_atmosphere(scene) -> list[dict]:
     return out
 
 
+def _declared_cast_root(mod, name: str) -> str | None:
+    """D5 (session-18): the root object name the module's CAST registry
+    declares for a character (CAST = {name: {"root": "...", ...}}), or
+    None when undeclared/malformed."""
+    cast = getattr(mod, "CAST", None)
+    if not isinstance(cast, dict):
+        return None
+    entry = cast.get(name)
+    if isinstance(entry, dict):
+        root = entry.get("root")
+        if isinstance(root, str) and root:
+            return root
+    return None
+
+
+def _gate5_root_problems(characters, mod, scene_objects) -> list[str]:
+    """D5 (session-18): gate 5 root-existence, de-tautologized (pure —
+    unit-tested in tests/test_s18_wave_d.py).
+
+    The old check re-tested names it had itself collected from the same
+    scene collection (`scene.objects.get(f"{name}.Root")` at collect time,
+    then `root_object not in scene.objects`) — a tautology that could never
+    fire, so a None root slipped through silently. Now: a None root on a
+    scene whose module DECLARES a cast rejects — via the collected root,
+    the CAST-declared root, or a rejection naming the character.
+
+    scene_objects: any container supporting `in` (bpy scene.objects or a
+    plain set of names — the latter keeps this testable without bpy).
+    """
+    cast = getattr(mod, "CAST", None)
+    cast_declared = isinstance(cast, dict) and bool(cast)
+    problems: list[str] = []
+    for ch in characters:
+        root_name = ch.get("root_object")
+        if root_name:
+            if root_name not in scene_objects:
+                problems.append(f"character {ch['name']}: root object "
+                                f"{root_name} not in scene")
+            continue
+        if not cast_declared:
+            # No CAST registry (template/fixture family) — nothing declared
+            # to cross-check; this lane stays as forgiving as before.
+            continue
+        declared = _declared_cast_root(mod, ch["name"])
+        if declared and declared in scene_objects:
+            # Declared root resolves — collector naming drift, not a
+            # missing actor.
+            continue
+        problems.append(
+            f"character {ch['name']}: root object unresolved — collected "
+            "None"
+            + (f", CAST declares {declared!r} but it is not in the scene"
+               if declared
+               else ", and the module CAST declares no root for this "
+                    "character")
+            + " — the character would ship unrooted")
+    return problems
+
+
 def _collect_world(scene) -> dict:
     world = {"lights": []}
     if scene.world:
@@ -913,6 +1000,262 @@ def _usd_customdata_keys(usda_path: str) -> list[str]:
     return []
 
 
+def _matching_brace(text: str, open_idx: int) -> int | None:
+    """Index of the brace matching text[open_idx] ('{'), or None.
+    Strings/comments must already be blanked (_strip_usda_strings_comments)
+    so braces inside values can't fool the depth count."""
+    depth = 0
+    for i in range(open_idx, len(text)):
+        if text[i] == '{':
+            depth += 1
+        elif text[i] == '}':
+            depth -= 1
+            if depth == 0:
+                return i
+    return None
+
+
+def _usd_block_entries(block_s: str, block_r: str) -> list:
+    """Direct child entries of a usda dictionary block (D4 helper).
+
+    block_s: the block interior with strings/comments BLANKED
+    (_strip_usda_strings_comments keeps offsets); block_r: the same
+    offsets in the RAW text (strings intact — needed for quoted row keys
+    and scalar values). Yields (name, stripped_seg, raw_seg) per entry.
+
+    An entry ends at the newline that returns depth to 0 (scalar lines)
+    or at the brace that returns depth to 0 (dictionary blocks); bracket
+    depth is tracked so a wrapped multi-line array stays ONE entry.
+    """
+    spans = []
+    seg_start = None
+    d = 0
+    bd = 0
+    n = len(block_s)
+    for i, ch in enumerate(block_s):
+        if d == 0 and bd == 0 and seg_start is None and not ch.isspace():
+            seg_start = i
+        if ch == '{':
+            d += 1
+        elif ch == '}':
+            d -= 1
+            if d == 0 and seg_start is not None:
+                spans.append((seg_start, i + 1))
+                seg_start = None
+        elif ch == '[':
+            bd += 1
+        elif ch == ']':
+            bd = max(0, bd - 1)
+        elif ch == '\n' and d == 0 and bd == 0 and seg_start is not None:
+            spans.append((seg_start, i))
+            seg_start = None
+    if seg_start is not None:
+        spans.append((seg_start, n))
+    out = []
+    for a, b in spans:
+        seg_r = block_r[a:b]
+        m = re.match(
+            r"\s*[A-Za-z0-9_]+\[\]?\s+"
+            r"(?:\"([^\"]*)\"|([A-Za-z_][\w]*))\s*=", seg_r)
+        if not m:
+            continue  # not a typed entry (preamble, stray whitespace)
+        name = m.group(1) if m.group(1) is not None else m.group(2)
+        out.append((name, block_s[a:b], seg_r))
+    return out
+
+
+_MISSING = object()  # sentinel: "no parsable scalar value" (never a real value)
+
+
+def _parse_usd_token(tok: str):
+    """Best-effort parse of one usda scalar token (raw text, strings
+    intact). Unparseable tokens pass through as strings."""
+    tok = tok.strip()
+    if len(tok) >= 2 and tok[0] == '"' and tok[-1] == '"':
+        return tok[1:-1]
+    if tok in ("true", "false"):
+        return tok == "true"
+    try:
+        return int(tok)
+    except ValueError:
+        pass
+    try:
+        return float(tok)
+    except ValueError:
+        return tok
+
+
+def _split_usd_array(body: str) -> list:
+    """Quote-aware top-level comma split of a usda array body (a ','
+    inside a string element must not split)."""
+    parts, buf, in_str, esc = [], [], False, False
+    for ch in body:
+        if in_str:
+            buf.append(ch)
+            if esc:
+                esc = False
+            elif ch == '\\':
+                esc = True
+            elif ch == '"':
+                in_str = False
+        elif ch == '"':
+            in_str = True
+            buf.append(ch)
+        elif ch == ',':
+            parts.append(''.join(buf).strip())
+            buf = []
+        else:
+            buf.append(ch)
+    tail = ''.join(buf).strip()
+    if tail:
+        parts.append(tail)
+    return parts
+
+
+def _parse_usd_scalar(seg_r: str):
+    """Best-effort parse of a typed scalar/array usda entry's VALUE
+    (raw segment: type name, key, '=', value). Returns _MISSING when the
+    segment is not a parsable typed entry."""
+    m = re.match(
+        r"\s*[A-Za-z0-9_]+\[\]?\s+"
+        r"(?:\"[^\"]*\"|[A-Za-z_]\w*)\s*=\s*(.+?)\s*\Z", seg_r, re.S)
+    if not m:
+        return _MISSING
+    raw = m.group(1)
+    # Cut an UNQUOTED trailing usda comment ('#' outside strings) so a
+    # hypothetical inline comment can't poison the value.
+    kept, in_str, esc = [], False, False
+    for ch in raw:
+        if in_str:
+            kept.append(ch)
+            if esc:
+                esc = False
+            elif ch == '\\':
+                esc = True
+            elif ch == '"':
+                in_str = False
+        elif ch == '"':
+            in_str = True
+            kept.append(ch)
+        elif ch == '#':
+            break
+        else:
+            kept.append(ch)
+    raw = ''.join(kept).strip()
+    if raw.startswith("[") and raw.endswith("]"):
+        body = raw[1:-1].strip()
+        if not body:
+            return []
+        return [_parse_usd_token(p) for p in _split_usd_array(body)]
+    return _parse_usd_token(raw)
+
+
+# usd key -> json story key aliases for the count parity (D4): the JSON
+# keeps the CAMS_V3 rows under story["cam_specs"]; the USD carrier names
+# the same rows "cameras".
+_PARITY_COUNT_ALIASES = {"cameras": "cam_specs"}
+
+
+def _usd_customdata_counts(usda_path: str):
+    """D4 (session-18): row counts + declared scalars of the STAGE
+    previz:entity payload in a .usda (sibling of _usd_customdata_keys;
+    pure — unit-tested in tests/test_s18_wave_d.py).
+
+    Key-presence (the old parity gate) cannot see value/count divergence:
+    the hook NOTE-and-drops malformed rows (_collect_board/
+    _collect_shots), and a dropped row lands as an absent ROW inside a
+    present KEY. This reader exposes the payload's SHAPE:
+      counts  — depth-1 key -> number of DIRECT child entries, for every
+                key whose value is a dictionary block (BOARD entries,
+                CAMS rows, SHOTS rows, dialog rows, ...);
+      scalars — depth-1 keys with scalar/array values, best-effort parsed
+                (int/float/bool/str and int[]/float[]/str[] lists) — the
+                fps / frame_start parity lane.
+    Returns (counts, scalars); ({}, {}) when no stage payload is found.
+    """
+    text = open(usda_path, "r", encoding="utf-8", errors="replace").read()
+    stripped = _strip_usda_strings_comments(text)
+    for m in re.finditer(r"\bentity\s*=\s*\{", stripped):
+        start = m.end() - 1
+        end = _matching_brace(stripped, start)
+        if end is None:
+            continue
+        block_s = stripped[start + 1:end]
+        block_r = text[start + 1:end]
+        if "schema_version" not in block_s:
+            continue  # per-object payload — keep scanning
+        counts: dict = {}
+        scalars: dict = {}
+        for name, seg_s, seg_r in _usd_block_entries(block_s, block_r):
+            brace = seg_s.find("{")
+            if brace == -1:
+                val = _parse_usd_scalar(seg_r)
+                if val is not _MISSING:
+                    scalars[name] = val
+                continue
+            inner_end = _matching_brace(seg_s, brace)
+            if inner_end is None:
+                continue
+            counts[name] = len(_usd_block_entries(
+                seg_s[brace + 1:inner_end], seg_r[brace + 1:inner_end]))
+        return counts, scalars
+    return {}, {}
+
+
+def _parity_count_mismatches(story: dict, shots: list,
+                             usd_counts: dict) -> list:
+    """D4 (session-18): per-collection ROW-COUNT parity — the check the
+    key-presence gate could not be (a hook NOTE-and-drop row lands as an
+    absent ROW inside a present KEY). Compares the INTERSECTION only: a
+    collection just one side declares is the presence lane's business,
+    and USD-only carrier keys (timeline, environment, ...) are additive
+    by design. Pure — unit-tested."""
+    mismatches = []
+    for usd_key, n_usd in sorted(usd_counts.items()):
+        json_key = _PARITY_COUNT_ALIASES.get(usd_key, usd_key)
+        json_val = shots if json_key == "shots" else story.get(json_key)
+        if not isinstance(json_val, (dict, list)):
+            continue
+        n_json = len(json_val)
+        if n_json != n_usd:
+            mismatches.append(
+                f"{usd_key}: USD carries {n_usd} row(s) but the JSON side "
+                f"carries {n_json} — a dropped/malformed row diverges the "
+                f"carriers (check the [previz_usd_hook] NOTE lines)")
+    return mismatches
+
+
+def _parity_scalar_mismatches(fps: int, frame_start: int, frame_end: int,
+                              usd_scalars: dict) -> list:
+    """D4: fps / frame_start VALUE parity, compared only when the USD side
+    declares them (old sidecars may not). Pure — unit-tested."""
+    mismatches = []
+    u_fps = usd_scalars.get("fps")
+    if u_fps is not None:
+        try:
+            if int(u_fps) != int(fps):
+                mismatches.append(
+                    f"fps: USD declares {u_fps!r} but the JSON/scene side "
+                    f"is {int(fps)} — the app would stamp the timeline "
+                    f"wrong")
+        except (TypeError, ValueError):
+            mismatches.append(f"fps: USD value {u_fps!r} is not an int")
+    u_fr = usd_scalars.get("frame_range")
+    if isinstance(u_fr, (list, tuple)) and len(u_fr) == 2:
+        try:
+            if [int(u_fr[0]), int(u_fr[1])] != [int(frame_start),
+                                                int(frame_end)]:
+                mismatches.append(
+                    f"frame_range: USD declares {list(u_fr)} but the "
+                    f"JSON/scene side is [{int(frame_start)}, "
+                    f"{int(frame_end)}] — frame_start/frame_end defaults "
+                    f"diverged between the carriers")
+        except (TypeError, ValueError):
+            mismatches.append(
+                f"frame_range: USD value {list(u_fr)} is not int-parseable")
+    return mismatches
+
+
 def _export_usd_sidecar(scene, mod, scene_module_name: str,
                         out_path: str) -> None:
     """In-process USD export with the previz carrier hook (animation ON).
@@ -1018,18 +1361,34 @@ def main() -> None:
     # example said v3_3 and nobody re-checked. The reviewer's 'crappy
     # version' + 'rigged character falls back to cylinder' were 100%
     # this gap. Fail-closed unless explicitly allowed.
+    #
+    # D8 (session-18): the family is now the generic scene_*.py scan
+    # (minus template/demo/fixture exclusions) — the old regex matched
+    # only scene_escape_v* (zero files today) so the gate was vacuous.
+    # "Not the latest" means STRICTLY OLDER than the newest candidate: on
+    # a fresh clone every file shares the checkout mtime, so exporting
+    # any legitimate film module stays green; the gate fires when a
+    # NEWER scene module was edited after the one being exported. Modules
+    # outside the family (t10 fixtures, the template itself) never fire
+    # the gate — they are not drift-comparable.
     scripts_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = _scene_module_candidates(scripts_dir)
     latest = _latest_scene_module(scripts_dir)
-    if latest and args.scene != latest and not args.allow_stale:
+    _stale = bool(
+        latest
+        and args.scene in candidates
+        and candidates[args.scene] < candidates[latest])
+    if _stale and not args.allow_stale:
         raise SystemExit(
             f"[pkg] FAIL: VERSION DRIFT -- exporting {args.scene} but "
             f"the newest scene module in {scripts_dir} is {latest}. "
             f"The review package must be built from the current scene "
             f"(or pass --allow-stale to export the old one on purpose "
             f"-- and say why in the package name).")
-    if latest and args.scene != latest:
+    if _stale:
         print(f"[pkg] WARN: --allow-stale: exporting {args.scene} "
-              f"(newest is {latest})", flush=True)
+              f"(newest is {latest}) — say why in the package name",
+              flush=True)
 
     # session-25: Blender does NOT add the --python script's dir to
     # sys.path in --background mode — the scene module import below
@@ -1268,6 +1627,20 @@ def main() -> None:
                                 f"sfx_events.json: event[{i}] 'frame' must "
                                 f"be an integer, got {fr!r}")
                             break
+                        if fr < 0:
+                            # D9 (session-18): the sfx decoder wraps a
+                            # negative slice index into the buffer END
+                            # (CPython semantics) — the event would land
+                            # minutes past the timeline. Reject with the
+                            # event named (build_sfx.build() rejects at
+                            # its layer too).
+                            sfx_problems.append(
+                                f"sfx_events.json: event[{i}] "
+                                f"({ev.get('name') or ev.get('kind')}) "
+                                f"'frame' is negative ({fr}) — the sfx "
+                                f"decoder would wrap it into the buffer "
+                                f"END; fix the emitter")
+                            break
                     sfx_fps = sfx_doc.get("fps")
                     if sfx_fps is not None:
                         try:
@@ -1334,6 +1707,7 @@ def main() -> None:
             raise
         previz["usd_sidecar"] = "scene.usda"
         usd_keys = _usd_customdata_keys(usd_path)
+        usd_counts, usd_scalars = _usd_customdata_counts(usd_path)
         # story keys as the USD carrier names them (shots/cameras live in
         # its story dict; the JSON keeps them structural + cam_specs)
         universe = set(story) | {"shots", "cameras"}
@@ -1342,14 +1716,25 @@ def main() -> None:
                          if k not in PARITY_SCALARS and k != "cam_specs"
                          and k not in usd_keys)
         checked = sorted((set(story) & set(usd_story_keys)) - PARITY_SCALARS)
+        # D4 (session-18): row-count + fps/frame_start VALUE parity — the
+        # key-presence check above cannot see a row the hook NOTE-and-
+        # dropped, nor an fps/frame_start default that diverged.
+        count_mismatches = _parity_count_mismatches(story, shots, usd_counts)
+        scalar_mismatches = _parity_scalar_mismatches(
+            int(fps), int(f_start), int(f_end), usd_scalars)
+        parity_detail = ([] if not missing else [f"missing: {missing}"])
+        parity_detail.extend(count_mismatches)
+        parity_detail.extend(scalar_mismatches)
         previz["usd_parity"] = {
-            "status": "ok" if not missing else f"missing: {missing}",
+            "status": "ok" if not parity_detail else "; ".join(parity_detail),
             "checked_keys": checked,
             "usd_story_keys": usd_story_keys,
+            "row_counts": usd_counts,
+            "row_mismatches": parity_detail,
         }
         print(f"[pkg] USD sidecar: {os.path.getsize(usd_path)/1e6:.1f}MB, "
-              f"story keys {len(usd_story_keys)}, parity "
-              f"{'OK' if not missing else 'MISSING ' + str(missing)}",
+              f"story keys {len(usd_story_keys)}, row counts {usd_counts}, "
+              f"parity {'OK' if not parity_detail else 'FAIL: ' + '; '.join(parity_detail)}",
               flush=True)
 
     json_path = os.path.join(args.output, "previz.json")
@@ -1420,10 +1805,12 @@ def main() -> None:
         for a in ("BOARD", "RUN_PARAMS"))
     if not characters and _crowd_declared:
         problems.append("characters registry is empty")
-    for ch in characters:
-        if ch["root_object"] and ch["root_object"] not in scene.objects:
-            problems.append(f"character {ch['name']}: root object "
-                            f"{ch['root_object']} not in scene")
+    # D5 (session-18): the old per-character loop re-tested names it had
+    # itself collected from scene.objects (a tautology) and let a None
+    # root slip through silently. _gate5_root_problems rejects a None
+    # root on a scene whose module DECLARES a cast — collected root,
+    # CAST-declared root, or a rejection naming the character.
+    problems.extend(_gate5_root_problems(characters, mod, scene.objects))
 
     # gate 6: actions manifest
     if not actions:

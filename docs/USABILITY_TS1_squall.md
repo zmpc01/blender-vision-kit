@@ -14,7 +14,10 @@
   union of layer tick ranges, BEFORE the pre-spawn hold/keepout/world
   transform) + real z from composed rows. Unlayered caches stay
   byte-identical (r054 72/72 held). Test: test_ts1_composed_view
-  13/13. The 4-h review's paired fix: the `layout_composed`
+  13/13. (test_ts1_composed_view lives in the blender-escape-previz
+  checkout — the loader/composed-view code is sibling-repo; this kit's
+  tree carries no copy. Don't hunt for it here.)
+  The 4-h review's paired fix: the `layout_composed`
   provenance marker in the npz meta + the composed-aware ground-contact
   gate (crowd_kit/gates.py) — the ballistic rows are exempt INSIDE the
   declared range, the planar law keeps its teeth outside.

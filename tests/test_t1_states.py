@@ -139,6 +139,8 @@ def main():
                   f, indent=2, default=str)
     print(f"[T1] {verdict}")
     print(f"[T1] wrote {OUT}")
+    if FAIL:               # E5: the battery must read FAILURES as exit 1
+        sys.exit(1)
 
 
 main()

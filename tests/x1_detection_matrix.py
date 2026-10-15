@@ -617,6 +617,34 @@ def main():
           f"counts={audit['state_counts']} failed={audit['failed']}")
     print(f"[X1] wrote {OUT_JSON}")
     print(f"[X1] wrote {OUT_MD}")
+    return s, bin_mismatch
 
 
-main()
+def _regressions(s, bin_mismatch):
+    """E4: the battery fail path. The X1 matrix doubles as a regression
+    fixture for the BVH audit (this file's own conclusion), so any BVH
+    binary/state-exact regression or any flagged binary mismatch is a
+    battery failure with a one-line reason. The bbox detector's errors
+    are the KNOWN-bad baseline the matrix documents — they are reported
+    and scored, never failed on."""
+    problems = []
+    if s["bvh_binary_ok"] < s["n"]:
+        problems.append(
+            f"BVH binary regression {s['bvh_binary_ok']}/{s['n']} "
+            f"(TP{s['bvh_tp']} FP{s['bvh_fp']} FN{s['bvh_fn']} TN{s['bvh_tn']})")
+    if s["bvh_state_ok"] < s["n"]:
+        problems.append(
+            f"BVH state-exact regression {s['bvh_state_ok']}/{s['n']}")
+    if bin_mismatch:
+        ids = ",".join(f"{m['id']}:{m['detector']}" for m in bin_mismatch[:6])
+        problems.append(
+            f"{len(bin_mismatch)} scored binary mismatch(es): {ids}")
+    return problems
+
+
+_s, _bin_mismatch = main()
+_problems = _regressions(_s, _bin_mismatch)
+if _problems:
+    print(f"[X1] FAIL: {'; '.join(_problems)}")
+    sys.exit(1)
+print("[X1] ALL PASS")

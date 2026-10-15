@@ -33,9 +33,10 @@ cp scripts/scene_template.py scripts/my_scene.py  # copy + edit build_scene()/an
 
 NOTE: the script filename IS the scene name — `scripts/my_scene.py` is
 addressed as `--scene my_scene` / `--scene-name my_scene` everywhere.
-A static scene (no animation) is fine: make `animate()` a no-op or
-delete it — look.py and the render path both handle scenes without
-animation.
+A static scene (no animation) is fine: empty `animate()`'s body, or
+delete it (the template's `main()` guards the call with `hasattr` — on
+an older unguarded copy, delete the `main()` call line too) — look.py
+and the render path both handle scenes without animation.
 
 ## THE VISION LOOP (this replaces the blind kit's perceive/critique loop)
 
@@ -87,7 +88,10 @@ Annotations (default ON, `--no-annotate` to strip): 1m ground grid, RGB
 axis gnomon (X red / Y green / Z blue), top-8 object index labels (yellow,
 `--labels N`), red bbox wireframes on validator-flagged objects.
 `--closeup <id>` adds an auto-framed macro render of one object.
-Exit codes: 0 = PASS/WARN clean, 3 = validator P0/P1 present —
+Exit codes: 0 = PASS (no P0/P1); 3 = P0 or P1 present (WARN-level
+issues fail by default — `--no-fail-on-issues` keeps probe loops
+clean); 4 = image-readiness failure (a readiness row errored:
+unreadable/empty output — that look is INVALID, not warnable). All
 propagated through blrun (verified); in pipelines check
 `${PIPESTATUS[0]}` or grep the `VERDICT:` line.
 
@@ -306,7 +310,7 @@ Full details: `/kb/placement_and_physics.md`. Headlines:
   WITNESSES why X can't sit; gate rejects scene-wide with a fix queue
 - `audit` pair states: PENETRATING (penetration_mm) / TOUCHING / NESTED /
   CLEAR (clearance_mm); audit only sees pairs within the 100 mm clearance
-  pad (placement_lib.py:577 — the pad is the real constant); beyond the
+  pad (placement_lib.py:611 — the pad is the real constant); beyond the
   pad floaters appear in NO pair; use `physics_gate` or `look` verdict
   for scene-wide floating. **LAW: exact-match the pair's `state` field
   (PENETRATING/TOUCHING/NESTED/CLEAR) — never `verdict`, which is the

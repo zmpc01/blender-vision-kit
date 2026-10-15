@@ -16,7 +16,11 @@ for i in 1 2 3; do
 done
 if [ "$FAIL" -eq 0 ]; then echo "[push] GitHub ok $(git rev-parse --short HEAD)"; fi
 ( for i in $(seq 1 8); do
-    git push gitlab main 2>/dev/null && { echo "[push] GitLab ok $(git rev-parse --short HEAD)"; exit 0; }
+    # Branch law: GitLab mirrors the clean lineage — push main AS
+    # github-canonical (per-session archives github-canonical-sNN when
+    # non-FF). NEVER force. No stderr swallow: WAF 403s are expected,
+    # anything else must print.
+    git push gitlab main:github-canonical && { echo "[push] GitLab ok $(git rev-parse --short HEAD)"; exit 0; }
     sleep 5
   done
   echo "[push] GitLab gave up after 8 tries (WAF) — non-fatal" ) &

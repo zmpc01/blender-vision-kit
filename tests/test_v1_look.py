@@ -12,6 +12,7 @@ Covers:
 Run:   ./scripts/blrun.sh --background --python tests/test_v1_look.py --
 """
 import os
+import re
 import subprocess
 import sys
 
@@ -54,10 +55,27 @@ def test_1_annotate_roundtrip():
            f"only {len(objs)} KIT_ANNOT objects")
     _check("label curve created", len(curves) >= 1)
     _check("materials created", len(mats) >= 6)
-    # labels aim without error
-    annotate.aim_labels_at(layer["labels"], (4, -4, 3))
+    # labels aim WITHOUT error AND the aim has an effect (E8: the old
+    # `_check("aim_labels_at no error", True)` was vacuous —
+    # annotate.aim_labels_at writes rotation_euler so assert THAT: the
+    # billboard's world +Z must end up pointing at the camera location,
+    # and flat=True must lay the label back to identity rotation)
+    from mathutils import Vector
+    lbl = layer["labels"][0]
+    cam_loc = Vector((4.0, -4.0, 3.0))
+    annotate.aim_labels_at(layer["labels"], cam_loc)
+    bpy.context.view_layer.update()
+    z_axis = (lbl.matrix_world.to_3x3() @ Vector((0.0, 0.0, 1.0))).normalized()
+    to_cam = (cam_loc - lbl.location)
+    to_cam.normalize()
+    _dot = z_axis.dot(to_cam)
+    _check("aim_labels_at orients +Z at camera", _dot > 0.999,
+           f"dot={_dot:.4f} (rot after aim={tuple(round(v, 3) for v in lbl.rotation_euler)})")
     annotate.aim_labels_at(layer["labels"], (0, 0, 50), flat=True)
-    _check("aim_labels_at no error", True)
+    bpy.context.view_layer.update()
+    _flat = tuple(round(v, 5) for v in lbl.rotation_euler)
+    _check("aim_labels_at flat lays the label flat", _flat == (0.0, 0.0, 0.0),
+           f"rot={_flat}")
     removed = annotate.delete_annotation_layer(layer)
     _check("delete returns count", removed >= 15, f"removed={removed}")
     objs, mats, curves = _annot_residue()
@@ -159,7 +177,8 @@ def test_4_look_exit3_on_floater():
     _check("exit code 3 on P1 floater", r.returncode == 3,
            f"rc={r.returncode} tail={r.stdout[-400:] if r.stdout else ''}")
     _check("verdict WARN printed", "VERDICT: WARN" in r.stdout, "")
-    _check("P1 count in verdict", "P1=1" in r.stdout, "")
+    _check("P1 count in verdict", re.search(r"\bP1=1\b", r.stdout) is not None,
+           "")
     grid = "/tmp/test_look_floater_out/grid.png"
     _check("grid written", os.path.exists(grid)
            and os.path.getsize(grid) > 5000)

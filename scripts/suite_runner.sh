@@ -76,25 +76,27 @@ SUITES=(
   "test_v7_camprobe|tests/test_v7_camprobe.py|BL||0|\\[V7\\] ALL PASS|battery #8 (rc=90 then; BLRUN_FORCE=1 in-code now)"
   "test_v8_material|tests/test_v8_material.py|BL||0|\\[V8\\] ALL PASS|battery #9"
   "test_v9_fixes_s16|tests/test_v9_fixes_s16.py|BL||0|\\[test_v9\\] ALL PASS|battery #10"
-  "t8_placement_diorama|tests/t8_placement_diorama.py|BL|-- --output output/{label}/t8|0|\\[T8\\] ([0-9]+)/\\1 checks passed|battery #11; marker needs N/N equal (suite always exits 0)"
+  "t8_placement_diorama|tests/t8_placement_diorama.py|BL|-- --output output/{label}/t8|0|\\[T8\\] 8/8 checks passed|battery #11 (marker = the exact all-pass literal since wave-E E6 — no grep backref; suite exits 1 on failure since E5, so the exit code is authoritative too)"
   "t9_chaos_fuzz|tests/t9_chaos_fuzz.py|BL|-- --output output/{label}/t9_chaos_fuzz|0|CHAOS: 0 hard failures|battery #12"
   "test_f17_gridrefine|tests/test_f17_gridrefine.py|BL||0|\\[test_f17\\] ALL PASS|battery #13"
   "test_f22_levels|tests/test_f22_levels.py|BL||0|\\[test_f22\\] ALL PASS|battery #14"
-  "test_t1_states|tests/test_t1_states.py|BL||0|ALL PASS|battery #15 (bare verdict marker; suite always exits 0)"
-  "test_t2_stairs|tests/test_t2_stairs.py|BL||0|ALL PASS|battery #16 (bare verdict marker; suite always exits 0)"
-  "test_t3_jeep|tests/test_t3_jeep.py|BL||0|ALL PASS|battery #17 (bare verdict marker; suite always exits 0)"
-  "test_t4_table|tests/test_t4_table.py|BL||0|ALL PASS|battery #18 (bare verdict marker; suite always exits 0)"
+  "test_t1_states|tests/test_t1_states.py|BL||0|ALL PASS|battery #15 (bare verdict marker; exits 1 on failure since wave-E E5)"
+  "test_t2_stairs|tests/test_t2_stairs.py|BL||0|ALL PASS|battery #16 (bare verdict marker; exits 1 on failure since wave-E E5)"
+  "test_t3_jeep|tests/test_t3_jeep.py|BL||0|ALL PASS|battery #17 (bare verdict marker; exits 1 on failure since wave-E E5)"
+  "test_t4_table|tests/test_t4_table.py|BL||0|ALL PASS|battery #18 (bare verdict marker; exits 1 on failure since wave-E E5)"
   "test_t5_physics|tests/test_t5_physics.py|BL||0|\\[T5\\] ALL PASS|battery #19"
   "test_t6_add_ops|tests/test_t6_add_ops.py|BL||0|\\[T6\\] ALL PASS|battery #20 (direct blender bin inside; run.sh exports BLENDER_BIN)"
   "test_r7_route|tests/test_r7_route.py|PY||0|ALL PASS|battery #21 (pure python per header)"
   "test_r8_seat|tests/test_r8_seat.py|BL||0|\\[test_r8\\] ALL PASS|battery #22"
   "test_r9_chunking|tests/test_r9_chunking.py|BL|-- out=output/{label}/r9_chunking|0|ALL PASS|battery #23"
-  "test_usd_carrier|tests/test_usd_carrier.py|BL||0|\\[test_usd_carrier\\] ALL PASS|battery #24 (export_textures kwarg fixed post-battery; pxr half may print SKIP)"
+  "test_usd_carrier|tests/test_usd_carrier.py|BL||0|\\[test_usd_carrier\\] ALL PASS|battery #24 (export_textures kwarg fixed post-battery; pxr-less path exits 2 with a SKIP line since wave-E E9 → row reads SKIP, not FAIL)"
   "test_t10_preflight_prop|tests/test_t10_preflight_prop.py|PY||0|\\[t10p\\] ALL PASS|battery #25 (pure python, no blender)"
   "test_t10_export|tests/test_t10_export.py|BL|-- out=output/{label}/t10_export|0|\\[t10\\] ALL PASS|battery #26"
   "test_s17_wave_a|tests/test_s17_wave_a.py|BL||0|\\[test_s17\\] ALL PASS|session-17 wave-A regressions"
   "test_s17_wave_b|tests/test_s17_wave_b.py|BL||0|\\[test_s17b\\] ALL PASS|session-17 wave-B regressions (in-Blender)"
   "test_s17_infra|tests/test_s17_infra.py|PY||0|\\[test_s17i\\] ALL PASS|session-17 wave-D infra regressions (this repo's infra fixes)"
+  "x1_detection_matrix|tests/x1_detection_matrix.py|BL||0|\\[X1\\] ALL PASS|session-18 wave-E E4: BVH contact-audit regression fixture (bbox rows are the KNOWN-bad baseline — only BVH/binary-mismatch regressions fail)"
+  "test_s18_eyes|tests/test_s18_eyes.py|BL||0|test_s18_eyes: ALL PASS|session-18 wave-E E2: look exit-4 / camera_intent / build_sfx vocabulary coverage"
 )
 
 loud_header() {
@@ -193,7 +195,14 @@ for row in "${SUITES[@]}"; do
     elif [[ $marker_ok -eq 0 ]]; then
         notable="exit ok but expected marker missing"
     fi
-    if [[ $rc_ok -eq 1 && $marker_ok -eq 1 ]]; then
+    # E9 (session-18 wave-E): a suite that could not run (pxr-less etc.)
+    # exits 2 with its own '] SKIP' line — record SKIP, never FAIL (the
+    # pre-wave behavior was a guaranteed false-FAIL battery row).
+    if [[ $rc -eq 2 ]] && grep -Eq '\] SKIP' "$log" 2>/dev/null; then
+        notable="suite requested SKIP (exit 2 + '] SKIP' line in log)"
+        verdict="SKIP (suite-requested)"; NSKIP=$((NSKIP + 1))
+        echo "[suite]   SKIP (suite requested: exit 2 + SKIP line)"
+    elif [[ $rc_ok -eq 1 && $marker_ok -eq 1 ]]; then
         verdict="**PASS**"; NPASS=$((NPASS + 1))
         echo "[suite]   PASS (exit=$rc, marker found)"
     else
@@ -202,6 +211,14 @@ for row in "${SUITES[@]}"; do
     fi
     ROWS+=("| $n | $path | \`$marker\` | $rc | $verdict | ${notable:-$note} |")
 done
+
+# ---- E3 (session-18 wave-E): --only must never fake a green run ----
+# An --only name that matches no SUITES row ran 0 suites; with the old
+# code the run ended DONE/exit 0 — indistinguishable from all-green.
+if [[ ${#ONLY[@]} -gt 0 && $((NPASS + NFAIL)) -eq 0 ]]; then
+    echo "[suite] --only matched no suite: ${ONLY[*]}"
+    exit 2
+fi
 
 # ---- RESULTS.md — same shape as docs/battery_s16_results.md ----
 {

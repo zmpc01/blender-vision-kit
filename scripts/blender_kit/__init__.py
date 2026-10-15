@@ -145,25 +145,60 @@ def _scaffold_5x_action(action):
     return bag
 
 
+# Legacy BARE op ids filter_rna_kwargs accepts (no module path). Every
+# pre-D3 caller passed "usd_export"; the alias keeps them working while
+# new call sites pass the full bpy.ops path ("wm.usd_export",
+# "export_scene.gltf", "wm.read_homefile", ...).
+_RNA_OP_ALIASES = {
+    "usd_export": "wm.usd_export",
+}
+
+
+def _resolve_bpy_op(op_id: str):
+    """D3 (session-18): resolve an operator id to its bpy.ops callable.
+
+    Accepts module-path ids ("wm.usd_export", "export_scene.gltf",
+    "wm.read_homefile") and the legacy bare aliases in _RNA_OP_ALIASES,
+    via getattr chains on bpy.ops. Raises AttributeError for an
+    unresolvable id (the caller's except decides policy).
+    """
+    full = _RNA_OP_ALIASES.get(op_id, op_id)
+    node = bpy.ops
+    for part in full.split("."):
+        node = getattr(node, part)
+    return node
+
+
 def filter_rna_kwargs(op_id, kwargs, tag=""):
-    """F2C-1/F2C-2 (session-17): filter operator kwargs to what the RUNNING
-    Blender's RNA actually declares, and NOTE the drops.
+    """F2C-1/F2C-2 (session-17) + D3 (session-18): filter operator kwargs
+    to what the RUNNING Blender's RNA actually declares, and NOTE the drops.
+
+    `op_id` is LOAD-BEARING since D3: it resolves the operator via
+    _resolve_bpy_op, so any op can be filtered — "wm.usd_export",
+    "export_scene.gltf", "wm.read_homefile", or the legacy bare alias
+    "usd_export". The RNA probe used to be HARDCODED to
+    bpy.ops.wm.usd_export (op_id decorative), which left the glTF call
+    site's ~11 version-specific 4.x-verified kwargs going in RAW — the
+    exact unexercised-lane drift class this filter exists for.
 
     The usd_export kwarg set was calibrated against 4.5.13's RNA; on 5.2.2
     the same set TypeErrors (export_textures unrecognized) — the drift
     class the session-16 battery caught in export_usd.py. This is the
     shared filter: EVERY usd_export call site (export_usd.py,
-    export_previz_package.py --usd-sidecar, blender_kit.export_usd) goes
-    through it, so no twin can re-grow the unfiltered variant.
+    export_previz_package.py --usd-sidecar, blender_kit.export_usd) and,
+    since D3, the glTF call site (blender_kit.export_gltf) goes through
+    it, so no twin can re-grow the unfiltered variant.
 
     The _safe_set philosophy, applied to operator kwargs: version-proof by
     construction. `tag` names the caller in the NOTE line.
 
-    Raises nothing: if get_rna_type() is unavailable (very old Blender),
-    returns kwargs unchanged and the caller's own TypeError retry remains
-    the fallback (degradation, not a new failure mode)."""
+    Raises nothing: if the op can't be resolved or get_rna_type() is
+    unavailable (very old Blender), returns kwargs unchanged and the
+    caller's own TypeError retry remains the fallback (degradation, not a
+    new failure mode)."""
     try:
-        rna_props = set(bpy.ops.wm.usd_export.get_rna_type().properties.keys())
+        rna_props = set(
+            _resolve_bpy_op(op_id).get_rna_type().properties.keys())
     except Exception:  # noqa: BLE001 — no RNA → caller's retry path handles it
         return kwargs
     dropped = [k for k in kwargs if k not in rna_props]
@@ -840,8 +875,9 @@ def _validate_outputs(outdir: str) -> None:
 
 def _write_metadata(args: argparse.Namespace, *, scene_name: str,
                     elapsed: float, scene: bpy.types.Scene) -> None:
-    """Write metadata.json alongside renders, plus scene.json (structured
-    scene context for any consumer -- validator pairing, diffing, QA)."""
+    """Write metadata.json alongside renders plus scene.json (structured
+    scene context for any consumer -- validator pairing, diffing, QA, and
+    the live viewer's Scene tab via agent_server /api/scene.json)."""
     import datetime
     meta = {
         "scene": scene_name,
@@ -867,7 +903,27 @@ def _write_metadata(args: argparse.Namespace, *, scene_name: str,
     }
     with open(os.path.join(args.output, "metadata.json"), "w") as f:
         json.dump(meta, f, indent=2)
-    print(f"[blender_kit] metadata.json written ({len(meta['objects'])} objects)")
+    # D12 (session-18): the docstring always promised scene.json but
+    # nothing wrote it — the live viewer's Scene tab 404'd on
+    # /api/scene.json (agent_server serves <workdir>/scene.json verbatim,
+    # so the file just needs to exist next to metadata.json). Write the
+    # compact scene doc, reusing the meta fields already collected.
+    scene_doc = {
+        "scene_name": scene_name,
+        "blender_version": bpy.app.version_string,
+        "engine": args.engine,
+        "resolution": [args.w, args.h],
+        "frame_range": [scene.frame_start, scene.frame_end],
+        "fps": scene.render.fps,
+        "camera": meta["camera"],
+        "camera_lens_mm": meta["camera_lens_mm"],
+        "objects": meta["objects"],
+        "rendered_at": meta["rendered_at"],
+    }
+    with open(os.path.join(args.output, "scene.json"), "w") as f:
+        json.dump(scene_doc, f, indent=2)
+    print(f"[blender_kit] metadata.json + scene.json written "
+          f"({len(meta['objects'])} objects)")
 
 
 def _encode_mp4(outdir: str, *, fps: int = 12) -> None:
@@ -981,8 +1037,10 @@ def export_gltf(args: argparse.Namespace, *, out_path: str | None = None,
     if not out_path.endswith(".glb"):
         out_path = os.path.splitext(out_path)[0] + ".glb"
 
-    # export_scene.gltf operator parameter names verified against Blender 4.x API
-    # docs: https://docs.blender.org/api/current/bpy.ops.export_scene.html
+    # D3 (session-18): the kwarg set is now RNA-FILTERED inside the try
+    # below (was: raw, with a "verified against Blender 4.x API docs"
+    # comment — the same frozen-docs claim the usd_export site had before
+    # 5.2.2 broke it).
     exclude = list(exclude_objects or [])
     exclude.extend(render_hidden_objects(bpy.context.scene))
     exclude = list({ob.name: ob for ob in exclude}.values())
@@ -996,7 +1054,14 @@ def export_gltf(args: argparse.Namespace, *, out_path: str | None = None,
                 prev_selected.add(ob.name)
             ob.select_set(ob not in exclude)
     try:
-        bpy.ops.export_scene.gltf(
+        # D3 (session-18): RNA-FILTER the glTF call too. The kwarg set was
+        # calibrated against 4.x docs ("verified against Blender 4.x API
+        # docs" — the same claim the usd_export site made before 5.2.2
+        # broke it) and ~11 version-specific kwargs went in RAW, because
+        # the shared filter was hardcoded to usd_export. It now goes
+        # through the same runtime filter — version-proof by construction,
+        # drops NOTE'd like the USD sites.
+        gltf_kwargs = dict(
             filepath=out_path,
             export_format='GLB',
             export_cameras=True,        # default False -- MUST set
@@ -1010,6 +1075,9 @@ def export_gltf(args: argparse.Namespace, *, out_path: str | None = None,
             export_import_convert_lighting_mode='SPEC',
             use_selection=bool(exclude),
         )
+        gltf_kwargs = filter_rna_kwargs(
+            "export_scene.gltf", gltf_kwargs, tag="blender_kit.export_gltf")
+        bpy.ops.export_scene.gltf(**gltf_kwargs)
     finally:
         if exclude:
             for ob in bpy.data.objects:

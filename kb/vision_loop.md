@@ -69,11 +69,16 @@ Luma-only subject detection MISSED red-on-gray (luma-matched) — use RGB.
 
 ## Exit codes + markers
 
-- 0 = clean (PASS/WARN-free), 3 = validator P0/P1 (fail-on-issues parity
-  with validate_scene). RAW blender propagates; **blrun.sh does not**
-  (its gate greps tracebacks only) — grep `VERDICT:` lines instead.
-  Upstream gotcha: in-Blender test suites subprocessing the raw binary
-  DO see real exit codes (env inherited from the blrun parent).
+- 0 = PASS (no P0/P1), 3 = validator P0 or P1 present (fail-on-issues
+  parity with validate_scene — WARN-level issues fail by default).
+  Exit codes PROPAGATE through blrun.sh: it takes the wrapped blender's
+  exit status verbatim; its traceback gate only OVERRIDES a would-be-0
+  exit to 1 when crash signatures appear in the output. The
+  `${PIPESTATUS[0]}` advice is for pipelines YOU build around blrun or
+  raw blender (`blrun ... | grep` — `$?` is grep's, not blrun's);
+  blrun's own caller sees the real code (verified twice, AGENTS.md law
+  115). Upstream gotcha: in-Blender test suites subprocessing the raw
+  binary DO see real exit codes (env inherited from the blrun parent).
 - Verdict text: FAIL (P0>0) / WARN (P1>0) / PASS. Severity scale:
   floating=P1, below-floor=P0, intersection=P1 (P0 at ≥30% overlap),
   above-ceiling=P2.

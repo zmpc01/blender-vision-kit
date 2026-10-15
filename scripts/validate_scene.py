@@ -417,7 +417,21 @@ def main():
         clear_scene()
         ctx = mod.build_scene()
         if hasattr(mod, "animate"):
-            mod.animate(ctx, start_frame=1, n_frames=args.frames)
+            # s18 B10: this call passed start_frame/n_frames UNCONDITIONALLY
+            # — a bare `def animate(ctx)` scene module TypeError'd here
+            # BEFORE any check ran (the apply_patch/scene_schema twins of
+            # this exact bug are F2B-24 / F5A-5). Signature-bind split, the
+            # established pattern: bind first; fall back to the bare call
+            # when the module owns its timeline; a TypeError raised INSIDE
+            # animate still propagates (the call sits outside the bind try).
+            import inspect as _inspect
+            try:
+                _inspect.signature(mod.animate).bind(
+                    ctx, start_frame=1, n_frames=args.frames)
+            except TypeError:
+                mod.animate(ctx)
+            else:
+                mod.animate(ctx, start_frame=1, n_frames=args.frames)
     else:
         print("[validate] using currently-loaded scene")
 

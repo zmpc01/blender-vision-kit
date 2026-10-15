@@ -246,7 +246,7 @@ def main():
     if CHECKS["fail"]:
         print(f"FAILED: {CHECKS['fail']}")
         print("test_v2_motion: FAIL")
-        return
+        sys.exit(1)        # E5: the battery must read FAIL as exit 1
     print("test_v2_motion: ALL PASS")
 
 

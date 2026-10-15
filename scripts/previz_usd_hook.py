@@ -351,7 +351,15 @@ def _collect_board(board):
                 "f_run_end": int(main_tuple[0]),
                 "f_apex": int(main_tuple[1]),
                 "f_land": int(main_tuple[2]),
-                "seat_local": [float(x) for x in main_tuple[3]],
+                # D4 (session-18): a None seat ("no seat assigned yet") is a
+                # LEGAL board row — the JSON collector emits null and KEEPS
+                # the row (export_previz_package._collect_story), but the
+                # float() sweep here used to TypeError and NOTE-and-DROP the
+                # whole row, silently losing the actor from the USD carrier
+                # (and desyncing the row-count parity gate). Mirror the JSON
+                # decoder: None -> "" (USD customData forbids None).
+                "seat_local": [float(x) for x in main_tuple[3]]
+                if main_tuple[3] is not None else "",
                 "yaw_end": float(main_tuple[4]),
                 "pose_name": str(main_tuple[5]),
                 "run_x": run_x_val,

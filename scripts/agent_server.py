@@ -81,14 +81,36 @@ broker = EventBroker()
 # File watcher for scene.glb changes
 # ---------------------------------------------------------------------------
 
+def _watcher_transition(prev, announced, cur):
+    """D10 (session-18): two-poll size-stability decision (pure — unit-tested
+    in tests/test_s18_wave_d.py).
+
+    The old watcher fired scene_updated the instant mtime moved — i.e.
+    MID-COPY — so the viewer fetched a truncated .glb and rendered garbage.
+    A change is announced only when (mtime, size) is IDENTICAL across two
+    consecutive polls (~interval apart: the writer has settled) AND differs
+    from what was last announced.
+
+    Args:
+        prev: (mtime, size) seen at the previous poll (None = none yet).
+        announced: (mtime, size) last announced to viewers (None = nothing).
+        cur: (mtime, size) seen now.
+
+    Returns (fire: bool, new_announced).
+    """
+    if cur == prev and announced is not None and cur != announced:
+        return True, cur
+    return False, announced
+
+
 class FileWatcher:
-    """Watches a file and publishes an event when it changes."""
+    """Watches a file and publishes an event when it stops changing
+    (D10: two consecutive polls agree on mtime AND size)."""
 
     def __init__(self, path: str, broker: EventBroker, interval: float = 0.5):
         self.path = path
         self.broker = broker
         self.interval = interval
-        self._last_mtime = 0
         self._thread = None
         self._stop = threading.Event()
 
@@ -104,20 +126,31 @@ class FileWatcher:
             self._thread.join(timeout=1)
 
     def _run(self):
+        # D10 (session-18): two-poll size-stability — see
+        # _watcher_transition. Initial detection becomes a silent baseline
+        # (viewers fetch it via initialLoad; no event fires), exactly the
+        # old "don't fire on initial detection" behavior.
+        prev = None
+        announced = None
         while not self._stop.is_set():
             try:
                 if os.path.exists(self.path):
-                    mtime = os.path.getmtime(self.path)
-                    if mtime != self._last_mtime:
-                        if self._last_mtime != 0:  # don't fire on initial detection
-                            size = os.path.getsize(self.path)
+                    cur = (os.path.getmtime(self.path),
+                           os.path.getsize(self.path))
+                    if announced is None:
+                        announced = cur  # initial detection: baseline only
+                    else:
+                        fire, announced = _watcher_transition(
+                            prev, announced, cur)
+                        if fire:
                             self.broker.publish({
                                 "type": "scene_updated",
-                                "message": f"Scene .glb updated ({size} bytes)",
+                                "message": f"Scene .glb updated "
+                                           f"({cur[1]} bytes)",
                                 "timestamp": time.time(),
-                                "size": size,
+                                "size": cur[1],
                             })
-                        self._last_mtime = mtime
+                    prev = cur
             except Exception as e:
                 print(f"[watcher] error: {e}", file=sys.stderr)
             self._stop.wait(self.interval)
@@ -283,6 +316,23 @@ class AgentServerHandler(http.server.BaseHTTPRequestHandler):
 
 
 # ---------------------------------------------------------------------------
+# HTTP server (D1: THREADED — see ThreadedTCPServer)
+# ---------------------------------------------------------------------------
+
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    """D1 (session-18): the SSE handler LOOPS FOREVER while a viewer is
+    connected (_handle_sse below), and viewer/live.html calls connectSSE()
+    BEFORE initialLoad() — on the single-threaded TCPServer that one SSE
+    connection blocked accept() entirely, so every other route (including
+    the initialLoad status fetch) deadlocked until the SSE client went
+    away: the documented live-viewer deadlock. ThreadingMixIn gives each
+    request its own thread; daemon_threads=True keeps Ctrl-C / SIGTERM
+    shutdown instant instead of waiting on open SSE streams."""
+    daemon_threads = True
+    allow_reuse_address = True
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -320,9 +370,10 @@ def main():
         watcher.start()
         print(f"[server] watching {glb_path} for changes", file=sys.stderr)
 
-    # Start HTTP server
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("0.0.0.0", args.port), AgentServerHandler) as httpd:
+    # Start HTTP server (D1: threaded — see ThreadedTCPServer; the old
+    # global `socketserver.TCPServer.allow_reuse_address = True` monkey-
+    # patch is gone, the attribute lives on the subclass).
+    with ThreadedTCPServer(("0.0.0.0", args.port), AgentServerHandler) as httpd:
         print(f"[server] Agent server listening on http://localhost:{args.port}/")
         print(f"[server]   workdir: {args.workdir}")
         print(f"[server]   viewer:  {args.viewer_dir}/live.html")

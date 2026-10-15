@@ -21,6 +21,7 @@ Exit codes:
 """
 import math
 import os
+import re
 import sys
 import tempfile
 
@@ -340,6 +341,15 @@ def main():
 
         # Verify BOARD run_x is a float (USD-REVIEW-1 A2 test)
         assert "run_x" in text, "board run_x not in .usda text"
+        # E9: text-level SHAPE assert — the scalar float -0.9, NOT the
+        # 1-tuple (-0.9,) (USD cannot encode tuples; the pre-fix hook
+        # leaked the raw tuple into customData). The lookbehind/lookahead
+        # distinguish 'run_x = -0.9' from the wrapped forms '(-0.9)',
+        # '(-0.9,)' and '[-0.9]'. This runs WITHOUT pxr, so the A2 fix
+        # is asserted even on the pxr-less skip path below.
+        assert re.search(r"run_x[^-]*(?<!\()-0\.9(?![\)\],])", text), \
+            ("board run_x: scalar -0.9 not found in .usda text "
+             "(tuple form or missing — USD-REVIEW-1 A2)")
         # The run_x should NOT be a tuple (-0.9,) but a float -0.9
         # We'll check the actual value via the pxr re-import below
         print(f"  [PASS] board.run_x in .usda (USD-REVIEW-1 A2 fix verified)")
@@ -348,9 +358,14 @@ def main():
         try:
             from pxr import Usd, Sdf, Gf
         except ImportError:
+            # E9: exit 2 with a SKIP line — the suite's own header
+            # ("2 = ERROR (couldn't run — pxr unavailable)") and the
+            # runner's SKIP convention. The old `sys.exit(0)` here
+            # guaranteed a false-FAIL battery row (exit 0 without the
+            # ALL PASS marker).
             print("[test_usd_carrier] SKIP: pxr not importable; "
-                  "text-level assertions passed")
-            sys.exit(0)
+                  "text-level assertions passed (incl. run_x shape)")
+            sys.exit(2)
 
         stage = Usd.Stage.Open(usd_path)
         assert stage, "couldn't open USD stage"

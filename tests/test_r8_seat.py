@@ -101,7 +101,13 @@ def main():
           -0.45 <= spec["sit_target"][0] <= 0.45 and
           -0.45 <= spec["sit_target"][1] <= 0.45, True)
 
-    # ---------------- R8.2b low-seat probe sanity (used by R8.7) ----
+    # ---------------- R8.2b low-seat probe sanity ----------------
+    # (E12: this header had zero checks. The check lives inside the R8.7
+    # block below — that block already builds the LOW chair and runs the
+    # low-seat probe; R8.2b asserts the probe actually READ the lowered
+    # cushion, so R8.7's rejection is attributable to leg reach, not a
+    # stale/mis-read seat plane. Doing it here would have to clobber the
+    # shared R8.2 scene that R8.4's contamination probe depends on.)
 
     # ---------------- R8.4 contamination ----------------
     bpy.ops.mesh.primitive_cube_add(size=1, location=(0.05, -0.1, 0.55))
@@ -164,6 +170,12 @@ def main():
     rep2 = RS.execute_sit("Girl", spec2, m2, hold_idle=24)
     check("R8.7.low_seat_rejected", rep2["ok"], False)
     check("R8.7.feet_reason", rep2["checks"]["feet_ok"], False)
+
+    # R8.2b (E12): the low-seat probe sanity — the probe's seat plane
+    # must track the lowered cushion (box scale 0.05 at z=0.31 -> top
+    # 0.335), NOT the old 0.53 cushion top or the backrest
+    check("R8.2b.low_seat_z_tracks_cushion",
+          abs(spec2["seat_z"] - 0.335) <= 0.06, True)
 
     # --------------------------------------------------------------------
     print(f"\n[test_r8] {'ALL PASS' if not FAIL else 'FAILURES:'}")

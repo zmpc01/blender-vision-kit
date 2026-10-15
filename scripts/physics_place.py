@@ -172,7 +172,8 @@ def _shape_for(obj, role):
                 return 'BOX'
         except Exception:  # noqa: BLE001 — hint only
             pass
-        return 'CONVEX_HULL' if nverts <= _SHAPE_CAP_VERTS else 'BOX'
+        return 'CONVEX_HULL' if nverts <= _SHAPE_CAP_VERTS \
+            else ('BOX' if origin_centered else 'CONVEX_HULL')
     if nverts > _SHAPE_CAP_VERTS:
         return 'BOX' if origin_centered else 'CONVEX_HULL'
     return 'CONVEX_HULL'
@@ -185,13 +186,31 @@ def _is_skinned(obj):
     return False
 
 
+def _parent_animated(obj):
+    """C2: walk the parent chain — a keyed/driver-driven ANCESTOR rides
+    the whole subtree, so a mover child of a keyed empty is dragged by
+    the parent during stepping and its committed pose re-parents at the
+    next frame_set. Returns 'parent_animated:<name>:<chans[:2]>' or
+    None. Uses pl._transform_anim_channels (ALL transform channels,
+    F2B-9 iter_all_fcurves discipline)."""
+    p = obj.parent
+    while p is not None:
+        chans = pl._transform_anim_channels(p)
+        if chans:
+            return f"parent_animated:{p.name}:" + ",".join(chans[:2])
+        p = p.parent
+    return None
+
+
 def _prep(objs, environment=(), allow_bake=False, allow_copy=False):
     """Filter/validate the mover set. Returns (movers, env_objs, excluded).
 
     Mover-set rules (design D2/B3/B4):
     - mesh objects only (a selected non-mesh ABORTS rb ops, F14);
-    - location-animated / skinned objects are EXCLUDED (sim + fcurves
-      fight; commit would be clobbered at the next frame evaluation);
+    - TRANSFORM-animated (location/rotation/scale keys or drivers, C2)
+      objects, objects with an animated PARENT (C2), and skinned objects
+      are EXCLUDED (sim + keys fight; commit would be clobbered at the
+      next frame evaluation);
     - hidden / hidden-viewport objects excluded;
     - parented parts: only ROOT movers get bodies — children of movers
       ride along (independent child bodies would separate from the
@@ -223,15 +242,26 @@ def _prep(objs, environment=(), allow_bake=False, allow_copy=False):
             # a hidden "terrain" body would also crash _rb_add via the
             # ops poll ("cannot edit hidden object")
             excluded.append({"obj": o.name, "reasons": ["hidden_env"]})
-        elif pl._location_anim_channels(o):
+        else:
             # tiebreak TB4: an animated PASSIVE body is NOT static in the
             # sim (4.5 tracks the keyed transform — ball rest moved from
             # the static 0.352 to 0.2055 with a keyed env slab). Frozen
             # colliders would rest the mover on a transient pose; excluded
             # is the honest behavior (NO_SUPPORT beats a lie).
-            excluded.append({"obj": o.name, "reasons": ["animated_env"]})
-        else:
-            env_objs.append(o)
+            # C2: the animated test now covers ALL transform channels
+            # (a rotation-keyed env passed the old location-only filter
+            # and froze at a transient pose) AND the parent chain (a
+            # keyed parent drags its frozen child).
+            env_reasons = []
+            if pl._transform_anim_channels(o):
+                env_reasons.append("animated_env")
+            par = _parent_animated(o)
+            if par is not None:
+                env_reasons.append(par)
+            if env_reasons:
+                excluded.append({"obj": o.name, "reasons": env_reasons})
+            else:
+                env_objs.append(o)
     candidates = [o for o in candidates if o.name not in env_names]
     for o in candidates:
         reasons = []
@@ -239,11 +269,22 @@ def _prep(objs, environment=(), allow_bake=False, allow_copy=False):
             reasons.append("hidden")
         if _is_skinned(o):
             reasons.append("skinned")
-        chans = pl._location_anim_channels(o)
+        chans = pl._transform_anim_channels(o)
         if chans:
             reasons.append("animated:" + ",".join(chans[:2]))
-        if any(len(m.modifiers) for m in [o] if False):  # placeholder no-op
-            pass
+        par = _parent_animated(o)
+        if par is not None:
+            reasons.append(par)
+        # C3 (real guard — was an `if False` stub): non-armature
+        # modifiers + a bake-needed scale refuse the bake (mesh.transform
+        # under a modifier stack re-derives the modifier input and
+        # shifts the evaluated geometry the shape snapshot took).
+        # allow_bake=True explicitly authorizes the bake (then
+        # _bake_scales MUST copy multi-user data — C4).
+        if (any(m.type != 'ARMATURE' for m in o.modifiers)
+                and max(abs(v - 1.0) for v in o.scale) > 1e-6
+                and not allow_bake):
+            reasons.append("modifiers_block_bake")
         if o.data is None:
             # design-gate F23 (Track I rider): an explicitly-passed non-mesh
             # (e.g. an add_empty anchor) used to raise AttributeError here —
@@ -287,18 +328,37 @@ def _prep(objs, environment=(), allow_bake=False, allow_copy=False):
 
 def _bake_scales(movers, env_objs, allow_bake):
     """Bake object scale into mesh data for all RB participants (F6).
-    Only called when allow_bake — _prep already excluded modifier/multi-
-    user cases. Returns list of baked names."""
+    Only called from the allow_bake path — _prep already refused the
+    modifier case unless allow_bake was explicitly passed (C3).
+    Returns (baked_names, simbake_copies).
+
+    C4: a multi-user mesh (users>1 — reachable with allow_copy=True)
+    used to be transformed IN PLACE, silently rescaling every linked
+    duplicate scene-wide. The object now gets a PRIVATE datablock copy
+    (renamed '.SimBake') which is transformed instead. The copy STAYS
+    after teardown — the object keeps its private data (restoring the
+    shared datablock would undo the sim's committed shape; the shared
+    datablock itself is never touched)."""
     baked = []
+    copies = []
+    if not allow_bake:
+        # C3 honesty: the bake IS the allow_bake path — with the param
+        # False the old code still transformed data (an accepted-but-
+        # ignored lie; TB1 makes positive-scale objects sim-ready anyway)
+        return baked, copies
     for o in movers + env_objs:
         s = o.scale
         if max(abs(v - 1.0) for v in s) > 1e-6:
+            if o.data.users > 1:
+                o.data = o.data.copy()
+                o.data.name = o.data.name + ".SimBake"
+                copies.append(o.name)
             o.data.transform(Matrix.Diagonal((s.x, s.y, s.z, 1.0)))
             o.scale = (1.0, 1.0, 1.0)
             baked.append(o.name)
     if baked:
         bpy.context.view_layer.update()
-    return baked
+    return baked, copies
 
 
 # --------------------------------------------------------------------------
@@ -614,8 +674,10 @@ def settle(objs=None, environment=(), *, frames=45, apply='end',
                       verdict_reason="no eligible mover objects")
         return _finish(report, t0, output)
 
-    baked = _bake_scales(movers, env_objs, allow_bake)
+    baked, simbake_copies = _bake_scales(movers, env_objs, allow_bake)
     report["scale_baked"] = baked
+    if simbake_copies:
+        report["simbake_data_copies"] = simbake_copies
 
     others = [o for o in bpy.context.scene.objects
               if o.type == 'MESH' and o not in movers]
@@ -870,6 +932,14 @@ def place(obj, *, drop_mm=30.0, frames=45, snap=True, snap_cap_mm=8.0,
     t0 = time.time()
     report = {"op": "physics_place", "obj": obj.name, "apply": apply,
               "drop_mm": drop_mm}
+    if allow_bake:
+        # C3: place/oracle accepted allow_bake but never called
+        # _bake_scales — an accepted-but-ignored param is a lie; refuse
+        # loudly instead.
+        raise ValueError(
+            "physics_place: allow_bake is implemented only for "
+            "physics_settle — pass allow_bake=False (the old behavior "
+            "silently ignored it) or use physics_settle.")
     all_mesh = [o for o in bpy.context.scene.objects
                 if o.type == 'MESH' and o.name != obj.name]
     movers, env_objs, excluded = _prep([obj], environment=all_mesh,

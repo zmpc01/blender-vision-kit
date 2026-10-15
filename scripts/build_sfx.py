@@ -176,6 +176,20 @@ def build(events_path, out_wav, seed=1234):
         data = json.load(fh)
     fps = data.get("fps", 24)
     events = data.get("events", [])
+    # D9 (session-18, layer 2): fail closed on negative frames BEFORE the
+    # decoder — `L[s:e]` with a negative s wraps into the buffer END
+    # (CPython negative-slice semantics), dropping the event minutes past
+    # the timeline instead of at its stamp. Export gate 15 rejects this
+    # upstream; build() is the last line of defense.
+    for ev in events:
+        fr = ev.get("frame")
+        if isinstance(fr, (int, float)) and not isinstance(fr, bool) \
+                and fr < 0:
+            raise ValueError(
+                f"[sfx] event {ev.get('name', ev.get('kind', '?'))!r}: "
+                f"frame {fr} is negative — the decoder would wrap it into "
+                f"the buffer END (CPython negative slice); fix the emitter "
+                f"(export gate 15 rejects this too)")
     total_s = max((ev["frame"] / fps + 3.0 for ev in events), default=5.0)
     n = int(total_s * SR)
     L = np.zeros(n)

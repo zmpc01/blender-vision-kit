@@ -32,7 +32,7 @@ import time
 
 import bpy
 import bmesh
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 from mathutils.bvhtree import BVHTree
 from mathutils.geometry import intersect_ray_tri
 
@@ -336,10 +336,42 @@ def _segment_hits_poly(a, b, polys, face_idx, return_depth=False):
     return False
 
 
+def _armature_pose_offset(arm_obj, tol=1e-4):
+    """C6 decisive probe for armatures with ZERO animation data: compare
+    each pose bone's evaluated matrix against its rest matrix (pb.matrix
+    vs pb.bone.matrix_local — both are ARMATURE-space, so no world
+    matrix is involved). Any translation OR rotation mismatch beyond
+    `tol` means the rig is manually/driver-posed => 'animated' for
+    guard purposes. Early-exits on the first mismatch (performance);
+    one view_layer.update() first because pb.matrix is a
+    DEPSGRAPH-evaluated read (a just-posed rig reads stale otherwise)."""
+    if arm_obj.type != 'ARMATURE' or not arm_obj.pose.bones:
+        return False
+    bpy.context.view_layer.update()
+    for pb in arm_obj.pose.bones:
+        rest = pb.bone.matrix_local
+        pose = pb.matrix
+        if (pose.to_translation() -
+                rest.to_translation()).length > tol:
+            return True
+        # rotation too: a bone rotated about its own HEAD keeps its
+        # translation — translation-only probes miss the most common
+        # manual pose (twist/bend in place)
+        qd = pose.to_quaternion().rotation_difference(
+            rest.to_quaternion())
+        if abs(qd.angle) > tol:
+            return True
+    return False
+
+
 def _skinned_guard(obj, force):
     """Refuse confident nonsense on posed/animated rigged meshes (kit
     gotcha #27: evaluated mesh can return bind pose while the render shows
-    the posed figure). Armature WITHOUT animation = rest pose = safe."""
+    the posed figure). Armature WITHOUT animation = rest pose = safe.
+    C6: 'animated' now also covers DRIVER-posed armatures (animation
+    drivers, zero action/NLA) and MANUALLY-posed ones (pose_bone.matrix
+    != bone.matrix_local with zero animation data) via a cheap decisive
+    pose-matrix probe."""
     if obj.type != 'MESH':
         return None
     has_arm = any(m.type == 'ARMATURE' for m in obj.modifiers) or \
@@ -349,7 +381,8 @@ def _skinned_guard(obj, force):
         return None
     ad = getattr(obj, "animation_data", None)
     animated = bool(ad and (ad.action or
-                            any(tr.strips for tr in ad.nla_tracks)))
+                            any(tr.strips for tr in ad.nla_tracks) or
+                            ad.drivers))
     if not animated:
         # s17 (found by the test fixture): the POSE lives on the ARMATURE —
         # a skinned mesh whose armature object is animated (parent, modifier
@@ -366,9 +399,19 @@ def _skinned_guard(obj, force):
         for cand in cands:
             cad = getattr(cand, "animation_data", None)
             if cad and (cad.action or
-                        any(tr.strips for tr in cad.nla_tracks)):
+                        any(tr.strips for tr in cad.nla_tracks) or
+                        cad.drivers):
                 animated = True
                 break
+        if not animated:
+            # C6: driver-posed and MANUALLY-posed armatures carry ZERO
+            # animation data — the action/NLA/driver test above read them
+            # as rest-pose while the evaluated mesh is posed (gotcha #27's
+            # quiet twin). The pose-matrix probe is decisive.
+            for cand in cands:
+                if _armature_pose_offset(cand):
+                    animated = True
+                    break
     if animated and not force:
         raise RuntimeError(
             f"'{obj.name}' is an ANIMATED skinned mesh — evaluated mesh "
@@ -681,6 +724,43 @@ def audit_scene(pairs=None, exclude=(), *, sample='verts',
 # Layer 2 — placement solver
 # ---------------------------------------------------------------------------
 
+_ALL_TRANSFORM_PATHS = ("location", "rotation_euler",
+                        "rotation_quaternion", "rotation_axis_angle",
+                        "scale")
+
+
+def _anim_channels(obj, paths):
+    """Tagged transform fcurve/driver channels whose data_path is in
+    `paths` (session-18 wave-C: one collector, three views — location /
+    rotation / all-transform). Tags name the SOURCE so guards can tell
+    rebasable active-action keys from NLA/driver-driven channels:
+    'action:<path>[i]', 'nla:<act>:<path>[i]', 'driver:<path>[i]'.
+    F2B-9: iter_all_fcurves (read-only, ALL 5.x slots) — iter_fcurves
+    probed slot[0] only, and AUTO-SCAFFOLDS fresh actions as a read side
+    effect."""
+    chans = []
+    ad = getattr(obj, "animation_data", None)
+    if not ad:
+        return chans
+    if ad.action:
+        for fc in iter_all_fcurves(ad.action):
+            if fc.data_path in paths:
+                chans.append(f"action:{fc.data_path}[{fc.array_index}]")
+    for tr in getattr(ad, "nla_tracks", []):
+        for st in tr.strips:
+            act = getattr(st, "action", None)
+            if act:
+                for fc in iter_all_fcurves(act):
+                    if fc.data_path in paths:
+                        chans.append(
+                            f"nla:{act.name}:{fc.data_path}"
+                            f"[{fc.array_index}]")
+    for dc in getattr(ad, "drivers", []):
+        if dc.data_path in paths:
+            chans.append(f"driver:{dc.data_path}[{dc.array_index}]")
+    return chans
+
+
 def _location_anim_channels(obj):
     """Location fcurves/drivers that would clobber placement writes
     (review blocker #4). F2B-9: iter_all_fcurves (read-only, ALL 5.x
@@ -688,25 +768,25 @@ def _location_anim_channels(obj):
     later slot were invisible and the guard passed right before a
     frame_set clobbered the placement; iter_fcurves also scaffolds fresh
     actions as a read side effect."""
-    chans = []
-    ad = getattr(obj, "animation_data", None)
-    if not ad:
-        return chans
-    if ad.action:
-        for fc in iter_all_fcurves(ad.action):
-            if fc.data_path == "location":
-                chans.append(f"action:location[{fc.array_index}]")
-    for tr in getattr(ad, "nla_tracks", []):
-        for st in tr.strips:
-            act = getattr(st, "action", None)
-            if act:
-                for fc in iter_all_fcurves(act):
-                    if fc.data_path == "location":
-                        chans.append(f"nla:{act.name}:location[{fc.array_index}]")
-    for dc in getattr(ad, "drivers", []):
-        if dc.data_path == "location":
-            chans.append(f"driver:location[{dc.array_index}]")
-    return chans
+    return _anim_channels(obj, ("location",))
+
+
+def _rotation_anim_channels(obj):
+    """Rotation fcurves/drivers (C1): seat_at(align)/place_on
+    (align_to_surface) write ROTATION — a rotation-keyed object gets its
+    orientation overwritten in-memory and snaps back on the next
+    frame_set (hybrid pose; the tsquall faller carries object-level rot
+    keys — this class is live in real films)."""
+    return _anim_channels(obj, ("rotation_euler", "rotation_quaternion",
+                                "rotation_axis_angle"))
+
+
+def _transform_anim_channels(obj):
+    """ALL transform channels incl. scale (C2): physics_place simulated a
+    rotation-keyed mover then its committed pose was clobbered by its own
+    keys; a rotation-keyed env passed the old location-only filter and
+    froze as a static collider at a transient pose (TB4)."""
+    return _anim_channels(obj, _ALL_TRANSFORM_PATHS)
 
 
 def _guard_anim(obj, override):
@@ -723,6 +803,56 @@ def _guard_anim(obj, override):
             f"placement — the right choice for moving an animated prop) "
             f"or override='ignore' (at your own risk).")
     return chans
+
+
+def _guard_rotation_anim(obj, override, op_name):
+    """C1: ops that write ROTATION (seat_at align=True, place_on
+    align_to_surface=True) must not silently clobber rotation animation.
+
+    - default (override=None) AND override='ignore': REFUSE, naming the
+      channels found — there is no safe 'ignore' for rotation writes
+      (the keys WILL restore the old orientation at the next frame_set;
+      the hybrid pose is exactly the class this guard exists for).
+    - override='keyframe' with a QUATERNION-mode object whose rotation
+      keys live in the ACTIVE action: rebaseable — returns the channel
+      tags and the caller must apply _rebase_rotation_keys with the
+      placement delta rotation.
+    - EULER-mode (or axis-angle) rotation keys: refuse even under
+      override='keyframe' — converting euler key curves is invasive; the
+      error tells the consumer to switch rotation_mode to 'QUATERNION'
+      (glTF-style props already are) or bake.
+    - NLA/driver rotation channels: refuse even under override='keyframe'
+      (the rebase only reaches the active action — the same scope as the
+      location rebase)."""
+    chans = _rotation_anim_channels(obj)
+    if not chans:
+        return None
+    named = ", ".join(chans[:4])
+    if override == "keyframe":
+        if any(c.startswith(("nla:", "driver:")) for c in chans):
+            raise RuntimeError(
+                f"'{obj.name}' has rotation animation OUTSIDE the active "
+                f"action ({named}) — the keyframe override can only rebase "
+                f"active-action keys. Mute/consolidate the NLA strips, "
+                f"remove the drivers, or bake the rotation animation "
+                f"first.")
+        if obj.rotation_mode != 'QUATERNION':
+            raise RuntimeError(
+                f"'{obj.name}' has {obj.rotation_mode}-mode rotation keys "
+                f"({named}) and {op_name} writes rotation. Converting "
+                f"euler key curves is invasive — switch the object's "
+                f"rotation_mode to 'QUATERNION' and re-key (glTF-style "
+                f"props already are), or bake the rotation animation, or "
+                f"run the placement BEFORE animating.")
+        return chans
+    raise RuntimeError(
+        f"'{obj.name}' has rotation animation ({named}). {op_name} writes "
+        f"rotation, so the keys would snap the orientation back at the "
+        f"next frame_set (hybrid pose). Run the placement BEFORE "
+        f"animate(); or pass override='keyframe' (REBASES quaternion-mode "
+        f"active-action keys by the placement delta rotation — euler-mode "
+        f"keys are refused even then: switch rotation_mode to QUATERNION "
+        f"or bake). override='ignore' is NOT honored for rotation writes.")
 
 
 def _rebase_location_keys(obj, delta):
@@ -762,6 +892,88 @@ def _rebase_location_keys(obj, delta):
         bpy.context.scene.frame_set(f)  # re-evaluate at the same frame
         bpy.context.view_layer.update()
     return n, [f"location[{'xyz'[i]}]" for i in sorted(touched)]
+
+
+def _world_rotation_delta_to_basis(obj, q_world_offset):
+    """Convert a WORLD-frame rotation delta into the object's BASIS space
+    (the F2B-8/F5A-3 twin for rotation): matrix_world = A @ matrix_basis
+    with A = parent.matrix_world @ matrix_parent_inverse, so a world
+    pre-multiply Q corresponds to a basis pre-multiply of A^-1 Q A. The
+    rotation fcurves are basis-space — feeding them the raw world delta
+    would misrotate every keyed child of a rotated parent. Parentless
+    objects conjugate through identity (q_basis == q_world, the C1
+    design's 'world-frame' law)."""
+    if obj.parent is None:
+        return q_world_offset.copy()
+    a = (obj.parent.matrix_world @
+         obj.matrix_parent_inverse).to_quaternion()
+    return a.inverted() @ q_world_offset @ a
+
+
+def _rebase_rotation_keys(obj, q_basis_offset):
+    """C1: pre-multiply EVERY rotation_quaternion keyframe of the active
+    action by the BASIS-space placement delta rotation — the quaternion
+    twin of _rebase_location_keys (K4): the naive 'key the current
+    frame' override leaves LATER keys holding the pre-placement
+    orientation. q_new = q_offset @ q_key at each key (the C1 design's
+    world-frame law for parentless objects; the caller passes the
+    conjugated basis delta for parented ones). F2B-9: iter_all_fcurves
+    is safe here despite the WRITES — it never calls .new()/.find(), it
+    only chains EXISTING per-slot fcurve collections (5.x slotted-action
+    law). Refuses partial (1-3 channel) quaternion curves and
+    non-uniform keyframe times — converting those is invasive (bake
+    first). Returns (n_keypoints_rebased, channels_touched)."""
+    ad = getattr(obj, "animation_data", None)
+    if ad is None or ad.action is None:
+        return 0, []
+    fcs = {}
+    for fc in iter_all_fcurves(ad.action):
+        if (fc.data_path == "rotation_quaternion"
+                and fc.array_index in (0, 1, 2, 3)):
+            fcs[fc.array_index] = fc
+    if not fcs:
+        # no live quaternion curves (e.g. dead euler keys under
+        # QUATERNION rotation_mode) — nothing to rebase
+        return 0, []
+    if len(fcs) != 4:
+        missing = sorted(set(range(4)) - set(fcs))
+        raise RuntimeError(
+            f"'{obj.name}' has PARTIAL rotation_quaternion fcurves "
+            f"(missing components {missing}) — pre-multiplying would "
+            f"corrupt the curve. Bake the rotation animation first.")
+    times = None
+    for i in range(4):
+        ts = [kp.co.x for kp in fcs[i].keyframe_points]
+        if times is None:
+            times = ts
+        elif len(ts) != len(times) or any(
+                abs(a - b) > 1e-6 for a, b in zip(ts, times)):
+            raise RuntimeError(
+                f"'{obj.name}' has rotation_quaternion fcurves with "
+                f"non-uniform keyframe times — per-key pre-multiplication "
+                f"needs all 4 components keyed together. Bake the "
+                f"rotation animation first.")
+    q_off = q_basis_offset.normalized()
+    for j, _t in enumerate(times):
+        # array_index order IS wxyz (0=w ... 3=z) for both the fcurves
+        # and mathutils.Quaternion's index access
+        q_key = Quaternion((fcs[0].keyframe_points[j].co.y,
+                            fcs[1].keyframe_points[j].co.y,
+                            fcs[2].keyframe_points[j].co.y,
+                            fcs[3].keyframe_points[j].co.y))
+        q_new = (q_off @ q_key).normalized()
+        for i in range(4):
+            fcs[i].keyframe_points[j].co.y = q_new[i]
+    for i in range(4):
+        try:
+            fcs[i].update()
+        except AttributeError:
+            pass
+    f = bpy.context.scene.frame_current
+    bpy.context.scene.frame_set(f)  # re-evaluate at the same frame
+    bpy.context.view_layer.update()
+    return 4 * len(times), [f"rotation_quaternion[{'wxyz'[i]}"
+                            for i in range(4)]
 
 
 def _world_delta_to_local(obj, delta_world):
@@ -951,9 +1163,13 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
     multi-level support (butt on cushion + feet on floor), the report sets
     multi_level=true with the height distribution — use seat_at for rigs.
 
-    mode: 'rest' (max support under footprint — stand ON), 'sink' (min —
-    wells/insets; audit will report intended penetration), 'p25'/'p50'/'p75'.
     footprint: 'bottom' (downward-facing verts, w/ fallback), 'all', 'grid'.
+    mode tokens are validated (C10 — a typo used to surface as a raw
+    dict-lookup KeyError); align_to_surface engages on grid footprints
+    too (C9) and the report always carries explicit aligned_to_surface /
+    align_skip_reason fields. Rotation-writing runs (align) refuse
+    rotation-keyed objects unless override='keyframe' can rebase the
+    quaternion keys (C1).
     inset: shrink footprint to points >= inset meters inside its own bbox
     (seat lips/edges).
     keep_xy: True (default) — solves Z ONLY, object stays at its current
@@ -982,6 +1198,15 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
             f"footprint value — pass the numeric inset=<meters> param "
             f"instead (it shrinks the footprint inside its own bbox for "
             f"seat lips).")
+    if mode not in ('rest', 'sink', 'p25', 'p50', 'p75'):
+        # C10: the mode token used to surface as a raw dict-lookup
+        # KeyError at the solve step (unhelpful shape, F2B-16 pattern).
+        raise RuntimeError(
+            f"place_on: unknown mode {mode!r} — valid values: 'rest' "
+            f"(max support height under the footprint, default), 'sink' "
+            f"(min — wells/insets; the audit will report the intended "
+            f"penetration), 'p25', 'p50', 'p75' (support-height "
+            f"percentiles).")
     if keep_xy is not True:
         raise RuntimeError(
             "place_on: keep_xy=False is refused (F2B-4: accepted-but-"
@@ -993,7 +1218,8 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
               "supports": [s.name for s in supports],
               "clearance_m": clearance, "footprint": footprint,
               "mode": mode, "keep_xy": keep_xy,
-              "contact_band_mm": contact_band_mm}
+              "contact_band_mm": contact_band_mm,
+              "aligned_to_surface": False}
     _skinned_guard(obj, force)
     for s in supports:
         _skinned_guard(s, force)
@@ -1001,6 +1227,13 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
     anim = _guard_anim(obj, override)
     if anim:
         report["anim_override"] = anim
+    # C1: align_to_surface MAY write rotation — a rotation-keyed object
+    # is refused up front (or the quaternion keys are marked rebaseable
+    # under override='keyframe')
+    rot_chans = (_guard_rotation_anim(obj, override, "place_on")
+                 if align_to_surface else None)
+    if rot_chans:
+        report["rotation_anim_override"] = rot_chans
     bpy.context.view_layer.update()
     clear_bvh_cache()
 
@@ -1023,11 +1256,15 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
                     fy = mn.y + (mx.y - mn.y) * (j + 0.5) / n
                     pts_xy.append((fx, fy))
             z_ref = mn.z
-            footprint_pts = []
             heights, detail, hit_normals = support_heights(supports, pts_xy)
             if any(h is not None for h in heights) or n >= 192:
                 break
             n *= 4
+        # C9: grid footprints fill footprint_pts exactly like the vert
+        # paths do — the empty list used to make align_to_surface
+        # silently no-op on grid (and the refine pass never ran) because
+        # both gate on footprint_pts truthiness.
+        footprint_pts = [Vector((x, y, z_ref)) for x, y in pts_xy]
         if n != grid_n:
             report["footprint_grid_refined"] = (
                 f"{grid_n}x{grid_n} found no support — refined to "
@@ -1090,6 +1327,10 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
             acc += n
         if acc.length > 1e-9:
             mean_n = acc.normalized()
+    if not align_to_surface:
+        # C9: explicit field — a non-aligned solve can never pass silently
+        report["align_skip_reason"] = (
+            "align_to_surface=False — not requested")
     if mean_n is not None:
         slope = round(math.degrees(math.acos(
             min(1.0, max(-1.0, mean_n.z)))), 2)
@@ -1114,12 +1355,26 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
             mn, mx = _aabb(obj)
             pivot = Vector(((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mn.z))
             R = q.to_matrix().to_4x4()
+            q_world_before = obj.matrix_world.to_quaternion().copy()
             obj.matrix_world = (Matrix.Translation(pivot) @ R @
                                 Matrix.Translation(-pivot) @
                                 obj.matrix_world)
             report["aligned_to_surface"] = True
             report["aligned_rotation_q"] = [round(v, 5) for v in q]
             bpy.context.view_layer.update()
+            if rot_chans:
+                # C1: rebase the quaternion keys by the ACTUAL world
+                # rotation delta the align just applied (conjugated into
+                # basis space for parented movers) — otherwise the next
+                # frame_set restores the pre-align orientation (hybrid
+                # pose).
+                q_offset_world = (obj.matrix_world.to_quaternion() @
+                                  q_world_before.inverted())
+                nrot, rchans = _rebase_rotation_keys(
+                    obj,
+                    _world_rotation_delta_to_basis(obj, q_offset_world))
+                report["rotation_keyframes_rebased"] = nrot
+                report["rebased_rotation_channels"] = rchans
             clear_bvh_cache()
             # re-measure footprint in the new orientation
             pts = surface_samples(obj, mode=('bottom' if footprint == 'bottom'
@@ -1137,6 +1392,21 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
                 raise RuntimeError(
                     f"place_on: no support surface found after align "
                     f"(object '{obj.name}').")
+        elif align_to_surface and slope <= 0.5:
+            # C9: requested but nothing to do — say so explicitly
+            report["align_skip_reason"] = (
+                f"support slope {slope:.2f} deg is below the 0.5 deg "
+                f"align threshold — already flat")
+        elif align_to_surface:
+            # defensive: the truthiness gate above no longer trips for
+            # grid (footprint_pts is always filled) but stay explicit
+            report["align_skip_reason"] = (
+                "empty footprint points — nothing to align")
+    elif align_to_surface:
+        # C9: no normals under the footprint -> align is impossible;
+        # record it instead of leaving the field silently False
+        report["align_skip_reason"] = (
+            "no support normals under the footprint — cannot align")
     dist_report = {"n": len(good), "n_void": len(heights) - len(good),
                    "min_m": round(min(good), 4), "max_m": round(max(good), 4),
                    "p25_m": round(_percentile(good, 25), 4),
@@ -1231,7 +1501,8 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
 
 
 def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
-            override=None, seat_mesh=None, contact_band_mm=0.1, output=None):
+            override=None, seat_mesh=None, contact_band_mm=0.1, output=None,
+            force=False):
     """CAD-mate style seating: place obj relative to a named anchor empty
     (kit convention e.g. 'Jeep.SeatL'; figure faces the empty's +Y, sits
     along -Y, empty +Z is up).
@@ -1244,6 +1515,12 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
     echoed the requested token back).
     offset: (dx, dy, dz) interpreted in the EMPTY's local space.
     seat_mesh: optional mesh object to post-audit against (e.g. cushion).
+    force: passthrough to _skinned_guard (C7 — seat_at was the only
+    solver without it); force=True labels the post-contact audit
+    'unreliable-skinned' instead of refusing.
+    align=True writes ROTATION — rotation-keyed objects are refused
+    unless override='keyframe' can rebase quaternion-mode keys (C1;
+    euler-mode keys are refused even then).
     Returns placement report with post_contact when seat_mesh given.
 
     F2B-8: all writes are composed in WORLD space via matrix_world (the
@@ -1258,10 +1535,21 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
         raise RuntimeError(
             f"seat_at: unknown reference '{reference}' — valid tokens: "
             f"'bottom' (bbox bottom-center), 'origin', 'centroid'")
+    # C7: seat_at was the only solver with no _skinned_guard/force
+    # (place_on:997, move_to, pair_contact all guard)
+    _skinned_guard(obj, force)
+    if seat_mesh is not None:
+        _skinned_guard(seat_mesh, force)
     _origin_centroid_warn(obj, report)
     anim = _guard_anim(obj, override)
     if anim:
         report["anim_override"] = anim
+    # C1: align=True writes ROTATION — refuse rotation-keyed objects up
+    # front (or mark the quaternion keys rebaseable under keyframe)
+    rot_chans = (_guard_rotation_anim(obj, override, "seat_at")
+                 if align else None)
+    if rot_chans:
+        report["rotation_anim_override"] = rot_chans
     bpy.context.view_layer.update()
     clear_bvh_cache()
 
@@ -1270,6 +1558,7 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
     report["pre_bbox_max_m"] = [round(v, 4) for v in pre_bbox[1]]
 
     _basis_before = obj.matrix_basis.translation.copy()
+    q_world_before = obj.matrix_world.to_quaternion().copy()
     seat_mw = seat_empty.matrix_world.copy()
     target_loc = seat_mw.translation.copy()
     if align:
@@ -1293,6 +1582,15 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
         obj.matrix_world = Matrix.Translation(
             obj.matrix_world.translation) @ L4
         bpy.context.view_layer.update()
+    q_delta_basis = None
+    if align and rot_chans:
+        # C1: the align write just changed the world rotation by
+        # q_offset = q_after @ q_before^-1; the keys must be rebased by
+        # the same delta (conjugated into basis space for parented
+        # movers) or the next frame_set restores the old orientation.
+        q_offset_world = (obj.matrix_world.to_quaternion() @
+                          q_world_before.inverted())
+        q_delta_basis = _world_rotation_delta_to_basis(obj, q_offset_world)
     if offset:
         target_loc = seat_mw @ Vector(offset)
     if reference == 'bottom':
@@ -1342,12 +1640,39 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
             obj.keyframe_insert(data_path="location",
                                 frame=bpy.context.scene.frame_current)
             report["keyframe_inserted"] = True
+        if q_delta_basis is not None:
+            # C1: quaternion twin of the location rebase (rotation keys
+            # can only exist when the action does — the guard above
+            # refused NLA/driver rotation channels)
+            nrot, rchans = _rebase_rotation_keys(obj, q_delta_basis)
+            report["rotation_keyframes_rebased"] = nrot
+            report["rebased_rotation_channels"] = rchans
     bpy.context.view_layer.update()
     clear_bvh_cache()
     if seat_mesh is not None:
-        report["post_contact"] = pair_contact(obj, seat_mesh,
-                                              contact_band_mm=contact_band_mm)
-        report["ok"] = report["post_contact"].get("severity") != "fail"
+        try:
+            report["post_contact"] = pair_contact(
+                obj, seat_mesh, contact_band_mm=contact_band_mm,
+                force=force)
+            report["ok"] = report["post_contact"].get("severity") != "fail"
+        except Exception as e:  # noqa: BLE001 — C7: wrap, never hide
+            # C7: the move already committed — the raised error must
+            # carry the applied placement fields so the consumer can see
+            # what state the scene is in (the partial report is also
+            # persisted to `output` when one was requested).
+            _maybe_write(report, output)
+            raise RuntimeError(
+                f"seat_at: post-contact audit failed AFTER the placement "
+                f"committed — the scene now holds the seated pose. "
+                f"anchor='{report['seat']}' "
+                f"reference='{report['reference']}' "
+                f"applied_translation_m="
+                f"{report.get('applied_translation_m')} "
+                f"post_bbox_min_m={report.get('post_bbox_min_m')} "
+                f"post_bbox_max_m={report.get('post_bbox_max_m')} "
+                f"(partial report: "
+                f"{output if output else 'no output path requested'}) — "
+                f"original error: {e}") from e
     report["timings_ms"] = round((time.time() - t0) * 1000, 1)
     return _maybe_write(report, output)
 

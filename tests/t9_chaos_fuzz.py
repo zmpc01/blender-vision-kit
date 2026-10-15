@@ -47,6 +47,10 @@ import validate_scene as VS
 OUT = None
 RESULTS = {"fixture": "t9_chaos_fuzz", "rounds": [], "seat_checks": []}
 RNG = random.Random(5202)  # fixed seed: reproducible chaos
+# The audit pair `state` vocabulary (placement_lib) — E7 rounds assert
+# MEMBERSHIP in these enums, never the human `verdict` string (see
+# _run_round's warning below).
+_STATE_VOCAB = {"PENETRATING", "TOUCHING", "NESTED", "CLEAR"}
 
 
 def _note(kind, tag, ok, detail):
@@ -235,7 +239,15 @@ def main():
         PL.snap_z(mug, table.matrix_world.translation.z + 0.025 + 0.07,
                   reference="origin")
     _run_round("R1_tilt_small", mug, table, t1,
-               lambda pairs: (True, "no-crash round"))
+               # E7 (docstring row R1: 'TOUCHING (corner) or PENETRATING'):
+               # the mug is snapped to the tabletop, so the audit pad
+               # guarantees a pair and the state must be one of the two
+               # promised enums — a crash-row (ERROR) or CLEAR fails here.
+               lambda pairs: (
+                   bool(pairs) and all(p.get("state") in
+                                       ("TOUCHING", "PENETRATING")
+                                       for p in pairs),
+                   f"{[p.get('state') for p in pairs]}"))
 
     # R2 tilt-steep: 25deg roll, dropped near table edge (likely falls off
     # support bbox — audit may or may not see a pair; no crash required)
@@ -245,7 +257,15 @@ def main():
                                     math.radians(45)), 'XYZ')
         bpy.context.view_layer.update()
     _run_round("R2_tilt_steep", mug, table, t2,
-               lambda pairs: (True, f"{len(pairs)} pairs"))
+               # E7 (docstring row R2: 'any contact verdict — must not
+               # crash'): the mug is at the table edge and the inline
+               # comment allows 'may or may not see a pair', so the
+               # promise encoded here is vocabulary validity: whatever
+               # pairs come back must carry exact audit states, never
+               # ERROR/None/garbage.
+               lambda pairs: (
+                   all(p.get("state") in _STATE_VOCAB for p in pairs),
+                   f"{[p.get('state') for p in pairs]}"))
 
     # R3 sink: push the crate 40mm INTO the stool top -> PENETRATING
     def t3():
@@ -270,7 +290,14 @@ def main():
         crate.location.x += 0.18
         bpy.context.view_layer.update()
     _run_round("R5_offset", crate, stool, t5,
-               lambda pairs: (True, f"{[p.get('state') for p in pairs]}"))
+               # E7 (docstring row R5: 'TOUCHING or CLEAR — must not
+               # crash'): the crate bottom is seated exactly on the
+               # stool top (0.675 - 0.15 == 0.525), half off in XY.
+               lambda pairs: (
+                   bool(pairs) and all(p.get("state") in
+                                       ("TOUCHING", "CLEAR")
+                                       for p in pairs),
+                   f"{[p.get('state') for p in pairs]}"))
 
     # R6 yaw-90 the MUG on the table (round footprint: contact unchanged)
     def t6():
@@ -280,7 +307,14 @@ def main():
         mug.rotation_euler = Euler((0, 0, math.radians(90)), 'XYZ')
         bpy.context.view_layer.update()
     _run_round("R6_yaw90", mug, table, t6,
-               lambda pairs: (True, f"{[p.get('state') for p in pairs]}"))
+               # E7 (docstring row R6: 'TOUCHING/CLEAR — must not
+               # crash'): the mug is back at home ON the table — a
+               # round footprint means yaw must not change contact.
+               lambda pairs: (
+                   bool(pairs) and all(p.get("state") in
+                                       ("TOUCHING", "CLEAR")
+                                       for p in pairs),
+                   f"{[p.get('state') for p in pairs]}"))
 
     # R7 teleport the crate 5m away -> in NO pair (audit pad law)
     def t7():

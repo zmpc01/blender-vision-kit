@@ -63,8 +63,11 @@ Usage:
     # List all supported mutation ops:
     blrun.sh --background --python scripts/apply_patch.py -- --list
 
-    # CLI shortcut: set camera DoF without writing a patch JSON (applies to
-    # the current scene, or the one loaded via --patch/--patch-json):
+    # CLI shortcut: set camera DoF without writing mutations — the patch
+    # MUST still carry load_blend or scene (the F2B-22 guard below refuses
+    # the shortcut against a bare patch: "the current scene" there means
+    # the factory startup scene, whose default camera is NOT a usable
+    # target):
     blrun.sh --background --python scripts/apply_patch.py -- \
         --patch-json '{"load_blend": "smoke/smoke.blend"}' \
         --camera Camera --focus-distance 2.5 --aperture-fstop 2.8 \
@@ -177,12 +180,33 @@ def _apply_set_material_color(obj, params):
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
     if bsdf is None:
         raise RuntimeError(f"No Principled BSDF in {mat.name}")
-    color = _require(params, "color", "set_material_color")
-    if len(color) == 3:
-        color = (*color, 1.0)
-    bsdf.inputs["Base Color"].default_value = color
+    color = _require(params, "color", "set_material_color",
+                     expected_type=list)
+    # s18 B11: 'color' had NO shape/type/range validation — a bare string
+    # ("red") per-char-iterated into the BSDF channels, and out-of-range
+    # components shipped silently (Base Color kept the raw value; Blender
+    # clamps only the viewport diffuse_color). Siblings roughness/metallic
+    # clamp to [0,1]; the in-repo glow law (tdawn_actors F-TD11) keeps
+    # Base Color in range and carries HDR via Emission Strength — so a
+    # clamp loses nothing legitimate. Non-finite is refused by
+    # _require/_finite_check above (NaN would survive a clamp).
+    if len(color) not in (3, 4) or any(
+            isinstance(c, bool) or not isinstance(c, (int, float))
+            for c in color):
+        raise RuntimeError(
+            f"op 'set_material_color' key 'color' must be [r,g,b] or "
+            f"[r,g,b,a] numbers (got {color!r})")
+    rgba = [max(0.0, min(1.0, float(c))) for c in color]
+    if rgba != [float(c) for c in color]:
+        print(f"[apply_patch] set_material_color: '{obj.name}' components "
+              f"outside [0,1] clamped to {[round(c, 3) for c in rgba]} "
+              f"(Base Color is not an HDR channel — glow goes through "
+              f"Emission Strength)")
+    if len(rgba) == 3:
+        rgba = (*rgba, 1.0)
+    bsdf.inputs["Base Color"].default_value = rgba
     # Also set diffuse_color — Workbench engine reads THIS, not BSDF (gotcha #56)
-    mat.diffuse_color = color
+    mat.diffuse_color = rgba
 
 
 def _apply_set_material_roughness(obj, params):
@@ -218,11 +242,25 @@ def _apply_delete_object(obj, params):
 
 
 def _apply_duplicate_object(obj, params):
+    # s18 B2: kit docstring law (see header: add ops REFUSE if the name
+    # exists) — duplicate_object used to rename SILENTLY to '.001' when
+    # new_id was taken (a lying name poisons every later op targeting
+    # new_id) and a missing/non-string new_id died as a raw KeyError.
+    new_id = params.get("new_id")
+    if not new_id or not isinstance(new_id, str):
+        raise RuntimeError(
+            "op 'duplicate_object' requires a non-empty string 'new_id' "
+            f"(the duplicate's name), got {new_id!r}")
+    if bpy.data.objects.get(new_id) is not None:
+        raise RuntimeError(
+            f"duplicate_object refuses: '{new_id}' already exists "
+            f"(Blender would silently rename the copy to '{new_id}.001' "
+            f"— pick another name, or delete/rename the existing object)")
     new_obj = obj.copy()
     if obj.data:
         new_obj.data = obj.data.copy()
     bpy.context.collection.objects.link(new_obj)
-    new_obj.name = params["new_id"]
+    new_obj.name = new_id
     if "location" in params:
         _finite_check("duplicate_object", "location", params["location"])
         new_obj.location = tuple(params["location"])
@@ -331,12 +369,35 @@ def _apply_render_viewport(obj, params):
     else:
         target = _compute_scene_center()
     lens = params.get("lens", 50)
+    # s18 B4: a NaN/garbage lens silently rendered a poisoned frame —
+    # validate like the sibling target guard below (F2B-26 style).
+    if (isinstance(lens, bool) or not isinstance(lens, (int, float))
+            or not math.isfinite(float(lens)) or float(lens) <= 0):
+        raise RuntimeError(
+            f"op 'render_viewport' key 'lens' must be a positive, finite "
+            f"number in mm (got {lens!r})")
+    lens = float(lens)
     # F2B-1 (P0): PARAM_DOCS documented `custom_loc` while the handler read
     # only `custom_location` — the documented spelling was SILENTLY DROPPED
     # (allowed-keys warning can't catch it: custom_loc is not a typo of
     # anything), so angle='custom' demanded a nonexistent CLI flag instead.
     # Accept both spellings; the docs keep canonical custom_location.
     custom_loc = params.get("custom_location", params.get("custom_loc"))
+    if custom_loc is not None:
+        # s18 B4: match the target guard above — angle='custom' with a
+        # NaN/malformed custom_location silently rendered garbage.
+        if (not isinstance(custom_loc, (list, tuple))
+                or len(custom_loc) != 3
+                or any(isinstance(c, bool) or not isinstance(c, (int, float))
+                       for c in custom_loc)):
+            raise RuntimeError(
+                f"op 'render_viewport' key 'custom_location' must be "
+                f"[x,y,z] numbers (got {custom_loc!r})")
+        if not all(math.isfinite(float(c)) for c in custom_loc):
+            raise RuntimeError(
+                f"op 'render_viewport' key 'custom_location' contains "
+                f"NaN/Infinity — scenes do not")
+        custom_loc = tuple(float(c) for c in custom_loc)
     render_angle(angle, out, engine=engine, samples=samples,
                  width=width, height=height, target=target, lens=lens,
                  custom_location=custom_loc)
@@ -408,9 +469,20 @@ _PHYSICS_FAILURES = []
 
 
 def _apply_move_to(obj, params):
+    # s18 B5: placement_lib.move_to falls through ANY unknown reference
+    # token to bottom-center while the report echoes the requested token
+    # back — a lying report on a silently different placement. seat_at and
+    # snap_z validate their tokens (F2B-6/F2B-12); mirror that here at the
+    # handler layer (Wave-C owns the placement_lib-side validation).
+    reference = params.get("reference", "bottom-center")
+    if reference not in ("bottom-center", "centroid", "origin"):
+        raise RuntimeError(
+            f"op 'move_to': unknown reference {reference!r} — valid "
+            f"tokens: 'bottom-center' (bbox bottom-xy-center), 'centroid', "
+            f"'origin'")
     rep = _PL.move_to(obj, _require(params, "target", "move_to",
                                      expected_type=list, expected_len=3),
-                      reference=params.get("reference", "bottom-center"),
+                      reference=reference,
                       override=params.get("override"),
                       output=params.get("output"))
     _LAST_REPORTS["move_to"] = rep
@@ -433,13 +505,41 @@ def _apply_place_on(obj, params):
                            "one support object (the TOPMOST surface under "
                            "the mover)")
     supports = [_get_obj(s, "place_on") for s in raw_supports]
+    # s18 B4: json.loads accepts NaN/Infinity literals — a NaN clearance or
+    # inset silently solved a garbage placement that every later audit kept
+    # 'passing'; a bare-string grid_n would per-char-iterate in the grid
+    # sampler (the F2B-26 class). Validate at the param layer.
+    clearance = params.get("clearance", 0.0)
+    inset = params.get("inset", 0.0)
+    for _key, _val in (("clearance", clearance), ("inset", inset)):
+        if isinstance(_val, bool) or not isinstance(_val, (int, float)):
+            raise RuntimeError(
+                f"op 'place_on' key '{_key}' must be a number in meters "
+                f"(got {_val!r})")
+        if not math.isfinite(float(_val)):
+            raise RuntimeError(
+                f"op 'place_on' key '{_key}' contains NaN/Infinity — a "
+                f"non-finite placement poisons the scene (audits and "
+                f"renders keep 'passing' on garbage)")
+        if float(_val) < 0.0:
+            raise RuntimeError(
+                f"op 'place_on' key '{_key}' must be >= 0 (got {_val}) — "
+                f"negative clearance embeds below the surface, negative "
+                f"inset expands the footprint past its bbox")
+    grid_n = params.get("grid_n", 12)
+    if (isinstance(grid_n, bool) or not isinstance(grid_n, (int, float))
+            or not float(grid_n).is_integer() or int(grid_n) < 1):
+        raise RuntimeError(
+            f"op 'place_on' key 'grid_n' must be a positive integer "
+            f"(got {grid_n!r})")
+    grid_n = int(grid_n)
     rep = _PL.place_on(
         obj, *supports,
-        clearance=params.get("clearance", 0.0),
+        clearance=clearance,
         footprint=params.get("footprint", "bottom"),
         mode=params.get("mode", "rest"),
-        grid_n=params.get("grid_n", 12),
-        inset=params.get("inset", 0.0),
+        grid_n=grid_n,
+        inset=inset,
         keep_xy=params.get("keep_xy", True),
         override=params.get("override"),
         contact_band_mm=params.get("contact_band_mm", 0.1),
@@ -467,10 +567,22 @@ def _apply_seat_at(obj, params):
         seat_mesh = _get_obj(seat_mesh_name, "seat_at")
     else:
         seat_mesh = None
+    offset = params.get("offset")
+    if offset is not None:
+        # s18 B4: json.loads accepts NaN/Infinity — a NaN offset silently
+        # seated the figure in a poisoned pose (and a bare string would
+        # per-char-iterate inside Vector()). Validate shape + finiteness.
+        if (not isinstance(offset, (list, tuple)) or len(offset) != 3
+                or any(isinstance(c, bool) or not isinstance(c, (int, float))
+                       for c in offset)):
+            raise RuntimeError(
+                f"op 'seat_at' key 'offset' must be [dx,dy,dz] numbers in "
+                f"the empty's local space (got {offset!r})")
+        _finite_check("seat_at", "offset", offset)
     rep = _PL.seat_at(
         obj, seat,
         reference=params.get("reference", "bottom"),
-        offset=params.get("offset"),
+        offset=offset,
         align=params.get("align", True),
         override=params.get("override"),
         seat_mesh=seat_mesh,
@@ -528,12 +640,34 @@ def _apply_audit(obj, params):
                            "object names (a bare string would iterate "
                            "per-character)")
     exclude = tuple(raw_exclude)
+    # s18 B4: a NaN contact band makes every '>' comparison False — the
+    # fail_on_penetration gate false-PASSES a penetrating scene (and a
+    # non-number band dies as a raw TypeError deep in the comparison).
+    # Validate finite and >= 0 before the audit runs.
+    band = params.get("contact_band_mm", 0.1)
+    if (isinstance(band, bool) or not isinstance(band, (int, float))
+            or not math.isfinite(float(band))):
+        raise RuntimeError(
+            f"op 'audit' key 'contact_band_mm' must be a finite number in "
+            f"mm (got {band!r}) — NaN/Infinity makes every penetration "
+            f"comparison False and false-PASSES the gate")
+    if float(band) < 0.0:
+        raise RuntimeError(
+            f"op 'audit' key 'contact_band_mm' must be >= 0 (got {band})")
+    band = float(band)
+    # s18 B6: a typo'd scope id used to run the scene-wide audit, then
+    # scope it down to 0 pairs — fail_on_penetration VACUOUSLY PASSED.
+    # Refuse unknown ids before the (expensive) audit runs. The 'pairs'
+    # names are already resolved loudly via _get_obj above (F2B-15).
+    scope_id = params.get("id")
+    if scope_id and bpy.data.objects.get(scope_id) is None:
+        raise RuntimeError(
+            f"op 'audit': scope id '{scope_id}' not found in scene")
     rep = _PL.audit_scene(pairs=pairs, exclude=exclude,
                           sample=params.get("sample", "verts"),
-                          contact_band_mm=params.get("contact_band_mm", 0.1),
+                          contact_band_mm=band,
                           clearance_pad_mm=params.get("clearance_pad_mm", 100.0),
                           force=params.get("force", False))
-    scope_id = params.get("id")
     if scope_id:
         # wave-1 friction #5: the id param was accepted but silently
         # non-scoping. Scope the VERDICT to pairs involving this object
@@ -558,8 +692,7 @@ def _apply_audit(obj, params):
         # match the unscoped path's rule (placement_lib.audit_scene): a
         # penetration counts only beyond the contact band — sub-band
         # micro-penetrations are advisory there and must stay advisory
-        # here (review 5-a P2-7).
-        band = params.get("contact_band_mm", 0.1)
+        # here (review 5-a P2-7). `band` is the s18-B4-validated local.
         rep["failed"] = any(
             p["state"] == "PENETRATING" and
             (p.get("penetration_mm") is None or
@@ -670,9 +803,32 @@ def _apply_physics_place(obj, params):
 def _apply_physics_oracle(obj, params):
     import bpy as _bpy
     target = _get_obj(params["id"], "physics_oracle")
+    # s18 B4: json.loads accepts NaN/Infinity — a NaN xyz target teleports
+    # the mover into a poisoned pose the oracle then 'verifies' (and a
+    # NaN target_z sinks it below the world). Validate at the param layer,
+    # mirroring render_viewport's target guard.
+    xyz = params.get("target")
+    if xyz is not None:
+        if (not isinstance(xyz, (list, tuple)) or len(xyz) != 3
+                or any(isinstance(c, bool) or not isinstance(c, (int, float))
+                       for c in xyz)):
+            raise RuntimeError(
+                f"op 'physics_oracle' key 'target' must be [x,y,z] "
+                f"numbers (got {xyz!r})")
+        if not all(math.isfinite(float(c)) for c in xyz):
+            raise RuntimeError(
+                f"op 'physics_oracle' key 'target' contains NaN/Infinity "
+                f"— scenes do not")
+    target_z = params.get("target_z")
+    if target_z is not None:
+        if isinstance(target_z, bool) or not isinstance(target_z, (int, float)) \
+                or not math.isfinite(float(target_z)):
+            raise RuntimeError(
+                f"op 'physics_oracle' key 'target_z' must be a finite "
+                f"number in meters (got {target_z!r})")
     rep = _PP.oracle(target,
-                     target_z=params.get("target_z"),
-                     target=params.get("target"),
+                     target_z=target_z,
+                     target=xyz,
                      frames=params.get("frames", 45),
                      pad_mm=params.get("pad_mm", 150.0),
                      tol_mm=params.get("tol_mm", 1.0),
@@ -710,8 +866,21 @@ def _apply_physics_gate(obj, params):
 def _apply_seam_views(obj, params):
     a = _get_obj(params["a"], "seam_views")
     b = _get_obj(params["b"], "seam_views")
+    # s18 B11: a bare-string res ('640x360') became per-character atoms
+    # downstream and a wrong-length/wrong-type res died in render internals
+    # (the F2B-26 class). Require [width, height] positive integers.
+    raw_res = params.get("res", (640, 360))
+    if (isinstance(raw_res, str) or not isinstance(raw_res, (list, tuple))
+            or len(raw_res) != 2
+            or any(isinstance(c, bool) or not isinstance(c, (int, float))
+                   or not float(c).is_integer() or int(c) < 1
+                   for c in raw_res)):
+        raise RuntimeError(
+            "op 'seam_views' key 'res' must be [width, height] positive "
+            f"integers (got {raw_res!r} — a bare string would become "
+            f"per-character atoms)")
     rep = _PL.seam_views(a, b, out_dir=params["out_dir"],
-                         res=tuple(params.get("res", (640, 360))),
+                         res=(int(raw_res[0]), int(raw_res[1])),
                          engine=params.get("engine", "workbench"),
                          contact_band_mm=params.get("contact_band_mm", 0.1),
                          fill_frac=params.get("fill_frac", 0.6))
@@ -720,7 +889,19 @@ def _apply_seam_views(obj, params):
 
 
 def _apply_heat_bake(obj, params):
-    others = [_get_obj(n, "heat_bake") for n in params["others"]]
+    # s18 B11: a bare string iterated per-character — each char became a
+    # _get_obj lookup ('C', 'u', 'b'...). Require a real list of names.
+    raw_others = params["others"]
+    if isinstance(raw_others, str) or not isinstance(raw_others, (list, tuple)):
+        raise RuntimeError(
+            "op 'heat_bake' key 'others' must be a list of object names "
+            f"(got {type(raw_others).__name__} — a bare string would "
+            f"iterate per-character)")
+    if any(not isinstance(n, str) for n in raw_others):
+        raise RuntimeError(
+            "op 'heat_bake' key 'others' entries must be object names "
+            f"(strings), got {raw_others!r}")
+    others = [_get_obj(n, "heat_bake") for n in raw_others]
     rep = _PL.heat_bake(obj, others,
                         yellow_mm=params.get("yellow_mm", 10.0),
                         green_mm=params.get("green_mm", 50.0))
@@ -1062,6 +1243,31 @@ def _apply_split_mesh(obj, params):
     if region is not None and not isinstance(region, dict):
         raise RuntimeError("split_mesh: region must be "
                            "{'min':[x,y,z], 'max':[x,y,z]}")
+    if mode not in ("dry-run", "split", "split-region"):
+        raise RuntimeError(f"split_mesh: mode must be dry-run|split|"
+                           f"split-region (region implies its own "
+                           f"dry-run), got {mode!r}")
+    if mode == "split" and region is not None:
+        raise RuntimeError("split_mesh: loose-parts split takes no "
+                           "region — use mode split-region")
+    # s18 B12: params read only in some modes were silently accepted (and
+    # ignored) in the others — new_id only feeds split-region, ack_risks
+    # only split/split-region, ack_many_parts only split. A patch carrying
+    # ack_risks on a dry-run LOOKED acknowledged and wasn't. Per-mode
+    # allowed-key set; extras refuse naming the mode and the valid params.
+    allowed = {"output"}
+    if region is not None:
+        allowed.add("region")
+    if mode == "split":
+        allowed |= {"ack_risks", "ack_many_parts"}
+    elif mode == "split-region":
+        allowed |= {"new_id", "ack_risks"}
+    extra = set(params) - allowed - {"op", "id"}
+    if extra:
+        raise RuntimeError(
+            f"split_mesh: mode {mode!r} does not take param(s) "
+            f"{sorted(extra)} — valid params for this mode: "
+            f"{sorted(allowed | {'id'})} (plus 'op')")
     if mode == "dry-run":
         if region is not None:
             rep = _SL.analyze_region(obj, region)
@@ -1069,24 +1275,17 @@ def _apply_split_mesh(obj, params):
         else:
             rep = _SL.analyze_split(obj)
     elif mode == "split":
-        if region is not None:
-            raise RuntimeError("split_mesh: loose-parts split takes no "
-                               "region — use mode split-region")
         rep = _SL.split_object(obj, ack_risks=bool(params.get("ack_risks",
                                                               False)),
                                ack_many_parts=bool(params.get(
                                    "ack_many_parts", False)))
-    elif mode == "split-region":
+    else:  # split-region (mode validity enforced above)
         if region is None:
             raise RuntimeError("split_mesh: split-region requires the "
                                "region param (run a dry-run first)")
         rep = _SL.split_region(obj, region, new_id=params.get("new_id"),
                                ack_risks=bool(params.get("ack_risks",
                                                          False)))
-    else:
-        raise RuntimeError(f"split_mesh: mode must be dry-run|split|"
-                           f"split-region (region implies its own "
-                           f"dry-run), got {mode!r}")
     out = params.get("output")
     if out:
         d = os.path.dirname(os.path.abspath(out))
@@ -1534,26 +1733,44 @@ def main():
     # Apply mutations in order
     mutations: List[dict] = patch.get("mutations", [])
     print(f"[apply_patch] applying {len(mutations)} mutation(s)...")
+
+    def _chain_abort(i, total, reason):
+        """Shared chain-abort tail for BOTH abort classes (s18 B3): a
+        plain RuntimeError AND a physics gate fail_hard SystemExit(2) —
+        the gate's sys.exit is a BaseException, so the old `except
+        Exception` never saw it and exactly the scenario --save-blend was
+        built for (abort after in-memory placement) lost the save."""
+        print(f"[apply_patch] ERROR on mutation {i+1}/{total}: {reason}",
+              file=sys.stderr)
+        if args.save_blend:
+            # round-E subject B (W1): a fail_hard gate aborts the
+            # chain AFTER in-memory placement — silently losing the
+            # work cost a full re-invocation. Ops commit atomically,
+            # so the state at the abort is consistent (possibly
+            # mid-op for the aborting one) — save it and say so.
+            os.makedirs(os.path.dirname(os.path.abspath(args.save_blend)),
+                        exist_ok=True)
+            bpy.ops.wm.save_as_mainfile(filepath=args.save_blend)
+            print(f"[apply_patch] CHAIN ABORTED at mutation {i+1}; "
+                  f"scene state SAVED to {args.save_blend} anyway "
+                  f"(the aborting op's change may be incomplete — "
+                  f"verify with physics_gate)", file=sys.stderr)
+
     for i, mut in enumerate(mutations):
         try:
             apply_mutation(mut)
         except Exception as e:
-            print(f"[apply_patch] ERROR on mutation {i+1}/{len(mutations)}: {e}",
-                  file=sys.stderr)
-            if args.save_blend:
-                # round-E subject B (W1): a fail_hard gate aborts the
-                # chain AFTER in-memory placement — silently losing the
-                # work cost a full re-invocation. Ops commit atomically,
-                # so the state at the abort is consistent (possibly
-                # mid-op for the aborting one) — save it and say so.
-                os.makedirs(os.path.dirname(os.path.abspath(args.save_blend)),
-                            exist_ok=True)
-                bpy.ops.wm.save_as_mainfile(filepath=args.save_blend)
-                print(f"[apply_patch] CHAIN ABORTED at mutation {i+1}; "
-                      f"scene state SAVED to {args.save_blend} anyway "
-                      f"(the aborting op's change may be incomplete — "
-                      f"verify with physics_gate)", file=sys.stderr)
+            _chain_abort(i, len(mutations), e)
             sys.exit(1)
+        except SystemExit as e:
+            # s18 B3: physics gate fail_hard raises SystemExit(2)
+            # (physics_place.gate) — run the SAME save+message, then
+            # re-raise so the exit code stays 2 (converting it to a
+            # different code would lie to shell pipelines that grep it).
+            _chain_abort(i, len(mutations),
+                         f"SystemExit({e.code}) — a fail-hard op aborted "
+                         f"the chain (its verdict line is above)")
+            raise
 
     # Optional save
     if args.save_blend:

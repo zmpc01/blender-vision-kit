@@ -642,6 +642,8 @@ def main():
     with open(OUT, "w") as fh:
         json.dump({"failures": FAIL, "results": results}, fh, indent=1)
     print(f"[T5] wrote {OUT}")
+    if FAIL:               # E5: the battery must read FAILURES as exit 1
+        sys.exit(1)
 
 
 main()

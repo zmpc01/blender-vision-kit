@@ -135,6 +135,18 @@ AP._apply_render_viewport(None, {"output": out, "angle": "custom",
                                  "custom_loc": [3, -3, 2]})
 check("s17_4.custom_loc_accepted", os.path.getsize(out) > 0,
       "the documented spelling must render, not silently no-op")
+# E12: getsize>0 alone cannot tell 'rendered the custom view' from
+# 'rendered something'. Neither apply_patch nor viewport_capture
+# carries the resolved camera in a report, so assert the EFFECT: the
+# custom location must produce a DIFFERENT image than a standard angle
+# of the same scene (a silently-ignored custom_loc renders identical
+# frames).
+out_ref = "/tmp/_s17_customloc_ref.png"
+AP._apply_render_viewport(None, {"output": out_ref, "angle": "front"})
+diff = float(np.abs(_pixels(out) - _pixels(out_ref)).mean())
+check("s17_4b.custom_loc_rendered_custom_view", diff > 0.005,
+      f"mean abs pixel diff custom-vs-front = {diff:.4f} "
+      "(~0 == the custom camera was ignored)")
 
 # ---------------------------------------------------------------- 5. F2B-5
 try:

@@ -208,6 +208,8 @@ def main():
         print(f"[V4]   {f_}")
     if not FAIL:
         print("[V4] ALL PASS")
+    if FAIL:               # E5: the battery must read FAILURES as exit 1
+        sys.exit(1)
 
 
 main()

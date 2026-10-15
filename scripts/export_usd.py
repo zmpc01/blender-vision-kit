@@ -32,7 +32,53 @@ import os
 import sys
 
 import bpy
-from blender_kit import filter_rna_kwargs, script_argv, clear_scene
+from blender_kit import (clear_scene, filter_rna_kwargs, iter_all_fcurves,
+                         script_argv)
+
+
+def _carrier_stage_keys(usd_path: str) -> list:
+    """D11 (session-18): top-level keys of the STAGE previz:entity payload
+    in the WRITTEN usd — the post-export proof the carrier landed.
+
+    Prefers pxr (format-agnostic: .usda/.usd/.usdc/.usdz), guarded by
+    try/import (pxr needs bpy.utils.expose_bundled_modules() on 4.x+ and
+    may be absent entirely); falls back to
+    export_previz_package._usd_customdata_keys (the .usda text scanner —
+    lives there, not in previz_usd_hook) when pxr is unavailable.
+    Returns [] when neither can read the payload — the caller fails
+    closed on empty.
+    """
+    try:
+        try:
+            bpy.utils.expose_bundled_modules()
+        except Exception:
+            pass  # older Blender: pxr is already importable
+        from pxr import Usd
+        stage = Usd.Stage.Open(usd_path)
+        if stage is not None:
+            root = stage.GetPrimAtPath("/root")
+            if not root or not root.IsValid():
+                dp = stage.GetDefaultPrim()
+                root = dp if (dp and dp.IsValid()) else None
+            if root is not None:
+                data = root.GetCustomData() or {}
+                ent = data.get("previz:entity")
+                if ent is None and isinstance(data.get("previz"), dict):
+                    ent = data["previz"].get("entity")
+                if isinstance(ent, dict) and ent:
+                    return sorted(str(k) for k in ent.keys())
+    except Exception as e:
+        print(f"[export_usd] NOTE: pxr carrier read unavailable ({e})")
+    # Text-scan fallback (.usda ASCII only).
+    try:
+        sys_path = os.path.dirname(os.path.abspath(__file__))
+        if sys_path not in sys.path:
+            sys.path.insert(0, sys_path)
+        from export_previz_package import _usd_customdata_keys
+        return _usd_customdata_keys(usd_path)
+    except Exception as e:
+        print(f"[export_usd] NOTE: text carrier read unavailable ({e})")
+        return []
 
 
 def main():
@@ -92,7 +138,38 @@ def main():
             try:
                 mod.animate(ctx, start_frame=args.start, n_frames=args.frames)
             except Exception as e:
-                print(f"[export_usd] NOTE: animate() failed (non-fatal): {e}")
+                if args.export_animation:
+                    # D2 (session-18): an "animated" export whose animate()
+                    # died used to ship a STATIC USD with exit 0 — the NOTE
+                    # swallowed the failure and the exporter still ran with
+                    # export_animation=True (the exact session-21 class the
+                    # comment above documents). Fail closed when the file
+                    # is labelled animated.
+                    raise RuntimeError(
+                        "[export_usd] FAIL: animate() raised on an "
+                        f"--export-animation run ({e}) — refusing to ship "
+                        "a static file labelled animated") from e
+                print(f"[export_usd] NOTE: animate() failed (non-fatal "
+                      f"for a static export): {e}")
+
+    if args.export_animation:
+        # D2 belt-and-braces: a clean animate() return is not proof of
+        # keys. Verify at least one action in the file actually carries
+        # fcurves before the exporter is allowed to label the file
+        # animated (covers the --load-blend path too).
+        n_animated = 0
+        for act in bpy.data.actions:
+            try:
+                if any(True for _ in iter_all_fcurves(act)):
+                    n_animated += 1
+            except Exception:
+                continue
+        if n_animated == 0:
+            raise RuntimeError(
+                "[export_usd] FAIL: --export-animation is set but NO "
+                "action in the file carries fcurves — refusing to export "
+                "a static scene as animated (D2: the old NOTE-swallow "
+                "shipped static USDs with exit 0)")
 
     # Set the frame to start (or frame 1) for the static export
     scene = bpy.context.scene
@@ -184,6 +261,21 @@ def main():
         size = os.path.getsize(out_path)
         print(f"[export_usd] USD exported: {out_path} "
               f"({size} bytes, {size/1024:.1f} KB)")
+
+        # D11 (session-18): register() swallows a failed hook install and
+        # on_export is WARN-and-continue — a carrier-less USD used to ship
+        # exit 0. Verify the stage payload actually landed in the WRITTEN
+        # file (the decoder is the oracle) before declaring success.
+        carrier_keys = _carrier_stage_keys(out_path)
+        if not carrier_keys:
+            raise RuntimeError(
+                "[export_usd] FAIL: previz:entity stage payload did NOT "
+                f"land in {out_path} (0 carrier keys — register() swallows "
+                "install failures and on_export is WARN-and-continue; see "
+                "the [previz_usd_hook] lines above). Stage payload "
+                "broken — refusing to ship.")
+        print(f"[export_usd] carrier verified: previz:entity stage keys "
+              f"{carrier_keys}")
     finally:
         previz_usd_hook.unregister()
 

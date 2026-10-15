@@ -159,7 +159,12 @@ def main():
     audit = PL.audit_scene()
     bad = [p for p in audit.get("pairs", [])
            if p.get("state") == "PENETRATING"]
-    RESULTS["audit_verdict"] = audit.get("verdict", audit.get("state"))
+    # E10: audit_scene returns pairs_checked/state_counts/failed/pairs —
+    # the old `audit.get("verdict", audit.get("state"))` read keys that
+    # never exist, so the results JSON carried a null verdict.
+    RESULTS["audit_verdict"] = {"failed": audit.get("failed"),
+                                "state_counts": audit.get("state_counts"),
+                                "pairs_checked": audit.get("pairs_checked")}
     RESULTS["audit_bad_pairs"] = [f"{p['a']}x{p['b']}" for p in bad]
     check("C1.no_penetration", len(bad), 0)
 
@@ -221,6 +226,8 @@ def main():
           f"checks passed")
     print(f"[T8] diagnostics for PRINCIPAL eye-check: {OUT}/seam_mug_table/ "
           f"{OUT}/heat/ {OUT}/section/ — then run look.py on this scene")
+    if n_fail:             # E5: the battery must read FAILURES as exit 1
+        sys.exit(1)
 
 
 main()

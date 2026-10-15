@@ -10,10 +10,13 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = argv[0] if argv else tempfile.mkdtemp(prefix="r9test_")
 os.makedirs(OUT, exist_ok=True)
 FAILS = []
+N_CHECKS = 0          # E12: honest tail — count real results
 
 def check(name, cond, detail=""):
+    global N_CHECKS
     tag = "PASS" if cond else "FAIL"
     print(f"  [{tag}] {name} {detail}", flush=True)
+    N_CHECKS += 1
     if not cond:
         FAILS.append(name)
 
@@ -179,10 +182,12 @@ if im is not None:
 check("externalized texture loads", loaded,
       f"has_data={im.has_data if im else None}")
 
-n_pass = sum(1 for _, ok, _ in RESULTS if False) if False else None
-total = len(FAILS)
-print(f"\n{'ALL PASS' if not FAILS else 'FAILURES: ' + str(FAILS)} "
-      f"({15 - total if False else len([1 for _ in range(0)]) or 'see above'} checks)", flush=True)
+# E12: the old tail was dead code (`... if False else None` relics) that
+# printed a meaningless "ALL PASS (see above checks)" line. Count the
+# real checks and print the real marker (the battery greps bare
+# "ALL PASS" — keep it exact and last).
+n_pass = N_CHECKS - len(FAILS)
+print(f"\n[R9] {n_pass}/{N_CHECKS} checks passed", flush=True)
 if FAILS:
     print(f"FAILURES: {FAILS}")
     sys.exit(1)
