@@ -92,8 +92,18 @@ def main():
     else:
         step = (end - start) / (n - 1)
         frame_nums = [int(round(start + i * step)) for i in range(n)]
+    # A9 (session-18): a window shorter than the sample count (step < 1
+    # frame) produced duplicate cells — N cells claiming N motion samples
+    # but fewer unique frames. Dedupe preserving order; the label stays
+    # honest because the label IS the frame number.
+    realized = len(frame_nums)
+    frame_nums = list(dict.fromkeys(frame_nums))
+    if len(frame_nums) != realized:
+        print(f"[contact_sheet] NOTE: window collapses to "
+              f"{len(frame_nums)} unique frame(s) "
+              f"(asked {realized}; step < 1 frame)")
 
-    print(f"[contact_sheet] sampling {n} frames: {frame_nums}")
+    print(f"[contact_sheet] sampling {len(frame_nums)} frames: {frame_nums}")
 
     # Configure render engine
     if args.engine == "workbench":
@@ -158,29 +168,36 @@ def main():
         scene.camera = orbit_cam
 
     # Render each frame
+    import viewport_capture as vc
     with tempfile.TemporaryDirectory() as tmpdir:
         out_paths = []
-        for i, frame_num in enumerate(frame_nums):
-            scene.frame_set(frame_num)
+        # A3 (session-18): raw bpy.ops.render.render honors the camera
+        # bound to a timeline MARKER over scene.camera (F-TD3) — film
+        # scenes bind every shot cam, so every cell silently rendered the
+        # marker's shot camera. Same sweep+restore render_angle uses.
+        restore_markers = vc._marker_camera_sweep(scene)
+        try:
+            for i, frame_num in enumerate(frame_nums):
+                scene.frame_set(frame_num)
 
-            # If orbit, also rotate the camera around target
-            if orbit_cam is not None:
-                t = i / max(1, n - 1)  # 0 to 1
-                theta = math.radians(360 * t) - math.pi/2  # start from front
-                orbit_cam.location = (
-                    target[0] + args.orbit_radius * math.cos(theta),
-                    target[1] + args.orbit_radius * math.sin(theta),
-                    target[2] + args.orbit_height,
-                )
+                # If orbit, also rotate the camera around target
+                if orbit_cam is not None:
+                    t = i / max(1, len(frame_nums) - 1)  # 0 to 1
+                    theta = math.radians(360 * t) - math.pi/2  # start from front
+                    orbit_cam.location = (
+                        target[0] + args.orbit_radius * math.cos(theta),
+                        target[1] + args.orbit_radius * math.sin(theta),
+                        target[2] + args.orbit_height,
+                    )
 
-            out_path = os.path.join(tmpdir, f"f{frame_num:04d}.png")
-            scene.render.filepath = out_path
-            bpy.ops.render.render(write_still=True)
-            if not os.path.exists(out_path):
-                print(f"[contact_sheet] ERROR: render failed for frame {frame_num}", file=sys.stderr)
-                sys.exit(1)
-            out_paths.append((frame_num, out_path))
-            print(f"[contact_sheet]   frame {frame_num}: {os.path.getsize(out_path)} bytes")
+                out_path = os.path.join(tmpdir, f"f{frame_num:04d}.png")
+                scene.render.filepath = out_path
+                bpy.ops.render.render(write_still=True)
+                vc._validate_png(out_path)
+                out_paths.append((frame_num, out_path))
+                print(f"[contact_sheet]   frame {frame_num}: {os.path.getsize(out_path)} bytes")
+        finally:
+            restore_markers()
 
         # Stitch with frame number labels
         from PIL import Image, ImageDraw, ImageFont

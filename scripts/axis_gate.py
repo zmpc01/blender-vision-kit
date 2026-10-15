@@ -50,7 +50,14 @@ def _shot_travel_signs(ctx, cams_table, shots):
         cam = info["cam"]
         f_mid = (f0 + f1) // 2
         scene.frame_set(f_mid)
-        bpy.context.view_layer.update()
+        # A6 (session-18): view_layer.update() alone returns STALE
+        # matrix_world for constraint-driven (track-to) cameras — the
+        # occlusion_gate law (documented from the v2 calibration):
+        # evaluated_depsgraph_get + update() is required for the
+        # constraint's transform to land. A stale orientation flips the
+        # lateral sign → phantom SCREEN-DIRECTION findings.
+        dep = bpy.context.evaluated_depsgraph_get()
+        dep.update()
         mw = cam.matrix_world
         # camera right axis = +X of the camera in world
         right = (mw.to_3x3() @ Vector((1.0, 0.0, 0.0))).normalized()

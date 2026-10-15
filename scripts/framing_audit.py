@@ -45,9 +45,13 @@ def _region_to_ndc(rv):
 
 
 def _project(scene, cam, depsgraph, p):
+    """A4 (session-18): also return the view-space depth. world_to_camera_view
+    gives MIRRORED coordinates for points BEHIND the camera (negative w)
+    — they can land inside the NDC box and read as in-frame. The caller
+    treats depth <= 0 as a hard framing failure."""
     from bpy_extras.object_utils import world_to_camera_view
     rv = world_to_camera_view(scene, cam, p)
-    return _region_to_ndc(rv)
+    return (*_region_to_ndc(rv), rv.z)
 
 
 def _default_bbox(sub):
@@ -111,10 +115,13 @@ def audit(scene, shots, subjects, verbose=False):
                     continue
                 if not sub or sub.get("head") is None:
                     continue  # subject not alive/present this frame
-                hx, hy = _project(scene, cam_ev, depsgraph, sub["head"])
-                fx, fy = _project(scene, cam_ev, depsgraph, sub["feet"])
-                # in-frame check for this sample
-                bad = (hy > 1.0 or hy < -1.0 or abs(hx) > 1.0
+                hx, hy, hz = _project(scene, cam_ev, depsgraph, sub["head"])
+                fx, fy, fz = _project(scene, cam_ev, depsgraph, sub["feet"])
+                # in-frame check for this sample. A4: behind-camera
+                # samples are hard-fail regardless of (mirrored) NDC.
+                behind = (hz <= 0.0 or fz <= 0.0)
+                bad = (behind
+                       or hy > 1.0 or hy < -1.0 or abs(hx) > 1.0
                        or hy > HEADROOM
                        or abs(hx) > SIDEROOM or abs(fx) > SIDEROOM)
                 if not sub.get("feet_crop"):
@@ -127,7 +134,13 @@ def audit(scene, shots, subjects, verbose=False):
                     continue          # judged by the 60% rule at the end
                 if bad:
                     # report the specific margin that failed
-                    if hy > 1.0 or hy < -1.0 or abs(hx) > 1.0:
+                    if behind:
+                        issues.append(
+                            f"{shot_id} f{f} {name}: subject BEHIND the "
+                            f"camera (view z={min(hz, fz):.3f}) — projected "
+                            f"coords are mirrored, framing is meaningless "
+                            f"from this pose")
+                    elif hy > 1.0 or hy < -1.0 or abs(hx) > 1.0:
                         issues.append(
                             f"{shot_id} f{f} {name}: HEAD OUT OF FRAME "
                             f"(y_n {hy:+.2f}, x_n {hx:+.2f})")

@@ -159,7 +159,11 @@ def main():
     args = p.parse_args(script_argv())
     print(f"[scene_template] args: {args}")
     ctx = build_scene()
-    animate(ctx, start_frame=args.start, n_frames=args.frames)
+    # F1 (session-18): AGENTS.md teaches a static scene can "delete
+    # animate()" — the unconditional call then NameError'd on the very
+    # first edit of a fresh copy. Guard it (the doc documents this).
+    if "animate" in globals():
+        animate(ctx, start_frame=args.start, n_frames=args.frames)
     configure_render(args)
     print_scene_summary(args.scene_name)
     render(args, scene_name=args.scene_name)

@@ -106,7 +106,11 @@ def _visible(obj):
             return False
         if hasattr(obj, "visible_camera") and not obj.visible_camera:
             return False
-        if tuple(obj.scale) < (0.01, 0.01, 0.01):
+        # A5 (session-18): tuple(a) < tuple(b) is LEXICOGRAPHIC — a
+        # (0.008, 50.0, 3.0) wall flattened on X alone compared True and
+        # was exempted as "degenerate" while still occluding every ray.
+        # The intent is ALL-axis degeneracy.
+        if all(abs(s) < 0.01 for s in obj.scale):
             return False
     except Exception:
         return True

@@ -8,7 +8,7 @@ Bundles the perception round into a single Blender invocation:
     blrun.sh --background --python scripts/look.py -- \
         --load-blend work.blend \
         [--angles front,side,top,persp] [--frame 1] [--engine workbench] \
-        [--annotate|--no-annotate] [--labels 8] [--closeup Table] \
+        [--no-annotate] [--labels 8] [--closeup Table] \
         [--grid-cols 2] [--lens 50] [--target X,Y,Z] [--w 640 --h 480] \
         [--output output/my_scene/look]
 
@@ -24,11 +24,14 @@ What you always get (forced pairing — you cannot look without the numbers):
   the written image paths.
 
 Annotations (default ON, render-time only, NEVER saved into any .blend):
-  1m ground grid, RGB axis gnomon at origin (confirm handedness — law L2),
-  top-N object labels, red bbox wireframes on validator-flagged objects.
+  1m ground grid, RGB axis gnomon SW of scene center at (cx-1.5, cy-1.5)
+  (confirm handedness — law L2), top-N object labels, red bbox wireframes
+  on validator-flagged objects.
 
-Exit codes: 0 = clean/WARN, 3 = validator P0 **or P1** present (with
---fail-on-issues, the default), 1 = operational error.
+Exit codes: 0 = PASS (no P0/P1), 3 = validator P0 **or P1** present (with
+--fail-on-issues, the default — WARN-level issues fail closed), 4 = an
+image-readiness row errored (unreadable/empty output — that look is
+INVALID), 1 = operational error.
 
 Camera occlusion probe (F-TD12, D-TD22): --probe-camera NAME[,...] (or
 'all') casts each scene camera's center ray and NAMES what it hits first
@@ -179,8 +182,13 @@ def _manifest() -> dict:
             # 'viewport' default when no material or pre-sync run)
             mats = [s.material for s in o.material_slots if s.material]
             if mats:
+                # A10 (session-18): probe-only runs skip sync_display_colors,
+                # so _COLOR_SOURCE is empty — the old default stamped
+                # node-authored materials as "viewport" (a lie). Unknown
+                # must be null, not a wrong answer.
                 row["color_source"] = annotate._COLOR_SOURCE.get(
-                    mats[0].name, "viewport")
+                    mats[0].name) if probe_only else \
+                    annotate._COLOR_SOURCE.get(mats[0].name, "viewport")
             out.append(row)
         elif o.type == 'LIGHT':
             out.append({"id": o.name, "type": "LIGHT",
@@ -400,23 +408,35 @@ def main():
     layer = {"objects": [], "labels": []}
     annotated = False
     if not args.no_annotate and not probe_only:
-        from viewport_capture import _compute_scene_center
-        center = _compute_scene_center()
-        meshes = [o for o in scene.objects if o.type == 'MESH'
-                  and not o.name.startswith(annotate.ANNOT_PREFIX)]
-        # top-N labels by bbox diagonal, EXCLUDING ground-like slabs
-        # (a 20x20m ground "label" renders as a giant billboard that blocks
-        # the whole top view — measured on the first look_test run)
-        def groundlike(o):
-            return o.dimensions.z <= 0.05 and (o.dimensions.x * o.dimensions.y) >= 6.0
-        ranked = sorted((o for o in meshes if not groundlike(o)),
-                        key=lambda o: -o.dimensions.length)
-        label_ids = [(o.name, i + 1) for i, o in enumerate(ranked[:args.labels])]
-        layer = annotate.build_annotation_layer(
-            flagged_ids=flagged, label_ids=label_ids, grid=True, gnomon=True)
-        annotated = True
-        view_layer = bpy.context.view_layer
-        view_layer.update()
+        # A12 (session-18): this block used to sit OUTSIDE the zero-residue
+        # finally — an exception mid-build leaked a partial KIT_ANNOT_*
+        # layer (in-memory; blrun fail-closed turns it into exit 1, but the
+        # residue would poison any same-process continuation). Purge on
+        # the raise path too.
+        try:
+            from viewport_capture import _compute_scene_center
+            center = _compute_scene_center()
+            meshes = [o for o in scene.objects if o.type == 'MESH'
+                      and not o.name.startswith(annotate.ANNOT_PREFIX)]
+            # top-N labels by bbox diagonal, EXCLUDING ground-like slabs
+            # (a 20x20m ground "label" renders as a giant billboard that blocks
+            # the whole top view — measured on the first look_test run)
+            def groundlike(o):
+                return o.dimensions.z <= 0.05 and (o.dimensions.x * o.dimensions.y) >= 6.0
+            ranked = sorted((o for o in meshes if not groundlike(o)),
+                            key=lambda o: -o.dimensions.length)
+            label_ids = [(o.name, i + 1) for i, o in enumerate(ranked[:args.labels])]
+            layer = annotate.build_annotation_layer(
+                flagged_ids=flagged, label_ids=label_ids, grid=True, gnomon=True)
+            annotated = True
+            view_layer = bpy.context.view_layer
+            view_layer.update()
+        except BaseException:
+            try:
+                annotate.delete_annotation_layer(layer)
+            except Exception:
+                pass
+            raise
 
     try:
         # ---- angle list (mirrors viewport_capture main) -------------------
@@ -602,10 +622,20 @@ def main():
 
         intent = []
         _fr = bpy.context.scene.frame_current
+        _no_grid = args.no_grid
         for lbl, path in per_angle.items():
-            row = {"image": os.path.basename(path), "angle": lbl,
+            # A10 (session-18): grid-path panels are written to a temp dir
+            # that dies with the with-block — recording "front.png" gave
+            # consumers dead references. The deliverable is grid.png; name
+            # it plus the panel label it became.
+            _img = (os.path.basename(path) if _no_grid
+                    else f"grid.png#{lbl}")
+            row = {"image": _img, "angle": lbl,
                    "rendered_cam": ("scene.camera" if lbl == "active"
                                     else f"temp {lbl} panel")}
+            if not _no_grid:
+                row["panel"] = lbl
+                row["image_is_temp_panel"] = True
             mk = _marker_cam_at(_fr)
             if mk:
                 row["marker_cam_at_frame"] = mk

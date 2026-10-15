@@ -329,10 +329,22 @@ def motion_numbers(objs, start, end, frames):
 def filmstrip(frames, outdir, w, h, engine, cols=4):
     import viewport_capture as vc
     paths = []
-    for f in frames:
-        p = os.path.join(outdir, f"strip_f{f:04d}.png")
-        vc.render_angle("persp", p, engine=engine, width=w, height=h)
-        paths.append(p)
+    scene = bpy.context.scene
+    f_prev = scene.frame_current
+    try:
+        for f in frames:
+            # A2 (session-18): the strip rendered EVERY cell at the same
+            # (stale) frame — frame_current was frozen by the callers'
+            # last frame_set, so the "time-ordered" strip was N copies of
+            # one pose, labeled per-frame. Set the frame before each cell.
+            scene.frame_set(int(f))
+            bpy.context.view_layer.update()
+            p = os.path.join(outdir, f"strip_f{f:04d}.png")
+            vc.render_angle("persp", p, engine=engine, width=w, height=h)
+            paths.append(p)
+    finally:
+        scene.frame_set(f_prev)
+        bpy.context.view_layer.update()
     sheet = os.path.join(outdir, "filmstrip.png")
     vc.stitch_contact_sheet(paths, sheet, grid_cols=cols)
     for p in paths:

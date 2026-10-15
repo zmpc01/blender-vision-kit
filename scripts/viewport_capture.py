@@ -231,6 +231,63 @@ def render_angle(angle_label: str, out_path: str, *,
     """
     scene = bpy.context.scene
 
+    # A11 (session-18): render_angle mutates persistent render/display
+    # state and used to never restore it — a workbench look then
+    # --save-blend baked the CHECKER's engine/resolution/view_transform
+    # into the scene with no patch op able to set it back. Snapshot at
+    # entry; restore in the final finally.
+    _snap = {
+        "engine": scene.render.engine,
+        "res_x": scene.render.resolution_x,
+        "res_y": scene.render.resolution_y,
+        "res_pct": scene.render.resolution_percentage,
+        "fmt": scene.render.image_settings.file_format,
+        "cmode": scene.render.image_settings.color_mode,
+        "filepath": scene.render.filepath,
+        "view_transform": scene.view_settings.view_transform,
+        "exposure": scene.view_settings.exposure,
+        "use_border": scene.render.use_border,
+        "use_crop": scene.render.use_crop_to_border,
+    }
+    for _blk, _attrs in ((scene.display.shading,
+                          ("light", "color_type", "show_shadows",
+                           "show_cavity")),):
+        for _a in _attrs:
+            try:
+                _snap[f"shading_{_a}"] = getattr(_blk, _a)
+            except AttributeError:
+                pass
+
+    def _restore_state():
+        r = scene.render
+        r.engine = _snap["engine"]
+        r.resolution_x = _snap["res_x"]
+        r.resolution_y = _snap["res_y"]
+        r.resolution_percentage = _snap["res_pct"]
+        r.image_settings.file_format = _snap["fmt"]
+        r.image_settings.color_mode = _snap["cmode"]
+        r.filepath = _snap["filepath"]
+        r.use_border = _snap["use_border"]
+        r.use_crop_to_border = _snap["use_crop"]
+        scene.view_settings.view_transform = _snap["view_transform"]
+        scene.view_settings.exposure = _snap["exposure"]
+        for _a in ("light", "color_type", "show_shadows", "show_cavity"):
+            if f"shading_{_a}" in _snap:
+                try:
+                    setattr(scene.display.shading, _a, _snap[f"shading_{_a}"])
+                except AttributeError:
+                    pass
+
+    # A8 (session-18): engine was validated AFTER the temp camera was
+    # created — an unknown-engine raise leaked temp_*_cam + its target
+    # empty into the live scene. Validate FIRST; nothing has been
+    # created yet at this point.
+    if engine not in ("workbench", "eevee", "cycles"):
+        raise RuntimeError(
+            f"Unknown engine: {engine}. Choose from: workbench, eevee, "
+            f"cycles (normalize_engine_id maps spellings upstream of "
+            f"this check)")
+
     # Pick / create the camera
     cleanup = None
     if angle_label == "active":
@@ -285,14 +342,18 @@ def render_angle(angle_label: str, out_path: str, *,
         scene.cycles.device = 'CPU'
         scene.cycles.samples = samples
         scene.cycles.use_denoising = True
-    else:
-        raise RuntimeError(f"Unknown engine: {engine}")
 
     scene.render.resolution_x = width
     scene.render.resolution_y = height
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = 'PNG'
     scene.render.image_settings.color_mode = 'RGB'
+    # A7 (session-18): a loaded .blend with border render enabled writes
+    # a cropped wrong-resolution PNG that passed every check. Tool
+    # renders are never border-cropped; force off (state restored in
+    # the finally below).
+    scene.render.use_border = False
+    scene.render.use_crop_to_border = False
     scene.render.filepath = out_path
 
     # Temporarily swap the scene's active camera. F-TD3: ALSO sweep the
@@ -319,10 +380,28 @@ def render_angle(angle_label: str, out_path: str, *,
                   f"from the scene's SHOTS table.", flush=True)
         if cleanup:
             cleanup()
+        _restore_state()
 
     if not os.path.exists(out_path):
         raise RuntimeError(f"Render failed silently — no output at {out_path}")
     _validate_png(out_path)
+    # A7 (session-18): verify the written PNG's actual dimensions equal
+    # the requested ones — a cropped/border-truncated or driver-degraded
+    # render used to flow through as "healthy" at the wrong resolution.
+    try:
+        from PIL import Image as _PILImage
+        with _PILImage.open(out_path) as _im:
+            _got = _im.size
+        if (_got[0] != width or _got[1] != height):
+            raise RuntimeError(
+                f"Render output at {out_path} is {_got[0]}x{_got[1]} "
+                f"but {width}x{height} was requested — a border crop "
+                f"or resolution degradation silently rewrote the frame "
+                f"size. Not a trustworthy image; failing loudly.")
+    except RuntimeError:
+        raise
+    except Exception:
+        pass  # PIL unavailable — _validate_png's magic check still ran
     _warn_if_clipped(out_path, engine)
     return out_path
 

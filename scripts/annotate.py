@@ -6,8 +6,10 @@ vision-capable agent (blender-vision-kit D5):
 
   1. 1m ground grid  — scale + position cues (kills "how big is that?" and
      chirality misreads when paired with the axis gnomon)
-  2. Axis gnomon     — 1m RGB axis arrows at world origin (X=red, Y=green,
-     Z=blue); the vision agent confirms handedness via the gnomon (law L2)
+  2. Axis gnomon     — 1m RGB axis arrows SW-offset of scene center at
+     (cx-1.5, cy-1.5) (X=red, Y=green, Z=blue); the vision agent confirms
+     handedness via the gnomon (law L2). At world origin it can hide
+     inside the subject — the offset was measured twice (gotcha 113).
   3. Object labels   — top-N objects by bbox diagonal get a FONT text
      billboard (id + index), aimed at the render camera per angle
   4. Flag boxes      — validator-flagged objects get a red wireframe bbox

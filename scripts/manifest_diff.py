@@ -135,6 +135,10 @@ def diff_manifests(before, after, tol=0.005):
                 "before": {k: bo.get(k) for k in bo} if bo else None,
                 "after": {k: ao.get(k) for k in ao} if ao else None})
     report["really_added"] = really_added
+    # A1 (session-18): really_removed was computed and DISCARDED —
+    # report["removed"] stayed [] forever, so --expect-clean exited 0 on
+    # unauthorized deletions (the verification tool's core category).
+    report["removed"] = really_removed
     report["ok"] = True
     return report
 
