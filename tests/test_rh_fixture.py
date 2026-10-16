@@ -155,6 +155,13 @@ def f1_catalog():
         pass
     res = rh_canvas.catalog_query("models")
     check(res["count"] == 3, f"model rows {res['count']}")
+    # s20 filters (the docs-only drive's F3 ask): tag + max-frames
+    res = rh_canvas.catalog_query("animations", tag="elevated_root_motion")
+    check(res["count"] == 1 and res["rows"][0]["id"] == PIN_JUMP,
+          f"--tag filter: {res['count']}")
+    res = rh_canvas.catalog_query("animations", max_frames=30)
+    check(all(r["frames"] <= 30 for r in res["rows"]) and res["count"] >= 1,
+          f"--max-frames filter: {[r['frames'] for r in res['rows']]}")
 
 
 # --------------------------------------------------------------------------- #

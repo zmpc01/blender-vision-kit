@@ -544,7 +544,8 @@ def ensure_model(name: str, cache: str | None = None,
 # --------------------------------------------------------------------------- #
 def catalog_query(kind: str, category: str | None = None,
                   search: str | None = None, facets: list[tuple] | None = None,
-                  explicit_lib: str | None = None) -> dict:
+                  explicit_lib: str | None = None, tag: str | None = None,
+                  max_frames: int | None = None) -> dict:
     """Filtered catalog. Returns {'kind', 'count', 'rows', 'meta'}.
 
     kind='categories' lists the 19 animation categories with clip
@@ -588,6 +589,12 @@ def catalog_query(kind: str, category: str | None = None,
             if fr is not None:
                 r["frames"] = fr
                 r["duration_s"] = round(fr / FBX_FPS, 2)
+        if tag:
+            rows = [r for r in rows if tag in r.get("tags", [])]
+        if max_frames is not None:
+            rows = [r for r in rows
+                    if (r.get("frames") is not None
+                        and r["frames"] <= max_frames)]
         meta = {"total_rows": 2137, "unique_after_id_dedup": 2032,
                 "categories": len(cats),
                 "tags_note": "elevated_root_motion = pair with set "
@@ -1250,6 +1257,12 @@ def main(argv=None) -> int:
     p.add_argument("--facet", action="append", default=[], metavar="FACET=VALUE",
                    help="characters 9-facet taxonomy filter (repeatable), "
                         "e.g. --facet gender=female --facet species=elf")
+    p.add_argument("--tag", default=None,
+                   help="animations: browse-tag filter (s20; e.g. "
+                        "elevated_root_motion | static_pose)")
+    p.add_argument("--max-frames", type=int, default=None,
+                   help="animations: duration cap at browse time (s20; "
+                        "frames <= N, e.g. 90 = clips <= 3 s)")
     p.add_argument("--json", action="store_true")
     p.add_argument("--limit", type=int, default=40)
 
@@ -1296,7 +1309,8 @@ def main(argv=None) -> int:
                 k, v = f.split("=", 1)
                 facets.append((k.strip(), v.strip()))
             res = catalog_query(args.kind, args.category, args.search,
-                                facets, args.library)
+                                facets, args.library,
+                                tag=args.tag, max_frames=args.max_frames)
             _print_catalog(res, args.limit, args.json)
         elif args.cmd == "fetch":
             ids = [i.strip() for i in args.ids.split(",") if i.strip()]

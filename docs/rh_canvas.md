@@ -262,3 +262,63 @@ mirror of binaries.
   `/home/z/RH-canvas-characters` (`data/characters.jsonl`,
   `data/filter_options.json`, `data/director_models.json`,
   `director-gltf-manifest.json`).
+
+
+## s20 amendments (the vision-kit vendor round)
+
+### The placement law vs ANIMATED armatures (the docs-only drive's F1, P1)
+
+Every imported RH armature arrives ANIMATED (the action carries
+object-level root-motion channels), so `move_to`/`place_on` refuse
+without an override. The working recipe:
+
+    pl.move_to(arm, spot, reference="bottom-center", override="keyframe")
+    pl.place_on(arm, support, footprint="grid", override="keyframe")
+
+- `override='keyframe'` rebases the whole key path by the placement
+  delta — every frame keeps its relative placement.
+- Anchor on the **bbox bottom-center**, never the origin: a pose can
+  offset the body from its origin (the sit clip leans the bbox ~0.5 m
+  +Y of the origin — probe-verified; the origin-anchored move leaves
+  the support BEHIND the body).
+- Facing an animated actor: a manual armature yaw is CLOBBERED by the
+  object-level rotation channels at the next frame_set. Use the
+  wrapper-empty pattern (parent to an empty, yaw the wrapper — the UAL
+  actors' contract) or accept the natural facing.
+
+### In-scene statue API (the drive's F2)
+
+`rh_canvas.import_statue(model_name, ground_snap=False, cache=None,
+explicit_lib=None)` returns **`(list_of_root_objects, report_dict)`** —
+a LIST (a GLTF import may be multi-root), unlike import-clip's
+`(armature, report)` tuple. Move/rotate the ROOT objects only; the
+child meshes follow. `ground_snap=True` offsets each root so its
+subtree's lowest vertex sits at z=0 (the platform ships |min_z| within
+a 10 mm band; the snap is the no-op-class correction).
+
+### Browse filters (the drive's F3)
+
+`catalog --kind animations` accepts `--tag <name>` (e.g.
+`elevated_root_motion`, `static_pose`) and `--max-frames <N>` (duration
+cap; frames <= N). Tags/durations are DATA-DRIVEN as of s20: a
+library's manifest rows may declare `tags`/`frames` per row (the
+hardcoded platform walk-sets remain as the union source), so the
+fixture library's tags participate in the same filters.
+
+### The fixture library (offline stand-in)
+
+`RH_CANVAS_LIB` may point at the OFFLINE fixture library
+(`scripts/rh_fixture_lib.py` builds it) when the platform clones are
+absent — the data source went dark 2026-10-16 (beulahkemp/RH-canvas-*
+404; no mirrors). Fixture clips are SYNTHETIC stand-ins: they reproduce
+every contract law (65 mixamorig: bones, fps 30, frame-range-from-
+action, channel-match bind guard, registry fingerprint, fake-user
+hygiene) but the choreography is PROCEDURAL — the import report's
+`t_pose_span_m` / `hips_location_z_raw_cm` are the ground truth for
+what a clip actually does. Known deviations from the platform files
+(documented, asserted by the fixture's own truth.json): the imported
+object scale lands 1.0 (not 0.01) and obj rot X 0 (not +90) — the
+platform's Maya-time unit-baking split is unrecoverable offline; every
+consumer-behavior law holds. The battery:
+`tests/test_rh_fixture.py` (13 rows, self-verifying against the
+generator's truth).
