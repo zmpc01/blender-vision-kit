@@ -107,6 +107,12 @@ def world_bvh(obj, depsgraph=None):
     hit = _BVH_CACHE.get(key)
     if hit is not None:
         return hit
+    if obj.type == 'ARMATURE':
+        # rh_canvas R8: no mesh to evaluate — the closed-box proxy keeps
+        # contact/raycast math working on armature subjects/supports.
+        tree = _armature_box_bvh(obj)
+        _BVH_CACHE[key] = tree
+        return tree
     ev = obj.evaluated_get(dg)
     bm = bmesh.new()
     bm.from_mesh(ev.to_mesh())
@@ -193,6 +199,47 @@ def classify_point(tree, p, band_m=1e-4, parity_primary=False):
     return (('inside', dist) if hits % 2 == 1 else ('outside', dist))
 
 
+def _armature_points(obj, mode='verts'):
+    """World-space stand-in sample points for ARMATURE objects (the
+    rh_canvas placement law, mainline R8: place the ARMATURE, never the
+    skinned mesh — at placement time the mesh often doesn't exist yet, and
+    bone geometry has no .vertices to sample). Points = pose-bone head/tail
+    at the CURRENT frame (pose-aware) + the object's bound_box corners.
+    mode='bottom' keeps the lowest z-band (feet) — mirrors the mesh
+    bottom-mode fallback semantics."""
+    mw = obj.matrix_world
+    pts = []
+    pose = getattr(obj, 'pose', None)
+    if pose is not None:
+        for pb in pose.bones:
+            pts.append(mw @ pb.head)
+            pts.append(mw @ pb.tail)
+    for c in obj.bound_box:
+        pts.append(mw @ Vector(c))
+    if mode == 'bottom' and pts:
+        zs = [p.z for p in pts]
+        zmin = min(zs)
+        band = (max(zs) - zmin) * 0.05 + 1e-6
+        pts = [p for p in pts if p.z <= zmin + band]
+    return pts
+
+
+def _armature_box_bvh(obj):
+    """Closed-box BVH proxy from the armature's world bound_box (the
+    mesh-BVH stand-in for armature subjects/supports in pair_contact and
+    support raycasts — bone geometry has no mesh to build a tree from)."""
+    mn, mx = _aabb(obj)
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    ctr = (mn + mx) * 0.5
+    scl = Matrix.Diagonal((mx.x - mn.x, mx.y - mn.y, mx.z - mn.z, 1.0))
+    bm.transform(Matrix.Translation(ctr) @ scl)
+    bm.normal_update()
+    tree = BVHTree.FromBMesh(bm)
+    bm.free()
+    return tree
+
+
 # ---------------------------------------------------------------------------
 # Layer 1 — measurement
 # ---------------------------------------------------------------------------
@@ -200,7 +247,15 @@ def classify_point(tree, p, band_m=1e-4, parity_primary=False):
 def surface_samples(obj, mode='verts', spacing=0.01, cap=20000):
     """World-space surface sample points.
     mode: 'verts' | 'verts+edges' (subdivides edges to ~spacing) | 'bottom'
-    (verts whose world normal points down, normal_z < -0.3)."""
+    (verts whose world normal points down, normal_z < -0.3).
+    ARMATURE objects sample pose-bone head/tail points + bound_box corners
+    (see _armature_points — the rh_canvas armature-first placement recipe)."""
+    if obj.type == 'ARMATURE':
+        pts = _armature_points(obj, mode)
+        if len(pts) > cap:
+            stride = math.ceil(len(pts) / cap)
+            pts = pts[::stride]
+        return pts
     dg = bpy.context.evaluated_depsgraph_get()
     ev = obj.evaluated_get(dg)
     me = ev.to_mesh()
@@ -241,11 +296,23 @@ _POLY_CACHE = {}
 
 
 def _polys_world(obj):
-    """[(Vector, Vector, Vector, ...), ...] world-space polygon loops."""
+    """[(Vector, Vector, Vector, ...), ...] world-space polygon loops.
+    ARMATURE objects return the bound_box quad loops (the same box the
+    BVH proxy uses — bone geometry has no polygons; keeps the crossing
+    analysis consistent with world_bvh's armature branch)."""
     key = _cache_key(obj)
     hit = _POLY_CACHE.get(key)
     if hit is not None:
         return hit
+    if obj.type == 'ARMATURE':
+        mw = obj.matrix_world
+        c = [mw @ Vector(b) for b in obj.bound_box]
+        # bound_box corner order: 0-3 bottom loop, 4-7 top loop (4=i+4)
+        polys = [(c[0], c[1], c[2], c[3]), (c[7], c[6], c[5], c[4]),
+                 (c[0], c[4], c[5], c[1]), (c[1], c[5], c[6], c[2]),
+                 (c[2], c[6], c[7], c[3]), (c[3], c[7], c[4], c[0])]
+        _POLY_CACHE[key] = polys
+        return polys
     dg = bpy.context.evaluated_depsgraph_get()
     ev = obj.evaluated_get(dg)
     me = ev.to_mesh()
@@ -1353,9 +1420,16 @@ def _place_on_impl(obj, *supports, clearance=0.0, footprint='bottom',
                 f"place_on: empty footprint for '{obj.name}' "
                 f"(footprint={footprint}, inset={inset}). Try footprint="
                 f"'all' or 'grid', or inset=0.")
-        report["footprint_fallback"] = footprint == 'bottom' and not any(
-            world_normal(obj, v.normal).z < -0.3 for v in
-            obj.data.vertices)
+        # ARMATURE subjects take the _armature_points branch (rh_canvas
+        # R8) — reading obj.data.vertices here would AttributeError (an
+        # Armature block has no .vertices); the flag is mesh-only.
+        report["footprint_fallback"] = (
+            footprint == 'bottom' and obj.type == 'MESH' and not any(
+                world_normal(obj, v.normal).z < -0.3 for v in
+                obj.data.vertices))
+        if obj.type == 'ARMATURE':
+            report["footprint_source"] = (
+                "armature-points (pose bone head/tail + bound_box corners)")
         pts_xy = [(p.x, p.y) for p in pts]
         z_ref = min(p.z for p in pts)
         footprint_pts = pts
@@ -1683,7 +1757,9 @@ def seat_at(obj, seat_empty, *, reference='bottom', offset=None, align=True,
         anchor_obj = Vector(((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mn.z))
         delta = target_loc - anchor_obj
     elif reference == 'centroid':
-        vs = obj.data.vertices if getattr(obj, 'data', None) is not None else None
+        # rh_canvas R8: an ARMATURE's .data is an Armature block (truthy,
+        # no .vertices) — the old getattr guard passed it and len(vs) raised.
+        vs = obj.data.vertices if obj.type == 'MESH' else None
         if vs is None:
             report["reference_fallback"] = (
                 "centroid requested on non-mesh object — used origin")
@@ -1787,7 +1863,9 @@ def move_to(obj, target, *, reference='bottom-center', override=None,
     mw = obj.matrix_world
     # empties/other non-mesh objects have obj.data=None (F10: move_to on a
     # seat_at ANCHOR is a legitimate operation — the anchor is the target)
-    vs = obj.data.vertices if getattr(obj, 'data', None) is not None else None
+    # rh_canvas R8: an ARMATURE's .data is an Armature block (truthy, no
+    # .vertices) — the old getattr guard passed it and len(vs) raised.
+    vs = obj.data.vertices if obj.type == 'MESH' else None
     if reference == 'centroid':
         if vs is None:
             report["reference_fallback"] = (

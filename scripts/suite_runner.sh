@@ -112,6 +112,7 @@ SUITES=(
   "test_s18_wave_d|tests/test_s18_wave_d.py|BL||0|\\[S18D\\] ALL PASS|session-18 wave-D regressions (D1 threaded server, D3 RNA-filter op ids, D4 USD parity counts, D5 gate-5 CAST root, D6/D7 encode guards, D8 staleness matcher, D9 sfx negative frames, D10 watcher stability, D12 scene.json; MIXED suite — bpy-guarded sections degrade to textual under plain python3)"
   "test_s19_wave_pins|tests/test_s19_wave_pins.py|BL||0|\\[test_s19p\\] ALL PASS|session-19 fix pins (red-by-construction; s18 A6 + s19 wave-A: NaN/_nonneg_mm/frames guards, set_rotation mode channel, override token, anim guards, align idempotence, fill_frac, heat_bake bands, sample/engine tokens, skinned snap_z, stale-depsgraph audit)"
   "test_crowd_e2e|tests/test_crowd_e2e.py|PY||0|\\[CROUDE2E\\] ALL PASS|M3 r149: crowd-kit end-to-end gate (wheel sha256+size vs README pin F2E-12, native import+version coherence, vendored submodule kit import+__version__ coherence, 5-agent bake complete into fresh tempdir; provision: blender_crowd_native importable per wheels/README law)"
+  "test_rh_canvas|tests/test_rh_canvas.py|BL||0|\[rh-canvas\] ALL PASS|s20 vendor: RH-canvas mocap path battery R1-R8b (catalog/fetch-verify/import-clip laws/mannequin/bind channel-match+registry/G statue/GLB round-trip/armature placement e2e; graceful-skip when the RH library clones are absent)"
 )
 
 loud_header() {
