@@ -686,11 +686,19 @@ def _collect_story(mod, fps: float, frame_start: int) -> dict:
 
 
 def _collect_characters(scene, mod) -> list[dict]:
-    """Characters registry: union of BOARD + RUN_PARAMS actors, identity
-    colors from the built scene's CA.Body.<name> materials, boards_at =
-    the BOARD land frame (when the actor actually boards)."""
+    """Characters registry: union of BOARD + RUN_PARAMS + CAST actors,
+    identity colors from the built scene's CA.Body.<name> materials,
+    boards_at = the BOARD land frame (when the actor actually boards).
+
+    CAST joins the union (session-19 film lane): the film-lane scene
+    modules declare CAST = {name: {"root", "material", "role"}} for
+    their keyed heroes — the boarding-run vocabularies (BOARD /
+    RUN_PARAMS) simply don't apply to heroes that never board (the
+    tfog Stationmaster patrols; he has no run_end/apex/land). CAST
+    roots are the same names gate 5 already accepts via
+    _declared_cast_root, so this is consistency, not a new contract."""
     names = set()
-    for attr in ("BOARD", "RUN_PARAMS"):
+    for attr in ("BOARD", "RUN_PARAMS", "CAST"):
         d = getattr(mod, attr, None)
         if isinstance(d, dict):
             names.update(str(k) for k in d.keys())
@@ -723,6 +731,11 @@ def _collect_characters(scene, mod) -> list[dict]:
                 entry["boards_at"] = int(board[name][0][2])  # land frame
             except Exception:
                 pass
+        cast = getattr(mod, "CAST", None) or {}
+        cast_entry = cast.get(name)
+        if isinstance(cast_entry, dict):
+            if isinstance(cast_entry.get("role"), str):
+                entry["role"] = cast_entry["role"]
         out.append(entry)
     return out
 
@@ -747,8 +760,14 @@ def _collect_atmosphere(scene) -> list[dict]:
             pass
         mat = ob.active_material
         if mat and mat.use_nodes:
+            # PRINCIPLED_VOLUME first (the escape-lane fog), then
+            # VOLUME_SCATTER (the film-lane worlds build pure Volume
+            # Scatter boxes — tfog_world; same Density/Color sockets).
             vol = next((n for n in mat.node_tree.nodes
                         if n.type == 'PRINCIPLED_VOLUME'), None)
+            if vol is None:
+                vol = next((n for n in mat.node_tree.nodes
+                            if n.type == 'VOLUME_SCATTER'), None)
             if vol:
                 try:
                     entry["density"] = _r3(

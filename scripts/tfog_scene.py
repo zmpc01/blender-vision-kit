@@ -193,6 +193,12 @@ KEEPOUT_R = float(C.CAM_KEEPOUT_R)
 
 CROWD_TIER_PINS = []
 
+# exporter-name aliases (the film-4 exporter contract): the exporter
+# introspects SHOTS (or SHOTS_V3) + CAMS_V3; this film's certified
+# tables are SHOTS_V1/CAMS_V1 — same 4-row / 7-tuple shapes verbatim.
+SHOTS = SHOTS_V1
+CAMS_V3 = CAMS_V1
+
 # the exporter characters registry (the film-4 gate-5 shape)
 CAST = {
     "LatePassenger": {"root": "LatePassenger.Root",
