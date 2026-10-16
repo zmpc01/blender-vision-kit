@@ -1,3 +1,4 @@
+# VENDORED 2026-10-16 from mainline blender-agent-kit @6943ab5 (vision-kit s21 vendor round; zero code drift; vision deltas must land as sanctioned deltas per docs/VENDOR_LEDGER.md)
 # ual_gauntlet.py -- UAL verification gauntlet (Task UAL-1, deliverable 2).
 #
 # Adapted from project/research/rigged_character_upgrade_path.md section 3:
@@ -9,8 +10,8 @@
 #       beat action; drift must be < 0.05 m (armature object drift too)
 #   R4  recolor: single material slot -> diffuse_color AND Principled base
 #       color = SUBJECT_RED (0.82, 0.10, 0.12); workbench MATERIAL render;
-#       pixel verification (R-share via scripts/image_metrics.py) runs
-#       OUTSIDE this script and is appended to the results JSON by the caller
+#       pixel verification (ascii_vision R class share) runs OUTSIDE this
+#       script and is appended to the results JSON by the caller
 #   SCL scale: armature world bbox height ~1.7-1.9 m (research gate:
 #       1.5-2.0 m; feet z ~ 0)
 #
@@ -277,7 +278,7 @@ print(f"G4: nla_tracks={len(nla)}, unmuted after probing={unmuted or 'none'}")
 
 # ---- verdict table --------------------------------------------------------
 print("\n" + "=" * 78)
-print("GAUNTLET VERDICTS (R4 pixel check appended by caller via image_metrics)")
+print("GAUNTLET VERDICTS (R4 pixel check appended by caller after ascii_vision)")
 print("=" * 78)
 rows = [
     ("R1 import+eval", f"import {R['import_s']}s; "
@@ -292,13 +293,13 @@ rows = [
     ("SCL scale", f"height {h} m (bind {R['scale']['bind_height_m']}, "
      f"feet z {R['scale'].get('idle_feet_z')})",
      "PASS" if R["scale"]["pass"] else "FAIL"),
-    ("R4 recolor", "red_check.png rendered; R-share pending (image_metrics)",
+    ("R4 recolor", "red_check.png rendered; ascii_vision R-share pending",
      "PENDING"),
 ]
 for name, detail, verdict in rows:
     print(f"  {name:<14} {detail}\n{'':>16}-> {verdict}")
 
-R["r4"]["pixel_check"] = "PENDING (measure R-share via scripts/image_metrics.py)"
+R["r4"]["pixel_check"] = "PENDING (run ascii_vision on red_check.png)"
 with open(os.path.join(out_dir, "gauntlet_results.json"), "w") as fh:
     json.dump(R, fh, indent=1)
 print(f"\n[ual_gauntlet] results -> {os.path.join(out_dir, 'gauntlet_results.json')}")

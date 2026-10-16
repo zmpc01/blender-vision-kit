@@ -52,12 +52,17 @@ CHASE_TAIL = 9              # the loader's structural tail (gates.py:769)
 DECLARED_TOTAL = EXPECTED_AGENTS
 CACHE_DIR_DEFAULT = "/tmp/crowdcache_tform"
 
-# --- the golden-hour rig (the LADDER's knobs; the world defers) ---------
+# --- the golden-hour rig (the LADDER VERDICT; the world defers) ---------
+# Ladder receipt (this round): the authored 6-deg axis was PRE-VISUAL —
+# at 6 deg the 6 m colonnade walls shadow the ENTIRE 56 m yard (57 m
+# wall shadows), the haze eats the rake (dust 0.015->0.004 barely moved
+# it; the geometry was the cause). The ladder extended to functional
+# golden-hour elevations: e14 delivers the long raking shadows the
+# design asks for; e9/e6 murky, e4 pink-washed. Dust pinned 0.004.
 TFORM_SUN_STRENGTH = 3.0
 TFORM_SKY_STRENGTH = 0.4
-TFORM_SUN_ELEV_DEG = 6.0
-TFORM_DUST_DENSITY = 0.015  # the washed-pastel guard: LOW until the
-                            # aerial proves otherwise (design section 5)
+TFORM_SUN_ELEV_DEG = 14.0
+TFORM_DUST_DENSITY = 0.004
 
 SHOTS_V1 = [
     ("S1",  1,   96,  "aerial NE establish: the citadel yard, long "
@@ -737,9 +742,12 @@ def _cache_paths():
 
 
 def _set_engine(scene, engine, samples):
-    scene.render.engine = "BLENDER_EEVEE_NEXT" \
-        if engine == "eevee" else "BLENDER_WORKBENCH"
-    if engine == "eevee":
+    # 5.2 law: the enum id is BLENDER_EEVEE (NEXT is 4.x) -- the
+    # tfog pattern (commit 37c00b9 era); do NOT version-guess here.
+    name = "BLENDER_EEVEE" if engine.startswith("eevee") else \
+        "BLENDER_WORKBENCH"
+    scene.render.engine = name
+    if hasattr(scene.eevee, "taa_render_samples"):
         scene.eevee.taa_render_samples = int(samples)
 
 
