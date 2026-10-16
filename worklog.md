@@ -3972,3 +3972,49 @@ Work Log:
 
 Stage Summary:
 - the vendor is on GitHub; next: rh_fixture_lib.py (offline Mixamo-convention fixture library generator + self-verifying truth JSON), test_rh_fixture battery, the dog-food motion-lab scene (RH fixture clips + UAL hero + Quaternius rigged models + statues), sub-agent audit + usability waves, principal-eye motion-grid verification
+
+---
+Task ID: session-20 (continued — the RH integration lane, complete)
+Agent: Super Z (main orchestrator; visual verdicts stay with the principal)
+
+Work Log (from the vendor commit to close):
+- vendor: rh_canvas.py + test + docs vendored verbatim (a939253); placement_lib ARMATURE graft
+- the RH data source found DEAD (beulahkemp repos 404, no forks/wayback/mirrors; git auth for
+  sibling repos also fails under this round's PAT — API 200 + git 401 = fine-grained-token
+  signature; the crowd-kit submodule provisioned via the API tarball endpoint)
+- the OFFLINE fixture library: rh_fixture_lib.py + _fixture_fbx_patch.py (structured FBX
+  rewrite via the addon's own parse_fbx/encode_bin); the import recipe PINNED by a focused
+  grid against the law oracle (receipt drift note: an early commit message said "81-combo";
+  the final grid was 3-9 rows after the focused pivot); documented deviations: obj scale 1.0
+  (not 0.01), obj rot X 0 (not +90) — the platform's Maya-time unit baking is unrecoverable;
+  bone rest builds read the A-FLAGGED CURVE records, not the P records (empirical importer law)
+- test_rh_fixture: 13 rows, self-verifying vs truth.json (no hand pins); ALL PASS
+- scene_motion_lab: the dog-food humanoid scene (7 fixture-clip actors + 2 statues + platform
+  + bench; per-actor motion strips + stills + GLB)
+- SUB-AGENT WAVES: S20-A2 (lab+battery audit: no P0, 1xP1 tautology, ~10 P2/P3 — all folded),
+  S20-A3 (placement graft audit: the BVH face-index misalignment CONFIRMED + fixed via the
+  shared _ARMATURE_QUADS table — the 'bowtie' claim REFUTED empirically (corner order probed:
+  i&1->z, i&2->y, i&4->x; the six quads are the six outward faces)), S20-U1 (docs-only consumer
+  drive: 8-item friction ledger, all folded), S20-A1 (the deep fixture/patch audit — THE CATCH:
+  my jump-apex eye-cert was WRONG)
+- THE SELF-SYCOPHANCY CATCH (the session's most important fix): pose-bone LOCATION is
+  bone-local (Hips points +Z world -> local Y = up); my "vertical" keys hopped SIDEWAYS.
+  TWO independent numeric probes agreed world hips-z was constant while the per-actor-follow
+  strip camera masked it and I certified "apex airborne" off the illusion. Fixed (local-Y
+  authoring + frame-evaluated WORLD-z behavior gates in the generator), regenerated,
+  RE-CERTIFIED with numbers and eyes agreeing
+- other fixes folded: the dead curve-remap stage in the patch (OP parse read backwards —
+  deleted + documented), O(rows^2) browse in the catalog (rows ARE the manifest rows),
+  data-driven tags/frames + --tag/--max-frames filters, F8 tautology -> real teeth (spear
+  PENETRATING case), honest-skip protocol, AgX->Standard pin, strip residue purge, union-AABB
+  strip framing, metadata viewer contract, the pose-bone-rename fcurve auto-remap trap
+  (documented in the F5b decoy)
+- battery: 38/38 ALL GREEN (full roster receipt, both RH rows included)
+
+Stage Summary:
+- tip ab3cb4b (+ docs/worklog); GitHub canonical current; GitLab WAF 403 all session (the
+  archive branch push is the next session's first chore if it still blocks)
+- the fixture library + the offline battery are the RH path's new durability layer: the
+  module surface no longer depends on a live external source
+- next session scope lives in HANDOFF (UAL hero-swap leg, wrapper-empty facing pattern,
+  upstream-booking of the rh_canvas s20 deltas)
