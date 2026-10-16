@@ -150,20 +150,42 @@ def _load_clip_frames() -> dict[str, int]:
     return CLIP_FRAMES
 
 
-def clip_tags(anim_id: str) -> list[str]:
-    """Browse-time consumer tags for a clip id (see the sets above)."""
+def clip_tags(anim_id: str, explicit=None) -> list[str]:
+    """Browse-time consumer tags for a clip id: the hardcoded platform
+    walk sets (see above) UNION the manifest-declared tags (s20 delta —
+    a second/fixture library declares its own rows)."""
     aid = str(anim_id)
     tags = []
     if aid in ELEVATED_ROOT_MOTION:
         tags.append("elevated_root_motion")
     if aid in STATIC_POSE:
         tags.append("static_pose")
+    try:
+        for a in load_animations(explicit):
+            if a["id"] == aid:
+                for t in a.get("manifest_tags", ()):
+                    if t not in tags:
+                        tags.append(t)
+                break
+    except RHRefused:
+        pass                                  # no library: sets only
     return tags
 
 
-def clip_frames(anim_id: str) -> int | None:
-    """Frame count at browse time (s39 full-walk table); None unknown."""
-    return _load_clip_frames().get(str(anim_id))
+def clip_frames(anim_id: str, explicit=None) -> int | None:
+    """Frame count at browse time: the s39 full-walk table (platform
+    library) or the manifest-declared frames (s20 delta — a second/
+    fixture library declares its own). None = unknown."""
+    v = _load_clip_frames().get(str(anim_id))
+    if v is not None:
+        return v
+    try:
+        for a in load_animations(explicit):
+            if a["id"] == str(anim_id):
+                return a.get("manifest_frames")
+    except RHRefused:
+        pass
+    return None
 
 
 # Capsule radii (metres) for the mannequin build — REVIEW-RH-1b verified:
@@ -283,6 +305,14 @@ def load_animations(explicit: str | None = None) -> list[dict]:
             "sha256": e["sha256"],
             "url": e["url"],
         }
+        # data-driven browse tags (s20 delta): the hardcoded walk-tag
+        # sets below snapshot the PLATFORM library; a manifest may
+        # declare tags per row (the fixture library does) — the union
+        # keeps both sources working.
+        if e.get("tags"):
+            seen[eid]["manifest_tags"] = [str(t) for t in e["tags"]]
+        if e.get("frames"):
+            seen[eid]["manifest_frames"] = int(e["frames"])
     return list(seen.values())
 
 
@@ -551,10 +581,10 @@ def catalog_query(kind: str, category: str | None = None,
         for r in rows:
             r["category_name"] = cats.get(
                 r["category"], {}).get("name", r["category"])
-            tags = clip_tags(r["id"])
+            tags = clip_tags(r["id"], explicit_lib)
             if tags:
                 r["tags"] = tags
-            fr = clip_frames(r["id"])
+            fr = clip_frames(r["id"], explicit_lib)
             if fr is not None:
                 r["frames"] = fr
                 r["duration_s"] = round(fr / FBX_FPS, 2)

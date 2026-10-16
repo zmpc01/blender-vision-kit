@@ -496,6 +496,9 @@ def build_statue(spec, path):
     dz = -min(zs)
     statue.location.z += dz
     bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
+    zs = [v.co.z for v in statue.data.vertices]
+    spec["_measured_height"] = round(max(zs) - min(zs), 4)
+    spec["_measured_min_z"] = round(min(zs), 5)
     bpy.ops.object.select_all(action='DESELECT')
     statue.select_set(True)
     bpy.context.view_layer.objects.active = statue
@@ -681,6 +684,9 @@ def main():
             "size": os.path.getsize(path),
             "sha256": _sha256_file(path),
             "url": "file://" + os.path.abspath(path),
+            "tags": truth["clips"][spec["id"]]["tags"],
+            "frames": truth["clips"][spec["id"]]["frames"][1] 
+                  - truth["clips"][spec["id"]]["frames"][0] + 1,
         })
         anim_rows.append({"id": spec["id"], "categoryCode": spec["cat"],
                           "name": spec["name"], "nameEn": spec["nameEn"]})
@@ -702,6 +708,8 @@ def main():
             "group": spec["group"], "group_label": spec["group_label"],
             "size": os.path.getsize(path),
             "sha256": _sha256_file(path),
+            "height_m": spec.get("_measured_height"),
+            "feet_min_z_m": spec.get("_measured_min_z"),
         }
         manifest_note = "built by rh_fixture_lib (procedural)"
         print(f"[fixture] statue {spec['name']}: {path}")
@@ -717,7 +725,7 @@ def main():
             "size": os.path.getsize(path),
             "sha256": _sha256_file(path),
         })
-        models.append({"group": spec["group"], "label": spec["group_label"],
+        models.append({"key": spec["group"], "label": spec["group_label"],
                        "models": [{"id": spec["name"], "name": spec["name"],
                                    "url": "file://" + os.path.abspath(path)}]})
     _clean_scene()
