@@ -3957,3 +3957,18 @@ Stage Summary:
 - tip 84cd8d3 (rebased over the film lane's 3bd04ec/73f6633 twice, zero force); battery 35/35; every ≥P2 finding from wave-1 closed with pins or honest debts documented in the triage close-status
 - the round's meta: (1) display-mangle strikes even repr() — believe the parser; (2) one REAL syntax error survived to commit because edits landed between parse checks — parse BEFORE every commit; (3) Edit+Bash in one parallel block = the file-race twice; (4) the single-owner-read trap (node_tree ID) is gotcha-11's family; (5) fresh-sandbox: install.sh BLENDER_BIN override skips the tools/blender symlink the battery needs
 - coordination: the film lane (tfog scene GREEN + flow strip GREEN + their 3 new probe laws: nulled-markers still flip scene.camera at frame_set → DELETE+recreate is the only safe probe path; scene.collection.objects is direct-members-only; workbench renders fog-volume surfaces opaque) — all absorbed in their commit messages; the lane should rebase onto 84cd8d3 for the B1 finish fix + 126-pin docs before staging exports
+
+---
+Task ID: session-20 (the RH INTEGRATION lane — vendor + dog food + stress test)
+Agent: Super Z (main orchestrator; visual verdicts stay with the principal)
+
+Task: user mandate — "we have integrated a new animation library (2k+) + some more humanoid rigged models into the kit: dog food and stress test those latest integrations; apply to existing projects or use a new project tailored for these data"
+
+Work Log:
+- fresh sandbox restored: PAT sweep (ghp_twrZ... ACTIVE user=zmpc01; the kickoff PAT ghp_Uj7... is 401-DEAD), clone tip 37c00b9 (film lane: tfog stills ALL 12 eye-certified), SKILL/HANDOFF/PLAN absorbed, Blender 5.2.2 foreground chunked-DL (gotcha-12 reconfirmed: setsid detached = reaped)
+- found the integration: mainline s38/s39 = rh_canvas.py (2,032 Mixamo 65-bone mocap FBX + 99 statues; catalog/fetch/import/bind; 9 laws) + UAL vendored hero path + Quaternius rigged FBX research models
+- DATA-SOURCE P1 FINDING: beulahkemp/RH-canvas-animations + RH-canvas-characters are GONE from GitHub (404; no forks, no wayback captures, no HF/gitee mirrors, no release attachments) — verified 2026-10-16. The module's data layer was a single point of failure: code ships, data does not. Mitigation = offline fixture library (this session builds it)
+- vendored rh_canvas.py + test_rh_canvas.py + docs/rh_canvas.md verbatim (zero code drift; UA + provenance note only); grafted the placement_lib ARMATURE branch (mainline R8): _armature_points + _armature_box_bvh + branches in world_bvh/surface_samples/_polys_world; place_on footprint_fallback mesh-only + footprint_source; move_to/seat_at vs-guard fixed for ARMATURE (.data is a truthy Armature block with no .vertices — old getattr guard passed it and len() raised); suite roster 36->37; pushed a939253 (rebased over the film lane's 9e16465, zero force; GitLab WAF 403 x8 — retry pending)
+
+Stage Summary:
+- the vendor is on GitHub; next: rh_fixture_lib.py (offline Mixamo-convention fixture library generator + self-verifying truth JSON), test_rh_fixture battery, the dog-food motion-lab scene (RH fixture clips + UAL hero + Quaternius rigged models + statues), sub-agent audit + usability waves, principal-eye motion-grid verification
