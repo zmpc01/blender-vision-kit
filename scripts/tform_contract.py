@@ -100,21 +100,20 @@ DEST_DRUMMERS = {
     "point": (12.6, 0.0),
     "capacity": ((12.0, -1.5), (13.5, 1.5)),
 }
-# officers: TWO 1-agent pops, adjacent destination boxes 0.5 m apart
-# (y; the design's "~0.9" was approximate -- REV note: the clasp
-# recipe pins contact distance_m <= 0.15, and a natural reach step
-# covers ~0.35/arm, so 0.5 apart makes the grip physically honest),
-# non-overlapping; they converge during the ring hold and the
-# bake_interaction clasp lives at their measured arrival.
+# officers: TWO 1-agent pops, adjacent destination boxes INSIDE the
+# ring (round-5 camprobe: from every outside angle the r=4 ring slots
+# screen the pair; INSIDE the circle the ring forms AROUND the
+# principals -- ceremony-correct and camera-clean). 0.5 m apart (y);
+# the bake_interaction clasp lives at their measured arrival.
 DEST_OFFICER_A = {
     "id": "officer_w",
-    "point": (4.9, 0.25),
-    "capacity": ((4.6, 0.05), (5.2, 0.45)),
+    "point": (1.6, 0.25),
+    "capacity": ((1.3, 0.05), (1.9, 0.45)),
 }
 DEST_OFFICER_B = {
     "id": "officer_e",
-    "point": (4.9, -0.25),
-    "capacity": ((4.6, -0.45), (5.2, -0.05)),
+    "point": (1.6, -0.25),
+    "capacity": ((1.3, -0.45), (1.9, -0.05)),
 }
 
 # --- the population plan (cache N = 102; ingest order = the cap law) ---

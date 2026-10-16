@@ -76,19 +76,20 @@ SHOTS_V1 = [
     ("S9",  937, 972, "the streaming column funnels through the gap"),
     ("S10", 973, 1008, "the standard bearer crosses the foreground "
                        "(keyed)"),
-    ("S11", 1009, 1044, "title: THE DRILL over the banner + drum "
-                        "platform"),
+    ("S11", 1009, 1044, "title: the bearer PLANTS the banner (f1009) "
+                        "-- THE DRILL over the banner + dais"),
     ("S12", 1045, 1080, "final aerial: the mark, the long shadows, "
                         "the departing file"),
 ]
 
 CAMS_V1 = [
-    # S1: aerial NE (high, outside the walkable, row-free)
-    ("CAM_S1",  (26.0, -18.0, 14.0), (26.0, -18.0, 14.0), 35,
-     (0.0, 0.0, 0.0), False, 0.0),
-    # S2: inside the colonnade shade, low, looking E along the columns
-    ("CAM_S2",  (-20.0, -18.3, 1.5), (-20.0, -18.3, 1.5), 40,
-     (10.0, -18.0, 1.2), False, 0.0),
+    # S1: aerial SE high (the march + the gap + the colonnade corner)
+    ("CAM_S1",  (24.0, -26.0, 18.0), (24.0, -26.0, 18.0), 35,
+     (2.0, 8.0, 0.0), False, 0.0),
+    # S2: from the E looking W down the shade line (the colonnade
+    # recedes; round-1/2/3: from the W the nearest watchers block)
+    ("CAM_S2",  (14.0, -16.0, 3.2), (14.0, -16.0, 3.2), 40,
+     (-16.0, -18.0, 0.6), False, 0.0),
     # S3: from the gap looking S at the assembly (inside the strip N)
     ("CAM_S3",  (0.0, 16.5, 2.4), (0.0, 16.5, 2.4), 40,
      (0.0, 6.0, 0.8), False, 0.0),
@@ -96,19 +97,21 @@ CAMS_V1 = [
     # arcs W->E over the wheel annulus
     ("CAM_S4",  (-14.0, -8.0, 9.0), (10.0, -8.0, 8.0), 35,
      (0.0, 6.0, 0.5), False, 0.0),
-    # S5: the keyed crane close: low tracking the feet across the arc
-    ("CAM_S5",  (-6.0, -3.5, 1.5), (6.0, -3.5, 1.5), 50,
-     (0.0, 6.0, 0.6), False, 0.0),
+    # S5: the keyed crane close, BACKED OFF one ring-radius (round-1:
+    # the lens sat inside the formation band -- a wall of white)
+    ("CAM_S5",  (-8.0, -4.5, 2.0), (8.0, -4.5, 2.0), 40,
+     (0.0, 5.5, 0.5), False, 0.0),
     # S6: high S over the colonnade: the halt snap + the ring re-form
     ("CAM_S6",  (0.0, -17.0, 9.0), (0.0, -17.0, 9.0), 40,
      (0.0, 2.0, 0.0), False, 0.0),
-    # S7: tight on the officers (just off the ring's E edge; keepouts
-    # are EMPTY this film -- the lens stands inside the walkable by
-    # design, noted for the camprobe wave)
-    ("CAM_S7",  (6.4, 1.8, 1.5), (6.4, 1.8, 1.5), 50,
-     (4.9, 0.1, 0.9), False, 0.0),
-    # S8: low close at the ring's W edge as the formation breaks
-    ("CAM_S8",  (-6.2, 0.8, 1.4), (-6.2, 0.8, 1.4), 45,
+    # S7: the clasp INSIDE the circle (round-5 contract REV: the
+    # officers' boxes moved inside the ring -- the ring forms around
+    # the principals; this ray from the SW-inner yard is clean)
+    ("CAM_S7",  (0.0, -3.2, 1.5), (0.0, -3.2, 1.5), 35,
+     (1.6, 0.0, 0.9), False, 0.0),
+    # S8: low close at the ring's W edge, tightened (the break reads
+    # at f860+)
+    ("CAM_S8",  (-5.2, 0.6, 1.3), (-5.2, 0.6, 1.3), 45,
      (0.0, 0.5, 0.8), False, 0.0),
     # S9: inside the barracks strip N looking S back at the stream
     ("CAM_S9",  (0.0, 26.0, 2.6), (0.0, 26.0, 2.6), 40,
@@ -116,10 +119,10 @@ CAMS_V1 = [
     # S10: the standard bearer crosses the foreground (low, W side)
     ("CAM_S10", (-16.0, -14.0, 1.6), (-16.0, -14.0, 1.6), 45,
      (-9.0, -6.0, 1.1), False, 0.0),
-    # S11: the banner + drum platform from the E (the title reads on
-    # the banner's W face)
+    # S11: the PLANTED banner + the dais (the bearer plants at f1009
+    # and holds -- round-1: the banner had EXITED frame by the title)
     ("CAM_S11", (17.5, 4.0, 1.8), (17.5, 4.0, 1.8), 40,
-     (10.8, 0.0, 1.6), False, 0.0),
+     (-3.5, -12.2, 1.6), False, 0.0),
     # S12: final aerial SW: the mark + long shadows + the departing file
     ("CAM_S12", (-20.0, -14.0, 12.0), (-20.0, -14.0, 12.0), 35,
      (2.0, 6.0, 0.0), False, 0.0),
@@ -239,16 +242,17 @@ def _heroes(scene):
         ob.data.materials.append(make_material(f"CA.Body.{name}", rgb,
                                                rough=0.5))
         out[name] = ob
-    # the BANNER: pole + cloth plane parented to the bearer (rev 1:
-    # simple parent; prop_carry path-rebasing is the rev-2 upgrade)
+    # the BANNER: pole + cloth parented to the bearer -- the pole is
+    # RAISED (round-2 probe: the cone centered at the root origin sat
+    # half-underground with the cloth at the feet)
     pole = bpy.data.objects.new("banner_pole",
                                 _banner_pole_mesh("banner_pole"))
-    pole.location = (0.0, 0.0, 0.0)
+    pole.location = (0.0, 0.0, 2.0)
     scene.collection.objects.link(pole)
     pole.parent = out["StandardBearer"]
     cloth = bpy.data.objects.new("banner_cloth",
                                  _banner_cloth_mesh("banner_cloth"))
-    cloth.location = (0.0, 0.0, 0.0)
+    cloth.location = (0.0, 0.0, 2.3)
     scene.collection.objects.link(cloth)
     cloth.parent = pole
     out["banner"] = cloth
@@ -496,15 +500,18 @@ def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
 # ======================================================================
 
 def _kf_standard_bearer(ctx):
-    """The banner cross: waits W of the yard, crosses the foreground
-    during S10 (frames 973-1008), exits W. Bezier."""
+    """The banner cross + the PLANT: waits W, crosses the foreground
+    during S10 (973-1008), PLANTS the banner at f1009 (the title
+    beat) and holds through the end -- the S11 title frames the
+    planted banner against the dais."""
     sb = ctx["heroes"]["StandardBearer"]
     _kf(sb, 1, loc=(-24.0, -10.0), rot_z=math.radians(90.0))
     _kf(sb, 940, loc=(-24.0, -10.0), rot_z=math.radians(90.0))
     _kf(sb, 973, loc=(-20.0, -12.0), rot_z=math.radians(70.0))
     _kf(sb, 990, loc=(-11.0, -9.0), rot_z=math.radians(90.0))
     _kf(sb, 1008, loc=(-4.0, -12.5), rot_z=math.radians(110.0))
-    _kf(sb, 1044, loc=(2.0, -16.0), rot_z=math.radians(140.0))
+    _kf(sb, 1020, loc=(-4.0, -12.5), rot_z=math.radians(180.0))
+    _kf(sb, 1080, loc=(-4.0, -12.5), rot_z=math.radians(180.0))
     _bezier(sb)
 
 
