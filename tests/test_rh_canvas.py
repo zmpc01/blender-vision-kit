@@ -561,7 +561,11 @@ def r9():
     cache = os.path.join(_OUT_ROOT, "rh_canvas_cache_r9")
     m = next(m for m in models if m["name"] == "Female")
     res = rh_canvas.fetch_previews(["Female"], cache=cache)
-    check("R9g preview fetch status ok", res[0]["status"], "ok")
+    # 'ok' on a cold cache, 'ok-cached' when a prior run verified the file —
+    # both mean a VERIFIED preview is on disk (the cache dir persists
+    # across battery runs under KIT_OUT)
+    check("R9g preview fetch status ok|ok-cached",
+          res[0]["status"] in ("ok", "ok-cached"), True)
     head = open(res[0]["dest"], "rb").read(8)
     check("R9h preview is a real PNG", head == rh_canvas.PNG_MAGIC, True)
     res2 = rh_canvas.fetch_previews(["Female"], cache=cache)
