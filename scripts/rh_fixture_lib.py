@@ -185,12 +185,19 @@ def build_action(arm, spec):
 
     kind = spec["kind"]
     n = frames
+    # AXIS LAW (s20-A1 F-P1, two-probe-verified): pose-bone LOCATION is
+    # BONE-LOCAL — this rig's Hips bone points +Z WORLD, so local Y =
+    # world UP, local X = world +X, local Z = world -Y (horizontal).
+    # Vertical root motion keys LOCAL Y; the old local-z keys hopped
+    # SIDEWAYS (world hips z constant — two independent probes agreed
+    # while the per-actor-follow camera masked it from my eyes: the
+    # self-sycophancy trap, caught by the numbers).
     if kind == "walk":                      # in-place: hip bounce + leg swing
         for f in range(1, n + 1, 6):
             t = (f - 1) / max(1, n - 1)
             ph = 2 * math.pi * t * spec.get("cycles", 2)
             swing = 0.45 * math.sin(ph)
-            _set_pb(arm, "Hips", loc=(0, 0, 0.02 * abs(math.sin(ph))),
+            _set_pb(arm, "Hips", loc=(0, 0.02 * abs(math.sin(ph)), 0),
                     frame=f)
             _set_pb(arm, "LeftUpLeg", rot_euler=(-swing, 0, 0), frame=f)
             _set_pb(arm, "RightUpLeg", rot_euler=(swing, 0, 0), frame=f)
@@ -206,7 +213,7 @@ def build_action(arm, spec):
             t = (f - 1) / max(1, n - 1)
             ph = 2 * math.pi * t * spec.get("cycles", 4)
             swing = 0.7 * math.sin(ph)
-            _set_pb(arm, "Hips", loc=(travel * t, 0, 0.05 * abs(math.sin(ph))), frame=f)
+            _set_pb(arm, "Hips", loc=(travel * t, 0.05 * abs(math.sin(ph)), 0), frame=f)
             _set_pb(arm, "LeftUpLeg", rot_euler=(-swing, 0, 0), frame=f)
             _set_pb(arm, "RightUpLeg", rot_euler=(swing, 0, 0), frame=f)
             _set_pb(arm, "LeftLeg", rot_euler=(0.5 * max(0.0, math.sin(ph)), 0, 0), frame=f)
@@ -218,7 +225,7 @@ def build_action(arm, spec):
         for f in range(1, n + 1, 5):
             t = (f - 1) / max(1, n - 1)
             ph = 2 * math.pi * t * spec.get("cycles", 3)
-            _set_pb(arm, "Hips", loc=(0, 0, 0.03 + 0.02 * math.sin(ph)),
+            _set_pb(arm, "Hips", loc=(0, 0.03 + 0.02 * math.sin(ph), 0),
                     rot_euler=(0, 0, 0.15 * math.sin(ph)), frame=f)
             _set_pb(arm, "LeftArm", rot_euler=(0, 0, 2.4 + 0.3 * math.sin(ph)), frame=f)
             _set_pb(arm, "RightArm", rot_euler=(0, 0, -2.4 - 0.3 * math.sin(ph)), frame=f)
@@ -236,7 +243,7 @@ def build_action(arm, spec):
                 z = -0.18 + 1.25 * math.sin(math.pi * (t - 0.25) / 0.45)
             else:
                 z = 0.0
-            _set_pb(arm, "Hips", loc=(0, 0, z), frame=f)
+            _set_pb(arm, "Hips", loc=(0, z, 0), frame=f)
             crouch = 0.9 if (t < 0.25 or t > 0.8) else (1.15 if 0.35 < t < 0.6 else 1.0)
             _set_pb(arm, "LeftUpLeg", rot_euler=(-0.8 * (1 - crouch), 0, 0), frame=f)
             _set_pb(arm, "RightUpLeg", rot_euler=(-0.8 * (1 - crouch), 0, 0), frame=f)
@@ -246,7 +253,7 @@ def build_action(arm, spec):
             _set_pb(arm, "RightArm", rot_euler=(0, 0, -1.6 * (t < 0.7 and t > 0.25)), frame=f)
     elif kind == "sit":                     # low-motion pose hold
         for f in (1, n // 2, n):
-            _set_pb(arm, "Hips", loc=(0, 0.05, -0.42), rot_euler=(0.35, 0, 0), frame=f)
+            _set_pb(arm, "Hips", loc=(0, -0.42, 0), rot_euler=(0.35, 0, 0), frame=f)
             _set_pb(arm, "LeftUpLeg", rot_euler=(-1.45, 0, 0), frame=f)
             _set_pb(arm, "RightUpLeg", rot_euler=(-1.45, 0, 0), frame=f)
             _set_pb(arm, "LeftLeg", rot_euler=(1.4, 0, 0), frame=f)
@@ -263,7 +270,7 @@ def build_action(arm, spec):
     elif kind == "die":                     # collapse to floor
         for f in range(1, n + 1, 4):
             t = _ease((f - 1) / max(1, n - 1))
-            _set_pb(arm, "Hips", loc=(0.1 * t, 0, -0.95 * t),
+            _set_pb(arm, "Hips", loc=(0.1 * t, -0.95 * t, 0),
                     rot_euler=(1.35 * t, 0, 0), frame=f)
             _set_pb(arm, "LeftUpLeg", rot_euler=(-1.3 * t, 0, 0), frame=f)
             _set_pb(arm, "RightUpLeg", rot_euler=(-1.3 * t, 0, 0), frame=f)
@@ -599,8 +606,7 @@ def main():
             (100.0, 1.0, 'm_yup', 0.0)]
     for node_scale, usf, rest_mode, node_rot in grid:
         recipe = {"node_scale": node_scale, "usf": usf,
-                  "rest_mode": rest_mode, "node_rot": node_rot,
-                  "curve_x100": True}
+                  "rest_mode": rest_mode, "node_rot": node_rot}
         export_probe(probe_path)          # fresh file per trial (no compounding)
         fxp.patch_file(probe_path, **recipe)
         m, imp_arm = verify_import_laws(probe_path)
@@ -655,11 +661,10 @@ def main():
             xs, ys = hips[0], hips[1]
             xy = sum(math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1])
                      for i in range(1, len(xs)))
-            # unit-aware: raw cm values (usf=100 recipe) read /100; the
-            # pinned usf=1 recipe lands curves in METERS (the importer
-            # applies the unit factor the platform files never carried)
-            if RECIPE and RECIPE.get("usf") == 100.0:
-                xy /= 100.0
+            # the pinned usf=1 recipe lands curves in METERS (the
+            # platform's raw-cm files are unrecoverable offline — the
+            # documented deviation; the importer's unit factor applies)
+
         animated = 0
         seen = set()
         for fc in fcs:
@@ -669,6 +674,31 @@ def main():
                 if b not in seen:
                     seen.add(b)
         animated = len(seen)
+        # ANIMATED-BEHAVIOR GATES (s20-A1: the pipeline shipped a dead
+        # stage + a wrong axis green because nothing gated motion —
+        # rest-only laws structurally cannot catch either). These gate
+        # WORLD hips z (frame-evaluated — axis-convention-proof).
+        sc = bpy.context.scene
+        wz = []
+        for f in (spec["frames"] // 4, spec["frames"] // 2,
+                  3 * spec["frames"] // 4):
+            sc.frame_set(f)
+            bpy.context.view_layer.update()
+            hw = imp_arm.matrix_world @ \
+                imp_arm.pose.bones[MIX + "Hips"].matrix.translation
+            wz.append(round(hw.z, 3))
+        sc.frame_set(1)
+        if spec["kind"] == "jump" and (max(wz) - min(wz)) < 0.6:
+            raise SystemExit(
+                f"[fixture] VERTICAL-ROOT-MOTION GATE FAILED on "
+                f"{spec['id']}: hips world-z samples {wz} (span "
+                f"{max(wz) - min(wz):.2f} m < 0.6) — the leap does not "
+                f"elevate (the axis law bit again?)")
+        if spec["kind"] == "die" and min(wz) > 0.6:
+            raise SystemExit(
+                f"[fixture] COLLAPSE GATE FAILED on {spec['id']}: hips "
+                f"world-z samples {wz} (expected a drop to ~0.2 m) — "
+                f"the die does not fall")
         if spec["kind"] == "run" and abs(xy - spec.get("travel_m", 3.0)) > 0.6:
             raise SystemExit(
                 f"[fixture] XY-PATH LAW FAILED on {spec['id']}: hips XY "
@@ -677,7 +707,7 @@ def main():
             "name": spec["name"], "nameEn": spec["nameEn"],
             "category": spec["cat"], "frames": m["action_frames"],
             "obj_scale": m["obj_scale"], "rot_x_deg": m["rot_x_deg"],
-            "hips_z_raw_cm": m["hips_z_raw"],
+            "hips_z_range_m": m["hips_z_raw"],
             "xy_path_m": round(xy, 3),
             "animated_bones": animated,
             "t_pose_span_m": m["t_pose_span_m"],

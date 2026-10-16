@@ -13,6 +13,14 @@ location fcurve values raw centimetres, fps 30.
 
 Mechanics: parse_fbx (namedtuple tree) -> mutable encode_bin.FBXElem
 tree (type-preserving) -> in-place mutation -> encode_bin.write.
+
+s20-A1 (X-P1): the ANIMATION-CURVE remap stage was DELETED — the OP
+connection parse read the wrong direction (child=curve, parent=cn) and
+the stage never executed (t_curves/r_curves always 0; measured by
+re-patch probe). The shipped clips therefore carry the EXPORTER's raw
+round-trip curves (metres, Blender-axes) and the calibration passed
+BECAUSE the stage was inert. The fixture's truth records what the
+import really lands; no curve-value remap is claimed anywhere now.
 """
 import math
 import os
@@ -163,15 +171,8 @@ def _t_remap_rest(v):
     return [x, z, -y]
 
 
-def _t_remap_curve(v):
-    """Curve values: same axis map, x100 — the raw-CENTIMETRE law
-    (law 5): hips location fcurves stay raw cm post-import."""
-    x, y, z = v
-    return [x * 100.0, z * 100.0, -y * 100.0]
-
-
 def patch_tree(root, node_scale=100.0, usf=100.0, rest_mode='m_yup',
-               node_rot=0.0, curve_x100=True):
+               node_rot=0.0):
     """Platform-convention patch, RECIPE-PARAMETERIZED. The calibration
     (main) searches the recipe grid against the 9-law oracle and pins
     the winner — no hand-deduced constants.
@@ -247,99 +248,54 @@ def patch_tree(root, node_scale=100.0, usf=100.0, rest_mode='m_yup',
                 q.props = list(q.props[:len(q.props) - 3]) \
                     + [pack('<d', 0.0), pack('<d', 0.0), pack('<d', 0.0)]
 
-    # ---- animation curves (via OP connections) ----
-    conns = _find(root, b'Connections')
-    models_by_uid = {}
-    for c in objs.elems:
-        if c.id == b'Model' and c.props:
-            models_by_uid[c.props[0]] = c
-    cn_by_uid = {}
-    for c in objs.elems:
-        if c.id == b'AnimationCurveNode' and c.props:
-            cn_by_uid[c.props[0]] = c
-
-    chan_of_curve = {}     # curve uid -> (cn uid, b'X'|b'Y'|b'Z')
-    target_of_cn = {}      # cn uid -> (bone base, b'T'|b'R')
-    for c in (conns.elems if conns else []):
-        if c.id != b'C' or len(c.props) < 4 or c.props[0] != b'OP':
-            continue
-        child, parent, prop = c.props[1], c.props[2], c.props[3]
-        if prop in (b'd|X', b'd|Y', b'd|Z') and child in cn_by_uid:
-            chan_of_curve[child] = (parent, prop[-1:])
-        elif prop in (b'Lcl Translation', b'Lcl Rotation') \
-                and child in cn_by_uid and parent in models_by_uid:
-            nm = models_by_uid[parent].props[1]
-            if isinstance(nm, bytes):
-                bone = nm.split(b'\x00\x01')[0]
-                kind = b'T' if prop == b'Lcl Translation' else b'R'
-                target_of_cn[child] = (bone, kind)
-
-    groups = {}
-    for c in objs.elems:
-        if c.id != b'AnimationCurve' or not c.props:
-            continue
-        link = chan_of_curve.get(c.props[0])
-        if link is None:
-            continue
-        tgt = target_of_cn.get(link[0])
-        if tgt is None:
-            continue
-        kts = kvf = None
-        for e2 in c.elems:
-            if e2.id == b'KeyTime':
-                kts = e2.props[0]
-            elif e2.id == b'KeyValueFloat':
-                kvf = e2.props[0]
-        if kts is None or kvf is None:
-            continue
-        groups.setdefault(tgt, {})[link[1]] = (kts, kvf)
-
-    n_remapped_t = n_remapped_r = 0
-    for (bone, kind), chans in groups.items():
-        if kind == b'T' and len(chans) == 3:
-            ls = [chans[b'X'][1], chans[b'Y'][1], chans[b'Z'][1]]
-            if not (len(ls[0]) == len(ls[1]) == len(ls[2])):
-                continue                      # unaligned keys: skip honestly
-            for i in range(len(ls[0])):
-                x, y, z = ls[0][i], ls[1][i], ls[2][i]
-                nx, ny, nz = _t_remap_curve((x, y, z))
-                ls[0][i], ls[1][i], ls[2][i] = nx, ny, nz
-            n_remapped_t += 1
-        elif kind == b'R' and len(chans) == 3:
-            xs, ys, zs = chans[b'X'][1], chans[b'Y'][1], chans[b'Z'][1]
-            if not (len(xs) == len(ys) == len(zs)):
-                continue
-            for i in range(len(xs)):
-                ex, ey, ez = _rot_remap((xs[i], ys[i], zs[i]))
-                xs[i], ys[i], zs[i] = ex, ey, ez
-            n_remapped_r += 1
-
     # ---- purge the ARMATURE NODE's baked object curves ----
     # The exporter animates the object node even when static; the baked
     # curves carry the (-90, x100) bake and OVERRIDE the patched P
     # records at import (the object re-reads them at frame 1). The node
     # is identity by law — its curves and connections must GO.
     arm_uid = arm_node.props[0]
+    # rebuild the cn->Model mapping (the dead curve stage's tables are
+    # gone; the purge only needs which curve nodes target the armature)
+    conns = _find(root, b'Connections')
+    models_by_uid = {}
+    for c in objs.elems:
+        if c.id == b'Model' and c.props:
+            models_by_uid[c.props[0]] = c
+    cn_by_uid = {c.props[0] for c in objs.elems
+                 if c.id == b'AnimationCurveNode' and c.props}
     arm_cn_uids = set()
-    for cn_uid, (bone, kind) in target_of_cn.items():
-        if bone == b'FixtureArm':
-            arm_cn_uids.add(cn_uid)
+    for c in (conns.elems if conns else []):
+        if c.id == b'C' and len(c.props) >= 4 and c.props[0] == b'OP' \
+                and c.props[3] in (b'Lcl Translation', b'Lcl Rotation') \
+                and c.props[1] in cn_by_uid \
+                and c.props[2] in models_by_uid:
+            nm = models_by_uid[c.props[2]].props[1]
+            if isinstance(nm, bytes) and \
+                    nm.split(b'\x00\x01')[0] == b'FixtureArm':
+                arm_cn_uids.add(c.props[1])
     if arm_cn_uids:
+        # curve elements connect to their cn via OP 'd|X' — collect the
+        # cn uids and drop every AnimationCurve whose parent cn is purged
+        purge_curves = set()
+        if conns is not None:
+            for c in conns.elems:
+                if c.id == b'C' and len(c.props) >= 4 \
+                        and c.props[0] == b'OP' \
+                        and c.props[3].startswith(b'd|') \
+                        and c.props[2] in arm_cn_uids:
+                    purge_curves.add(c.props[1])
         objs.elems = [c for c in objs.elems
                       if not (c.id in (b'AnimationCurveNode',
                                        b'AnimationCurve')
                               and (c.props[0] in arm_cn_uids
-                                   or chan_of_curve.get(c.props[0],
-                                                        (None,))[0]
-                                   in arm_cn_uids))]
+                                   or c.props[0] in purge_curves))]
         if conns is not None:
             conns.elems = [c for c in conns.elems
                            if not (len(c.props) >= 3
                                    and (c.props[1] in arm_cn_uids
                                         or c.props[2] in arm_cn_uids))]
 
-    return root, {'t_curves': n_remapped_t, 'r_curves': n_remapped_r,
-                  'bones': len(bone_nodes)}
+    return root, {'bones': len(bone_nodes)}
 
 
 def patch_file(path, **recipe):

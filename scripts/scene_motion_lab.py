@@ -204,6 +204,7 @@ def render_motion_strips(ctx, out_dir, n=6, engine='WORKBENCH'):
     """Per-actor motion strips: n cells across the actor's OWN clip
     range (the vision-native animation check — one image per actor)."""
     from blender_kit import normalize_engine_id
+    from mathutils import Vector
     sc = ctx["scene"]
     eng = normalize_engine_id(engine)
     sc.render.engine = eng
@@ -244,10 +245,12 @@ def render_motion_strips(ctx, out_dir, n=6, engine='WORKBENCH'):
             sc.frame_set(f)
             bpy.context.view_layer.update()
             a, b = pl._aabb(arm)
-            lo = a if lo is None else Vector((min(lo.x, a.x), min(lo.y, a.y),
-                                              min(lo.z, a.z)))
-            hi = b if hi is None else Vector((max(hi.x, b.x), max(hi.y, b.y),
-                                              max(hi.z, b.z)))
+            lo = (Vector((a.x, a.y, a.z)) if lo is None
+                  else Vector((min(lo.x, a.x), min(lo.y, a.y),
+                               min(lo.z, a.z))))
+            hi = (Vector((b.x, b.y, b.z)) if hi is None
+                  else Vector((max(hi.x, b.x), max(hi.y, b.y),
+                               max(hi.z, b.z))))
         mn, mx = lo, hi
         ctr = (mn + mx) * 0.5
         span = max(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z)
