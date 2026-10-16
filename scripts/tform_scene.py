@@ -59,10 +59,10 @@ CACHE_DIR_DEFAULT = "/tmp/crowdcache_tform"
 # it; the geometry was the cause). The ladder extended to functional
 # golden-hour elevations: e14 delivers the long raking shadows the
 # design asks for; e9/e6 murky, e4 pink-washed. Dust pinned 0.004.
-TFORM_SUN_STRENGTH = 3.0
-TFORM_SKY_STRENGTH = 0.4
-TFORM_SUN_ELEV_DEG = 14.0
-TFORM_DUST_DENSITY = 0.004
+tform_sun_strength = 3.0
+tform_sky_strength = 0.4
+tform_sun_elev_deg = 14.0
+tform_dust_density = 0.004
 
 SHOTS_V1 = [
     ("S1",  1,   96,  "aerial NE establish: the citadel yard, long "
@@ -141,8 +141,8 @@ CAMS_V3 = CAMS_V1
 # --- the keepout surface (contract-authoritative; the camprobe wave
 # adds rows as ONE edit -- the F-TD13 law; the scaffold is EMPTY) ------
 import tform_contract as C
-KEEPOUTS = tuple(C.CAM_KEEPOUTS)
-KEEPOUT_R = float(C.CAM_KEEPOUT_R)
+keepouts = tuple(C.CAM_KEEPOUTS)
+keepout_r = float(C.CAM_KEEPOUT_R)
 
 CROWD_TIER_PINS = []
 
@@ -380,22 +380,22 @@ def _shot_table(shots, cams):
 
 def _golden_hour(scene):
     """The golden-hour rig (the world defers it -- tform_world law 5):
-    the raking warm sun at TFORM_SUN_ELEV_DEG from the W + the warm-dim
+    the raking warm sun at tform_sun_elev_deg from the W + the warm-dim
     sky + the dust density re-applied. The LADDER re-pins these."""
     sun_data = bpy.data.lights.new("TFORM.Sun", type="SUN")
-    sun_data.energy = TFORM_SUN_STRENGTH
+    sun_data.energy = tform_sun_strength
     sun_data.color = (1.0, 0.62, 0.34)
     sun_data.angle = math.radians(1.5)
     sun = bpy.data.objects.new("TFORM.Sun", sun_data)
     scene.collection.objects.link(sun)
-    elev = math.radians(TFORM_SUN_ELEV_DEG)
+    elev = math.radians(tform_sun_elev_deg)
     azim = math.radians(255.0)      # raking from the WSW
     sun.rotation_euler = (math.pi / 2 - elev, 0.0, azim)
     sky = bpy.data.worlds.new("TF.GoldenHour")
     sky.use_nodes = True
     bg = sky.node_tree.nodes.get("Background")
     bg.inputs["Color"].default_value = (0.32, 0.27, 0.36, 1.0)
-    bg.inputs["Strength"].default_value = TFORM_SKY_STRENGTH
+    bg.inputs["Strength"].default_value = tform_sky_strength
     scene.world = sky
     # the dust: re-apply the ladder density onto the world's Volume
     # Scatter node (the world ships the placeholder)
@@ -408,7 +408,7 @@ def _golden_hour(scene):
     if vs is None:
         raise RuntimeError("tform_scene: dust_box carries no Volume "
                            "Scatter node")
-    vs.inputs["Density"].default_value = TFORM_DUST_DENSITY
+    vs.inputs["Density"].default_value = tform_dust_density
     return {"sun": sun, "sky": sky, "dust": dust}
 
 
@@ -679,8 +679,8 @@ def _honesty(ctx):
     # 4. the keepout surface (contract-vs-cache agreement, never a
     # literal -- the camprobe wave will add rows)
     applied = int(ctx["cache_block"]["crowd"]["keepouts_applied"])
-    fails += _ok("keepout count", len(KEEPOUTS) == applied,
-                 f"{len(KEEPOUTS)} rows == cache keepouts_applied "
+    fails += _ok("keepout count", len(keepouts) == applied,
+                 f"{len(keepouts)} rows == cache keepouts_applied "
                  f"({applied})")
 
     # 5. the officers + the beat window (the M5 evidence chain)
@@ -700,7 +700,7 @@ def _honesty(ctx):
     sun_e = sun.data.energy if (sun is not None and sun.data) else None
     fails += _ok("golden-hour sun",
                  sun is not None
-                 and abs((sun_e or 0.0) - TFORM_SUN_STRENGTH) < 1e-6,
+                 and abs((sun_e or 0.0) - tform_sun_strength) < 1e-6,
                  f"sun energy {sun_e}")
 
     # 7. the banner title keys read on BOTH owners (the 5.x
