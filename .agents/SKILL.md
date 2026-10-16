@@ -35,22 +35,18 @@ this variant serves agents with NATIVE image understanding. Design doc:
   QA only (code review, script execution, textual assertions — wave 5-b
   caught 3 real bugs this way); the principal makes EVERY visual verdict.
   Do not rebuild VLM bridges or delegated-vision paths — retracted.
-- Crowd sim lives in sibling zmpc01/blender-crowd-kit (pre-v1); the
-  in-kit stub was DELETED to avoid import shadowing.
-- Exit codes: look.py exits 3 on validator P0/P1; blrun propagates them
-  (wave-3 verified — the earlier "swallowed" claim was a pipeline probe
-  artifact: `$?` after `cmd | grep` is grep's exit).
+- Crowd sim lives in the vendored vendor/blender-crowd-kit submodule.
+- Exit codes: look.py exits 3 on validator P0/P1; blrun propagates them.
 - Vision regression: `tests/test_v1_look.py` (27 checks, in-Blender).
 
 ## Design philosophy (variant framing)
 
 Same hybrid architecture (3D-Agent, DD3M, Scenethesis): agent emits JSON
 patch or bpy script → blrun.sh → Blender → look.py renders+verdicts →
-the agent LOOKS at the images itself → iterate. The iteration loop —
-how fast the agent can act, see, and correct — matters more than the
-raw API surface. The variant's bet: an embodied eye cuts perception
-latency to zero but makes self-sycophancy the #1 failure mode, so the
-tool surface forces the numbers to travel WITH the images.
+the agent LOOKS at the images itself → iterate. The variant's bet: an
+embodied eye cuts perception latency to zero but makes self-sycophancy
+the #1 failure mode — the numbers travel WITH the images (s20 proved
+this extends to E2E motion claims: world-z sampling beside every strip).
 
 ## Core principles (internalize these)
 
@@ -255,10 +251,8 @@ vision_loop · render_speed · placement_and_physics · semantic_labeling ·
 prop_carry · rigged_characters · glTF_export · tdawn_vision_film (the
 film recipe + export command + crowd bridge contract) · crowd_fields ·
 gait_modifiers.
-## Session-12/13 meta (condensed — full: kb/tdawn_vision_film.md + docs/USABILITY_TD1* + USABILITY_R9.md)
+## Session-12/13 meta (ultra-condensed — full: kb/tdawn_vision_film.md + docs/USABILITY_TD1* + USABILITY_R9.md)
 
-- F-TD5 exporter view-layer sync LANDED; D18 asset-partition: 10
-  measured laws in docs/USABILITY_R9.md (chunks IMMUTABLE).
 - FACTORY-PURGE LAW: --factory-startup loads default Cube/Camera/Light
   into YOUR scene — purge at build_scene start.
 - Glow-surface law: dark-warm Base Color + saturated Emission Color set
@@ -267,29 +261,22 @@ gait_modifiers.
   --probe-camera) — the fix is a viewpoint move, not a retime.
 - NEVER run two blrun/EEVEE pipelines on one display (the flock makes
   it fail fast instead).
+- D18 asset-partition: 10 measured laws in docs/USABILITY_R9.md.
 
 ## SESSION 14/15 LAWS (condensed — full: docs/USABILITY_TD1/TF1 + HANDOFF session-14/15)
 
-- daemonize.py (double-fork) is the ONLY background survivor; it chdirs
-  "/" — absolute paths. blrun carries a per-DISPLAY flock (exit 90;
-  BLRUN_FORCE=1 bypass — suites NESTING blrun MUST set it).
-- make_material(arg3=ROUGHNESS; emission via F-TD11 kwargs). look.py
-  --probe-camera on EVERY reframe. Keepout rows (name,px,py,f0,f1
-  FRAMES) — seconds INERT; verify keepouts_applied counts ROWS.
-- Export-safe visibility = SCALE keys (hide_render does not export).
-- 5.2 slotted actions: use _iter_fcurves (channelbags). Park vendor
-  source meshes outside every frustum.
-- sfx events {name|kind, frame}; BEATS=(id,t_seconds,label) is the
-  CANONICAL agent-kit exporter's contract (shape-only here).
-- Rebase sides INVERT: --theirs = YOUR replayed commit. Re-render +
-  diff after every conflict resolution.
-- Night laws: emissive materials do not LIGHT; sky ladder dead → 0.12
-  + practicals; saturated neon owns local radiance; near-field
-  emission ceiling is DISTANCE-dependent (~1.1-1.3 close, 1.9 far OK).
-- Chrome cannot play 21MB GLBs — verify via API + stills. The FLOW
-  STRIP is the geometry-seam detector — run BEFORE cameras.
-- Governed-pair guard: land kit fix → tools/sync_shared.py --to
-  <consumer> → commit BOTH (cross-repo drift fails loudly).
+- daemonize.py (double-fork) is the ONLY background survivor; blrun's
+  per-DISPLAY flock exits 90 (BLRUN_FORCE=1 bypass — nested-blrun
+  suites MUST set it).
+- make_material(arg3=ROUGHNESS). look.py --probe-camera on EVERY
+  reframe. Keepout rows in FRAMES; verify keepouts_applied counts ROWS.
+- Export-safe visibility = SCALE keys. 5.2 slotted actions: _iter_fcurves.
+- sfx events {name|kind, frame}; BEATS=(id,t_seconds,label) canonical.
+- Rebase sides INVERT: --theirs = YOUR replayed commit.
+- Night laws: emissives do not LIGHT; near-field emission ceiling is
+  DISTANCE-dependent. The FLOW STRIP is the geometry-seam detector.
+- Governed-pair guard: land kit fix → sync_shared --to <consumer> →
+  commit BOTH.
 
 ## SESSION 15 FILM LAWS (recovered; full: docs/USABILITY_TF1_last_ferry.md)
 
@@ -325,17 +312,11 @@ gait_modifiers.
 - **Audit-before-implement ROI**: 3 cheap read-only audits → 1 real
   bug + the whole D19 spec. Cite file:line — but re-verify anchors by
   grep before batch-editing (they shift; symbol-cites are drift-proof).
-## SESSION 16 LAWS (the third film — condensed; full: USABILITY_TG1 + DESIGN_green_light REV-4)
+## SESSION 16 LAWS (the third film — ultra-condensed; full: USABILITY_TG1)
 
-- THE CAPACITY BOX IS AN ARRIVAL TRIGGER, NOT A CONTAINER: agents
-  GHOST on ENTER — design converge films FROM the box mechanics;
-  plaza-scale barricades there seal a nav pocket.
-- Speed envelope is PER-FILM (populations[0].mu+3σ caps ALL); NO
-  delayed emission; the x-sign palette split is SCENE-SIDE.
-- AgX-noon: the wash is SKY AMBIENT — tune the direct:ambient RATIO;
-  white cards need a DARK field; glyph emission sweep 1.9/3.9/5.5.
-- Clone-seam law: grep a sed-cloned tool for the PARENT'S scene module
-  before running; dress BEYOND the walkable's tail.
+- Capacity box = ARRIVAL TRIGGER (agents GHOST on ENTER); speed
+  envelope per-film; AgX-noon = tune direct:ambient ratio; clone-seam:
+  grep a sed-cloned tool for the PARENT'S scene module.
 
 
 ## SESSION 17 LAWS (the second KIT-QUALITY wave — 88 findings, all ≥P2 fixed)
@@ -354,26 +335,20 @@ gait_modifiers.
   settings (it dropped the previz:entity carrier).
 - _skinned_guard must check the ARMATURE's animation (the rig poses the
   mesh even when the mesh object has none).
-- Battery = suite_runner.sh (35 suites incl. the s19 pins); run --only
-  batches in ONE foreground call. Red-by-construction fixtures surface
-  when their masking failure heals — re-check expectations after
-  unmasking. Fix waves carry PINS or they are UNPINNED (s18 A6: the
-  whole wave was revert-silent; test_s19_wave_pins is the pattern).
+- Battery = suite_runner.sh (38 suites incl. the s19 pins + the two RH
+  rows); run --only batches in ONE foreground call. Fix waves carry
+  PINS or they are UNPINNED (test_s19_wave_pins is the pattern).
 
 
 ## SESSION 19 LAWS (the third exhaustion round + the native-vision e2e lane)
 
 - STALE-DEPSGRAPH PREFILTERS: every AABB prefilter that reads
-  matrix_world (pair_contact / audit_scene / seam_views) needs
-  view_layer.update() at entry — [set_location→audit] branched on the
-  PRE-move pose and false-PASSED the gate (F2B-21 class, 3 sites).
-- set_* ops now share the solver contract: write the rotation_mode's
-  REAL channel (QUATERNION included), guard animation, validate
-  override tokens ("rebase" was a fail-open lie). Rebases convert
-  world deltas via _world_delta_to_local / _world_rotation_delta_to_basis.
-- call_scene_animate is THE one animate dispatch — bind in try, bare
-  fallback, the call OUTSIDE the bind try (an in-body TypeError must
-  propagate; masking re-ran modules and duplicated side effects).
+  matrix_world needs view_layer.update() at entry (F2B-21 class).
+- set_* ops share the solver contract: write the rotation_mode's REAL
+  channel, guard animation, validate override tokens; rebases convert
+  world deltas via _world_delta_to_local.
+- call_scene_animate is THE one animate dispatch (bind in try / bare
+  fallback / the call OUTSIDE the bind try).
 - 5.x NODE_OWNER LAW: material-node keys land on the NODE_TREE's
   animation_data (node_tree = an ID block; RGBA = 4 channels) — read
   BOTH owners or false-negative (socket-level keying WORKS; the
@@ -388,27 +363,57 @@ gait_modifiers.
   ast.parse before EVERY commit (a real syntax error shipped once).
 
 
-## SESSION 17b LAWS (the fourth film: SQUALL — the storm-dusk regime; F-TS1..8)
+## SESSION 17b LAWS (the fourth film: SQUALL — ultra-condensed; full: USABILITY_TS1_squall.md + DESIGN_squall.md REV-3)
 
-- **F-TS1: the film path COMPOSES kit layers** (sidecar-gated
-  read_tick splice + real z; unlayered stays byte-identical) with the
-  paired tripwire fix (layout_composed marker + composed-aware gate).
-- **THE MARKER-CAMERA LAW**: shot markers override scene.camera in
-  their span — every probe tool nulls them in a finally. (s19 film-
-  lane addendum: NULLED markers STILL flip scene.camera at frame_set —
-  DELETE + recreate is the only safe probe path.)
-- **THE AXIAL-CRANE LAW**: an opaque roof makes the packed interior
-  visible ONLY along the colonnade axis (smoke-still-before-framing).
-- **THE RAGDOLL WALK-CLIP CLASS**: physics moves the ORIGIN; the mesh
-  keeps the walk clip — per-channel tumble overlay AFTER removing
-  bake2's flat whole-euler fcurves via the OWNING CHANNELBAG.
-- **chase_frame="belt" is a PIN, not a default** (F-TS2). Appended
-  populations: interval=1 + zone0-first + chase-last (F-TS4: the
-  native reads ONE global interval from the ID-SORTED populations[0]).
-- **THE SILENT-REPLACE LAW**: assert-guard every .replace() on a cam
-  table; the keepout row and the camprobe cert are ONE edit (F-TS7).
-- **The portal-axis naming trap (F-TS3)**: PortalAxis names the
-  CROSSING; NORTH_SOUTH = the wall at y=center.y. The loader N-pin
-  (F-TS5, expected_agents=) is a landed kit surface.
-- Ledger: docs/USABILITY_TS1_squall.md; design of record:
-  docs/DESIGN_squall.md REV-3.
+- **MARKER-CAMERA LAW**: shot markers override scene.camera in their
+  span; NULLED markers STILL flip it at frame_set — DELETE + recreate
+  is the only safe probe path.
+- F-TS1 film path COMPOSES kit layers (layout_composed marker +
+  composed-aware gate); RAGDOLL WALK-CLIP class (physics moves the
+  ORIGIN — tumble overlay via the OWNING CHANNELBAG).
+- chase_frame="belt" is a PIN (F-TS2); the SILENT-REPLACE LAW (assert
+  every .replace() on a cam table — F-TS7); portal-axis naming trap
+  (F-TS3); loader N-pin expected_agents= (F-TS5).
+
+
+## SESSION 20 LAWS (the RH integration lane — vendor + offline fixture + dog food)
+
+- **THE SELF-SYCOPHANCY CATCH (the round's headline)**: pose-bone
+  LOCATION is BONE-LOCAL (a +Z-world Hips bone => local Y = world up,
+  local Z = horizontal). "Vertical" root motion keyed on local Z hops
+  SIDEWAYS; the per-actor-follow camera masked it and the principal
+  eye-certified an illusion. TWO independent numeric probes caught it.
+  LAW: every eye-certified motion claim needs a numeric corroboration
+  (world-z sampling at sampled frames) — the two-column law extends to
+  E2E: the numbers travel WITH the strips.
+- The RH data source went DARK (repos 404, no mirrors) — the module
+  surface survived via the OFFLINE FIXTURE LIBRARY
+  (scripts/rh_fixture_lib.py): contract-conformant 65-bone clips built
+  by a STRUCTURED FBX REWRITE (the addon's own parse_fbx ->
+  mutable encode_bin tree -> patch -> encode; byte-structure-safe:
+  replace-only P records, per-slot type packing, S/R length-prefix
+  finalize). Empirical importer law: bone rests read the A-FLAGGED
+  CURVE records, not the P records (rest edits are inert; curves drive).
+  Documented deviations pinned in truth.json (obj scale 1.0, rot X 0 —
+  the platform's Maya-time unit baking is unrecoverable offline).
+- GATE ANIMATED BEHAVIOR, not just rest state: the fixture pipeline
+  shipped a dead stage + a wrong axis green because the laws only
+  measured rest. The generator now frame-evaluates WORLD hips z and
+  fails closed (jump span, die drop).
+- placement ARMATURE law: the box-proxy BVH and _polys_world quads MUST
+  share one face table (_ARMATURE_QUADS — index alignment by
+  construction; create_cube's face order differs = wrong poly tested =
+  false crossings). Blender bound_box corner order (probed): i&1->z,
+  i&2->y, i&4->x. An ARMATURE's .data is a TRUTHY Armature block with
+  no .vertices — type-check 'MESH', never getattr-truthiness.
+- Imported RH armatures are ANIMATED OBJECTS: move/place needs
+  override='keyframe'; anchor moves on the BBOX BOTTOM-CENTER (poses
+  offset the body from the origin); manual armature yaw is CLOBBERED by
+  object-level rotation keys — facing = the wrapper-empty pattern.
+- Renaming a pose bone AUTO-REMAPS the bound action's fcurve paths
+  (Blender rename fixup) — a channel-match decoy must bind a DIFFERENT
+  clip.
+- Battery = 38 suites (test_rh_fixture self-verifies vs the generator's
+  truth.json; the honest-skip protocol: exit 2 + SUITE-SKIP marker —
+  a zero-coverage run must NOT score PASS). Fine-grained-PAT signature:
+  API 200 + git 401 — provision repo trees via the API tarball endpoint.

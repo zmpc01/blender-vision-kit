@@ -1,5 +1,67 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
+> Session 20 close: 2026-10-16. HEAD = the RH INTEGRATION lane complete:
+> the 2k-animation + humanoid-model integration vendored from mainline
+> s38/s39, an OFFLINE fixture library (the data source went dark),
+> test_rh_fixture 13/13, the scene_motion_lab dog-food (7 clips + 2
+> statues, strips eye-certified WITH numeric gates), four sub-agent
+> audit/usability waves folded, battery 38/38. This block → the
+> session-19 block → docs/rh_canvas.md (s20 amendments) + worklog.
+
+## Session-20 close state (NEWEST — read this first)
+
+- **What landed**: rh_canvas.py + test_rh_canvas.py + docs/rh_canvas.md
+  vendored verbatim from mainline (b7c675d..6943ab5 lineage; sanctioned
+  deltas only: UA/provenance/data-driven tags+frames/--tag/--max-frames);
+  the placement_lib ARMATURE graft with the _ARMATURE_QUADS shared face
+  table (index-aligned BVH); scripts/rh_fixture_lib.py + _fixture_fbx_patch.py
+  (the offline fixture library: 8 contract-conformant Mixamo-family clips
+  + 3 statues + catalogs, self-verifying truth.json); tests/test_rh_fixture.py
+  (13 rows, ALL PASS); scripts/scene_motion_lab.py (the dog-food scene).
+- **THE DATA SOURCE IS DEAD**: beulahkemp/RH-canvas-animations +
+  RH-canvas-characters 404 (verified 2026-10-16; no forks, no wayback,
+  no mirrors). The fixture library is the RH path's data layer now.
+  ALSO: this round's GH PAT fails GIT auth on the sibling repos (API 200
+  + git "Invalid username or token" = fine-grained-token signature) —
+  provision repo trees via the API tarball endpoint
+  (api.github.com/repos/<r>/tarball/<ref>) until PAT scopes are fixed.
+- **THE SESSION'S LESSON (read before any motion work)**: pose-bone
+  LOCATION is bone-local; vertical root motion on local Z = sideways
+  hops; the per-actor-follow camera masked it and the principal
+  eye-certified an illusion. Two numeric probes caught it. Every
+  eye-certified motion claim needs world-space numeric corroboration.
+  The generator now gates animated behavior (frame-evaluated world-z)
+  fail-closed.
+- **Fresh-sandbox bootstrap for this repo** (what worked):
+  1. bash /home/z/my-project/scripts/setup_s20.sh (PAT sweep + clone —
+     write tokens into FILE contents, never inline shell)
+  2. Blender: bash /home/z/my-project/scripts/setup_s20_blender.sh
+     (foreground chunked DL + tools/blender symlink — background gets
+     reaped; BLENDER_BIN alone skips the symlink the battery needs)
+  3. Pillow into the BUNDLED python + host python3 (strips + the PY rows)
+  4. crowd-kit submodule: API tarball into vendor/blender-crowd-kit
+     (git auth fails under this PAT) + pip the 1.6.0 wheel BOTH sides
+     (bundled + host — test_crowd_e2e is mode PY)
+  5. fixture library: ./scripts/blrun.sh --background --python
+     scripts/rh_fixture_lib.py -- (idempotent; --force to rebuild)
+  6. battery: suite_runner --only batches (38 suites, foreground)
+- **GitLab archive branch github-canonical-s20**: the WAF 403'd EVERY
+  push this session (8 retries per push, ~8 pushes). FIRST CHORE next
+  session: `git push gitlab main:github-canonical-s20` (never force).
+- **Open queues for the next session**:
+  1. The UAL hero-swap leg (the "some more humanoid rigged models" ask):
+     assets_ual_actors.py + the vendored UAL 46-action library + the
+     Quaternius Male/Female_Casual.fbx (in previz research/_rig/) — the
+     any-rig boundary (channel-match refusals → the retarget recipe) is
+     untested ground; the kb says "hero swap is its own session".
+  2. The wrapper-empty facing pattern for animated actors (F-RH3) —
+     land it as a placement_lib/rh_canvas helper + lab integration.
+  3. Upstream-booking: the rh_canvas s20 deltas (data-driven tags/
+     frames, --tag/--max-frames) + the placement_lib vs-guard fix belong
+     in mainline's ledger (docs/FINDINGS_upstream.md pattern).
+  4. GitLab archive retry (above) + the next /home/sync bundle.
+
+
 > Session 19 close: 2026-10-15. HEAD = the THIRD audit-exhaustion round
 > (six fresh auditors + fix waves A–D + wave-2 verification, battery
 > 35/35) + the principal's NATIVE-VISION e2e probes. This block → the

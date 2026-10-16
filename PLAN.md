@@ -65,6 +65,34 @@ critique rounds — audit 5-a incorporated in DRAFT-2).
 - [x] Wave 3: T5 fresh-eyes doc validation — ship-arc fixed, exit-code lore corrected, error UX fixed
 - [x] Orchestrator vision passes on all wave outputs (sub-agents cannot see PNGs in this harness)
 
+
+### M12 — The RH integration lane (session 20, 2026-10-16 — COMPLETE)
+
+- [x] Vendor rh_canvas.py + test + docs from mainline s38/s39 (zero
+      code drift; data-driven deltas documented) + the placement_lib
+      ARMATURE graft (index-aligned _ARMATURE_QUADS table after the
+      S20-A3 audit)
+- [x] THE DATA-SOURCE P1: beulahkemp/RH-canvas-* went dark — mitigated
+      by the offline fixture library (scripts/rh_fixture_lib.py +
+      _fixture_fbx_patch.py): 8 choreographed 65-bone clips + 3 statues
+      + catalog files, recipe pinned by grid calibration against the
+      import-law oracle, self-verifying truth.json, ANIMATED-BEHAVIOR
+      gates (world-z) fail-closed
+- [x] test_rh_fixture 13/13 (catalog/fetch-verify+repair/import laws/
+      mannequin/bind+playback/refusals/swap-unpin/fingerprint/statue/
+      GLB round-trip/placement e2e/ensemble)
+- [x] scene_motion_lab: the dog-food humanoid scene (7 clips staged,
+      per-actor motion strips, stills, GLB 928KB)
+- [x] Native-vision e2e: 7/7 strips eye-certified AND the jump-apex
+      illusion caught + corrected via the numeric probes (the
+      self-sycophancy lesson is in SKILL s20)
+- [x] Four sub-agent waves (A1/A2/A3 code audits + U1 docs-only drive)
+      — every ≥P2 folded: F8 teeth, honest-skip, AgX pin, residue
+      purge, union framing, metadata contract, catalog filters,
+      placement vs-guards, the dead curve-stage deletion
+- [x] Battery 38/38 ALL GREEN; GitLab archive BLOCKED by WAF all
+      session (first chore next session); docs amendments landed
+
 ### M5 — Perception tuning campaign (CURRENT, session 4, 2026-09-30)
 Owner IS the vision agent; tuning targets what WE actually perceive best.
 Sub-agent vision reality (re-confirmed empirically, sessions 2+3): this
