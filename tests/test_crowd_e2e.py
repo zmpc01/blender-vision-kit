@@ -30,8 +30,13 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-WHEELS = ROOT / "vendor" / "blender-crowd" / "addon" / "blender_crowd" / "wheels"
 KIT = ROOT / "vendor" / "blender-crowd-kit"
+# s20: the vendored SUBMODULE is the single source (M3 vendored the
+# crowd-kit whole, its own vendor/blender-crowd inside) — the old
+# kit-root sibling path no longer exists; the integrity ledger is the
+# submodule's SHA256SUMS (committed), not a README prose pin.
+WHEELS = (KIT / "vendor" / "blender-crowd" / "addon" / "blender_crowd"
+          / "wheels")
 
 PASS = []
 FAILS = []
@@ -46,28 +51,31 @@ def check(name, cond, detail=""):
         print(f"[CROUDE2E] FAILED: {name}" + (f" — {detail}" if detail else ""))
 
 
-# --- 1. thin-vendor wheel integrity vs the README pin ---------------
-readme = (WHEELS / "README.md").read_text(encoding="utf-8")
-sha_m = re.search(r"sha256:\s*`([0-9a-f]{64})`", readme)
-size_m = re.search(r"size:\s*`(\d+)`\s*bytes", readme)
-check("pin.parse", sha_m is not None and size_m is not None,
-      "README integrity pin not found/parsable")
+# --- 1. thin-vendor wheel integrity vs the SHA256SUMS ledger --------
+led_path = WHEELS / "SHA256SUMS"
+led = {}
+if led_path.is_file():
+    for line in led_path.read_text(encoding="utf-8").splitlines():
+        parts = line.split()
+        if len(parts) == 2:
+            led[parts[1].lstrip("*")] = parts[0]
+check("pin.parse", bool(led), "SHA256SUMS ledger not found/parsable")
 wheels = sorted(WHEELS.glob("blender_crowd_native-*.whl"))
 check("wheel.single", len(wheels) == 1, f"found {len(wheels)} wheels")
 wheel_ver = ""
-if sha_m and size_m and len(wheels) == 1:
+if led and len(wheels) == 1:
     w = wheels[0]
     data = w.read_bytes()
-    check("wheel.sha256", hashlib.sha256(data).hexdigest() == sha_m.group(1),
+    check("wheel.sha256",
+          hashlib.sha256(data).hexdigest() == led.get(w.name),
           w.name)
-    check("wheel.size", len(data) == int(size_m.group(1)),
-          f"{len(data)} != {size_m.group(1)}")
+    check("wheel.size", w.name in led, f"{w.name} in ledger")
     wm = re.match(r"blender_crowd_native-([0-9.]+)-", w.name)
     wheel_ver = wm.group(1) if wm else ""
     check("wheel.version.parse", bool(wheel_ver), w.name)
 else:
-    check("wheel.sha256", False, "skipped — pin/wheel missing")
-    check("wheel.size", False, "skipped — pin/wheel missing")
+    check("wheel.sha256", False, "skipped — ledger/wheel missing")
+    check("wheel.size", False, "skipped — ledger/wheel missing")
     check("wheel.version.parse", False, "skipped — wheel missing")
 
 # --- 2. native import (loud under the provision law) ----------------
