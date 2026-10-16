@@ -1,11 +1,13 @@
 # DESIGN s21 — the hero lane: wrapper law + second rig family + the retarget recipe
 
-> Status: DRAFT-1 for fresh-eyes design audit. Owner: session-21
-> orchestrator. Scope: the vision kit's "some more humanoid rigged
-> models" ask (HANDOFF open queue 1+2). Design surfaces: D1 wrapper_rig
-> helper (F-RH3 landed), D2 the Quaternius casual-rig loader, D3 the
-> rig_retarget recipe (the any-rig boundary), D4 motion_lab v2, D5
-> (deferred) hero_gates exporter wiring.
+> Status: REV-2 (design audit r1 folded — APPROVE-WITH-CHANGES, 2 P1 +
+> 9 P2 + P3s; the D-revision log is §5). The audit's corrected formula
+> set + the parent-cancellation identity are §D3's law text now.
+> Owner: session-21 orchestrator. Scope: the vision kit's "some more
+> humanoid rigged models" ask (HANDOFF open queue 1+2). Design
+> surfaces: D1 wrapper_rig helper (F-RH3 landed), D2 the Quaternius
+> casual-rig loader, D3 the rig_retarget recipe (the any-rig boundary),
+> D4 motion_lab v2, D5 (deferred) hero_gates exporter wiring.
 
 ## 0. Ground truth absorbed
 
@@ -195,3 +197,113 @@ RQ4. Quaternius height: probes show bbox_diag 7.165 with scale 1.0 —
      rescale REQUIRED at load (pinned ratio)?
 RQ5. 11 actions on Male but pool-key stripping assumes unique
      trailing keys — any collisions in the 11 names?
+
+## 5. D-revision log (design audit r1 — APPROVE-WITH-CHANGES, ALL folded)
+
+- **D1a (P2-4) probe law hardened**: candidates are ±Y ONLY (a foot
+  bone's local Z is the roll axis — also horizontal; a horizontalness
+  contest across axes is silently won by a meaningless axis). The
+  winner must be BOTH near-horizontal (|fwd.z| ≤ 0.5) AND
+  Y-dominant (|fwd.y| ≥ 0.5) — sideways-authored imports coin-flip
+  horizontalness alone. Auto-pick skips `*_end` leaves (the 42-bone
+  census provably carries `Foot.L_end`); the Quaternius loader passes
+  the explicit probe bone (`Foot.L`). The rep reports the WINNING
+  AXIS + the measured forward.
+- **D1b (P2-1b) mesh-rides-rescale**: the "unparented mesh → wrapper
+  with identity MPI" branch is only safe at scale 1.0. When
+  `scale ≠ 1.0`, the skinned mesh MUST be parented to the armature
+  (or carry the same MPI) or the posed/rest skins diverge (rest
+  renders at imported transform, posed verts follow the scaled rig).
+  The loader's first-run probe records `mesh.parent` truth.
+- **D2a (P2-1) UNIT_RESCALE**: the raw import is a ~5–7-unit giant
+  (bbox_diag 7.165/6.919 at object scale 1.0; no importer unit
+  conversion landed). Pin `UNIT_RESCALE` (expected ≈ 0.24–0.33;
+  exact value = first-run height measurement) applied in the WRAPPER
+  MPI (`wrap(..., scale=UNIT_RESCALE)`); the 1.2–2.2 m height gate
+  runs POST-rescale; both raw + rescaled heights live in the truth
+  constants. dist_m_p50 0.24 on a 941-vert mesh corroborates the
+  ~4× oversizing.
+- **D2b (P2-7) pool mechanics**: pools map THIS import's actions via
+  the acts-before/acts-after diff (the UAL pattern) — NOT "first
+  import wins" (that binds hero #2 to hero #1's datablock). "Exactly
+  11 actions" is asserted against the import diff, not
+  bpy.data.actions. Key rule: last pipe segment MINUS the gender
+  prefix → keys {Walk, Idle, Jump, Death, Clapping, Punch, Run,
+  RunningJump, Sitting, Standing, SwordSlash} (the design's earlier
+  "Man_Walking"/"native Walking" constants were WRONG — probes say
+  `Man_Walk`/`Female_Walk`). Per-rep pools only; a global stripped
+  registry would collide (`Walk` exists in both).
+- **D2c (P3)**: both FBXs name their armature `HumanArmature` —
+  object-level collision on a second import is harmless (loader
+  renames to `<name>.Rig`) and noted. First-run probe adds
+  `mesh.parent` + imported height to the truth constants.
+- **D3a (P1-1) THE CORRECTED FORMULA SET** (the audit's worked
+  example is law — keying `rot(L)` bakes the target's rest-local
+  orientation into every pose, a constant 45°–180° per-bone error;
+  limbs render inverted):
+```
+for each mapped pair (src b -> tgt t), parents FIRST:
+  D_s(b)     = M_src(b,f) @ M_src_rest(b)^-1          # world delta, src units
+  M_t(t,f)   = D_s(b) @ M_tgt_rest(t)                 # world pose on target
+  D_t(t)     = M_t(t,f) @ M_tgt_rest(t)^-1            # target's own delta (children reuse)
+  basis(t,f) = M_tgt_rest(t)^-1 @ D_t(parent(t))^-1 @ D_s(b) @ M_tgt_rest(t)
+               # root: D_t(parent) := I
+  ROTATION: key basis(t,f).to_quaternion() into rotation_quaternion
+            (target bone QUATERNION mode asserted); sign continuity
+            at write time (dot(q, q_prev) < 0 => q := -q) or the
+            interpolation spins the long way.
+  LOCATION: root-motion bone ONLY:
+            d_world = (M_src(b,f).translation - M_src_rest(b).translation)
+                      * (tgt_hip_rest_z / src_hip_rest_z)
+            d_local = M_tgt_rest(t).to_3x3().inverted() @ d_world   # BONE-LOCAL (the s20 axis law)
+            key into pose.bones[t].location; ALL other bones at rest.
+            The root chain's translation (pivot artifact) is DISCARDED.
+```
+  The parent-cancellation identity (why this is exact):
+  `D(p)^-1 @ D(b) = M_rest(b) @ basis_src @ M_rest(b)^-1` — the
+  armature-space composition IS the parent-relative transfer with
+  rest correction; pivot artifacts cancel exactly for non-root bones.
+- **D3b (P2-3) location-transfer set**: the mapped hips PLUS any
+  mapped ancestor carrying location fcurves (Quaternius root chain is
+  `Bone → Body → Hips`; UAL's bob provably lives on DEF-hips —
+  constraint-free purity — but the first-run self-verifying assertion
+  pins it: "Walk_Loop carries DEF-hips location fcurves, world-z span
+  ≥ 0.02 m"). RH-canvas sources carry hips location on every clip.
+- **D3c (P2-2) coverage denominator**: animated DEFORM-CLASS bones
+  only; per-family declared non-transferables (`*_end`, `PoleTarget.*`
+  — the probe shows they are the top movers of Man_Death, variance
+  6.35); finger policy rigify53→quaternius42 = EXCLUDE + report (the
+  stub `Fingers`/`Thumb1/2` cannot carry finger articulation).
+- **D3d (P2-5) write path**: the output action is built through
+  `blender_kit.fcurves_new()` (5.2 slotted-action scaffolding; a
+  fresh action has no slots and `fcurves.new` is a trap there),
+  single OBJECT slot; then `rh_canvas.bind()`'s `slots[0]` auto-assign
+  lands with zero extra code. Quaternion sign continuity at write
+  time (D3a). Never key `rotation_euler` on QUATERNION-mode bones
+  (the s18/s20 silently-inert law).
+- **D3e (P2-6) scale law reworded**: assert object scale UNIFORM
+  (any value — Mixamo-65 sources land at 0.01 BY LAW, rh_canvas
+  import law 1) + bone rest matrices ~identity scale; never assert
+  object scale == 1.0.
+- **D3f (P2-9 + P3s) immunity + pins**: the math operates on
+  `pose.bones[].matrix` (armature space) — wrapper MPI (facing/scale)
+  is EXCLUDED by construction; world-facing consistency is the
+  STAGING's job (yaw both wrappers identically — D4). Height ratio
+  measured from `bone.matrix_local.translation.z` (armature-data
+  space, immune to object transform, unit-consistent; T-pose vs
+  A-pose is a non-issue). Hips world gate comparator per sampled
+  frame: `|tgt_hips_z(f) − ratio·src_hips_z(f)| ≤ band`. Output fps
+  pinned from the source. Single global ratio assumes similar
+  proportions — the world gates are the catch-net.
+- **D4a (P2-8) integration law**: hero records are
+  `{arm, body, clip, rep}`-shaped and BOUND before the union-range
+  lines (they dereference frame_range unconditionally). Hero
+  placement moves the WRAPPER (v1's `pl.move_to(arm)` violates the
+  wrapper law — animated-armature yaws get clobbered; the wrapper is
+  the clobber-proof surface). Clip labels: `UAL:Walk_Loop`,
+  `Quat:Walk`, `UAL:Walk_Loop→Quat`.
+- **D5a (P3) fake-user lifecycle**: retarget + bind complete in ONE
+  process (an unpinned unassigned action dies on save); the FBX
+  importer's fake-user pins keep the Quaternius pool alive across
+  reload (intended); the export-side purge (unassigned fake-user
+  actions) is D5's when wiring lands.
