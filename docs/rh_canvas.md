@@ -41,7 +41,9 @@ python3 scripts/rh_canvas.py catalog --kind models --search farmer --json
 
 # 2. fetch (sha256-verified, idempotent, cache at $RH_CANVAS_CACHE
 #    else /home/z/rh_canvas_cache — NEVER inside the clones)
-python3 scripts/rh_canvas.py fetch --ids 2846,Farmer
+python3 scripts/rh_canvas.py fetch --ids 2846,Farmer        # sha256-verified
+python3 scripts/rh_canvas.py fetch --preview Bomber,Female  # preview PNGs (magic)
+python3 scripts/rh_canvas.py fetch --portraits 1            # preset renders (size+magic)
 
 # 3. in a scene script (the normal path — one Blender process):
 import sys; sys.path.insert(0, "<kit>/scripts")
@@ -63,10 +65,13 @@ rh_canvas.bind(mesh, "2076")                      # zombie run, by catalog id
 ./scripts/blrun.sh --background --python scripts/rh_canvas.py -- import-statue --model Farmer --ground-snap
 ```
 
-CLI subcommands: `catalog` (**categories|**animations|characters|models,
-`--category`, `--search`, `--facet facet=value`, `--json`; animation
-rows carry consumer tags `<elevated_root_motion>` /
-`<static_pose>` when present — see below), `fetch --ids`, `import-clip
+CLI subcommands: `catalog` (**categories|**animations|characters|models
+|**thumbnails**, `--category`, `--search`, `--facet facet=value`,
+`--tag`, `--max-frames`, `--json`; animation rows carry consumer tags
+`<elevated_root_motion>` / `<static_pose>` when present — see below;
+model rows carry a `preview` PNG URL, character rows carry `portraits`
+render URLs; every kind's meta carries `library_captured` vintage),
+`fetch --ids | --preview | --portraits`, `import-clip
 --id N [--name X]`, `mannequin [--name X] [--armature NAME]`, `bind
 --clip <id|armature|action> --armature <name|mesh>`, `import-statue
 --model NAME [--ground-snap]`. `--library` / `--cache` are accepted
@@ -82,7 +87,18 @@ is one such body; bring your own Mixamo-rigged mesh and bind it the
 same way. Non-Mixamo rigs need retargeting — a documented non-goal
 (v2 decision doc §2).
 
-**Test battery** (13 rows, R1-R8b): `./scripts/blrun.sh --background
+**Preview data (s40, kit vendor)**: every director model carries a
+`previewImage` CDN PNG (`fetch --preview NAME`); every preset carries
+2-3 portrait render URLs (`fetch --portraits ID`, cdn_size-verified);
+the 8 in-git body-type icons are `catalog --kind thumbnails`. The
+animations family has NO per-asset preview upstream (platform API
+gives none) — it is complete. Preview verify = magic bytes + size
+(no sha256 exists upstream for the preview family). NOTE: the
+beulahkemp/RH-canvas-* repos went PRIVATE 2026-10-16 (anon clone
+403s; CDN binaries unaffected) — the offline fixture library
+(scripts/rh_fixture_lib.py) covers the contract surface.
+
+**Test battery** (14 rows, R1-R9): `./scripts/blrun.sh --background
 --python tests/test_rh_canvas.py --` — graceful-skips whole when the
 library clones are absent. **Full-library walk** (s39):
 `tests/rh_fullwalk.py` — every one of the 2,032 clips imported +

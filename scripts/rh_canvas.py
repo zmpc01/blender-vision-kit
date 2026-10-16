@@ -2,20 +2,29 @@
 rh_canvas.py — RH-canvas mocap clips + director statues for the kit
 (polyhaven.py class: one file, two operating modes).
 
-  VISION-KIT VENDOR (session 20): copied from mainline blender-agent-kit
-  s38/s39 (b7c675d..6943ab5 lineage) — upstream-of-record for this file.
-  Variant deltas: UA string only (intentionally zero code drift — the
-  s39 hardening: channel-match bind guard, registry fingerprint,
-  fake-user hygiene — is INCLUDED by the copy). The library data source
-  (beulahkemp/RH-canvas-*) went dark 2026-10-16; tests run against the
-  local fixture library (tests/rh_fixture_lib.py) or skip loudly.
+  VISION-KIT VENDOR (session 40): copied from mainline blender-agent-kit
+  s40 (71eb1c3, on the s38/s39 b7c675d..6943ab5 lineage) — upstream-of-
+  record for this file. Variant deltas: UA string only (intentionally
+  zero code drift). This vendor ADDS the s40 preview-data surface
+  (model previewImage URLs + preset portrait URLs + the 8 in-git
+  thumbnails + fetch --preview/--portraits with the magic-byte verify
+  law + --tag/--max-frames browse filters — the kit s40 now carries the
+  s20 manifest-tags/frames deltas natively, so the pair is zero-drift
+  again). The library data source (beulahkemp/RH-canvas-*) went private
+  2026-10-16; tests run against the local fixture library
+  (scripts/rh_fixture_lib.py — note: scripts/, not tests/) or skip
+  loudly.
 
   HOST-side  (no bpy — plain python3 or inside Blender):
-    catalog      browse: --kind categories|animations|characters|models
-                 (categories = the 19-code discovery list with counts);
+    catalog      browse: --kind categories|animations|characters|models|
+                 thumbnails (categories = the 19-code discovery list with
+                 counts; thumbnails = the 8 in-git body-type preview PNGs);
                  animation rows carry consumer tags when present
-                 (elevated_root_motion / static_pose — s39 full walk)
+                 (elevated_root_motion / static_pose — s39 full walk;
+                 --tag / --max-frames browse filters, s40 port from VK s20)
     fetch        sha256-verified CDN downloads into a cache dir
+                 (--ids clips+models | --preview model PNGs |
+                  --portraits character preset renders)
   BLENDER-side (via blrun.sh --background --python scripts/rh_canvas.py --):
     import-clip     FBX clip -> armature + action (scene range auto-set)
     mannequin       procedural capsule body skinned to the Mixamo rig
@@ -26,10 +35,23 @@ Library discovery is PATH-BASED (crowd-plugin precedent — data is never
 vendored into the kit): --library DIR or env RH_CANVAS_LIB pointing at
 (or containing, or sibling-of) clones named RH-canvas-animations /
 RH-canvas-characters. Missing repos fail closed with the clone command.
+NOTE: the beulahkemp/RH-canvas-* repos went PRIVATE on 2026-10-16 —
+anonymous clone now 403s (a token with access is required; the CDN
+binaries remain public and unaffected). Recovery fallback: the
+/home/sync bundle backups.
 
 Sources: github.com/beulahkemp/RH-canvas-animations (2,137 mocap FBX rows,
-id-dedup -> 2,032 unique; 19 categories) + RH-canvas-characters (667
-9-facet character presets; 99 static director GLTF statues, ~1.06 GB).
+id-dedup -> 2,032 unique; 19 categories; the platform API exposes NO
+per-asset preview — category tree is the only taxonomy) +
+RH-canvas-characters (667 9-facet character presets, each with 2-3
+portrait render URLs — images[] in characters.jsonl + the 2,001-row
+portraits-manifest; 99 static director GLTF models, each with a
+previewImage CDN PNG; 8 in-git body-type thumbnail PNGs under
+assets/director/canvasfile/director/character-thumbnails/).
+Preview verification law: previews/portraits carry NO sha256 upstream —
+verify = magic bytes (PNG/JPEG) + size sanity (+ cdn_size when the
+portraits manifest declares it). The sha256 law applies to the FBX/GLTF
+manifests that actually carry hashes.
 Ground truth: RH-RECON-1 (/home/z/rh_recon/REPORT.md — 28 binaries
 live-probed on Blender 5.2.2) + REVIEW-RH-1b (mannequin/bind/round-trip
 verified). Cache: env RH_CANVAS_CACHE else /home/z/rh_canvas_cache
@@ -152,8 +174,8 @@ def _load_clip_frames() -> dict[str, int]:
 
 def clip_tags(anim_id: str, explicit=None) -> list[str]:
     """Browse-time consumer tags for a clip id: the hardcoded platform
-    walk sets (see above) UNION the manifest-declared tags (s20 delta —
-    a second/fixture library declares its own rows)."""
+    walk sets (see above) UNION the manifest-declared tags (s40, port of
+    the VK-s20 delta — a second/fixture library declares its own rows)."""
     aid = str(anim_id)
     tags = []
     if aid in ELEVATED_ROOT_MOTION:
@@ -174,8 +196,8 @@ def clip_tags(anim_id: str, explicit=None) -> list[str]:
 
 def clip_frames(anim_id: str, explicit=None) -> int | None:
     """Frame count at browse time: the s39 full-walk table (platform
-    library) or the manifest-declared frames (s20 delta — a second/
-    fixture library declares its own). None = unknown."""
+    library) or the manifest-declared frames (s40, VK-s20 port — a
+    second/fixture library declares its own). None = unknown."""
     v = _load_clip_frames().get(str(anim_id))
     if v is not None:
         return v
@@ -279,7 +301,10 @@ def require_library(which: str, explicit: str | None = None) -> str:
     raise RHRefused(
         f"the {which} library repo {repo} was not found. Point --library "
         f"(or env RH_CANVAS_LIB) at the clone, its parent, or any sibling "
-        f"dir — or clone it:\n    {clone}{other}")
+        f"dir — or clone it:\n    {clone}{other}\n"
+        f"  NOTE (2026-10-16): the beulahkemp/RH-canvas-* repos are now "
+        f"PRIVATE — anonymous clone returns 403; an authorized token is "
+        f"required (the CDN binaries remain public).")
 
 
 # --------------------------------------------------------------------------- #
@@ -305,10 +330,10 @@ def load_animations(explicit: str | None = None) -> list[dict]:
             "sha256": e["sha256"],
             "url": e["url"],
         }
-        # data-driven browse tags (s20 delta): the hardcoded walk-tag
-        # sets below snapshot the PLATFORM library; a manifest may
-        # declare tags per row (the fixture library does) — the union
-        # keeps both sources working.
+        # data-driven browse tags (s40, VK-s20 port): the hardcoded
+        # walk-tag sets snapshot the PLATFORM library; a manifest may
+        # declare tags/frames per row (the fixture library does) — the
+        # union keeps both sources working.
         if e.get("tags"):
             seen[eid]["manifest_tags"] = [str(t) for t in e["tags"]]
         if e.get("frames"):
@@ -326,7 +351,9 @@ def load_categories(explicit: str | None = None) -> dict[str, dict]:
 
 
 def load_characters(explicit: str | None = None) -> list[dict]:
-    """characters.jsonl -> 667 presets with a flattened 9-facet taxonomy."""
+    """characters.jsonl -> 667 presets with a flattened 9-facet taxonomy
+    + portrait render URLs (s40: the images[] array — each preset carries
+    2-3 renders {type, url}; the portraits ARE the preset's payload)."""
     root = require_library("characters", explicit)
     out = []
     with open(os.path.join(root, "data", "characters.jsonl"), encoding="utf-8") as f:
@@ -337,8 +364,13 @@ def load_characters(explicit: str | None = None) -> list[dict]:
             r = json.loads(line)
             facets = {k: v.get("optionCode", "")
                       for k, v in (r.get("attributes") or {}).items()}
+            portraits = [{"type": img.get("type", ""),
+                          "name": img.get("name", ""),
+                          "url": img.get("url", "")}
+                         for img in (r.get("images") or [])
+                         if img.get("url")]
             out.append({"id": str(r["id"]), "name": r["name"],
-                        "facets": facets})
+                        "facets": facets, "portraits": portraits})
     return out
 
 
@@ -383,10 +415,41 @@ def load_models(explicit: str | None = None) -> list[dict]:
                 "size": entry["size"],
                 "sha256": entry["sha256"],
                 "url": entry["url"],
+                "preview": m.get("previewImage", ""),   # s40: CDN PNG
                 "filename": os.path.basename(
                     urllib.parse.urlsplit(entry["url"]).path),
             })
     return models
+
+
+def load_thumbnails(explicit: str | None = None) -> list[dict]:
+    """The 8 in-git body-type preview PNGs (tiny UI icons, already in the
+    clone — viewable offline, no fetch). bodyType taxonomy icons: baby /
+    child / elder / female / male / plusSize / superhero / teen."""
+    root = require_library("characters", explicit)
+    tdir = os.path.join(root, "assets", "director", "canvasfile",
+                        "director", "character-thumbnails")
+    rows = []
+    if not os.path.isdir(tdir):
+        return rows
+    for fn in sorted(os.listdir(tdir)):
+        if fn.lower().endswith(".png"):
+            rows.append({"name": fn[:-4],
+                         "path": os.path.join(tdir, fn),
+                         "size": os.path.getsize(os.path.join(tdir, fn))})
+    return rows
+
+
+def library_vintage(which: str, explicit: str | None = None) -> str:
+    """Capture date from the library's data/_meta.json ('' when absent) —
+    catalog meta uses it so agents know the snapshot's age."""
+    try:
+        root = require_library(which, explicit)
+        with open(os.path.join(root, "data", "_meta.json"), encoding="utf-8") as f:
+            meta = json.load(f)
+        return str(meta.get("captured_at", ""))
+    except (RHRefused, OSError, json.JSONDecodeError):
+        return ""
 
 
 # --------------------------------------------------------------------------- #
@@ -468,6 +531,144 @@ def model_cache_path(cache: str, model: dict) -> str:
     return os.path.join(cache, "models", model["filename"])
 
 
+# Preview-family verification (s40): previews/portraits carry NO sha256
+# upstream (the platform serves bare CDN files; only the FBX/GLTF
+# manifests carry hashes) — verify = magic bytes + size sanity (+ exact
+# cdn_size for portraits, where the manifest declares it). Same
+# poison-repair + .part streaming discipline as the sha256 law.
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+JPEG_MAGIC = b"\xff\xd8"
+PREVIEW_MIN_BYTES = 2048          # the smallest real icon is ~3.7 KB
+
+
+def fetch_verified_light(url: str, dest: str, label: str,
+                         magic: bytes = PNG_MAGIC,
+                         size_hint: int | None = None,
+                         min_bytes: int = PREVIEW_MIN_BYTES) -> str:
+    """The PREVIEW VERIFY LAW (s40) — same cache discipline as
+    fetch_verified but with the strongest check the upstream actually
+    supports: magic bytes + size sanity (no sha256 exists for the
+    preview family). Returns 'ok-cached' | 'ok' | 're-fetched(repaired)'."""
+
+    def _ok(path: str) -> bool:
+        try:
+            if os.path.getsize(path) < min_bytes:
+                return False
+            with open(path, "rb") as fh:
+                head = fh.read(len(magic))
+            if head != magic:
+                return False
+            if size_hint is not None and os.path.getsize(path) != size_hint:
+                return False
+            return True
+        except OSError:
+            return False
+
+    label = label or os.path.basename(dest)
+    if os.path.exists(dest):
+        if _ok(dest):
+            return "ok-cached"
+        os.remove(dest)                       # poisoned/partial -> repair
+        status = "re-fetched(repaired)"
+    else:
+        status = "ok"
+    os.makedirs(os.path.dirname(os.path.abspath(dest)), exist_ok=True)
+    tmp = dest + ".part"
+    req = urllib.request.Request(enc(url), headers={"User-Agent": USER_AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r, open(tmp, "wb") as fh:
+            while True:
+                chunk = r.read(1 << 20)
+                if not chunk:
+                    break
+                fh.write(chunk)
+    except Exception:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
+    if not _ok(tmp):
+        got = os.path.getsize(tmp) if os.path.exists(tmp) else 0
+        os.remove(tmp)
+        raise RHRefused(
+            f"download of {label} FAILED preview verification (magic/"
+            f"size check; got {got} bytes"
+            + (f", manifest declares {size_hint}" if size_hint else "")
+            + "). The temp file was discarded — the cache is NOT poisoned.")
+    os.replace(tmp, dest)
+    return status
+
+
+def preview_cache_path(cache: str, model: dict) -> str:
+    return os.path.join(cache, "previews",
+                        os.path.basename(
+                            urllib.parse.urlsplit(model["preview"]).path)
+                        or f"{model['id']}.png")
+
+
+def fetch_previews(refs: list[str], cache: str | None = None,
+                   explicit_lib: str | None = None) -> list[dict]:
+    """Download director-model preview PNGs (99 CDN thumbnails, ~186 KB
+    each) by model name/uuid/filename — see before you fetch a 74.5 MB
+    GLTF. Magic-byte verified (no sha256 upstream)."""
+    cache = cache or DEFAULT_CACHE
+    results = []
+    for raw in refs:
+        key = str(raw).strip()
+        model = _find_model(key, explicit_lib)
+        if model is None:
+            raise RHRefused(
+                f"--preview {key!r} is not a director model (see `catalog "
+                f"--kind models` for names). Nothing was fetched.")
+        if not model.get("preview"):
+            raise RHRefused(
+                f"model {model['name']!r} carries no previewImage URL "
+                f"(upstream gap — the platform record has none).")
+        dest = preview_cache_path(cache, model)
+        status = fetch_verified_light(
+            model["preview"], dest, f"preview {model['name']}")
+        results.append({"id": model["name"], "kind": "preview",
+                        "name": model["name"], "status": status,
+                        "dest": dest})
+    return results
+
+
+def _find_portrait_rows(char_id: str,
+                        explicit_lib: str | None = None) -> list[dict]:
+    """portraits-manifest.json rows for one character id (2-3 renders)."""
+    root = require_library("characters", explicit_lib)
+    with open(os.path.join(root, "portraits-manifest.json"), encoding="utf-8") as f:
+        rows = json.load(f)
+    return [r for r in rows if str(r.get("characterId")) == str(char_id)]
+
+
+def fetch_portraits(char_ids: list[str], cache: str | None = None,
+                    explicit_lib: str | None = None) -> list[dict]:
+    """Download one character preset's portrait renders (the images[] the
+    catalog lists; ~3 jpgs, mean 3.5 MB each) — size-verified against the
+    portraits manifest's cdn_size + JPEG magic (no sha256 upstream)."""
+    cache = cache or DEFAULT_CACHE
+    results = []
+    for raw in char_ids:
+        cid = str(raw).strip()
+        rows = _find_portrait_rows(cid, explicit_lib)
+        if not rows:
+            raise RHRefused(
+                f"--portraits {cid!r} matches no portraits-manifest rows "
+                f"(ids are character preset ids — see `catalog --kind "
+                f"characters`). Nothing was fetched.")
+        for r in rows:
+            dest = os.path.join(cache, "portraits", cid,
+                                f"{r.get('type', 'render')}.jpg")
+            status = fetch_verified_light(
+                r["url"], dest, f"portrait {cid}/{r.get('type', '?')}",
+                magic=JPEG_MAGIC, size_hint=r.get("cdn_size"),
+                min_bytes=8192)
+            results.append({"id": cid, "kind": "portrait",
+                            "name": f"{cid}/{r.get('type', '?')}",
+                            "status": status, "dest": dest})
+    return results
+
+
 def _find_animation(anim_id: str, explicit=None) -> dict | None:
     for a in load_animations(explicit):
         if a["id"] == str(anim_id):
@@ -544,7 +745,8 @@ def ensure_model(name: str, cache: str | None = None,
 # --------------------------------------------------------------------------- #
 def catalog_query(kind: str, category: str | None = None,
                   search: str | None = None, facets: list[tuple] | None = None,
-                  explicit_lib: str | None = None, tag: str | None = None,
+                  explicit_lib: str | None = None,
+                  tag: str | None = None,
                   max_frames: int | None = None) -> dict:
     """Filtered catalog. Returns {'kind', 'count', 'rows', 'meta'}.
 
@@ -617,7 +819,9 @@ def catalog_query(kind: str, category: str | None = None,
         if search:
             s = search.lower()
             rows = [r for r in rows if s in r["name"].lower()]
-        meta = {"facets_applied": dict(facets)}
+        meta = {"facets_applied": dict(facets),
+                "portraits_note": "rows carry portrait render URLs "
+                                  "(fetch: --portraits <id>)"}
     elif kind == "models":
         rows = load_models(explicit_lib)
         if category:
@@ -627,10 +831,24 @@ def catalog_query(kind: str, category: str | None = None,
             s = search.lower()
             rows = [r for r in rows
                     if s in r["name"].lower() or s in r["group_label"].lower()]
-        meta = {"groups": sorted({r["group"] for r in rows})}
+        meta = {"groups": sorted({r["group"] for r in rows}),
+                "preview_note": "rows carry a preview PNG URL "
+                                "(fetch: --preview <name>)"}
+    elif kind == "thumbnails":
+        rows = load_thumbnails(explicit_lib)
+        if search:
+            s = search.lower()
+            rows = [r for r in rows if s in r["name"].lower()]
+        meta = {"note": "in-git body-type UI icons — local files, "
+                        "viewable without any fetch"}
     else:
         raise RHRefused(f"--kind must be categories|animations|characters|"
-                        f"models, got {kind!r}")
+                        f"models|thumbnails, got {kind!r}")
+    vintage = (library_vintage("animations", explicit_lib)
+               if kind in ("categories", "animations")
+               else library_vintage("characters", explicit_lib))
+    if vintage:
+        meta["library_captured"] = vintage
     return {"kind": kind, "count": len(rows), "rows": rows, "meta": meta}
 
 
@@ -654,10 +872,15 @@ def _print_catalog(res: dict, limit: int, as_json: bool) -> None:
                   f"[{r['nameEn']}]  {r['size']/1024:.0f}KB{tag}")
         elif res["kind"] == "characters":
             fcts = " ".join(f"{k}={v}" for k, v in sorted(r["facets"].items()))
-            print(f"  {r['id']:>4}  {r['name']}  {fcts}")
+            np = len(r.get("portraits", []))
+            pnote = f"  [{np} portrait{'s' if np != 1 else ''}]" if np else ""
+            print(f"  {r['id']:>4}  {r['name']}  {fcts}{pnote}")
+        elif res["kind"] == "thumbnails":
+            print(f"  {r['name']:<16} {r['size']/1024:.1f}KB  {r['path']}")
         else:
+            prev = "preview:yes" if r.get("preview") else "preview:NONE"
             print(f"  {r['group']:<3}  {r['name']:<24}  {r['group_label']:<14} "
-                  f"{r['size']/1048576:.2f}MB  {r['filename']}")
+                  f"{r['size']/1048576:.2f}MB  {prev}  {r['filename']}")
 
 
 # --------------------------------------------------------------------------- #
@@ -1248,7 +1471,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("catalog", help="browse catalogs (no network)")
     p.add_argument("--kind", default="animations",
                    choices=["categories", "animations", "characters",
-                            "models"])
+                            "models", "thumbnails"])
     p.add_argument("--category", default=None,
                    help="animations: category CODE (list them: --kind "
                         "categories); models: group JC/RW/DJ/CJ/JT")
@@ -1258,18 +1481,26 @@ def main(argv=None) -> int:
                    help="characters 9-facet taxonomy filter (repeatable), "
                         "e.g. --facet gender=female --facet species=elf")
     p.add_argument("--tag", default=None,
-                   help="animations: browse-tag filter (s20; e.g. "
+                   help="animations: browse-tag filter (s40; e.g. "
                         "elevated_root_motion | static_pose)")
     p.add_argument("--max-frames", type=int, default=None,
-                   help="animations: duration cap at browse time (s20; "
+                   help="animations: duration cap at browse time (s40; "
                         "frames <= N, e.g. 90 = clips <= 3 s)")
     p.add_argument("--json", action="store_true")
     p.add_argument("--limit", type=int, default=40)
 
-    p = sub.add_parser("fetch", help="sha256-verified CDN download (idempotent)")
-    p.add_argument("--ids", required=True,
+    p = sub.add_parser("fetch", help="verified CDN download (idempotent): "
+                       "--ids (sha256) | --preview (PNG magic) | "
+                       "--portraits (jpg size+magic)")
+    p.add_argument("--ids", default=None,
                    help="comma-separated animation ids and/or model names "
-                        "(e.g. 2846,2825,Farmer)")
+                        "(e.g. 2846,2825,Farmer) — sha256-verified")
+    p.add_argument("--preview", default=None,
+                   help="comma-separated director model names/uuids — "
+                        "download their preview PNGs (magic-verified)")
+    p.add_argument("--portraits", default=None,
+                   help="comma-separated character preset ids — download "
+                        "their portrait renders (size+magic verified)")
 
     p = sub.add_parser("import-clip", help="FBX clip -> armature + action")
     p.add_argument("--id", required=True, help="animation catalog id (STRING)")
@@ -1313,8 +1544,22 @@ def main(argv=None) -> int:
                                 tag=args.tag, max_frames=args.max_frames)
             _print_catalog(res, args.limit, args.json)
         elif args.cmd == "fetch":
-            ids = [i.strip() for i in args.ids.split(",") if i.strip()]
-            for r in fetch_ids(ids, args.cache, args.library):
+            if not (args.ids or args.preview or args.portraits):
+                raise RHRefused(
+                    "fetch needs one of --ids / --preview / --portraits "
+                    "(e.g. --ids 2846,Farmer | --preview Bomber | "
+                    "--portraits 1)")
+            results = []
+            if args.ids:
+                ids = [i.strip() for i in args.ids.split(",") if i.strip()]
+                results += fetch_ids(ids, args.cache, args.library)
+            if args.preview:
+                refs = [i.strip() for i in args.preview.split(",") if i.strip()]
+                results += fetch_previews(refs, args.cache, args.library)
+            if args.portraits:
+                cids = [i.strip() for i in args.portraits.split(",") if i.strip()]
+                results += fetch_portraits(cids, args.cache, args.library)
+            for r in results:
                 print(f"[rh] fetch {r['kind']} {r['id']} ({r['name']}): "
                       f"{r['status']} -> {r['dest']}")
         elif args.cmd == "import-clip":

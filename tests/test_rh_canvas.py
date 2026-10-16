@@ -24,6 +24,9 @@ Rows (all live, inside Blender via blrun.sh — T1/T7 harness style):
                               < 5 MB; duration_s == (f1-f0)/30)
   R7b determinism            (two exports byte-compare; nondeterminism is
                               documented, not failed)
+  R9  preview surfaces       (99 model previewImage URLs, 667 preset
+                              portrait URLs, 8 in-git thumbnails, the
+                              magic-byte fetch law + poison repair)
   R8  placement e2e          (armature-first recipe via placement_lib at
                               spots on a ground plane; armature world xy
                               at spot; evaluated mesh z-band [-0.05, 1.9])
@@ -522,6 +525,73 @@ def r8():
 ROWS_EXTRA = {}
 
 
+def r9():
+    """Preview-data integration (s40): model previewImage URLs, preset
+    portrait URLs, in-git body thumbnails, the magic-byte fetch law."""
+    print("== R9 preview/portrait/thumbnail surfaces ==", flush=True)
+    # a. all 99 models carry a previewImage URL
+    models = rh_canvas.load_models()
+    with_prev = [m for m in models if m.get("preview")]
+    check("R9a models carrying previewImage URL (99/99)",
+          (len(models), len(with_prev)), (99, 99))
+    # b. presets carry 2-3 portrait URLs each (667 presets)
+    chars = rh_canvas.load_characters()
+    np_port = sum(len(c.get("portraits", [])) for c in chars)
+    check("R9b presets count 667, portraits total > 1300 (2+ avg)",
+          len(chars) == 667 and np_port > 1300, True)
+    # c. the 8 in-git body thumbnails exist with PNG magic
+    thumbs = rh_canvas.load_thumbnails()
+    check("R9c thumbnails == 8 local PNGs w/ magic",
+          len(thumbs) == 8 and all(
+              os.path.isfile(t["path"]) and
+              open(t["path"], "rb").read(8) == rh_canvas.PNG_MAGIC
+              for t in thumbs), True)
+    # d. browse filters (VK-s20 port): tag + max_frames
+    q_tag = rh_canvas.catalog_query("animations", tag="static_pose")
+    q_mf = rh_canvas.catalog_query("animations", max_frames=10)
+    check("R9d tag filter static_pose == 25 rows", q_tag["count"], 25)
+    check("R9e max-frames<=10 rows all <= 10f", all(
+        r.get("frames", 10**9) <= 10 for r in q_mf["rows"]) and
+        q_mf["count"] > 0, True)
+    # e. vintage meta surfaces the snapshot date
+    vin = rh_canvas.library_vintage("characters")
+    check("R9f library vintage starts 2026-10", vin.startswith("2026-10"),
+          True)
+    # f. preview fetch: live CDN, PNG magic, idempotent, poison repair
+    cache = os.path.join(_OUT_ROOT, "rh_canvas_cache_r9")
+    m = next(m for m in models if m["name"] == "Female")
+    res = rh_canvas.fetch_previews(["Female"], cache=cache)
+    check("R9g preview fetch status ok", res[0]["status"], "ok")
+    head = open(res[0]["dest"], "rb").read(8)
+    check("R9h preview is a real PNG", head == rh_canvas.PNG_MAGIC, True)
+    res2 = rh_canvas.fetch_previews(["Female"], cache=cache)
+    check("R9i preview re-fetch idempotent (ok-cached)",
+          res2[0]["status"], "ok-cached")
+    with open(res[0]["dest"], "wb") as fh:
+        fh.write(b"POISONED-CACHE-FILE")
+    res3 = rh_canvas.fetch_previews(["Female"], cache=cache)
+    check("R9j poisoned preview repaired (re-fetched)",
+          res3[0]["status"], "re-fetched(repaired)")
+    check("R9k repaired file is a PNG again",
+          open(res[0]["dest"], "rb").read(8) == rh_canvas.PNG_MAGIC, True)
+    # g. portrait fetch: live CDN, cdn_size verified, JPEG magic
+    pres = rh_canvas.fetch_portraits(["1"], cache=cache)
+    check("R9l portrait fetch rows >= 2", len(pres) >= 2, True)
+    ok_rows = all(p["status"].startswith("ok") for p in pres)
+    magic_ok = all(open(p["dest"], "rb").read(2) == rh_canvas.JPEG_MAGIC
+                   for p in pres)
+    check("R9m portrait statuses ok + JPEG magic", ok_rows and magic_ok, True)
+    # h. refusal paths
+    refused = False
+    try:
+        rh_canvas.fetch_previews(["__no_such_model__"], cache=cache)
+    except rh_canvas.RHRefused:
+        refused = True
+    check("R9n unknown --preview model REFUSED", refused, True)
+    print(f"[R9] portraits fetched for char 1: "
+          f"{[p['name'] for p in pres]}", flush=True)
+
+
 def main() -> int:
     print(f"[rh-test] libraries: {LIBS}", flush=True)
     if not LIB_OK:
@@ -533,7 +603,7 @@ def main() -> int:
     for row_id, fn in (("R1", r1), ("R2", r2), ("R2b", r2b),
                        ("R3", r3), ("R3b", r3b), ("R4", r4),
                        ("R5", r5), ("R5b", r5b), ("R6", r6), ("R6b", r6b),
-                       ("R7", r7), ("R7b", r7b), ("R8", r8)):
+                       ("R7", r7), ("R7b", r7b), ("R8", r8), ("R9", r9)):
         row(row_id, fn)
     results = {
         "suite": "rh_canvas battery (spec §7 v2)",
