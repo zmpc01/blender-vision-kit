@@ -12,9 +12,9 @@
 
 | File | Vendored from | Tip | Vision deltas |
 |------|---------------|-----|---------------|
-| scripts/rh_canvas.py | mainline s38/s39 lineage | 6943ab5 | s20 sanctioned: data-driven tags/frames in tests, --tag/--max-frames filters, UA/provenance header (BOOKED for port-back, see rows below) |
-| tests/test_rh_canvas.py | mainline | 6943ab5 | none (byte-identical) |
-| docs/rh_canvas.md | mainline | 6943ab5 | s20 amendments (fixture library + any-rig + placement sections) |
+| scripts/rh_canvas.py | mainline s40 (71eb1c3) via the s40 vendor round | 71eb1c3 | UA string only (zero code drift; the kit s40 carries the s20 manifest-tags/frames deltas natively — port-back CLOSED, pair zero-drift) |
+| tests/test_rh_canvas.py | mainline s40 (14/14 incl. R9) | 71eb1c3 | none |
+| docs/rh_canvas.md | mainline s40 + s20 amendments | 71eb1c3 | fixture-library + any-rig + placement sections |
 | scripts/assets_ual_actors.py | mainline s33 port-back | 6943ab5 | none (provenance header only) |
 | scripts/ual_bake.py | mainline s34 engine split (owner:kit) | 6943ab5 | none (provenance header only) |
 | scripts/ual_test/ual_gauntlet.py | mainline v3.4 | 6943ab5 | none (provenance header only) |
@@ -45,6 +45,11 @@
 
 ## Port-back bookings (vision → mainline)
 
-- rh_canvas.py s20 deltas (data-driven tags/frames, --tag/--max-frames)
-  + docs/rh_canvas.md s20 amendments → mainline ledger row (s21 queue;
-  land as a mainline commit, then BOTH trees byte-identical again).
+- CLOSED (s40): rh_canvas s20 deltas + placement_lib VK s17-s20
+  hardening port-back landed upstream (mainline aa4ea44, 985 lines;
+  batteries decide) — placement_lib is now BYTE-IDENTICAL across both
+  trees, and the kit s40 rh_canvas carries the s20 tags/frames deltas
+  natively. Zero-drift pair restored.
+- NOTE: the RH data source (beulahkemp/RH-canvas-*) went PRIVATE
+  2026-10-16 (was 404) — still inaccessible; the fixture library
+  remains the data layer.
