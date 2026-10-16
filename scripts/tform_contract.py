@@ -100,18 +100,21 @@ DEST_DRUMMERS = {
     "point": (12.6, 0.0),
     "capacity": ((12.0, -1.5), (13.5, 1.5)),
 }
-# officers: TWO 1-agent pops, adjacent destination boxes 0.9 m apart
-# (y), non-overlapping; they converge during the ring hold and the
+# officers: TWO 1-agent pops, adjacent destination boxes 0.5 m apart
+# (y; the design's "~0.9" was approximate -- REV note: the clasp
+# recipe pins contact distance_m <= 0.15, and a natural reach step
+# covers ~0.35/arm, so 0.5 apart makes the grip physically honest),
+# non-overlapping; they converge during the ring hold and the
 # bake_interaction clasp lives at their measured arrival.
 DEST_OFFICER_A = {
     "id": "officer_w",
-    "point": (4.9, 0.45),
-    "capacity": ((4.6, 0.25), (5.2, 0.65)),
+    "point": (4.9, 0.25),
+    "capacity": ((4.6, 0.05), (5.2, 0.45)),
 }
 DEST_OFFICER_B = {
     "id": "officer_e",
-    "point": (4.9, -0.45),
-    "capacity": ((4.6, -0.65), (5.2, -0.25)),
+    "point": (4.9, -0.25),
+    "capacity": ((4.6, -0.45), (5.2, -0.05)),
 }
 
 # --- the population plan (cache N = 102; ingest order = the cap law) ---
@@ -119,11 +122,14 @@ DEST_OFFICER_B = {
 # populations[0] owns the envelope cap (the F-TS4 law) -> the FASTEST
 # pop leads: the drill (mu 1.3 = the walk-speed law the wheel is timed
 # to).
-SPAWN_GAP = (-2.5, 18.0, 2.5, 19.5)   # the gap MOUTH (yard side): the
-    # 15.5 m full-strip march cannot fit the 119-tick walk window (the
-    # gate caught it: mean coverage 12.89 m) -- the squad spawns AT the
-    # mouth, the stragglers are pinned mid-approach at t120 and DRESSED
-    # by the transform (the dress window carries DRESS_MAX_MOVE).
+SPAWN_GAP = (-2.0, 15.0, 2.0, 17.0)   # issuing FROM the gap (the yard
+    # N band): the probe measured 8/24 within dress reach from the gap
+    # MOUTH (y 18-19.5) -- the march genuinely cannot cover 12-15 m in
+    # 119 ticks for the whole squad. y 15-17 keeps the gap-direction
+    # read (they enter the frame from the gap side) while the worst
+    # path drops to ~14.6 m and the mean ~10.6 (mean coverage 12.9:
+    # the squad ARRIVES at t120, stragglers pinned mid-approach +
+    # dressed -- the honest halt-trickle).
 SPAWN_WATCH = (-24.0, -19.0, 24.0, -17.2)  # along the colonnade shade
 SPAWN_DRUM = (12.0, -1.5, 13.5, 1.5)       # beside the dais (E)
 SPAWN_OFFICERS = (-24.0, -18.8, -20.0, -17.4)  # Emerge from the W shade
@@ -217,8 +223,13 @@ INTERACTION = {
     "protocol": "authored-paired-clip-v1",
     "root_constraints_cover_interval": True,
     "min_contacts": 1,
+    "contact_label": "grip",     # the clasp IS a grip (the _LABELS law)
     "contact_distance_m": 0.15,
     "flow_then_pin": True,       # converge flows; clasp-hold pins phase
+    "converge_clip": 1,          # kit walk (the clip-channel vocabulary)
+    "clasp_clip": 0,             # kit idle = the held stance
+    "clasp_phase": 0.35,
+    "window_ticks": 23,          # [anchor, anchor+22], capped < 420
     "motion_keys": 7,
     "layer_sidecar": "2x window-ticks",
 }
