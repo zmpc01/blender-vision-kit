@@ -7,8 +7,11 @@ cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 export CROWD_CACHE_DIR=${CROWD_CACHE_DIR:-/tmp/crowdcache_tfog}
 OUT=${OUT:-output/tfog/stills}
 mkdir -p "$OUT"
-declare -A FRAMES=( [S1]=50 [S2]=140 [S3]=270 [S4]=320 [S5]=430 [S6]=570 \
+declare -A FRAMES=( [S1]=50 [S2]=140 [S3]=270 [S4]=320 [S5]=470 [S6]=570 \
   [S7]=640 [S8]=740 [S9]=840 [S10]=910 [S11]=980 [S12]=1050 )
+# S5=470 (the certified verdict, commit 37c00b9: the nose enters the
+# visible band ~f430 — the 430 still predated the streak; the table
+# had drifted while the render used the manual override).
 ONLY="${1:-}"
 for SID in S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12; do
   if [ -n "$ONLY" ] && [ "$ONLY" != "$SID" ]; then continue; fi
