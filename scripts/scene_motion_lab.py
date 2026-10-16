@@ -31,6 +31,7 @@ travels, dance arms overhead, jump apex airborne, sit ON the bench).
 import json
 import math
 import os
+import shutil
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -119,6 +120,13 @@ def build_scene():
         cam.rotation_euler = (mathutils.Vector(d).to_track_quat(
             '-Z', 'Y').to_euler())
         cams[name] = cam
+
+    # AgX crushes previz colors (core principle 13) — the lab's signal
+    # IS the 7 per-actor hues: pin Standard (the s20-A2 L-P2 fix)
+    try:
+        sc.view_settings.view_transform = 'Standard'
+    except Exception:
+        pass
 
     ctx = {
         "scene": sc, "cams": cams, "platform": platform, "bench": bench,
@@ -224,10 +232,23 @@ def render_motion_strips(ctx, out_dir, n=6, engine='WORKBENCH'):
                   arm.animation_data.action.frame_range]
         frames = [round(f0 + (f1 - f0) * i / (n - 1)) for i in range(n)]
         # per-actor closeup camera (the strip verifies THIS actor — the
-        # wide/front cams cannot frame a 7-actor stage at gait detail)
+        # wide/front cams cannot frame a 7-actor stage at gait detail).
+        # s20-A2 L-P4: traveling actors (run) leave the frame-1-framed
+        # camera — frame the AABB UNION across the sampled frames.
         sc.frame_set(sc.frame_start)
         bpy.context.view_layer.update()
-        mn, mx = pl._aabb(arm)
+        frames_probe = [round(f0 + (f1 - f0) * i / max(1, n - 1))
+                        for i in range(n)]
+        lo = hi = None
+        for f in frames_probe:
+            sc.frame_set(f)
+            bpy.context.view_layer.update()
+            a, b = pl._aabb(arm)
+            lo = a if lo is None else Vector((min(lo.x, a.x), min(lo.y, a.y),
+                                              min(lo.z, a.z)))
+            hi = b if hi is None else Vector((max(hi.x, b.x), max(hi.y, b.y),
+                                              max(hi.z, b.z)))
+        mn, mx = lo, hi
         ctr = (mn + mx) * 0.5
         span = max(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z)
         cd = bpy.data.cameras.new(f"strip_cam_{disp}")
@@ -236,30 +257,33 @@ def render_motion_strips(ctx, out_dir, n=6, engine='WORKBENCH'):
         sc.collection.objects.link(cam2)
         cam2.location = (ctr.x + span * 0.2, ctr.y - max(3.2, span * 2.6),
                          ctr.z + 0.35)
-        d = (ctr - cam2.location.__class__((ctr.x, ctr.y, ctr.z))
-             if False else
-             mathutils.Vector((ctr.x, ctr.y, ctr.z)) - cam2.location)
+        d = mathutils.Vector((ctr.x, ctr.y, ctr.z)) - cam2.location
         cam2.rotation_euler = d.to_track_quat('-Z', 'Y').to_euler()
         sc.camera = cam2
         cells = []
         tmpdir = tempfile.mkdtemp(prefix="labstrip_")
-        for i, f in enumerate(frames):
-            sc.frame_set(f)
-            bpy.context.view_layer.update()
-            path = os.path.join(tmpdir, f"cell_{i:02d}.png")
-            sc.render.filepath = path
-            bpy.ops.render.render(write_still=True)
-            cells.append(path)
-        # stitch 1 x n with labels
-        W, H = Image.open(cells[0]).size
-        sheet = Image.new("RGB", (W * n + 4 * (n - 1), H), (18, 18, 18))
-        xoff = 0
-        for i, p in enumerate(cells):
-            im = Image.open(p)
-            sheet.paste(im, (xoff, 0))
-            xoff += W + 4
-        out = os.path.join(out_dir, f"motion_{disp}.png")
-        sheet.save(out)
+        try:
+            for i, f in enumerate(frames):
+                sc.frame_set(f)
+                bpy.context.view_layer.update()
+                path = os.path.join(tmpdir, f"cell_{i:02d}.png")
+                sc.render.filepath = path
+                bpy.ops.render.render(write_still=True)
+                cells.append(path)
+            # stitch 1 x n with labels
+            W, H = Image.open(cells[0]).size
+            sheet = Image.new("RGB", (W * n + 4 * (n - 1), H), (18, 18, 18))
+            xoff = 0
+            for i, p in enumerate(cells):
+                im = Image.open(p)
+                sheet.paste(im, (xoff, 0))
+                xoff += W + 4
+            out = os.path.join(out_dir, f"motion_{disp}.png")
+            sheet.save(out)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+            # temp-camera residue (SKILL mistake #5): strip cams die here
+            bpy.data.objects.remove(cam2, do_unlink=True)
         strips[disp] = {"frames": frames, "path": out}
         print(f"[lab] strip {disp}: frames={frames} -> {out}")
     sc.frame_set(sc.frame_start)
@@ -272,6 +296,7 @@ def main():
                    help="comma list: wide|front|side")
     p.add_argument("--motion-strips", action="store_true")
     p.add_argument("--strip-frames", type=int, default=6)
+    # (validated >= 2 below: n<=1 would ZeroDivision the stitch)
     p.add_argument("--export-glb", action="store_true")
     args = p.parse_args(script_argv())
     out = args.output
@@ -288,6 +313,8 @@ def main():
 
     strips = {}
     if args.motion_strips:
+        if args.strip_frames < 2:
+            parser.error("--strip-frames must be >= 2")
         strips = render_motion_strips(ctx, out, n=args.strip_frames)
 
     # stills (workbench fast path)
@@ -317,7 +344,15 @@ def main():
         "scene": scene_name,
         "actors": {k: v["clip"] for k, v in ctx["actors"].items()},
         "statues": list(ctx["statues"]), "strips": strips,
-        "frame_range": [sc.frame_start, sc.frame_end], "fps": 30,
+        "frame_range": [sc.frame_start, sc.frame_end],
+        "fps": 30,
+        # the viewer contract (viewer/index.html reads these)
+        "engine": args.engine, "resolution": [sc.render.resolution_x,
+                                              sc.render.resolution_y],
+        "samples": getattr(args, "samples", 0),
+        "camera": "multi", "camera_lens_mm": 35,
+        "objects": len(bpy.data.objects),
+        "blender_version": bpy.app.version_string,
     }
     with open(os.path.join(out, "metadata.json"), "w") as f:
         json.dump(meta, f, indent=1)

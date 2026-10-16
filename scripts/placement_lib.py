@@ -224,16 +224,45 @@ def _armature_points(obj, mode='verts'):
     return pts
 
 
+# The armature box-proxy face table (s20-A3 audit fix). Blender's
+# bound_box corner order (EMPIRICALLY probed: i&1->z, i&2->y, i&4->x):
+#   [0](-,-,-) [1](-,-,+) [2](-,+,+) [3](-,+,-) [4](+,-,-) [5](+,-,+)
+#   [6](+,+,+) [7](+,+,-)
+# These six quads are the six faces, OUTWARD-wound (verified by cross
+# products) — and the BVH below is built FROM THIS SAME TABLE so the
+# face indices pair_contact's overlap() returns align with
+# _polys_world's quad list by construction (the old create_cube proxy
+# had a DIFFERENT face order: [0]=-X,[1]=+Y,[2]=+X,[3]=-Y,[4]=-Z,[5]=+Z
+# — face-index misalignment = wrong poly tested = false crossings).
+_ARMATURE_QUADS = (
+    (0, 1, 2, 3),   # -X
+    (7, 6, 5, 4),   # +X
+    (0, 4, 5, 1),   # -Y
+    (1, 5, 6, 2),   # +Z
+    (2, 6, 7, 3),   # +Y
+    (3, 7, 4, 0),   # -Z
+)
+
+
 def _armature_box_bvh(obj):
     """Closed-box BVH proxy from the armature's world bound_box (the
     mesh-BVH stand-in for armature subjects/supports in pair_contact and
-    support raycasts — bone geometry has no mesh to build a tree from)."""
+    support raycasts — bone geometry has no mesh to build a tree from).
+    Built from _ARMATURE_QUADS so BVH face indices == _polys_world quad
+    indices (the s20-A3 alignment law)."""
     mn, mx = _aabb(obj)
     bm = bmesh.new()
-    bmesh.ops.create_cube(bm, size=1.0)
-    ctr = (mn + mx) * 0.5
-    scl = Matrix.Diagonal((mx.x - mn.x, mx.y - mn.y, mx.z - mn.z, 1.0))
-    bm.transform(Matrix.Translation(ctr) @ scl)
+    bvs = [bm.verts.new(Vector((x, y, z)))
+           for x in (mn.x, mx.x) for y in (mn.y, mx.y)
+           for z in (mn.z, mx.z)]
+    # corner index -> bm.verts index: bound_box order is bit-flag
+    # (i&4->x, i&2->y, i&1->z); the comprehension above is (x,y,z)
+    # lexicographic = index x*4 + y*2 + z*1 — the SAME bit order.
+    for quad in _ARMATURE_QUADS:
+        try:
+            bm.faces.new([bvs[i] for i in quad])
+        except ValueError:
+            pass                              # degenerate extent
     bm.normal_update()
     tree = BVHTree.FromBMesh(bm)
     bm.free()
@@ -307,10 +336,10 @@ def _polys_world(obj):
     if obj.type == 'ARMATURE':
         mw = obj.matrix_world
         c = [mw @ Vector(b) for b in obj.bound_box]
-        # bound_box corner order: 0-3 bottom loop, 4-7 top loop (4=i+4)
-        polys = [(c[0], c[1], c[2], c[3]), (c[7], c[6], c[5], c[4]),
-                 (c[0], c[4], c[5], c[1]), (c[1], c[5], c[6], c[2]),
-                 (c[2], c[6], c[7], c[3]), (c[3], c[7], c[4], c[0])]
+        # corner order (empirical): i&1->z, i&2->y, i&4->x; the six
+        # quads are the six faces, outward-wound, and INDEX-ALIGNED with
+        # _armature_box_bvh (same table — the s20-A3 alignment law).
+        polys = [tuple(c[i] for i in quad) for quad in _ARMATURE_QUADS]
         _POLY_CACHE[key] = polys
         return polys
     dg = bpy.context.evaluated_depsgraph_get()
@@ -1176,6 +1205,10 @@ def _origin_centroid_warn(obj, report, tol_m=0.05):
     set_location may surprise them."""
     try:
         mw = obj.matrix_world
+        if obj.type != 'MESH':
+            return                    # armature/empty: no .vertices (the
+            # bare except below would swallow the AttributeError and the
+            # warning class silently never fires — s20-A3 P3-1)
         vs = obj.data.vertices
         n = len(vs)
         if n == 0:

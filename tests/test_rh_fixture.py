@@ -198,8 +198,9 @@ def f3_import_clip():
     fresh_scene()
     arm, rep = rh_canvas.import_clip(PIN_WALK)
     t = TRUTH["clips"][PIN_WALK]
-    check(rep["bones"] == 65 == t["obj_scale"] and True or rep["bones"] == 65,
-          f"bones {rep['bones']}")
+    check(rep["bones"] == 65, f"bones {rep['bones']}")
+    check(rep["obj_scale"] == t["obj_scale"],
+          f"obj_scale vs truth: {rep['obj_scale']} vs {t['obj_scale']}")
     check(rep["mixamorig_prefix"] is True, "prefix law")
     check(rep["fps"] == 30, f"fps law {rep['fps']}")
     check(rep["frame_range"] == t["frames"],
@@ -287,12 +288,19 @@ def f5b_bind_refusals():
     # channel-match guard's decoy needs prefix-correct names:
     fresh_scene()
     arm, _ = rh_canvas.import_clip(PIN_WALK)
-    names = [b.name for b in arm.data.bones]
-    for b, new in zip(list(arm.data.bones), names):
-        b.name = new.replace("mixamorig:", "mixamorig_:")
+    # count+prefix stay legal; the NAMES break -> the channel-match
+    # guard (0/N matched) is the layer that must refuse (s39-U2 P1 —
+    # the decoy must reach THAT guard, not the prefix census).
+    # TRAP (probe-verified): renaming a pose bone AUTO-REMAPS the bound
+    # action's fcurve data_paths (Blender's rename fixup) — binding the
+    # SAME clip would re-match 1:1. The decoy binds a DIFFERENT clip:
+    # its fresh import targets the ORIGINAL names -> 0/N -> refuse.
+    for b in arm.data.bones:
+        b.name = b.name + "X"          # mixamorig:Hips -> mixamorig:HipsX
     try:
-        rh_canvas.bind(arm, PIN_WALK)
-        raise AssertionError("prefix-broken bind must refuse")
+        rh_canvas.bind(arm, PIN_SIT)   # fresh import, original names
+        raise AssertionError("name-broken bind must refuse via "
+                             "channel-match")
     except rh_canvas.RHRefused:
         pass
 
@@ -409,13 +417,33 @@ def f8_placement():
     mn, mx = pl._aabb(arm)
     check(abs(mn.z - 0.5) < 0.15,
           f"armature bbox bottom near bench top: {mn.z}..{mx.z}")
-    # pair_contact works on the armature (box BVH proxy) — returns the
-    # JSON report dict (gotcha-11: read the real keys, never invent)
+    # pair_contact works on the armature (box BVH proxy) — the report's
+    # real keys (gotcha-11), then TEETH (s20-A2 T-P1 + s20-A3 P2):
     rep_pc = pl.pair_contact(arm, bench)
-    check(rep_pc.get("state") in ("TOUCHING", "PENETRATING", "CLEAR",
-                                  "NESTED", None)
-          or "state" in rep_pc,
-          f"pair_contact report keys: {sorted(rep_pc)[:6]}")
+    check(rep_pc.get("state") == "TOUCHING",
+          f"seated armature vs bench must read TOUCHING, got "
+          f"{rep_pc.get('state')!r}")
+    # the armature poly set == the AABB's 6 planes (the s20-A3
+    # alignment law: _polys_world quads == _armature_box_bvh faces)
+    from mathutils import Vector as _V
+    polys = pl._polys_world(arm)
+    check(len(polys) == 6, f"6 armature quads, got {len(polys)}")
+    for poly in polys:
+        n = (poly[1] - poly[0]).cross(poly[2] - poly[0]).normalized()
+        d = n.dot(poly[0])
+        corners = [abs(n.dot(_V(c)) - d) for c in poly]
+        check(max(corners) < 1e-4, f"quad not planar: {corners}")
+    # known-bad case: a thin spear THROUGH the bench box must read
+    # PENETRATING (the crossing branch on MESH-vs-MESH sanity — the
+    # armature-vs-support pair above must not have broken the branch)
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(5.0, 0.0, 0.25))
+    spear = bpy.context.active_object
+    spear.scale = (2.2, 0.04, 0.04)     # a skewer through the bench
+    bpy.context.view_layer.update()
+    rep_spear = pl.pair_contact(spear, bench)
+    check(rep_spear.get("state") == "PENETRATING",
+          f"spear-through-bench must PENETRATE, got "
+          f"{rep_spear.get('state')!r}")
 
 
 # --------------------------------------------------------------------------- #
@@ -471,16 +499,23 @@ ROWS_SPEC = [
 for rid, fn in ROWS_SPEC:
     row(rid, fn)
 
-print(f"\n[test_rh_fix] SUMMARY: "
-      f"{sum(1 for v in ROWS.values() if v == 'pass')} pass, "
-      f"{sum(1 for v in ROWS.values() if v == 'fail')} fail, "
-      f"{sum(1 for v in ROWS.values() if v == 'skip')} skip", flush=True)
+n_pass = sum(1 for v in ROWS.values() if v == 'pass')
+n_fail = sum(1 for v in ROWS.values() if v == 'fail')
+n_skip = sum(1 for v in ROWS.values() if v == 'skip')
+print(f"\n[test_rh_fix] SUMMARY: {n_pass} pass, {n_fail} fail, "
+      f"{n_skip} skip", flush=True)
 for rid in ROWS_SPEC:
     print(f"  {rid[0]}: {ROWS.get(rid[0], 'missing')}", flush=True)
 
 with open(OUT, "w") as f:
     json.dump({"rows": ROWS, "failures": FAIL}, f, indent=1)
 
+if not LIB_OK:
+    # the honest-skip protocol (suite_runner lines 215-223): exit 2 +
+    # the SUITE-SKIP marker — a zero-coverage run must NOT score PASS
+    print("SUITE-SKIP: fixture library absent — build it first "
+          "(scripts/rh_fixture_lib.py)", flush=True)
+    sys.exit(2)
 if FAIL:
     print(f"[test_rh_fix] ALL FAIL: {FAIL}", flush=True)
     sys.exit(1)
