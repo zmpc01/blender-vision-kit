@@ -4018,3 +4018,29 @@ Stage Summary:
   module surface no longer depends on a live external source
 - next session scope lives in HANDOFF (UAL hero-swap leg, wrapper-empty facing pattern,
   upstream-booking of the rh_canvas s20 deltas)
+
+---
+Task ID: session-21 (the RESUME + re-land round — tfog staging completed last round; this round = the tform_1 re-land + the s32 export-compliance fix at the source)
+Agent: Super Z (main orchestrator; visual verdicts stay with the principal)
+
+Task: resume the cut session. The recap's cut point was "Re-daemonizing [the review server]" — after tform_1 export went green + was staged locally but NEVER committed. Restore full context from artifacts, re-land everything the sandbox took, stage tform_1, land the kit fixes at the source.
+
+Work Log:
+- fresh sandbox (lab wiped AGAIN): restored 4 repos from GitHub + escape-outputs checked; Blender 5.2.2 via chunked_dl (383MB, 16 chunks clean); wheel 1.6.0 from the crowd-kit vendored wheels into venv + bundled python; Pillow into bundled; install.sh with BLENDER_BIN (libEGL local-libs); tools/blender symlink = the DIRECTORY (blrun wants tools/blender/blender); warm cache 2.4s
+- review server: bun install (835 pkgs) + prisma db push — LESSON: bare `npx prisma db push` silently ran against the WRONG DATABASE_URL (the Comment table missing at first restore; the repo's own db:push contract pins file:$PWD/db/custom.db); daemonize needs an ABSOLUTE log path (it chdirs to /); restore receipts EXACT (tdawn_2 x5, v6_0 x6, v6_1 x3, films 0)
+- CONTEXT FORENSICS: vision-kit remote had tform committed ONLY through camprobe certification (5fa907b); everything after (ladder verdict e14, dust 0.004, 12 stills, export, filmstrips, staging) was lost. /home/sync snapshot was stale (session-12 era) — unrecoverable; re-derived from the recorded verdicts
+- the golden-hour verdict re-applied to tform_scene (sun 6->14 deg + dust 0.015->0.004 with the full ladder receipt in the header); commit 360cd72 pushed (GitHub + GitLab archive s21 — github-canonical is non-FF by lineage law, -s20 existed from another lane b4be13cf, so the NEW archive branch s21 carries the round)
+- BAKE CHAIN re-run: probe c8be30ba / officers a@t355 b@t329 EXACT vs the commit record; 168 layers conflicts []; interaction 46 clasp edits; finish payload 9024057c == the committed record BYTE-DETERMINISTIC (verify: fresh-clone re-apply npz byte-identical); K1 live (26 layered recomposed, 46 authored exempt)
+- the 5.2 ENGINE-ENUM catch: tform_scene._set_engine hardcoded BLENDER_EEVEE_NEXT (the 4.x id) — 5.2's enum is BLENDER_EEVEE; fixed to the tfog pattern (startswith + hasattr)
+- stills runner fresh (tform_stills.sh, the clone-seam law) with the beat-anchored frame table (S3 f264 march-in / S6 f560 halt line / S7 f816 mid-clasp / S10 f1000 funnel / S11 f1020 planted title / S12 f1060 departing file); 12/12 EEVEE stills rendered; PRINCIPAL EYE GATE PASS (the e14 long-shadow signature reads S1/S4/S6/S12; S5/S7/S8 borderline-noted, honest to their certified framings)
+- filmstrips runner fresh (96 cells) — Blender's render.filepath EXTENSION LAW: the format's canonical ext (.png) REPLACES the requested .jpg; the family convention IS png data, the stage script derives ext from the files
+- EXPORT lane: preflight PASS 0/0 -> the wrapper REFUSED the escape-previz exporter (r084 #9 identity marker) -> the CANONICAL exporter is agent-kit's (cloned); the s32 discovery gate fail-closed 14 unmapped UPPERCASE constants -> the DESIGN DECISION: the 8 GENERIC film-lane names (SHOTS_V1/CAMS_V1/CACHE_DIR_DEFAULT/CHASE_TAIL/EXPECTED_AGENTS/DECLARED_TOTAL/TICK_HZ/TOTAL_FRAMES) are kit-level KNOWN_NON_STORY entries with documented destinations (upstream commit 2fa345e); the FILM-SPECIFIC knobs lowercased in-module (KEEPPOUTS/KEEPOUT_R mirror + the 4 TFORM_* ladder knobs)
+- THE ATMOSPHERE FIX WAS NEVER UPSTREAM: the tfog-era _collect_atmosphere VOLUME_SCATTER fallback died with its sandbox — re-landed at the SOURCE (2fa345e) with the CAST union verified already-upstream (s33 round 2)
+- EXPORT GREEN tform_1 rev 1 (12 shots/12 cams/2 chars/110 actions/1 atmosphere; gates green, .export_ok); the failed run's .REJECTED debris cleaned; pkg/stills re-copied (the rejected-run rename consumed it)
+- STAGED tform_1 into the review app via the surviving stage_tform.py (patched: sfx_events.json copy is conditional — tform authors no sfx beats, the app's sfx_events pointer is optional); the app serves THE DRILL first (newest-first), stills/strips/manifest all 200
+- push discipline held: vision-kit rebased over the parallel s21/s40 lanes TWICE mid-round (zero overlap both times); agent-kit pushed 71eb1c3..2fa345e; previz-review 3df3006..844ed3a; GitLab mirrors via archive branches (vision-kit s21) + FF (agent-kit, previz-review); /home/sync rsync of all four repos (NOTE: the full-vendor repos now exceed a 10-min tool-call rsync — sync repo-by-repo)
+
+Stage Summary:
+- tform_1 rev 1 is LIVE in the review app (the sixth film); the review round on all six films stays open (0 comments on the films)
+- the film family's export compliance now runs against the REAL upstream gates: the 8-name KNOWN_NON_STORY + the VOLUME_SCATTER fallback are landed upstream, not sandbox-local
+- filed debts: the OTHER film modules (tfog 13 extras, squall/green/ferry/tdawn TBD) will fail the s32 discovery at their NEXT exports — same treatment (generic -> upstream exemptions if the vocabulary repeats; film-specific -> lowercase). Not churned this round (their exports are stable-staged; churn without an export gate to prove it is risk without proof)
