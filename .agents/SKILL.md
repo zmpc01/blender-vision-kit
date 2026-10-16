@@ -251,17 +251,13 @@ vision_loop · render_speed · placement_and_physics · semantic_labeling ·
 prop_carry · rigged_characters · glTF_export · tdawn_vision_film (the
 film recipe + export command + crowd bridge contract) · crowd_fields ·
 gait_modifiers.
-## Session-12/13 meta (ultra-condensed — full: kb/tdawn_vision_film.md + docs/USABILITY_TD1* + USABILITY_R9.md)
+## Session-12/13 meta (full: kb/tdawn_vision_film.md + USABILITY_TD1*/R9)
 
-- FACTORY-PURGE LAW: --factory-startup loads default Cube/Camera/Light
-  into YOUR scene — purge at build_scene start.
-- Glow-surface law: dark-warm Base Color + saturated Emission Color set
-  independently (make_material pins them equal — F-TD11 kwargs).
-- Recession occlusion: ray-cast THROUGH a "vanished" subject (look
-  --probe-camera) — the fix is a viewpoint move, not a retime.
-- NEVER run two blrun/EEVEE pipelines on one display (the flock makes
-  it fail fast instead).
-- D18 asset-partition: 10 measured laws in docs/USABILITY_R9.md.
+- FACTORY-PURGE: --factory-startup loads default Cube/Camera/Light —
+  purge at build_scene start. Glow law: Base Color vs Emission Color
+  set independently (F-TD11). Recession occlusion: ray-cast THROUGH
+  the vanished subject — viewpoint move, not a retime.
+- NEVER run two blrun/EEVEE pipelines on one display.
 
 ## SESSION 14/15 LAWS (condensed — full: docs/USABILITY_TD1/TF1 + HANDOFF session-14/15)
 
@@ -278,29 +274,20 @@ gait_modifiers.
 - Governed-pair guard: land kit fix → sync_shared --to <consumer> →
   commit BOTH.
 
-## SESSION 15 FILM LAWS (recovered; full: docs/USABILITY_TF1_last_ferry.md)
+## SESSION 15 FILM LAWS (full: docs/USABILITY_TF1_last_ferry.md)
 
-- The native engine REFUSES barricade squares past the walkable edge
-  (E_InvalidRange) — cap barricade centers at walkable−r.
-- F-TF6: kit mode has NO hero-lane pushout (HERO_LANES was DEAD DATA);
-  any pushout feature must define arrival semantics FIRST (F-TG1:
-  arrived agents are GHOSTS).
-- The bridge shape is a FEATURE: N is pinned per-film — never "fix" a
-  pinned N to match a stale constant.
-- Camera-work budget: REFRAMES not new cams; keyed cranes must actually
-  move (never-keyed loc0→loc1 = the static 'crane' class).
-- Night pools: lamp gaps read as murky dead stretches; the title card
-  needs F-TD11 emission (make_material arg3 is ROUGHNESS).
+- Barricades past the walkable edge = E_InvalidRange. F-TF6: no
+  hero-lane pushout (HERO_LANES was DEAD DATA); arrival semantics
+  FIRST (F-TG1: arrived agents are GHOSTS). N is pinned per-film.
+- REFRAMES not new cams; never-keyed cranes = the static class.
+- Night: lamp gaps read dead; titles need F-TD11 emission.
 
 ## SESSION 16 LAWS (the KIT-QUALITY wave — D19 export preflight + t10; full: docs/USABILITY_S16 + DESIGN_D19)
 
-- **Lane discipline**: the parallel lane owns SCENE work unless the
-  user directs films; never co-edit scene_*.py.
-- **Preflight-before-export** (exit 3, attributed rejections); gate 15
-  (sfx fail-closed) + gate 4 (BOARD total-decode-failure) backstop.
-- **TWO exporters**: this tree's export_previz_package = escape/template
-  lane; film lanes export via the CANONICAL agent-kit copy. Pin WHICH
-  exporter is under test before writing suite asserts.
+- Lane discipline: parallel lanes own SCENE work; never co-edit
+  scene_*.py. Preflight-before-export (exit 3, attributed). TWO
+  exporters: this tree's = escape/template lane; films use the
+  CANONICAL agent-kit copy — pin WHICH before writing asserts.
 - **Decode-parity**: the REAL decoder is the oracle — assert both
   drift directions; a checker is never stricter than the decoder, but
   None-where-decoder-raises IS a rejection.
@@ -312,32 +299,26 @@ gait_modifiers.
 - **Audit-before-implement ROI**: 3 cheap read-only audits → 1 real
   bug + the whole D19 spec. Cite file:line — but re-verify anchors by
   grep before batch-editing (they shift; symbol-cites are drift-proof).
-## SESSION 16 LAWS (the third film — ultra-condensed; full: USABILITY_TG1)
+## SESSION 16 LAWS (the third film — full: USABILITY_TG1)
 
-- Capacity box = ARRIVAL TRIGGER (agents GHOST on ENTER); speed
-  envelope per-film; AgX-noon = tune direct:ambient ratio; clone-seam:
-  grep a sed-cloned tool for the PARENT'S scene module.
+- Capacity box = ARRIVAL TRIGGER (agents GHOST on ENTER); AgX-noon =
+  tune direct:ambient ratio; clone-seam: grep a sed-cloned tool for
+  the PARENT'S scene module.
 
 
 ## SESSION 17 LAWS (the second KIT-QUALITY wave — 88 findings, all ≥P2 fixed)
 
-- render_angle SWEEPS camera-bound marker bindings (render prefers the
-  marker over scene.camera — the F-TD3 silent-wrong-camera class);
-  look exit 4 = unreadable image; PNG magic verified, not existence.
-- Per-component location writes are PARENT-space: world-space solvers
-  go through _world_delta_to_local; seat_at composes matrix_world;
-  keyframe rebases take the BASIS delta (fcurves are basis-space).
-- Accepted-but-unimplemented params are fail-open lies: validate tokens
-  at the op layer (keep_xy/centroid/footprint/seat_mesh); the
-  PARAM_DOCS↔handler parity is AST-checked in test_s17_wave_b.
-- Operator kwargs: RNA-filter EVERY call site
-  (blender_kit.filter_rna_kwargs) — a TypeError fallback silently drops
-  settings (it dropped the previz:entity carrier).
-- _skinned_guard must check the ARMATURE's animation (the rig poses the
-  mesh even when the mesh object has none).
-- Battery = suite_runner.sh (38 suites incl. the s19 pins + the two RH
-  rows); run --only batches in ONE foreground call. Fix waves carry
-  PINS or they are UNPINNED (test_s19_wave_pins is the pattern).
+- render_angle SWEEPS camera-bound marker bindings (the F-TD3
+  silent-wrong-camera class); look exit 4 = unreadable image.
+- Per-component location writes are PARENT-space (world-space solvers
+  via _world_delta_to_local; keyframe rebases take the BASIS delta).
+- Accepted-but-unimplemented params are fail-open lies (validate at
+  the op layer; PARAM_DOCS↔handler parity is AST-checked).
+- Operator kwargs: RNA-filter EVERY call site (filter_rna_kwargs) —
+  a TypeError fallback silently drops settings. _skinned_guard checks
+  the ARMATURE's animation (the rig poses the mesh with none of its
+  own). Battery = suite_runner.sh; fix waves carry PINS or they are
+  UNPINNED (test_s19_wave_pins is the pattern).
 
 
 ## SESSION 19 LAWS (the third exhaustion round + the native-vision e2e lane)
@@ -354,13 +335,11 @@ gait_modifiers.
   BOTH owners or false-negative (socket-level keying WORKS; the
   "silent no-op" claim was a single-owner-read artifact).
 - THE NATIVE-VISION E2E LANE WORKS: sub-agents audit code; the
-  PRINCIPAL renders and LOOKS (smoke/s19_td3_probe, s19_motion_probe).
-  The eye probes caught the 5th bare-animate site both audit rounds
-  missed. Keep eye-probes standing for every silent-wrong-render fix.
-- Sandbox: install.sh BLENDER_BIN override skips the tools/blender
-  symlink the battery needs; Edit+Bash in one parallel block races
-  files to disk (serialize); display-mangle survives even repr() —
-  ast.parse before EVERY commit (a real syntax error shipped once).
+  PRINCIPAL renders and LOOKS — the eye probes caught the 5th
+  bare-animate site both audits missed. Keep eye-probes standing.
+- Sandbox: BLENDER_BIN override skips the tools/blender symlink the
+  battery needs; Edit+Bash in one parallel block races files (serialize);
+  display-mangle survives repr() — ast.parse before EVERY commit.
 
 
 ## SESSION 17b LAWS (the fourth film: SQUALL — ultra-condensed; full: USABILITY_TS1_squall.md + DESIGN_squall.md REV-3)
@@ -407,13 +386,39 @@ gait_modifiers.
   i&2->y, i&4->x. An ARMATURE's .data is a TRUTHY Armature block with
   no .vertices — type-check 'MESH', never getattr-truthiness.
 - Imported RH armatures are ANIMATED OBJECTS: move/place needs
-  override='keyframe'; anchor moves on the BBOX BOTTOM-CENTER (poses
-  offset the body from the origin); manual armature yaw is CLOBBERED by
-  object-level rotation keys — facing = the wrapper-empty pattern.
-- Renaming a pose bone AUTO-REMAPS the bound action's fcurve paths
-  (Blender rename fixup) — a channel-match decoy must bind a DIFFERENT
-  clip.
-- Battery = 38 suites (test_rh_fixture self-verifies vs the generator's
-  truth.json; the honest-skip protocol: exit 2 + SUITE-SKIP marker —
-  a zero-coverage run must NOT score PASS). Fine-grained-PAT signature:
-  API 200 + git 401 — provision repo trees via the API tarball endpoint.
+  override='keyframe'; anchors move on the BBOX BOTTOM-CENTER; armature
+  yaw is CLOBBERED by object-level rotation keys (facing = wrapper-empty).
+- Renaming a pose bone AUTO-REMAPS the action's fcurve paths — a decoy
+  must bind a DIFFERENT clip.
+- Battery = 38 suites (honest-skip protocol: exit 2 + SUITE-SKIP
+  marker — zero coverage must NOT score PASS). Fine-grained-PAT
+  signature: API 200 + git 401 — provision via the API tarball.
+
+## SESSION 21 LAWS (the resume + re-land round — tform_1 staged + upstream export compliance)
+
+- **THE RE-LAND DRILL IS CHEAP NOW (~20 min)**: chunked_dl Blender →
+  wheel FROM THE VENDORED crowd-kit wheels → install.sh BLENDER_BIN →
+  tools/blender symlinks the DIRECTORY (blrun wants tools/blender/
+  blender) → warm cache → server (bun install + the REPO'S db:push
+  contract — bare `npx prisma db push` hits the wrong db; daemonize
+  needs an ABSOLUTE log path) → restore receipts check.
+- **5.2 ENGINE ENUM**: BLENDER_EEVEE (NEXT is 4.x-only). Scene
+  modules must startswith-match + hasattr the samples knob — never
+  version-guess the enum.
+- **THE CANONICAL EXPORTER IS agent-kit's** — the wrapper refuses
+  any KIT_EXPORTER lacking the "export stamped OK" marker (r084#9);
+  the escape-previz copy is NOT exportable.
+- **THE s32 DISCOVERY GATE** fail-closes UPPERCASE payload-shaped
+  constants the story contract doesn't map. Taxonomy: generic
+  film-lane vocabulary → KNOWN_NON_STORY with a documented
+  destination (8 names upstream 2fa345e); film knobs → LOWERCASE
+  in-module (tform_scene is the worked example). Counted replaces.
+- **RENDER EXT LAW**: render.filepath's ext is REPLACED by the
+  format's canonical ext (.png) — derive manifests from the FILES.
+- **Check the UPSTREAM TIP before re-deriving a fix** — the tfog-era
+  atmosphere VOLUME_SCATTER fallback died with its sandbox; re-landed
+  at the source (2fa345e). GIT IS THE DISK applies to agent-kit TOO.
+- **GitLab posture**: vision-kit github-canonical is non-FF by
+  lineage law — per-round archive branches (s21 current); agent-kit +
+  previz-review mirror FF. /home/sync is REPO-BY-REPO (a whole-lab
+  rsync exceeds the 10-min tool cap).

@@ -1,5 +1,59 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
+> Session 21 close: 2026-10-16. HEAD = the RESUME round: the wiped
+> sandbox re-bootstrapped from remotes (the drill now ~20 min), the
+> tform_1 re-land completed end-to-end (bake chain byte-deterministic
+> at 9024057c, 12 stills eye-certified, EXPORT GREEN, staged — the
+> sixth film lives), and the film-lane export compliance landed
+> UPSTREAM (agent-kit 2fa345e). This block → the session-20 block →
+> PLAN Track TF → worklog (session-21 record).
+
+## Session-21 close state (NEWEST — read this first)
+
+- **tform_1 rev 1 (THE DRILL) is STAGED** in previz-review (844ed3a)
+  and the app serves it first (newest-first): 12 shots / 12 cams / 2
+  characters / 110 actions / 1 atmosphere, 96 filmstrips + 12 stills
+  + GLB 15MB. The bake chain re-proven BYTE-DETERMINISTIC from a
+  wiped sandbox (payload 9024057c == the 5fa907b record; probe pin
+  c8be30ba, officers a@t355 b@t329 — every stage receipt matched the
+  commit record exactly). K1 composed-motion is live on the film.
+- **The upstream fixes (agent-kit 2fa345e)**: (1) _collect_atmosphere
+  VOLUME_SCATTER fallback (the tfog-era fix that died with its
+  sandbox — check the CANONICAL exporter's tip BEFORE assuming a
+  film-lane fix exists); (2) scene_contract.KNOWN_NON_STORY += the
+  8 film-lane family names (SHOTS_V1/CAMS_V1/CACHE_DIR_DEFAULT/
+  CHASE_TAIL/EXPECTED_AGENTS/DECLARED_TOTAL/TICK_HZ/TOTAL_FRAMES),
+  each with a documented destination per the s32 D6 law. The
+  film-SPECIFIC knobs are lowercased IN-MODULE (tform_scene is the
+  worked example: KEEPOUTS→keepouts + TFORM_*→tform_*).
+- **New laws this round** (SKILL carries the condensed forms):
+  5.2 engine enum is BLENDER_EEVEE (NEXT is 4.x — never version-guess
+  in a scene module); the wrapper's r084#9 identity marker refuses
+  non-canonical exporters (KIT_EXPORTER = agent-kit's); Blender's
+  render.filepath ext is REPLACED by the format's canonical ext;
+  daemonize.py needs an ABSOLUTE log path; bare `npx prisma db push`
+  in previz-review runs against the WRONG db — use the repo's own
+  db:push contract (file:$PWD/db/custom.db).
+- **GitLab posture**: vision-kit's github-canonical is non-FF by
+  lineage law; the round's archive branch is github-canonical-s21
+  (kept FF-current); github-canonical-s20 exists from another lane
+  (b4be13cf — not ours, do not touch). agent-kit + previz-review
+  mirror FF to github-canonical. The repos now exceed a 10-min
+  tool-call rsync — /home/sync is done REPO-BY-REPO.
+- **Open queues for the next session**:
+  1. THE USER REVIEW ROUND on all six films (0 comments on the
+     films — the whole lane points here; the four older films at 0
+     since their close, tdawn_2/v6_0/v6_1 carry the historical
+     comment threads).
+  2. The diversity queue rest: interior/night-market (the regime not
+     yet covered) — the SQUALL build order recipe applies as-is.
+  3. Filed debt: the other five film modules fail the s32 discovery
+     at their NEXT exports — apply the tform treatment only when an
+     export round reopens each film (generic names → upstream
+     exemptions if the vocabulary repeats; film knobs → lowercase).
+  4. The s21 lane (parallel, separate): the UAL hero-swap leg + the
+     rh_canvas s40 preview-data surface are NOT this lane's scope.
+
 > Session 20 close: 2026-10-16. HEAD = the RH INTEGRATION lane complete:
 > the 2k-animation + humanoid-model integration vendored from mainline
 > s38/s39, an OFFLINE fixture library (the data source went dark),

@@ -481,6 +481,41 @@ code-level finding (--frames BLOCKER) remains valid.
       GOAL/DISABLE layers are VIEW-invisible (the F-TS1 ledger); a
       VIEW channel extension is a previz-side pinned-contract change
 
+## Track TF: THE EXPRESS + THE DRILL (the fifth + sixth films — DELIVERED, the review lane is open)
+
+- [x] tfog_1 rev 1 (THE EXPRESS — blue-hour fog rail platform, 129
+      agents): staged + verified in-app (previz-review c6b2f40); the
+      bake pin 19a93975 reproduced cross-machine; payload f5387e4a
+      (the S9+S10 clamp-split era); 12 certified stills (blue-hour
+      verdict sky1.0/lamps0.40/strips0.50, fog 0.05->0.028) + 96
+      filmstrips
+- [x] tform_1 rev 1 (THE DRILL — golden-hour citadel formation
+      drill, 102 agents): staged + verified in-app (previz-review
+      844ed3a); the FULL CROWD-KIT V2/V3 STACK on film — 168 layout
+      layers (7 windows x 24) + bake_interaction (the officers'
+      clasp, 46 authored rows) + K1 composed-motion live (26 layered
+      agents recomposed over [120,539], authored rows exempt) +
+      channel clips; payload 9024057c BYTE-DETERMINISTIC (re-proven
+      twice, incl. once from a wiped sandbox); 12 certified stills
+      (the golden-hour ladder verdict: sun e14 + dust 0.004 — the
+      authored 6-deg axis was pre-visual, the 6 m walls shadow the
+      whole 56 m yard at 6 deg)
+- [x] the export-compliance round landed UPSTREAM (agent-kit
+      2fa345e): the s32 discovery gate's KNOWN_NON_STORY now carries
+      the 8-name film-lane family vocabulary + the _collect_atmosphere
+      VOLUME_SCATTER fallback (the tfog-era fix that died with its
+      sandbox — the second GIT-IS-THE-DISK lesson for agent-kit)
+- [ ] the USER review round on all SIX films (0 comments on the
+      films — the whole lane points here)
+- [ ] filed debt: the OTHER film modules fail the s32 discovery at
+      their NEXT exports (tfog 13 extras; squall/green/ferry/tdawn
+      TBD) — generic vocabulary joins the upstream exemptions,
+      film-specific knobs lowercase (tform_scene is the worked
+      example); churn only when an export round reopens each film
+- [ ] the diversity queue rest: interior/night-market queues (the
+      regime not yet covered); a two-film round if the review round
+      lands clean
+
 ## Session-19 receipts (the THIRD audit-exhaustion round + native-vision e2e — 2026-10-15)
 
 - Wave-1: SIX fresh-context auditors on 0edf1aa → docs/audit_s19/wave1_triage.md (6×P1, ~17×P2, ~30×P3). Auditor-D verified the s18 P3 list 13/14 already closed (F8 re-drifted; symbol-cites now the law).
