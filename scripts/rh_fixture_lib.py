@@ -150,8 +150,15 @@ def _ease(t):
 
 
 def _set_pb(arm, bname, loc=None, rot_euler=None, frame=None):
-    """Key one pose bone (location metres, XYZ euler radians)."""
+    """Key one pose bone (location metres, XYZ euler radians).
+    ROTATION-MODE LAW (s20, eye-caught): pose bones default to
+    QUATERNION evaluation — keying rotation_euler on them is SILENTLY
+    INERT (the numeric battery passed because it only asserted hips
+    LOCATIONS; the principal-eye motion strips caught the frozen
+    joints). Pin XYZ before keying."""
     pb = arm.pose.bones[MIX + bname]
+    if pb.rotation_mode != 'XYZ':
+        pb.rotation_mode = 'XYZ'
     if loc is not None:
         pb.location = loc
     if rot_euler is not None:
