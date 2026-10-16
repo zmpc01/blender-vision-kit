@@ -1,3 +1,4 @@
+# VENDORED 2026-10-16 from mainline blender-agent-kit @6943ab5 (vision-kit s21 vendor round; zero code drift; vision deltas must land as sanctioned deltas per docs/VENDOR_LEDGER.md)
 """
 assets_ual_actors.py -- v4 UAL rigged hero actors (the wrapper layering).
 
@@ -69,14 +70,30 @@ SHIRT = {
     "Driver":  (0.82, 0.10, 0.12),   # RED
     "Girl":    (0.86, 0.12, 0.78),   # MAGENTA
     "Gunner":  (0.95, 0.52, 0.06),   # ORANGE
-    "HeroZed": (0.08, 0.72, 0.90),   # CYAN (session-23 user note:
-                   # emerald read as "zombie green" like the horde;
-                   # cyan keeps the leader-pop without the class
-                   # collision)
+    # HeroZed's base entry stays CYAN (session-23 hero table) but is
+    # OVERRIDDEN by TINTS below (s26) -- the effective color is
+    # _tint_rgb("HeroZed"), the zombie-family green.
+    "HeroZed": (0.08, 0.72, 0.90),   # CYAN (overridden -- see TINTS)
 }
 ACTOR_SCALE = 1.05     # gauntlet SCL: 1.651 m bind -> 1.734 m in [1.7,1.9]
 HEROZED_SCALE = 1.09   # menace read (REV3 item 6: PIN constant, in the
                        # child MPI -- NEVER a keyed wrapper scale)
+
+# s26 (user note on v5_1_b52 S8/f501: "why herozed is not a normal
+# zombie shape and has its own color?"): HeroZed must read as the
+# horde's HUNTER -- same species as the capsule crowd, not a 5th hero
+# class. Tint = the crowd's DARKEST jitter variant: escape_lib
+# PALETTE["zombie_body"] = SUBJECT_GREEN (0.10, 0.72, 0.28) x
+# JITTER_FACTORS 0.90 == Mat.Zed.J5 = (0.09, 0.648, 0.252), plus the
+# crowd body roughness 0.70 (UAL default was 0.60). Duplicated here by
+# the fork law (assets_characters/escape_lib own the capsule-side
+# tables; that module is frozen). He stays distinct through scale
+# (1.09), silhouette (UAL rig -- needed for the S8 lunge beats) and
+# choreography, NOT through color.
+ZOMBIE_TINT = ((0.09, 0.648, 0.252), 0.70)
+# post-import palette overrides, applied by build() via
+# tint_ual_actor(); the audit checks the EFFECTIVE color (_tint_rgb)
+TINTS = {"HeroZed": ZOMBIE_TINT}
 RIFLE_COL = (0.12, 0.12, 0.13)
 RIFLE_SCALE = (0.07, 0.95, 0.11)
 # review v4-impl-b P1-1: the capsule z 1.25 floats 0.23 m below the UAL
@@ -128,6 +145,43 @@ def _actor_material(name):
     # workbench MATERIAL color reads the viewport display color
     mat.diffuse_color = (*rgb, 1.0)
     return mat
+
+
+def _tint_rgb(name):
+    """Effective body color for `name`: the SHIRT base, overridden by
+    TINTS when present (s26). Single source for build + audit."""
+    ov = TINTS.get(name)
+    return ov[0] if ov else SHIRT[name]
+
+
+def tint_ual_actor(actor, rgb, roughness=None):
+    """Override a UAL actor's imported material with palette `rgb`.
+
+    GENERALIZED recolor mechanism (s26): works on ANY actor dict from
+    build() with ANY palette -- the HeroZed zombie-family tint is just
+    its first caller. Recolors every material datablock on the actor's
+    mesh slots via Principled 'Base Color' AND the viewport
+    diffuse_color (workbench + glTF stay in sync, gauntlet R4), and
+    optionally sets Roughness (crowd-family shading). Slot topology is
+    untouched -- the import already collapsed all slots to ONE
+    datablock (single-material law preserved).
+    """
+    mesh = actor["mesh"]
+    for slot in mesh.material_slots:
+        mat = slot.material
+        if mat is None:
+            continue
+        if mat.use_nodes:
+            bsdf = mat.node_tree.nodes.get("Principled BSDF")
+            if bsdf is not None:
+                bsdf.inputs["Base Color"].default_value = (*rgb, 1.0)
+                if roughness is not None:
+                    try:
+                        bsdf.inputs["Roughness"].default_value = roughness
+                    except KeyError:
+                        pass
+        mat.diffuse_color = (*rgb, 1.0)
+    return actor
 
 
 def _import_actor(name, scale):
@@ -239,6 +293,10 @@ def build(ctx=None):
              ("Gunner", ACTOR_SCALE), ("HeroZed", HEROZED_SCALE))
     for name, scale in specs:
         humans[name] = _import_actor(name, scale)
+        # s26: post-import palette override (HeroZed -> zombie family)
+        if name in TINTS:
+            rgb, rough = TINTS[name]
+            tint_ual_actor(humans[name], rgb, roughness=rough)
     humans["rifle"] = _build_rifle(humans["Gunner"]["root"])
     n_acts = len(humans["Driver"]["actions"])
     print(f"[ual_actors] 4 UAL imports: 4 wrappers + 4 rigs + 4 mannequins"
@@ -322,9 +380,10 @@ def audit(ctx):
         else:
             m = next(iter(mats))
             got = tuple(round(c, 3) for c in m.diffuse_color[:3])
-            exp = tuple(round(c, 3) for c in SHIRT[name])
+            exp = tuple(round(c, 3) for c in _tint_rgb(name))
             if any(abs(a - b) > 0.02 for a, b in zip(got, exp)):
-                issues.append(f"{name}: color {got} != v3.3 table {exp}")
+                issues.append(f"{name}: color {got} != effective table "
+                              f"{exp} (SHIRT/TINTS)")
 
         # action slot EMPTY at build (no live action until the bake)
         ad = arm.animation_data

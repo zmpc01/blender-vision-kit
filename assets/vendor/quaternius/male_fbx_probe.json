@@ -1,0 +1,329 @@
+{
+ "path": "/home/z/blender-agent-kit/project/research/_rig/Male_Casual.fbx",
+ "import_error": "",
+ "import_s": 0.36,
+ "armature": "HumanArmature",
+ "skinned_meshes": [
+  "BaseHuman"
+ ],
+ "objects": 2,
+ "actions_total": 11,
+ "action_names": [
+  "HumanArmature|HumanArmature|Man_Clapping",
+  "HumanArmature|HumanArmature|Man_Death",
+  "HumanArmature|HumanArmature|Man_Idle",
+  "HumanArmature|HumanArmature|Man_Jump",
+  "HumanArmature|HumanArmature|Man_Punch",
+  "HumanArmature|HumanArmature|Man_Run",
+  "HumanArmature|HumanArmature|Man_RunningJump",
+  "HumanArmature|HumanArmature|Man_Sitting",
+  "HumanArmature|HumanArmature|Man_Standing",
+  "HumanArmature|HumanArmature|Man_SwordSlash",
+  "HumanArmature|HumanArmature|Man_Walk"
+ ],
+ "arm_action_on_import": "HumanArmature|HumanArmature|Man_Clapping",
+ "arm_nla_tracks": [],
+ "first_action_slots": [
+  "<bpy_struct, ActionSlot(\"OBHumanArmature"
+ ],
+ "first_action_fcurves": 319,
+ "first_action_frames": [
+  1,
+  41
+ ],
+ "bone_count": 42,
+ "bone_names_sample": [
+  "Bone",
+  "Foot.L",
+  "Foot.L_end",
+  "Body",
+  "Hips",
+  "Abdomen",
+  "Torso",
+  "Neck",
+  "Head",
+  "Head_end",
+  "Shoulder.L",
+  "UpperArm.L",
+  "LowerArm.L",
+  "Palm.L",
+  "MiddleHand.L",
+  "Fingers.L",
+  "Fingers.L_end",
+  "Thumb1.L",
+  "Thumb2.L",
+  "Thumb2.L_end",
+  "Shoulder.R",
+  "UpperArm.R",
+  "LowerArm.R",
+  "Palm.R"
+ ],
+ "rotation_modes": [
+  "QUATERNION"
+ ],
+ "skin_weight_probe": [
+  {
+   "mesh": "BaseHuman",
+   "verts": 941,
+   "zero_weight_verts": 0,
+   "bbox_diag_local": 7.165,
+   "mesh_world_scale": 1.0,
+   "dist_m_p50": 0.2437,
+   "dist_m_p90": 0.3674,
+   "dist_m_p99": 0.4641,
+   "dist_m_max": 0.4761,
+   "frac_diag_p50": 0.034,
+   "frac_diag_p90": 0.0513,
+   "frac_diag_p99": 0.0648,
+   "frac_diag_gt_20pct": 0.0
+  }
+ ],
+ "anim_eval_probe": [
+  {
+   "anim": "HumanArmature|HumanArmature|Man_Clapping",
+   "found": true,
+   "frames": [
+    1,
+    41
+   ],
+   "slot_used": "ERR:'ActionSlot' object has no attribute 'name'",
+   "max_bone_translation_variance_m": 2.2806,
+   "max_all_bones_variance_m": 2.8898,
+   "top_moving_bones": [
+    [
+     "Fingers.R_end",
+     2.8898
+    ],
+    [
+     "Fingers.L_end",
+     2.817
+    ],
+    [
+     "Thumb2.R_end",
+     2.6748
+    ]
+   ],
+   "per_bone_variance_m": {
+    "Foot.L": 0.0,
+    "Foot.L_end": 0.0,
+    "Hips": 0.1128,
+    "Torso": 0.1246,
+    "Head": 0.2461,
+    "Head_end": 0.4258,
+    "UpperArm.L": 0.1599,
+    "LowerArm.L": 0.715,
+    "MiddleHand.L": 2.2806,
+    "UpperArm.R": 0.1493,
+    "LowerArm.R": 0.6268,
+    "MiddleHand.R": 2.2459
+   },
+   "armature_object_horizontal_drift_m": 0.0,
+   "hips_horizontal_drift_m": 0.0268
+  },
+  {
+   "anim": "HumanArmature|HumanArmature|Man_Death",
+   "found": true,
+   "frames": [
+    1,
+    51
+   ],
+   "slot_used": "ERR:'ActionSlot' object has no attribute 'name'",
+   "max_bone_translation_variance_m": 5.1395,
+   "max_all_bones_variance_m": 6.3493,
+   "top_moving_bones": [
+    [
+     "PoleTarget.L",
+     6.3493
+    ],
+    [
+     "PoleTarget.L_end",
+     6.3493
+    ],
+    [
+     "PoleTarget.R",
+     6.3423
+    ]
+   ],
+   "per_bone_variance_m": {
+    "Foot.L": 1.5153,
+    "Foot.L_end": 1.5315,
+    "Hips": 1.7613,
+    "Torso": 3.0263,
+    "Head": 4.4191,
+    "Head_end": 5.1395,
+    "UpperArm.L": 3.8422,
+    "LowerArm.L": 3.5856,
+    "MiddleHand.L": 4.7555,
+    "UpperArm.R": 3.6674,
+    "LowerArm.R": 3.5773,
+    "MiddleHand.R": 5.0798
+   },
+   "armature_object_horizontal_drift_m": 0.0,
+   "hips_horizontal_drift_m": 1.7613
+  },
+  {
+   "anim": "HumanArmature|HumanArmature|Man_Idle",
+   "found": true,
+   "frames": [
+    1,
+    101
+   ],
+   "slot_used": "ERR:'ActionSlot' object has no attribute 'name'",
+   "max_bone_translation_variance_m": 0.0994,
+   "max_all_bones_variance_m": 0.1244,
+   "top_moving_bones": [
+    [
+     "Fingers.R_end",
+     0.1244
+    ],
+    [
+     "Thumb2.R_end",
+     0.1142
+    ],
+    [
+     "Fingers.R",
+     0.1127
+    ]
+   ],
+   "per_bone_variance_m": {
+    "Foot.L": 0.0,
+    "Foot.L_end": 0.0,
+    "Hips": 0.0321,
+    "Torso": 0.0321,
+    "Head": 0.0329,
+    "Head_end": 0.0314,
+    "UpperArm.L": 0.0321,
+    "LowerArm.L": 0.0346,
+    "MiddleHand.L": 0.0826,
+    "UpperArm.R": 0.0321,
+    "LowerArm.R": 0.0389,
+    "MiddleHand.R": 0.0994
+   },
+   "armature_object_horizontal_drift_m": 0.0,
+   "hips_horizontal_drift_m": 0.0
+  },
+  {
+   "anim": "HumanArmature|HumanArmature|Man_Jump",
+   "found": true,
+   "frames": [
+    1,
+    26
+   ],
+   "slot_used": "ERR:'ActionSlot' object has no attribute 'name'",
+   "max_bone_translation_variance_m": 3.913,
+   "max_all_bones_variance_m": 4.4412,
+   "top_moving_bones": [
+    [
+     "Fingers.R_end",
+     4.4412
+    ],
+    [
+     "Fingers.R",
+     4.3473
+    ],
+    [
+     "Thumb2.R_end",
+     4.3068
+    ]
+   ],
+   "per_bone_variance_m": {
+    "Foot.L": 1.4687,
+    "Foot.L_end": 1.241,
+    "Hips": 1.4411,
+    "Torso": 1.4583,
+    "Head": 1.5092,
+    "Head_end": 1.5198,
+    "UpperArm.L": 1.4909,
+    "LowerArm.L": 2.0281,
+    "MiddleHand.L": 3.8408,
+    "UpperArm.R": 1.5204,
+    "LowerArm.R": 1.9247,
+    "MiddleHand.R": 3.913
+   },
+   "armature_object_horizontal_drift_m": 0.0,
+   "hips_horizontal_drift_m": 0.27
+  },
+  {
+   "anim": "HumanArmature|HumanArmature|Man_Punch",
+   "found": true,
+   "frames": [
+    1,
+    23
+   ],
+   "slot_used": "ERR:'ActionSlot' object has no attribute 'name'",
+   "max_bone_translation_variance_m": 1.7951,
+   "max_all_bones_variance_m": 1.7973,
+   "top_moving_bones": [
+    [
+     "Palm.R",
+     1.7973
+    ],
+    [
+     "LowerArm.R",
+     1.7951
+    ],
+    [
+     "MiddleHand.R",
+     1.7923
+    ]
+   ],
+   "per_bone_variance_m": {
+    "Foot.L": 0.0,
+    "Foot.L_end": 0.0,
+    "Hips": 0.4781,
+    "Torso": 0.4711,
+    "Head": 0.4123,
+    "Head_end": 0.4238,
+    "UpperArm.L": 0.416,
+    "LowerArm.L": 0.4619,
+    "MiddleHand.L": 0.4704,
+    "UpperArm.R": 0.687,
+    "LowerArm.R": 1.7951,
+    "MiddleHand.R": 1.7923
+   },
+   "armature_object_horizontal_drift_m": 0.0,
+   "hips_horizontal_drift_m": 0.4781
+  },
+  {
+   "anim": "HumanArmature|HumanArmature|Man_Run",
+   "found": true,
+   "frames": [
+    1,
+    22
+   ],
+   "slot_used": "ERR:'ActionSlot' object has no attribute 'name'",
+   "max_bone_translation_variance_m": 3.234,
+   "max_all_bones_variance_m": 3.2454,
+   "top_moving_bones": [
+    [
+     "Foot.R_end",
+     3.2454
+    ],
+    [
+     "Fingers.L_end",
+     3.2421
+    ],
+    [
+     "Foot.L_end",
+     3.234
+    ]
+   ],
+   "per_bone_variance_m": {
+    "Foot.L": 2.7427,
+    "Foot.L_end": 3.234,
+    "Hips": 0.3257,
+    "Torso": 0.3326,
+    "Head": 0.3364,
+    "Head_end": 0.3385,
+    "UpperArm.L": 0.3646,
+    "LowerArm.L": 1.2055,
+    "MiddleHand.L": 2.7185,
+    "UpperArm.R": 0.3495,
+    "LowerArm.R": 1.1396,
+    "MiddleHand.R": 2.5674
+   },
+   "armature_object_horizontal_drift_m": 0.0,
+   "hips_horizontal_drift_m": 0.0898
+  }
+ ]
+}

@@ -1,57 +1,38 @@
+# VENDORED 2026-10-16 from mainline blender-agent-kit @6943ab5 (vision-kit s21 vendor round; zero code drift; vision deltas must land as sanctioned deltas per docs/VENDOR_LEDGER.md)
 """
-ual_bake.py -- v4 step 3: the two-phase bake utility (PLAN_v4 REV3
-item 1 + item 5, spec-verbatim).
+ual_bake.py -- the two-phase hero-action bake ENGINE (kit-owned since
+s34; the escape project's choreography DATA lives in previz's
+scripts/ual_beats.py -- the crowd_v6.contract pattern's second
+instance; see the kit's docs/DESIGN_s34_ual_split.md).
 
-One merged baked action per actor ("UAL.<Actor>.Baked"), replacing the
-capsule limb-bake system for the UAL heroes:
+One merged baked action per actor ("UAL.<Actor>.Baked"):
 
   PHASE 1 (live-eval recording, REV3: slot + frame_set + double
-  view_layer.update): for every output frame f in [1..1080] resolve the
-  beat map -> (source action, source frame) or a BLEND of two evals;
-  record per pose bone matrix_basis decomposed to location +
+  view_layer.update): for every output frame f in [1..total] resolve
+  the beat map -> (source action, source frame) or a BLEND of two
+  evals; record per pose bone matrix_basis decomposed to location +
   rotation_quaternion (SCALE OMITTED, pinned 1.0 -- the baked action
   never carries scale channels).
 
   PHASE 2 (write): a FRESH action (never key into imported sources --
   the fresh-bake-only law; 4 imports duplicate all 46 actions and
   keying one would corrupt all). LINEAR keys, CONSTANT extrapolation,
-  EVERY frame f1..1080 (full range regardless of chunk --start: the
+  EVERY frame 1..total (full range regardless of chunk --start: the
   render daemon REBUILDS per chunk; a chunk-scoped bake freezes rigs
   in chunks 2+). Quaternion sign-canonicalized (dot<0 -> negate).
 
-  GATE (bake fidelity): baked-vs-live bone delta < 1e-3 m on sampled
-  frames per beat, armature-LOCAL space (the wrapper is separately
-  keyed + gated; recording world would mix the two). Blend windows are
-  exempt (slerp mixtures are not source poses). Includes the f512
-  hand-contact assert (Punch_Cross final frame -- the grab reach).
+  GATE (bake fidelity): baked-vs-live bone delta < 1e-3 m on the
+  caller-supplied sample frames, armature-LOCAL space (the wrapper is
+  separately keyed + gated; recording world would mix the two). Blend
+  windows are exempt (slerp mixtures are not source poses). The
+  caller may pass post_check(name, arm, scene) for per-actor
+  choreography asserts (previz's ual_beats supplies the f512
+  hand-contact check -- the s34 split moved scene specifics OUT of
+  this engine).
 
-Beat map (REV2 corrected + REV3 item 7; frame numbers are FROZEN to
-the sfx/dialog/event tables):
-  Driver:  sprint f1-133 (Sprint_Loop, phase 0.00)
-           board  f133-145 (Sitting_Enter @2.6x, blend 4)
-           drive  f145-1080 (Driving_Loop)
-  Girl:    sprint f1-139 (phase 5.28)
-           board  f139-151 (Sitting_Enter @2.6x, blend 4)
-           idle   f151-174 (Sitting_Idle_Loop)
-           talk   f174-500 (Sitting_Talking_Loop, blend 6)
-           idle   f500-1080 (Sitting_Idle_Loop, blend 6)
-  Gunner:  sprint f1-151 (phase 10.56)
-           aim    f151-157 (Pistol_Aim_Neutral, blend 6 -- REV3 item 7)
-           hold   f157-1080 + gap-aware Pistol_Shoot recoil pops at the
-           FLASH STROBE frames (REV3 item 12: pops pinned to the strobe
-           so audio + visual rhythms agree; recoil extent =
-           min(gap_to_next_shot, 6): out 0->3 over half, recover 3->0
-           over the rest -- continuous sawtooth at rapid cadences)
-  HeroZed: chase  f1-497 (phase 2.4)
-           lunge  f497-512 (Punch_Cross last 14f, blend 4)
-           grab   f512-541 (Punch_Cross final frame frozen)
-           thrown f541-550 (Hit_Chest 9f)
-           rest   f550-1080 (Hit_Chest final frozen)
-
-Pre-flight scale scan: source actions carry 159 scale fcurves each at
-1.0 +/- 1.7e-06 (glTF float32 quantization noise, measured step-1).
-Threshold 1e-4 (any REAL scale animation deviates 1e-2+; the REV3
-1e-6 wording trips on float32 noise -- documented deviation).
+The engine is scene-agnostic: the bake range (total), the beat
+tables, the sample frames, the pop geometry, and every action name
+arrive as parameters from the data module.
 """
 import math
 
@@ -59,8 +40,6 @@ import bpy
 from mathutils import Quaternion, Vector
 from blender_kit import fcurves_new, iter_fcurves
 
-FPS = 24
-TOTAL = 1080
 BLEND_DEFAULT = 6
 
 # bone set to record (all 53 pose bones; DEF-* Rigify names)
@@ -70,13 +49,14 @@ def _all_bones(arm):
 
 # ---------------------------------------------------------------------------
 # beat map
-# ---------------------------------------------------------------------------
+
 class Beat:
     __slots__ = ("f0", "f1", "action", "mode", "param", "phase",
-                 "blend", "src_lo", "src_hi")
+                 "blend", "src_lo", "src_hi", "ease")
 
     def __init__(self, f0, f1, action, mode, param=0.0, phase=0.0,
-                 blend=BLEND_DEFAULT, src_lo=0.0, src_hi=None):
+                 blend=BLEND_DEFAULT, src_lo=0.0, src_hi=None,
+                 ease=False):
         self.f0, self.f1 = f0, f1
         self.action = action
         self.mode = mode            # loop | rate | hold
@@ -84,6 +64,9 @@ class Beat:
         self.phase = phase          # loop: frame offset
         self.blend = blend
         self.src_lo, self.src_hi = src_lo, src_hi
+        self.ease = ease            # smoothstep the blend t (C1 at both
+        #                           # ends -- a linear t has peak
+        #                           # velocity MID-blend: reads as a snap
 
     def src_at(self, f):
         """Source frame for output frame f (no clamping -- blends need
@@ -96,75 +79,6 @@ class Beat:
         return self.param           # hold
 
 
-def _driver_beats():
-    return [
-        Beat(1, 133, "Sprint_Loop", "loop", param=16.0, phase=0.0),
-        Beat(133, 145, "Sitting_Enter", "rate", param=31.0 / 12.0,
-             blend=6),
-        Beat(145, TOTAL, "Driving_Loop", "loop", param=40.0, phase=0.0),
-    ]
-
-
-def _girl_beats():
-    return [
-        Beat(1, 139, "Sprint_Loop", "loop", param=16.0, phase=5.28),
-        Beat(139, 151, "Sitting_Enter", "rate", param=31.0 / 12.0,
-             blend=6),
-        Beat(151, 174, "Sitting_Idle_Loop", "loop", param=40.0),
-        Beat(174, 500, "Sitting_Talking_Loop", "loop", param=70.0,
-             blend=6),
-        Beat(500, TOTAL, "Sitting_Idle_Loop", "loop", param=40.0,
-             blend=6),
-    ]
-
-
-def _gunner_beats(aim="Pistol_Aim_Neutral"):
-    """v5 (session-18): the aim action is parametric -- the v5 scene
-    passes Rifle_Aim (authored two-handed hold); v4 callers get the
-    Pistol default verbatim (fork law: v4's release path unchanged)."""
-    return [
-        Beat(1, 151, "Sprint_Loop", "loop", param=16.0, phase=10.56),
-        # REV3 item 7: Sprint to f151 + 6f blend -> Aim at f157
-        Beat(151, 157, aim, "hold", param=0.0,
-             blend=6),
-        # review v4-impl-a P1-4: hold-continuation beats take NO blend
-        # (same action + same extrapolated src = identity mix that only
-        # ate the gate exemptions)
-        Beat(157, TOTAL, aim, "hold", param=0.0,
-             blend=0),
-    ]
-
-
-def _herozed_beats():
-    return [
-        Beat(1, 498, "Sprint_Loop", "loop", param=16.0, phase=2.4),
-        # review v4-impl-a P2-5: lunge starts f498 (the wrapper's own
-        # x-keys start at EL.frame_at(20.7) = f498); grab at f512 is
-        # EXACT (frame_at(21.3)); rate 14/14 native
-        Beat(498, 512, "Punch_Cross", "rate", param=1.0,
-             blend=4, src_lo=10.0),
-        Beat(512, 541, "Punch_Cross", "hold", param=24.0, blend=0),
-        Beat(541, 550, "Hit_Chest", "rate", param=8.0 / 9.0, blend=6),
-        Beat(550, TOTAL, "Hit_Chest", "hold", param=8.0, blend=0),
-    ]
-
-
-def _pop_footprints(bursts):
-    """Gunner burst pops pinned to the FLASH STROBE frames: shot at
-    f0 + k*every; footprint [s-2, s+4) (2f blend in, 2f play of Shoot
-    src 0-3, 2f blend out). Later shots win overlaps (sustained recoil
-    during rapid strobes)."""
-    shots = []
-    for f0, f1, every in bursts:
-        f = f0
-        while f <= f1:
-            shots.append(f)
-            f += every
-    return shots
-
-
-# ---------------------------------------------------------------------------
-# pre-flight
 # ---------------------------------------------------------------------------
 SCALE_TOL = 1e-4     # measured float32 noise floor 1.67e-06 (step-1);
                      # REAL scale animation deviates 1e-2+
@@ -234,12 +148,36 @@ def _record_table(arm, pool, action_name, src_f, scene, slot_state):
     return out
 
 
-def _mix(table_a, table_b, t):
+def _mix(table_a, table_b, t, arc_flip=None):
     """Per-bone basis mix: location lerp + quaternion slerp (REV3 item
-    5: 'per-bone slerp(tableA extrapolated, tableB(f), t/6)')."""
+    5: 'per-bone slerp(tableA extrapolated, tableB(f), t/6)').
+
+    s31 ARC-SIGN LAW (the take-7 gate-20 fires at f144-150): when the
+    MOVING table_a pose crosses the ANTIPODE of table_b's pose on a
+    bone (the gunner's aim stance sits ~180 deg from the sprint on
+    thigh.R/upper_arm.R/the rifle), the per-frame SHORT-ARC choice
+    jumps sides at the crossing -- a single-frame ~180-deg flip (two
+    per-frame continuity heuristics were tried and both failed: at
+    the crossing NEITHER arc is near the previous output; the flip is
+    a property of the whole blend, not of a frame pair). The fix:
+    the arc sign is chosen ONCE per bone at the BLEND START
+    (dot(table_a, table_b) at the first blend frame) and HELD for
+    the whole window: the path may sweep the long way (>180 deg)
+    but it is CONTINUOUS through the crossing -- a big readable turn,
+    not a flip. Endpoints are sign-invariant (slerp(.., 1) = +-qb =
+    the same rotation), so the blend still lands EXACTLY on the aim
+    pose at t=1."""
     out = {}
     for bone, (la, qa) in table_a.items():
         lb, qb = table_b[bone]
+        if arc_flip is not None and arc_flip.get(bone):
+            # mathutils LAW: negate() mutates IN PLACE and returns
+            # None -- `qb = qb.copy().negate()` assigns None (the
+            # slerp then raises into the except fallback and the mix
+            # silently degrades to the unflipped arc; TWO s31 export
+            # cycles shipped bit-identical output through this hole)
+            qb = qb.copy()
+            qb.negate()
         try:
             q = qa.slerp(qb, t)
         except Exception:                               # noqa: BLE001
@@ -267,7 +205,8 @@ def _canonicalize_quats(rows):
 def _write_baked_action(name, arm, rows, bones):
     """Fresh action 'UAL.<Name>.Baked' with LINEAR keys + CONSTANT
     extrapolation on location(3) + rotation_quaternion(4) per bone,
-    EVERY frame f1..1080. NO scale channels ever."""
+    EVERY frame f1..total (the caller's range). NO scale channels
+    ever."""
     act_name = f"UAL.{name}.Baked"
     old = bpy.data.actions.get(act_name)
     if old is not None:
@@ -306,13 +245,15 @@ _SAMPLE_BONES = ("DEF-hips", "DEF-head", "DEF-foot.L", "DEF-hand.L",
 
 
 def _fidelity_gate(name, arm, scene, beats, samples, rows,
-                   slot_state, pool, blend_frames, resolver):
+                   slot_state, pool, blend_frames, resolver,
+                   post_check=None):
     """Baked-vs-live bone delta at sampled frames. Both sides read
     ARMATURE-LOCAL translations (b.matrix.translation -- pose bone
     matrix in armature object space): the wrapper transform cancels, so
     the delta measures POSE fidelity exactly (the wrapper is separately
     keyed + gated). Blend windows are exempt (slerp mixtures are not
-    source poses). Includes the f512 hand-contact assert (HeroZed)."""
+    source poses). The caller's post_check hook (s34) carries any
+    per-actor choreography asserts."""
     findings = []
     # NB: resolver must be THE resolver the bake used (the Gunner's
     # pop resolver -- a plain beat resolver would mis-eval burst frames
@@ -368,36 +309,20 @@ def _fidelity_gate(name, arm, scene, beats, samples, rows,
                 findings.append(
                     f"fidelity: {name} {bn} baked-vs-live {d:.4f} m "
                     f"at f{f} (> 1e-3)")
-    # 3) f512 hand-contact assert (HeroZed only): Punch_Cross final
-    #    frame -- arms extended for the grab (armature-local distance
-    #    hand->hips; wrapper/scale independent)
-    if name == "HeroZed":
-        scene.frame_set(512)
-        bpy.context.view_layer.update()
-        bpy.context.view_layer.update()
-        hips = arm.pose.bones.get("DEF-hips")
-        reach = 0.0
-        for hn in ("DEF-hand.L", "DEF-hand.R"):
-            hb = arm.pose.bones.get(hn)
-            if hb is None:
-                continue
-            d = (hb.matrix.translation
-                 - hips.matrix.translation).length
-            reach = max(reach, d)
-        if reach < 0.35:
-            findings.append(
-                f"fidelity: HeroZed f512 hand reach {reach:.3f} m < 0.35 "
-                f"(grab pose not extended -- Punch_Cross mapping wrong?)")
-        else:
-            print(f"[ual_bake] HeroZed f512 hand reach {reach:.3f} m "
-                  f"(grab extended, PASS)")
+    # s34 split (design r1 I1): the per-actor choreography assert that
+    # lived here (the HeroZed f512 hand-contact check) moved to the
+    # DATA module; the engine calls the caller's post_check hook AFTER
+    # the compare loop and BEFORE the worst-delta print (stdout order
+    # preserved -- review r2 N1).
+    if post_check is not None:
+        findings.extend(post_check(name, arm, scene))
     print(f"[ual_bake] {name}: fidelity worst {worst:.2e} m over "
           f"{len(live)} samples")
     return findings
 
 
 # ---------------------------------------------------------------------------
-# resolver: output frame -> list of (action, src_f, weight)
+
 # ---------------------------------------------------------------------------
 def _make_resolver(beats, name):
     """Beats are HALF-OPEN [f0, f1): contiguous, no overlap (the
@@ -421,32 +346,60 @@ def _make_resolver(beats, name):
                 # frame snaps away (live-measured 0.265 m/frame hand
                 # spike at f501, on camera in S8)
                 t = (f - beat.f0) / max(1.0, beat.blend - 1.0)
-                out = [(prev.action, prev.src_at(f), 1.0 - t),
+                if getattr(beat, "ease", False):
+                    # s31: smoothstep -- zero blend-rate at BOTH ends
+                    # (the s30 take-6 sprint->aim 6f linear blend read
+                    # as a violent limb sweep: shoulder-vs-thigh girdle
+                    # twist peaked 71 deg, thigh.L flipped 176.8 deg in
+                    # ONE frame at f153 -- the user's S3 f152 'twisted
+                    # into body' flag)
+                    t = t * t * (3.0 - 2.0 * t)
+                # s31 FROZEN-SOURCE LAW: the outgoing beat's src is
+                # held at the blend START (prev.src_at(f0), not
+                # prev.src_at(f)). With a live source, a blend longer
+                # than the source's cycle (the gunner's 20-frame
+                # sprint->aim blend vs the 16-frame stride) sweeps the
+                # moving pose through the target's ANTIPODE -- the
+                # per-frame short-arc choice jumps sides at the
+                # crossing (take-7: 177.6-deg single-frame flips at
+                # f146/f150 through THREE failed per-frame arc
+                # heuristics -- the crossing is a property of the
+                # whole blend). Two FIXED poses cannot cross: the
+                # slerp path is a single smooth arc, endpoints exact.
+                # Visual: the stride holds its last pose while the
+                # blend morphs to the incoming action -- during the
+                # gunner's boarding leap (f145-157) the hold reads as
+                # the tuck of the jump.
+                out = [(prev.action, prev.src_at(beat.f0), 1.0 - t),
                        (beat.action, beat.src_at(f), t)]
         return out
     return resolver
 
-
-def _gunner_resolver(beats, shots, shoot="Pistol_Shoot",
-                     aim="Pistol_Aim_Neutral"):
-    """Gap-aware burst pops (review v4-impl-a P1-2, redesigned):
-    each shot's recoil extent = min(gap_to_next_shot, 6) frames:
-      [s, s+dur/2):   Pistol_Shoot src 0 -> 3   (recoil OUT after the
-                      flash -- causality: the shot fires AT s)
-      [s+dur/2, s+dur): src 3 -> 0              (recover, landing at 0
-                      exactly when the NEXT shot fires -- continuous
-                      sawtooth at rapid cadences, never a blink to the
-                      AIM pose between shots)
-    Blend-in [s-2, s) from Aim only when the previous pop has fully
-    ended (gap >= 8); the FIRST shot of an isolated burst eases in."""
-    base = _make_resolver(beats, "Gunner")
+def pop_resolver(base, shots, hold_from, shoot, aim,
+                  src_extent=3.0, max_extent=6, blend_in=2):
+    """Gap-aware burst pops (review v4-impl-a P1-2, redesigned;
+    s34-generalized from _gunner_resolver -- every scene constant is
+    now a parameter): each shot's recoil extent =
+    min(gap_to_next_shot, max_extent) frames:
+      [s, s+dur/2):   shoot src 0 -> src_extent   (recoil OUT after
+                      the flash -- causality: the shot fires AT s)
+      [s+dur/2, s+dur): src src_extent -> 0       (recover, landing
+                      at 0 exactly when the NEXT shot fires --
+                      continuous sawtooth at rapid cadences, never a
+                      blink to the AIM pose between shots)
+    Blend-in [s-blend_in, s) from Aim only when the previous pop has
+    fully ended (f >= the previous shot's end frame); the FIRST shot
+    of an isolated burst eases in. `hold_from` gates the pop zone (the
+    actor's aim-hold start frame -- v5's gunner: 157). The LAW body
+    (sawtooth shape, later-shot-wins, settle-gated blend-in) is engine;
+    the numbers are the data's."""
     shots_sorted = sorted(shots)
 
     def extent(i):
         s = shots_sorted[i]
         nxt = shots_sorted[i + 1] if i + 1 < len(shots_sorted) else None
-        gap = (nxt - s) if nxt is not None else 6
-        return min(gap, 6)
+        gap = (nxt - s) if nxt is not None else max_extent
+        return min(gap, max_extent)
 
     def resolver(f):
         owner = None
@@ -454,32 +407,33 @@ def _gunner_resolver(beats, shots, shoot="Pistol_Shoot",
             d = extent(i)
             if s <= f < s + d:
                 owner = i            # later shots win overlaps
-        if owner is not None and f >= 157:
+        if owner is not None and f >= hold_from:
             s = shots_sorted[owner]
             dur = extent(owner)
             half = dur / 2.0
             k = f - s
             if k < half:
-                src = 3.0 * (k / half if half > 0 else 0.0)
+                src = src_extent * (k / half if half > 0 else 0.0)
             else:
-                src = 3.0 * (1.0 - (k - half) / half if half > 0 else 0.0)
-            return [(shoot, max(0.0, min(3.0, src)), 1.0)]
-        # blend-in zone [s-2, s) only when the previous pop ended
+                src = src_extent * (1.0 - (k - half) / half
+                                    if half > 0 else 0.0)
+            return [(shoot, max(0.0, min(src_extent, src)), 1.0)]
+        # blend-in zone [s-blend_in, s) only when the previous pop ended
         for i, s in enumerate(shots_sorted):
-            if s - 2 <= f < s and f >= 157:
+            if s - blend_in <= f < s and f >= hold_from:
                 prev_end = shots_sorted[i - 1] + extent(i - 1) \
                     if i > 0 else 0
                 if f >= prev_end:
-                    t = min(1.0, max(0.0, (f - (s - 2)) / 1.0))
+                    t = min(1.0, max(0.0, (f - (s - blend_in))
+                                     / max(1.0, blend_in - 1.0)))
                     return [(aim, 0.0, 1.0 - t),
                             (shoot, 0.0, t)]
         return base(f)
 
     return resolver
 
-
-
-def bake_actor(ctx, name, beats, resolver, samples):
+def bake_actor(ctx, name, beats, resolver, samples, total,
+                post_check=None):
     scene = ctx["scene"]
     d = ctx["humans"][name]
     arm, pool = d["armature"], d["actions"]
@@ -488,7 +442,10 @@ def bake_actor(ctx, name, beats, resolver, samples):
     slot_state = {"name": None}
     rows = {}
     blend_frames = set()
-    for f in range(1, TOTAL + 1):
+    arc_flip = None            # the s31 per-bone arc-sign map (first
+    #                          # blend frame freezes it; None until then
+    #                          # and reset per ACTOR bake)
+    for f in range(1, total + 1):
         evals = resolver(f)
         if not evals:
             continue
@@ -500,59 +457,20 @@ def bake_actor(ctx, name, beats, resolver, samples):
             (an1, sf1, w1), (an2, sf2, w2) = evals
             ta = _record_table(arm, pool, an1, sf1, scene, slot_state)
             tb = _record_table(arm, pool, an2, sf2, scene, slot_state)
-            rows[f] = _mix(ta, tb, w2)
+            # the s31 arc-sign law: on the FIRST blend frame, freeze
+            # the per-bone arc choice (negate the target where the
+            # blend starts on the far side) and hold it for the whole
+            # window -- see _mix
+            if arc_flip is None:
+                arc_flip = {bone: (ta[bone][1].dot(tb[bone][1]) < 0.0)
+                            for bone in ta}
+            rows[f] = _mix(ta, tb, w2, arc_flip=arc_flip)
     _canonicalize_quats(rows)
     act = _write_baked_action(name, arm, rows, bones)
     print(f"[ual_bake] {name}: {act.name} written "
           f"({len(bones)} bones x 7 ch x {len(rows)} frames, "
           f"{len(blend_frames)} blend frames)")
     return _fidelity_gate(name, arm, scene, beats, samples, rows,
-                          slot_state, pool, blend_frames, resolver)
+                          slot_state, pool, blend_frames, resolver,
+                          post_check=post_check)
 
-
-def bake_all(ctx, bursts):
-    """Bake all 4 actors + run gates. Returns findings (empty = clean;
-    NON-empty = fail-closed abort upstream)."""
-    findings = _preflight({n: ctx["humans"][n]["actions"]
-                           for n in ("Driver", "Girl", "Gunner",
-                                     "HeroZed")})
-    if findings:
-        return findings
-    shots = _pop_footprints(bursts)
-    # v5 (session-18): UAL-mode action overrides via ctx (Rifle_Aim /
-    # Rifle_Shoot authored by assets_rifle_v5); v4 callers unset ->
-    # Pistol defaults verbatim.
-    aim_act = ctx.get("gunner_aim_action", "Pistol_Aim_Neutral")
-    shoot_act = ctx.get("gunner_shoot_action", "Pistol_Shoot")
-
-    specs = (
-        ("Driver", _driver_beats(), _make_resolver(_driver_beats(),
-                                                   "Driver")),
-        ("Girl", _girl_beats(), _make_resolver(_girl_beats(), "Girl")),
-        ("Gunner", _gunner_beats(aim_act),
-         _gunner_resolver(_gunner_beats(aim_act), shots,
-                          shoot=shoot_act, aim=aim_act)),
-        ("HeroZed", _herozed_beats(), _make_resolver(_herozed_beats(),
-                                                     "HeroZed")),
-    )
-    # review v4-impl-a P1-4: added interior samples for the previously
-    # zero-sample beats (Sitting_Enter mid, gunner aim land, lunge mid,
-    # grab hold, Hit_Chest mid)
-    samples = (1, 60, 120, 133, 140, 145, 160, 174, 190, 360, 500,
-               505, 512, 520, 546, 600, 760, 830, 1080)
-    for name, beats, resolver in specs:
-        findings.extend(bake_actor(ctx, name, beats, resolver, samples))
-        # SESSION-23 MEMORY LAW: the bake peaks across the 4-actor loop
-        # (4x imported action libraries + per-actor pool copies alive at
-        # once OOM-killed the export mid-HeroZed). Free each actor's
-        # pool remnants as soon as its bake is verified.
-        try:
-            import bpy as _bpy
-            _bpy.data.orphans_purge(do_local_ids=True, do_recursive=True)
-        except Exception:
-            pass
-        import gc
-        gc.collect()
-    if not findings:
-        print("[ual_bake] ALL ACTORS BAKED + FIDELITY CLEAN")
-    return findings

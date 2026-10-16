@@ -1,0 +1,338 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+    doc = "Blender v5.2.2 LTS"
+    endTimeCode = 48
+    metersPerUnit = 1
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Z"
+)
+
+def Xform "root" (
+    prepend apiSchemas = ["ColorSpaceAPI"]
+    customData = {
+        dictionary Blender = {
+            bool generated = 1
+        }
+        dictionary previz = {
+            dictionary entity = {
+                string blender_version = "5.2.2 LTS"
+                dictionary board = {
+                    dictionary Hero = {
+                        int f_apex = 15
+                        int f_land = 45
+                        int f_run_end = 30
+                        string pose_name = "idle"
+                        double run_x = 0
+                        string seat_local = ""
+                        double yaw_end = 0.5
+                    }
+                }
+                dictionary cameras = {
+                    dictionary "0" = {
+                        double[] aim = [0, 0, 0]
+                        double lens_mm = 50
+                        double[] loc0 = [6, -6, 3]
+                        double[] loc1 = [6, -6, 3]
+                        string name = "CAM_S1"
+                        bool parent_jeep = 0
+                        double shake_amp = 0
+                    }
+                    dictionary "1" = {
+                        double[] aim = [0, 0, 0]
+                        double lens_mm = 50
+                        double[] loc0 = [7, -5, 3.5]
+                        double[] loc1 = [7, -5, 3.5]
+                        string name = "CAM_S2"
+                        bool parent_jeep = 0
+                        double shake_amp = 0
+                    }
+                }
+                dictionary dialog = {
+                    dictionary "0" = {
+                        string clip = "line_one.wav"
+                        int onset_frame = 6
+                    }
+                }
+                dictionary environment = {
+                }
+                int fps = 24
+                int[] frame_range = [1, 48]
+                string kind = "environment"
+                string scene_name = "Scene"
+                string schema_version = "1.0"
+                dictionary shots = {
+                    dictionary "0" = {
+                        string description = "establish"
+                        int f0 = 1
+                        int f1 = 24
+                        string id = "S1"
+                    }
+                    dictionary "1" = {
+                        string description = "push"
+                        int f0 = 25
+                        int f1 = 48
+                        string id = "S2"
+                    }
+                }
+                dictionary timeline = {
+                    int fps = 24
+                    int[] frame_range = [1, 48]
+                    int total_frames = 48
+                }
+                int total_frames = 48
+            }
+        }
+    }
+)
+{
+    uniform token colorSpace:name = "lin_rec709_scene"
+
+    def Xform "T10Subject" (
+        customData = {
+            dictionary previz = {
+                dictionary entity = {
+                    string anchor_to = ""
+                    string blender_name = "T10Subject"
+                    string blender_type = "MESH"
+                    string body_type = "mesh"
+                    double camera_lens_mm = 0
+                    double[] identity_color_rgba = [1, 1, 1, 1]
+                    bool is_camera = 0
+                    bool is_light = 0
+                    bool kit_atmo = 0
+                    double light_energy = 0
+                    string pose_name = ""
+                    string rig_mode = ""
+                }
+            }
+        }
+    )
+    {
+        custom color3f previz:identityColor = (1, 1, 1)
+        custom string userProperties:blender:object_name = "T10Subject"
+        float3 xformOp:rotateXYZ.timeSamples = {
+            1: (0, -0, 0),
+        }
+        float3 xformOp:scale.timeSamples = {
+            1: (1, 1, 1),
+        }
+        double3 xformOp:translate.timeSamples = {
+            1: (0, 0, 0.5),
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Mesh "Cube" (
+            active = true
+        )
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 7, 6, 6, 7, 5, 4, 4, 5, 1, 0, 2, 6, 4, 0, 7, 3, 1, 5]
+            normal3f[] normals = [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                interpolation = "faceVarying"
+            )
+            point3f[] points = [(-0.5, -0.5, -0.5), (-0.5, -0.5, 0.5), (-0.5, 0.5, -0.5), (-0.5, 0.5, 0.5), (0.5, -0.5, -0.5), (0.5, -0.5, 0.5), (0.5, 0.5, -0.5), (0.5, 0.5, 0.5)]
+            texCoord2f[] primvars:st = [(0.375, 0), (0.375, 1), (0.125, 0.75), (0.625, 0), (0.625, 1), (0.875, 0.75), (0.375, 0.25), (0.125, 0.5), (0.625, 0.25), (0.875, 0.5), (0.375, 0.75), (0.625, 0.75), (0.375, 0.5), (0.625, 0.5)] (
+                interpolation = "faceVarying"
+            )
+            int[] primvars:st:indices = [0, 3, 8, 6, 6, 8, 13, 12, 12, 13, 11, 10, 10, 11, 4, 1, 7, 12, 10, 2, 13, 9, 5, 11]
+            uniform token subdivisionScheme = "none"
+            custom string userProperties:blender:data_name = "Cube"
+        }
+    }
+
+    def Xform "Aim_S1" (
+        customData = {
+            dictionary previz = {
+                dictionary entity = {
+                    string anchor_to = ""
+                    string blender_name = "Aim.S1"
+                    string blender_type = "EMPTY"
+                    string body_type = "empty"
+                    double camera_lens_mm = 0
+                    double[] identity_color_rgba = [1, 1, 1, 1]
+                    bool is_camera = 0
+                    bool is_light = 0
+                    bool kit_atmo = 0
+                    double light_energy = 0
+                    string pose_name = ""
+                    string rig_mode = ""
+                }
+            }
+        }
+    )
+    {
+        custom color3f previz:identityColor = (1, 1, 1)
+        custom string userProperties:blender:object_name = "Aim.S1"
+        float3 xformOp:rotateXYZ = (0, -0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Xform "Plane" (
+        customData = {
+            dictionary previz = {
+                dictionary entity = {
+                    string anchor_to = ""
+                    string blender_name = "Plane"
+                    string blender_type = "MESH"
+                    string body_type = "mesh"
+                    double camera_lens_mm = 0
+                    double[] identity_color_rgba = [1, 1, 1, 1]
+                    bool is_camera = 0
+                    bool is_light = 0
+                    bool kit_atmo = 0
+                    double light_energy = 0
+                    string pose_name = ""
+                    string rig_mode = ""
+                }
+            }
+        }
+    )
+    {
+        custom color3f previz:identityColor = (1, 1, 1)
+        custom string userProperties:blender:object_name = "Plane"
+
+        def Mesh "Plane" (
+            active = true
+        )
+        {
+            float3[] extent = [(-4, -4, 0), (4, 4, 0)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 3, 2]
+            normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                interpolation = "faceVarying"
+            )
+            point3f[] points = [(-4, -4, 0), (4, -4, 0), (-4, 4, 0), (4, 4, 0)]
+            texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+                interpolation = "faceVarying"
+            )
+            int[] primvars:st:indices = [0, 1, 3, 2]
+            uniform token subdivisionScheme = "none"
+            custom string userProperties:blender:data_name = "Plane"
+        }
+    }
+
+    def Xform "CAM_S2" (
+        customData = {
+            dictionary previz = {
+                dictionary entity = {
+                    string anchor_to = ""
+                    string blender_name = "CAM_S2"
+                    string blender_type = "CAMERA"
+                    string body_type = "camera"
+                    double camera_lens_mm = 50
+                    double[] identity_color_rgba = [1, 1, 1, 1]
+                    bool is_camera = 1
+                    bool is_light = 0
+                    bool kit_atmo = 0
+                    double light_energy = 0
+                    string pose_name = ""
+                    string rig_mode = ""
+                }
+            }
+        }
+    )
+    {
+        custom color3f previz:identityColor = (1, 1, 1)
+        custom string userProperties:blender:object_name = "CAM_S2"
+        float3 xformOp:rotateXYZ.timeSamples = {
+            1: (70.77414, 9.998254e-7, 54.462322),
+        }
+        float3 xformOp:scale.timeSamples = {
+            1: (1, 1, 1),
+        }
+        double3 xformOp:translate.timeSamples = {
+            1: (7, -5, 3.5),
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Camera "CAM_S2"
+        {
+            float2 clippingRange = (0.1, 1000)
+            float focalLength = 0.5
+            float horizontalAperture = 0.36
+            token projection = "perspective"
+            custom string userProperties:blender:data_name = "CAM_S2"
+            float verticalAperture = 0.2025
+        }
+    }
+
+    def Xform "CAM_S1" (
+        customData = {
+            dictionary previz = {
+                dictionary entity = {
+                    string anchor_to = ""
+                    string blender_name = "CAM_S1"
+                    string blender_type = "CAMERA"
+                    string body_type = "camera"
+                    double camera_lens_mm = 50
+                    double[] identity_color_rgba = [1, 1, 1, 1]
+                    bool is_camera = 1
+                    bool is_light = 0
+                    bool kit_atmo = 0
+                    double light_energy = 0
+                    string pose_name = ""
+                    string rig_mode = ""
+                }
+            }
+        }
+    )
+    {
+        custom color3f previz:identityColor = (1, 1, 1)
+        custom string userProperties:blender:object_name = "CAM_S1"
+        float3 xformOp:rotateXYZ.timeSamples = {
+            1: (73.583565, -2.6688875e-7, 45),
+        }
+        float3 xformOp:scale.timeSamples = {
+            1: (0.99999994, 1, 0.99999994),
+        }
+        double3 xformOp:translate.timeSamples = {
+            1: (6, -6, 3),
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Camera "CAM_S1"
+        {
+            float2 clippingRange = (0.1, 1000)
+            float focalLength = 0.5
+            float horizontalAperture = 0.36
+            token projection = "perspective"
+            custom string userProperties:blender:data_name = "CAM_S1"
+            float verticalAperture = 0.2025
+        }
+    }
+
+    def Xform "Aim_S2" (
+        customData = {
+            dictionary previz = {
+                dictionary entity = {
+                    string anchor_to = ""
+                    string blender_name = "Aim.S2"
+                    string blender_type = "EMPTY"
+                    string body_type = "empty"
+                    double camera_lens_mm = 0
+                    double[] identity_color_rgba = [1, 1, 1, 1]
+                    bool is_camera = 0
+                    bool is_light = 0
+                    bool kit_atmo = 0
+                    double light_energy = 0
+                    string pose_name = ""
+                    string rig_mode = ""
+                }
+            }
+        }
+    )
+    {
+        custom color3f previz:identityColor = (1, 1, 1)
+        custom string userProperties:blender:object_name = "Aim.S2"
+        float3 xformOp:rotateXYZ = (0, -0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+}
+
