@@ -742,9 +742,12 @@ def _cache_paths():
 
 
 def _set_engine(scene, engine, samples):
-    scene.render.engine = "BLENDER_EEVEE_NEXT" \
-        if engine == "eevee" else "BLENDER_WORKBENCH"
-    if engine == "eevee":
+    # 5.2 law: the enum id is BLENDER_EEVEE (NEXT is 4.x) -- the
+    # tfog pattern (commit 37c00b9 era); do NOT version-guess here.
+    name = "BLENDER_EEVEE" if engine.startswith("eevee") else \
+        "BLENDER_WORKBENCH"
+    scene.render.engine = name
+    if hasattr(scene.eevee, "taa_render_samples"):
         scene.eevee.taa_render_samples = int(samples)
 
 
