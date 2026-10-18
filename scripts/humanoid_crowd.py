@@ -168,7 +168,9 @@ def bind_crowd(ctx, fam, group_tint=None):
 
     ctx: the film scene ctx (needs ctx["crowd_cache"] with n_agents,
     ctx["chars"]["zombies"]["crowd"/"chase"] — the anchors list, RB
-    placeholders EXCLUDED per bake2's pairing law).
+    placeholders EXCLUDED per bake2's pairing law). The anchor
+    commuters become DEGENERATE CARRIERS (1-vert, no faces) — see the
+    law inside.
     group_tint: None or {"groups": [(n_in_group, rgba), ...],
     "agent_group": [group_idx per agent ordinal]} — per-OBJECT
     material-slot links (audit P2-3: zero mesh copies; one material
@@ -243,12 +245,51 @@ def bind_crowd(ctx, fam, group_tint=None):
     speeds = _cache_speeds(ctx, n)
     group_mats = _make_group_materials(group_tint)
     agent_group = (group_tint or {}).get("agent_group")
+    # the PER-GROUP MESH DATA law: the glTF exporter resolves materials
+    # from the MESH DATA slots — object-level slot links render right
+    # in Cycles but do NOT export (the tform_2 GLB carried the raw
+    # pink for all 102). One mesh-data copy per group, materials at
+    # the data level; agents share within the group (the tfog palette
+    # law's copy idiom, moved up a level).
+    group_meshes = None
+    if group_mats:
+        n_groups = len(group_mats)
+        group_meshes = []
+        for gi in range(n_groups):
+            gmats = [group_mats[gi]] * len(tmpl["meshes"])
+            copies = []
+            for j, tm in enumerate(tmpl["meshes"]):
+                gme = tm.copy()
+                gme.name = f"Hum.Group{gi}.Body{j}"
+                gme.materials.clear()
+                gme.materials.append(gmats[j])
+                copies.append(gme)
+            group_meshes.append(copies)
+
+    # the DEGENERATE CARRIER law: the anchor keeps its object identity
+    # (name, transform keys, bake2 pairing) but its mesh data becomes a
+    # single-vertex mesh — no faces, renders as NOTHING, yet the GLB
+    # keeps the node (gate 24's declared refs) and the exporter's TRS
+    # gather finds the object (gate 17). hide_render would EXCLUDE the
+    # object from the GLB and fail both gates (measured).
+    import bmesh
+    def _degenerate_data(name):
+        me = bpy.data.meshes.new(name)
+        bm = bmesh.new()
+        bm.verts.new((0.0, 0.0, 0.0))
+        bm.to_mesh(me)
+        bm.free()
+        return me
+    deg_data = _degenerate_data("Hum.carrier")
 
     reps = []
     n_walk = n_idle = 0
     for i, anchor in enumerate(anchors):
-        # the anchor stays a MESH (D6-2); it goes render-hidden
-        anchor.hide_render = True
+        # the anchor stays a MESH (D6-2); its data -> the degenerate
+        # carrier (the baked gait shape keys die with the old data —
+        # the rigs carry the gait now; the transform keys are
+        # OBJECT-level and survive the swap)
+        anchor.data = deg_data
         # per-agent rig: LINK the copy before wrap (review r1 P0-1/T4)
         arm_i = tmpl["arm"].copy()
         arm_i.name = f"{anchor.name}.Rig"
@@ -261,7 +302,9 @@ def bind_crowd(ctx, fam, group_tint=None):
         # RETARGET the Armature modifier (review r1 P0-3/T3: me.copy()
         # keeps the modifier pointing at the TEMPLATE arm — without the
         # retarget every agent renders as a rigid rest-pose statue)
-        for j, tm in enumerate(tmpl["meshes"]):
+        gi = agent_group[i] if agent_group is not None else 0
+        srcs = group_meshes[gi] if group_meshes else tmpl["meshes"]
+        for j, tm in enumerate(srcs):
             me = tm.copy()
             me.name = f"{anchor.name}.Body{j}"
             me.parent = wrapper["armature"]
@@ -269,8 +312,6 @@ def bind_crowd(ctx, fam, group_tint=None):
             for md in me.modifiers:
                 if md.type == 'ARMATURE':
                     md.object = wrapper["armature"]
-            if group_mats:
-                _tint_object(me, group_mats, i, agent_group=agent_group)
         # the action: walk (per-agent wrapped phase) or shared idle;
         # the SHARED idle also gets CYCLES (review r1 P2-13 — Blender-
         # side strips must loop too, not just the web viewer)

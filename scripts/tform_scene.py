@@ -666,7 +666,12 @@ def _humanoid_layer(ctx):
         wrapper.matrix_parent_inverse = Matrix.Identity(4)
         wrapper.location = (0.0, 0.0, 0.0)
         _UALM.tint_ual_actor(pr[name], HERO_RGB[name], roughness=0.5)
-        hero.hide_render = True
+        # the hero commuter -> degenerate carrier (the GLB node must
+        # SURVIVE for gate 24's declared refs; hide_render excludes it)
+        import bmesh as _bm
+        _me = bpy.data.meshes.new(f"{name}.carrier")
+        _b = _bm.new(); _b.verts.new((0.0, 0.0, 0.0)); _b.to_mesh(_me); _b.free()
+        hero.data = _me
         print(f"[tform] UAL principal {name} bound (scale "
               f"{UAL_SCALE:.3f}, tinted {HERO_RGB[name]})")
     ctx["humanoid_principals"] = pr
