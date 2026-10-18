@@ -82,9 +82,18 @@ def row(row_id, fn):
               flush=True)
         return
     try:
+        n0 = len(FAIL)
         fn()
-        ROWS[row_id] = "pass"
-        print(f"[row] {row_id}: PASS", flush=True)
+        if len(FAIL) > n0:
+            # the vacuous-score class (s23, caught live: R10b printed
+            # ALL PASS with a [FAIL] check on the wire) — check-level
+            # failures fail the row, same law as test_hero_lane
+            ROWS[row_id] = "fail"
+            print(f"[row] {row_id}: FAIL ({len(FAIL) - n0} check "
+                  f"failures)", flush=True)
+        else:
+            ROWS[row_id] = "pass"
+            print(f"[row] {row_id}: PASS", flush=True)
     except Exception:                                # noqa: BLE001
         ROWS[row_id] = "fail"
         FAIL.append(row_id)
@@ -578,6 +587,13 @@ def r9():
     check("R9h preview is a real PNG", head == rh_canvas.PNG_MAGIC, True)
     # g. in-git law: a fresh cache dir materializes from the in-git copy
     cache_git = os.path.join(_OUT_ROOT, "rh_canvas_cache_r9_git")
+    import shutil as _sh9
+    if os.path.isdir(cache_git):
+        # s23: the cold-cache precondition must be SELF-GUARANTEED — a
+        # dir left warm by a previous RUN of the suite lands ok-cached
+        # and the row fails on history, not on code (same determinism
+        # class as the R10b factory-reset fix)
+        _sh9.rmtree(cache_git)
     res_git = rh_canvas.fetch_previews(["Female"], cache=cache_git)
     check("R9g2 cold cache materializes from in-git copy (ok-git)",
           res_git[0]["status"], "ok-git")
@@ -691,6 +707,10 @@ def r10b():
     on x_bot (65-bone) AND male_body (78-bone — pins the A1 family gate)."""
     print("== R10b dummy-rig import + bind round-trip ==", flush=True)
     import bpy  # noqa  (battery runs inside Blender via blrun)
+    fresh()   # s23: R10's fixture-rig import leaves the stub action
+              # Armature|mixamo.com|Layer0 in bpy.data — without a
+              # factory reset THIS row's import lands Layer0.001 and
+              # the exact-name expectation fails on row ORDER
     cache = os.path.join(_OUT_ROOT, "rh_canvas_cache_r10b")
     # a. x_bot: import with placement, stub cleared, scale law kept
     arm, rep = rh_canvas.import_rig("x_bot", at=(1.5, -0.5, 0.0),

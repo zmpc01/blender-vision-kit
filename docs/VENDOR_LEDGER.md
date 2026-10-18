@@ -53,14 +53,20 @@
 - NOTE: the RH data source (beulahkemp/RH-canvas-*) went PRIVATE
   2026-10-16 (was 404) — still inaccessible; the fixture library
   remains the data layer.
-- NEW SANCTIONED DELTA (s22): rh_canvas library-split discovery — the
-  2026-10-17 platform migration moved the director 3D assets OUT of
-  RH-canvas-characters into beulahkemp/RH-3d-assets (manifest renamed
-  director-gltf-manifest.json -> gltf-manifest.json; same join schema).
-  Discovery now resolves THREE clones (animations / characters /
-  models) with a legacy fallback probe; load_models + load_thumbnails
-  read the models root. Landed here first (tested live: test_rh_canvas
-  14/14 against the real repos), port-back queued for mainline.
+- CLOSED-BY-UPSTREAM (s41 aa05cf3, vendored here 68fbb1e): the s22
+  library-split discovery booking. Mainline's s41 landed a SUPERSET
+  design (assets3d key; 5-field manifest drift guard; previews joined
+  per-model; thumbnails + dummy-rigs surfaces; require_library total).
+  The s22 'models' key + legacy-fallback probe were REPLACED by the
+  vendor (no external callers; stale-clone serve -> the kit's
+  fail-closed migration law). The s23 audit of the s22 delta (AUDIT-C)
+  is retired with it — its P3s are moot upstream (P3-2 totality exists
+  in s41; P3-1's warning was superseded by the refusal law).
+- s23 residual upstream nits (filed, NOT blocking): mainline's
+  discover_libraries docstring still says "Returns {animations,
+  characters}" (missing assets3d); require_library's error text still
+  says the beulahkemp repos are PRIVATE (they are public again —
+  verified by the live clones + battery).
 - STATUS FLIP (s22): the RH data source is LIVE again (was "private,
   inaccessible" through s21): beulahkemp/RH-canvas-* + RH-3d-assets all
   resolve, the CDN serves real binaries (sha-verified 2,137/2,137 FBX

@@ -74,9 +74,17 @@ def row(row_id, fn):
               f"scripts/rh_fixture_lib.py --", flush=True)
         return
     try:
+        n0 = len(FAIL)
         fn()
-        ROWS[row_id] = "pass"
-        print(f"[row] {row_id}: PASS", flush=True)
+        if len(FAIL) > n0:
+            # the vacuous-score class (s23): check-level failures fail
+            # the row, same law as test_hero_lane / test_rh_canvas
+            ROWS[row_id] = "fail"
+            print(f"[row] {row_id}: FAIL ({len(FAIL) - n0} check "
+                  f"failures)", flush=True)
+        else:
+            ROWS[row_id] = "pass"
+            print(f"[row] {row_id}: PASS", flush=True)
     except Exception:                                # noqa: BLE001
         ROWS[row_id] = "fail"
         FAIL.append(row_id)
