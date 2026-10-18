@@ -223,7 +223,31 @@ def h4_refusals():
     walk = u["actions"]["Walk_Loop"]
     rep = assets_quaternius.load("male", "HeroQ")
     tgt_arm = rep["arm"]
+    # audit A1 P2-6: a degenerate/empty source action refuses (the old
+    # code scored coverage 1.0 and baked a vacuous rest pose)
+    empty = bpy.data.actions.new("EmptyProbe")
+    try:
+        rig_retarget.retarget(src_arm, empty, tgt_arm)
+        raise AssertionError("empty source action accepted")
+    except rig_retarget.RetargetRefused:
+        pass
+    bpy.data.actions.remove(empty)
     r = rig_retarget.retarget(src_arm, walk, tgt_arm)
+    # audit A1 P2-9: a keyed path that does not resolve on the target
+    # refuses at the census (was an unguarded KeyError). The injection
+    # goes through blender_kit.fcurves_new — a raw action.fcurves.new
+    # would land in a legacy slot iter_fcurves never returns on 5.x.
+    import blender_kit
+    stale_fc = blender_kit.fcurves_new(
+        r["action"], 'pose.bones["__Nope__"].rotation_quaternion', 0)
+    stale_fc.keyframe_points.add(1)
+    stale_fc.keyframe_points[0].co = (r["frames"][0], 1.0)
+    try:
+        rig_retarget._run_closure(src_arm, walk, tgt_arm, r["action"],
+                                  {}, [r["frames"][0], r["frames"][1]], 1)
+        raise AssertionError("stale keyed path accepted")
+    except rig_retarget.RetargetRefused:
+        pass
     # stale output name refuses
     try:
         rig_retarget.retarget(src_arm, walk, tgt_arm)

@@ -33,31 +33,50 @@ THE FORMULA (per mapped pair src b -> tgt t, parents FIRST):
   ROTATION: basis.to_quaternion() -> rotation_quaternion keys (the
             target bone's QUATERNION mode is asserted); sign
             continuity at write time (dot(q, q_prev) < 0 => q := -q).
-  LOCATION: root-motion bone (the hips class) ONLY — R2's routed delta
-            keyed into pose.bones[t].location (BONE-LOCAL, the s20
-            axis law); every other bone's location stays at rest.
+  LOCATION (REV-3, data-driven): for EVERY mapped bone whose SOURCE
+            action carries location fcurves, key the conjugated basis
+            delta's translation x the height ratio into
+            pose.bones[t].location (BONE-LOCAL, the s20 axis law) — the
+            Quaternius disconnected-leg topology moves feet via
+            per-bone locations, so a hips-only policy structurally
+            drops the gait. The ratio-scaled delta also composes into
+            D_t so chained location sources propagate consistently
+            (audit A1 P2-4). A use_connect target bone's location is
+            SKIPPED and reported (rep loc_no_op): a location fcurve
+            cannot drive a connected bone — the same-class channel is
+            an equally dead no-op in the SOURCE rig (the UAL walk
+            replays gait-class from ROTATIONS alone, measured
+            2026-10-18) — so nothing is dropped and there is nothing
+            to refuse (audit A1 P1-3, as measured).
 
 The parent-cancellation identity (why this is exact):
   D(p)^-1 @ D(b) = M_rest(b) @ basis_src @ M_rest(b)^-1 — the
   armature-space composition IS the parent-relative transfer with rest
   correction; pivot artifacts cancel exactly for non-root bones.
 
-GATES (fail-closed, on the OUTPUT):
-  1. coverage floor: animated DEFORM-class src bones mapped >= 0.9
-  2. output channel census: every keyed path resolves on the target
-  3. WORLD gates at sampled frames (frame_set — the s20 law): feet
-     world-z in [-0.05, 0.15] m; hips world-z within [0.4, 1.4] x the
-     height ratio applied to the source's sampled hips height;
-     per-bone per-frame quaternion |delta| < 90 deg (teleport guard)
-  4. fresh-bake-only: a NEW action `<src>__rt_<tgt>`; the source
+GATES (fail-closed, on the OUTPUT — REV-3 audit A1 enforcement):
+  1. coverage floor: animated DEFORM-class src bones mapped >= 0.9;
+     an EMPTY transferable set refuses (no vacuous 1.0 pass)
+  2. output channel census: every keyed pose path must resolve on the
+     target (clean RetargetRefused — was an unguarded KeyError)
+  3. DRIVE check: stored fcurve values must reach the evaluated pose
+     properties — rotation AND location channels (the frozen-
+     evaluation class, measured live 2026-10-18); plus the SOURCE
+     anti-frozen span check (data span vs evaluated span at the hips:
+     a stuck source slot bakes a rest pose that drives fine)
+  4. teleport guard: per-bone per-frame quaternion |delta| < 90 deg
+  5. WORLD gates at sampled frames (run_world_gates, call AFTER
+     staging — the wrapper MPI carries the family rescale): feet
+     world-z ground floor + gait bands; hips world-z span; the CALLER
+     asserts on the returned table (the lab's two-column law)
+  6. fresh-bake-only: a NEW action `<src>__rt_<tgt>`; the source
      action is never mutated; fake_user left False until bind.
-  5. scale law: uniform object scale asserted on BOTH rigs (any
+  7. scale law: uniform object scale asserted on BOTH rigs (any
      value — Mixamo-65 lands at 0.01 BY LAW); bone rest scale ~ 1.
 
-Self-verification closure: after the bake, the target is re-evaluated
-at sampled frames and its armature-space pose must reproduce
-D_s(b) @ M_tgt_rest(t) within tolerance — the formula is not trusted,
-it is MEASURED (the s20 discipline).
+Gates 1-4 raise RetargetRefused INSIDE retarget() — a bake that
+violates them cannot return a rep (the docstring's fail-closed claim
+is now load-bearing, audit A1 P1-1).
 """
 import math
 
@@ -174,9 +193,12 @@ class RetargetRefused(ValueError):
 
 
 def _iter_fcurves(act):
-    if hasattr(blender_kit, "iter_fcurves"):
-        return list(blender_kit.iter_fcurves(act))
-    return list(act.fcurves)
+    """blender_kit is a HARD dep (the 4.x<->5.x channelbag shim). The
+    old `act.fcurves` fallback silently returned EMPTY on 5.x slotted
+    actions -> src_loc_bones empty -> the location transfer silently
+    dropped AND coverage vacuously 1.0 (audit A1 P2-5) — fail loudly
+    instead."""
+    return list(blender_kit.iter_fcurves(act))
 
 
 def _animated_bones(act, exclude):
@@ -184,8 +206,8 @@ def _animated_bones(act, exclude):
     out = set()
     for fc in _iter_fcurves(act):
         dp = fc.data_path
-        if dp.startswith("pose.bones["):
-            name = dp.split('"')[1]
+        if dp.startswith("pose.bones[") and '"' in dp:
+            name = dp.split('"')[1]   # audit A1 P3-11: unguarded split
             if not exclude(name):
                 out.add(name)
     return out
@@ -218,10 +240,8 @@ def _assert_uniform_scale(arm, tag):
             f"assumes uniform scale (D3e)")
     for b in arm.data.bones:
         m = b.matrix_local.to_3x3()
-        d = max(abs(m[i][j]) for i in range(3) for j in range(3)
-                if i != j)   # off-diagonal ~ 0 for axis-aligned rest
-        # rest scale: column lengths ~ 1
-        cols = [m[0][i] for i in range(3)]
+        # rest scale: row norms ~ 1 (audit A1 P3-10: these are ROW
+        # norms — the label said columns; dead off-diagonal removed)
         lens = [math.sqrt(sum(m[i][j] ** 2 for j in range(3)))
                 for i in range(3)]
         if max(abs(l - 1.0) for l in lens) > 1e-2:
@@ -250,7 +270,16 @@ def height_ratio(src_arm, src_hips, tgt_arm, tgt_hips):
         raise RetargetRefused(
             f"src hips rest height ~0 along the local up — {src_arm.name}"
             f" is not a standing rig?")
-    return tgth / srch
+    if abs(tgth) < 1e-6:
+        # audit A1 P2-8: ratio ~0 silently collapses every keyed
+        # location to zero
+        raise RetargetRefused(
+            f"tgt hips rest height ~0 along the local up — "
+            f"{tgt_arm.name} is not a standing rig?")
+    ratio = tgth / srch
+    if not math.isfinite(ratio):
+        raise RetargetRefused("height ratio is not finite")
+    return ratio
 
 
 def retarget(src_arm, src_action, tgt_arm, tgt_family=None,
@@ -304,6 +333,13 @@ def retarget(src_arm, src_action, tgt_arm, tgt_family=None,
         if cls is not None and cls not in tspec["bones"]:
             no_target.add(b)
     transferable = src_anim - no_target
+    if not transferable:
+        # audit A1 P2-6: an empty/degenerate source action scored
+        # coverage 1.0 and baked a vacuous rest pose, green gates
+        raise RetargetRefused(
+            f"source action {src_action.name!r} animates no transferable "
+            f"bones under the {sf} map — degenerate/empty action, "
+            f"refusing a vacuous bake")
     unmapped = sorted(transferable - mapped_src)
     coverage = (len(transferable & mapped_src) / len(transferable)) \
         if transferable else 1.0
@@ -357,8 +393,6 @@ def retarget(src_arm, src_action, tgt_arm, tgt_family=None,
             M_s_rest = src_rest[sb]
             M_t_rest = tgt_rest[tb]
             D_s = M_src @ M_s_rest.inverted()
-            M_t = D_s @ M_t_rest
-            D_t[tb] = M_t @ M_t_rest.inverted()
             parent_tb = tgt_arm.data.bones[tb].parent
             parent_D = D_t.get(parent_tb.name) if parent_tb else None
             if parent_tb is not None and parent_D is None:
@@ -373,7 +407,22 @@ def retarget(src_arm, src_action, tgt_arm, tgt_family=None,
                 # the exact conjugated delta's translation, ratio-scaled
                 # (the basis composition routes frames structurally —
                 # no separate world routing needed)
-                entry["loc"] = basis.to_translation() * ratio
+                loc = basis.to_translation() * ratio
+                entry["loc"] = loc
+                # audit A1 P2-4: the KEYED location is ratio-scaled, so
+                # the delta descendants must compensate is the SCALED
+                # pose — compose the effective local basis into D_t or
+                # chained location sources carry a
+                # (ratio-1)*parent-motion world error
+                basis_eff = Matrix.Translation(loc) \
+                    @ basis.to_quaternion().to_matrix().to_4x4()
+            else:
+                basis_eff = basis
+            # identity: parent_D @ M_t_rest @ basis == D_s @ M_t_rest
+            # (the unscaled composition); with basis_eff the same
+            # composition matches what the keyed channels evaluate
+            M_t = parent_D @ M_t_rest @ basis_eff
+            D_t[tb] = M_t @ M_t_rest.inverted()
             frame_out[tb] = entry
         samples[f] = frame_out
     # restore the source's previous action (fresh-bake-only: never
@@ -390,10 +439,13 @@ def retarget(src_arm, src_action, tgt_arm, tgt_family=None,
     out.use_fake_user = False          # pinned at bind time (D5a)
     # THE STUCK-POSE LAW: unassigning an action leaves the last
     # evaluated pose IN the pose-bone properties. The output keys
-    # rotation (+ hips location) only — every other channel must
+    # rotation (+ the REV-3 data-driven locations) only — every other
+    # channel must
     # evaluate from REST, not from the stuck import pose (the loader's
     # slot-clear cannot fix properties already mutated by evaluation).
     keyed = {tb for _, tb in pairs.values()}
+    loc_no_op = []   # connected targets: location is an undriveable
+                     # no-op in source AND target (skipped, reported)
     for pb in tgt_arm.pose.bones:
         pb.location = (0.0, 0.0, 0.0)
         pb.scale = (1.0, 1.0, 1.0)
@@ -426,20 +478,45 @@ def retarget(src_arm, src_action, tgt_arm, tgt_family=None,
                 fc.keyframe_points[-1].co = (f, val)
                 fc.keyframe_points[-1].interpolation = 'LINEAR'
         if samples[frames[0]][tb].get("loc") is not None:
-            for i in range(3):
-                fc = blender_kit.fcurves_new(
-                    out, f'pose.bones["{tb}"].location', index=i)
-                for f in frames:
-                    fc.keyframe_points.add(1)
-                    fc.keyframe_points[-1].co = (f, samples[f][tb]["loc"][i])
-                    fc.keyframe_points[-1].interpolation = 'LINEAR'
+            if tgt_arm.pose.bones[tb].bone.use_connect:
+                # audit A1 P1-3, as MEASURED (s23): a location fcurve
+                # cannot drive a CONNECTED bone — and the same-class
+                # channel is an equally dead no-op in the SOURCE rig
+                # (the UAL walk replays gait-class from ROTATIONS
+                # alone, measured 2026-10-18), so nothing is dropped:
+                # skip the write, say so in the rep (no silent lie,
+                # no refusal of the working path)
+                loc_no_op.append(tb)
+            else:
+                for i in range(3):
+                    fc = blender_kit.fcurves_new(
+                        out, f'pose.bones["{tb}"].location', index=i)
+                    for f in frames:
+                        fc.keyframe_points.add(1)
+                        fc.keyframe_points[-1].co = \
+                            (f, samples[f][tb]["loc"][i])
+                        fc.keyframe_points[-1].interpolation = 'LINEAR'
     _assign_action(tgt_arm, prev_tgt_action)   # slot restored
 
-    # ---- gates (bake-time, staging-immune): formula closure + teleport
+    # ---- gates (bake-time, staging-immune): census + drive + teleport
     gates = _run_closure(src_arm, src_action, tgt_arm, out, pairs,
                          frames, sample_stride)
+    # audit A1 P1-1: the docstring said fail-closed; the flags were
+    # computed and RETURNED but never enforced
+    if not gates["drives_ok"]:
+        raise RetargetRefused(
+            f"drive check FAILED (err {gates['drive_err_max']:.2e} >= "
+            f"1e-4): keyed fcurve values do not reach the evaluated "
+            f"pose — the frozen-evaluation / stuck-slot class; "
+            f"refusing a dead bake")
+    if not gates["teleport_ok"]:
+        raise RetargetRefused(
+            f"teleport guard tripped "
+            f"({gates['max_qdelta_deg']:.1f} deg > {TELEPORT_GUARD_DEG}) "
+            f"— per-frame pose jump, refusing")
     rep = {"action": out, "name": out_name, "mapped": len(pairs),
            "unmapped": unmapped, "no_target": sorted(no_target),
+           "loc_no_op": loc_no_op,
            "ratio": round(ratio, 4),
            "frames": [frames[0], frames[-1]], "fps": fps,
            "coverage": round(coverage, 4), "gates": gates}
@@ -513,19 +590,77 @@ def _run_closure(src_arm, src_action, tgt_arm, out_action, pairs,
     under certain action/slot states — rotations never reach the
     figure) and the stuck-slot class."""
     sc = bpy.context.scene
+    # GATE 2 (output channel census, audit A1 P2-9): every keyed pose
+    # path must resolve on the target — the lookups below were an
+    # unguarded KeyError, violating the no-traceback contract
+    keyed_paths = {fc.data_path for fc in _iter_fcurves(out_action)
+                   if fc.data_path.startswith("pose.bones[")
+                   and '"' in fc.data_path}
+    for dp in sorted(keyed_paths):
+        if dp.split('"')[1] not in tgt_arm.pose.bones:
+            raise RetargetRefused(
+                f"keyed path {dp!r} does not resolve on target "
+                f"{tgt_arm.name!r} — stale bake or name drift")
+    # fcurve lookup: per keyed bone, the quat-w curve (every keyed
+    # bone has one) + the location curves (REV-3: location channels
+    # are load-bearing — they get the same drive law, audit A1 P1-3)
+    qw = {}
+    locf = {}
+    for fc in _iter_fcurves(out_action):
+        if '"' not in fc.data_path:
+            continue
+        bn = fc.data_path.split('"')[1]
+        if fc.data_path.endswith(".rotation_quaternion") \
+                and fc.array_index == 0:
+            qw[bn] = fc
+        elif fc.data_path.endswith(".location"):
+            locf.setdefault(bn, {})[fc.array_index] = fc
+    # SOURCE anti-frozen defense (audit A1 P1-2): if the source
+    # assignment silently failed to rebind (the stuck-slot class),
+    # every sample reads REST -> a rest-pose bake DRIVES fine (its
+    # constant values reach the properties) and teleports never — the
+    # output gates cannot see it. Compare the source action's DATA
+    # span (fcurve values) vs the EVALUATED hips span at the same
+    # frames: animated data with a frozen evaluation refuses.
+    prev_src = (src_arm.animation_data.action
+                if src_arm.animation_data else None)
+    src_fc = [fc for fc in _iter_fcurves(src_action)
+              if '"' in fc.data_path
+              and fc.data_path.split('"')[1] == pairs["hips"][0]]
+    src_data_lo, src_data_hi = math.inf, -math.inf
+    for fc in src_fc:
+        for f in frames[::max(1, (len(frames) // 12) or 1)]:
+            v = fc.evaluate(f)
+            src_data_lo, src_data_hi = min(src_data_lo, v), \
+                max(src_data_hi, v)
+    _assign_action(src_arm, src_action)
+    hips_pb = src_arm.pose.bones[pairs["hips"][0]]
+    eval_chans = []
+    for f in frames[::max(1, (len(frames) // 12) or 1)]:
+        sc.frame_set(f)
+        bpy.context.view_layer.update()
+        eval_chans.append(list(hips_pb.rotation_quaternion)
+                          + list(hips_pb.location))
+    _assign_action(src_arm, prev_src)
+    if src_fc:
+        eval_lo = [min(c[i] for c in eval_chans)
+                   for i in range(len(eval_chans[0]))]
+        eval_hi = [max(c[i] for c in eval_chans)
+                   for i in range(len(eval_chans[0]))]
+        eval_span = max(hi - lo for lo, hi in zip(eval_lo, eval_hi))
+        data_span = src_data_hi - src_data_lo
+        if data_span > 1e-4 and eval_span < 1e-4:
+            raise RetargetRefused(
+                f"source {src_arm.name!r} evaluates FROZEN at rest "
+                f"while {src_action.name!r} carries motion (data span "
+                f"{data_span:.2e}, evaluated {eval_span:.2e}) — the "
+                f"stuck-source-slot class; refusing a rest-pose bake")
     prev_tgt = (tgt_arm.animation_data.action
                 if tgt_arm.animation_data else None)
     _assign_action(tgt_arm, out_action)
-    # fcurve lookup: per keyed bone, the quat-w curve (every keyed
-    # bone has one)
-    qw = {}
-    for fc in _iter_fcurves(out_action):
-        if fc.data_path.endswith(".rotation_quaternion") \
-                and fc.array_index == 0 and '"' in fc.data_path:
-            qw[fc.data_path.split('"')[1]] = fc
     sample = frames[::max(1, (len(frames) // 12) or 1)]
     rows = {"frames": sample, "drive_err_max": 0.0,
-            "max_qdelta_deg": 0.0, "moved": False}
+            "max_qdelta_deg": 0.0}
     prev_q = {}
     for f in sample:
         sc.frame_set(f)
@@ -542,6 +677,12 @@ def _run_closure(src_arm, src_action, tgt_arm, out_action, pairs,
                 rows["max_qdelta_deg"] = max(rows["max_qdelta_deg"],
                                              math.degrees(ang))
             prev_q[tb] = q.copy()
+        for tb, by_idx in locf.items():
+            pb = tgt_arm.pose.bones[tb]
+            for i, fc in by_idx.items():
+                stored = fc.evaluate(f)
+                rows["drive_err_max"] = max(rows["drive_err_max"],
+                                            abs(stored - pb.location[i]))
     _assign_action(tgt_arm, prev_tgt)
     rows["drives_ok"] = rows["drive_err_max"] < 1e-4
     rows["teleport_ok"] = rows["max_qdelta_deg"] < TELEPORT_GUARD_DEG

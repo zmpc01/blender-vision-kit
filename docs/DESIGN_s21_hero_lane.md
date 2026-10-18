@@ -351,3 +351,60 @@ for each mapped pair (src b -> tgt t), parents FIRST:
   EVERY assignment (ual_bake's _assign_action precedent; a plain
   `ad.action = X` leaves the binding stuck and the pose evaluates the
   old action silently).
+
+## 7. D-revision 4 (s23 audit-A1 fold — the gate layer made load-bearing)
+
+The s22 AUDIT-A (retimed twice: context-deadline both rounds) finally
+ran as the scoped A1 wave (math + module only). Verdict: the formula
+layer is SOUND (the conjugate-basis rotation and the parent-
+cancellation identity independently re-derived and numpy-probed exact
+to 1e-9; every (src,tgt) unpack verified; frame freshness clean; no
+P0). The exposure was the GATE layer: flags computed, docstring said
+fail-closed, nothing enforced. Folded (all in rig_retarget.py):
+
+- **P1-1 gates enforce**: drives_ok / teleport_ok now RAISE
+  RetargetRefused inside retarget() — a dead bake cannot return a rep.
+- **P1-2 source anti-frozen**: a stuck SOURCE slot bakes a rest pose
+  that PASSES the output drive check (constant values drive fine) —
+  new defense: source fcurve DATA span vs the EVALUATED hips span at
+  the sampled frames; animated data + frozen evaluation refuses.
+  Static actions (both spans ~0) stay legal.
+- **P1-3 location drive + connected law (as MEASURED — the auditor's
+  strict form was wrong)**: the drive check now covers LOCATION
+  channels too (locf map). The proposed "refuse location keys on
+  use_connect bones" fired on the REAL hero path (UAL walk carries
+  location fcurves on limb classes; Quaternius LowerLeg.L is
+  connected) — but a location fcurve cannot drive a connected bone in
+  ANY rig, the same-class channel is an equally dead no-op in the
+  SOURCE (the s22 decisive experiment: rotation-only replay lifts the
+  feet the full gait). So: SKIP + REPORT (rep loc_no_op), never
+  refuse. The refusal form would have broken the working path on a
+  channel that carries zero information.
+- **P2-4 scaled-delta propagation**: the keyed location is
+  ratio-scaled, so the delta descendants compensate is the SCALED
+  pose — D_t now composes basis_eff = T(loc*ratio) @ R(basis) via the
+  identity parent_D @ M_t_rest @ basis == D_s @ M_t_rest (unscaled
+  behavior identical for rotation-only bones, probed by the suite).
+  Chained location sources no longer carry a (ratio-1)*parent-motion
+  error. Not behaviorally testable today (no family pair with chained
+  locations + ratio != 1 exists in the corpus) — the identity comment
+  in the loop is the reviewable form.
+- **P2-5** _iter_fcurves: the act.fcurves fallback (empty on 5.x
+  slotted actions -> location transfer silently dropped + coverage
+  vacuously 1.0) removed — blender_kit is a hard dep, loud failure.
+- **P2-6** empty transferable set refuses (was: coverage 1.0 vacuous
+  rest bake). Test H4 row.
+- **P2-8** height_ratio bounds BOTH sides (+ finite check).
+- **P2-9** output channel census: every keyed pose path must resolve
+  (clean refusal; was an unguarded KeyError). Test H4 row (injection
+  via blender_kit.fcurves_new — a raw action.fcurves.new lands in a
+  legacy slot iter_fcurves never returns on 5.x).
+- **P3**: unguarded quote-split guarded; _assert_uniform_scale dead
+  vars removed + row-norms label fixed.
+- **P2-7 DEFERRED (documented)**: _assign_action pins slots[0] —
+  structurally unpinned for a FRESH action pre-write and wrong for
+  multi-slot actions; every real path is fresh-single-slot today.
+  Revisit if multi-slot sources ever arrive.
+
+test_hero_lane 6/6 after the fold (H5 feet band + H6 hips world
+band unchanged — no behavioral regression).
