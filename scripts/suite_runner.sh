@@ -114,6 +114,7 @@ SUITES=(
   "test_crowd_e2e|tests/test_crowd_e2e.py|PY||0|\\[CROUDE2E\\] ALL PASS|M3 r149: crowd-kit end-to-end gate (wheel sha256+size vs README pin F2E-12, native import+version coherence, vendored submodule kit import+__version__ coherence, 5-agent bake complete into fresh tempdir; provision: blender_crowd_native importable per wheels/README law)"
   "test_rh_canvas|tests/test_rh_canvas.py|BL||0|\[rh-test\] ALL PASS|s20 vendor: RH-canvas mocap path battery R1-R8b (catalog/fetch-verify/import-clip laws/mannequin/bind channel-match+registry/G statue/GLB round-trip/armature placement e2e; graceful-skip when the RH library clones are absent)"
   "test_rh_fixture|tests/test_rh_fixture.py|BL||0|\\[test_rh_fix\\] ALL PASS|s20: the rh_canvas surface battery vs the OFFLINE fixture library (catalog/tags/frames data-driven, fetch-verify+poison-repair, import laws vs self-verifying truth.json, mannequin census, bind+playback, refusals, swap-unpin, registry fingerprint, statue ground band, GLB round-trip, placement ARMATURE branches, ensemble)"
+  "test_rh_crossval|scripts/s22_crossval.py|BL||0|\\[XVAL\\] ALL MATCH|s22: the fixture-vs-REAL cross-validation (9 family laws measured on BOTH sides through the kit import path; 3 expected-deviations whitelisted — the s20 unit-baking class; honest-skip when either library layer is absent; docs/RH_CROSSVAL_s22.md)"
 )
 
 loud_header() {
