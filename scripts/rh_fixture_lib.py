@@ -10,9 +10,14 @@ What it produces (default root /home/z/rh_fixture_lib):
   RH-canvas-animations/assets-manifest.json   (the 4 keys fetch/catalog need)
   RH-canvas-animations/data/animations.jsonl
   RH-canvas-animations/data/category_tree.json
-  RH-canvas-characters/director-gltf-manifest.json
+  RH-canvas-characters/director-gltf-manifest.json  (legacy layout: also
+      satisfies the s22 models probe fallback — the 2026-10-17 platform
+      split moved the live 3D assets to RH-3d-assets/gltf-manifest.json)
   RH-canvas-characters/data/characters.jsonl
   RH-canvas-characters/data/filter_options.json
+  RH-canvas-characters/portraits-manifest.json   (empty — the s22
+      characters predicate requires it; the offline lib carries no
+      portraits, fetch_portraits rows are out of the fixture battery)
   RH-canvas-characters/data/director_models.json
   fbx/<id>.fbx ... gltf/<name>.glb ...
   truth.json  — SELF-VERIFYING ground truth: per-clip frames, hips
@@ -788,6 +793,8 @@ def main():
                                                "options": [{"code": v} for v in vs]}
                                               for k, vs in FACETS.items()]}]},
                   f, ensure_ascii=False, indent=1)
+    with open(os.path.join(char_dir, "portraits-manifest.json"), "w") as f:
+        json.dump([], f, ensure_ascii=False, indent=1)
     with open(os.path.join(char_dir, "data", "director_models.json"), "w") as f:
         json.dump(models, f, ensure_ascii=False, indent=1)
     with open(truth_marker, "w") as f:
