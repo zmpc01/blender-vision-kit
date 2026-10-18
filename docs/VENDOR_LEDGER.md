@@ -62,11 +62,11 @@
   fail-closed migration law). The s23 audit of the s22 delta (AUDIT-C)
   is retired with it — its P3s are moot upstream (P3-2 totality exists
   in s41; P3-1's warning was superseded by the refusal law).
-- s23 residual upstream nits (filed, NOT blocking): mainline's
+- s23 residual upstream nit (filed, NOT blocking): mainline's
   discover_libraries docstring still says "Returns {animations,
-  characters}" (missing assets3d); require_library's error text still
-  says the beulahkemp repos are PRIVATE (they are public again —
-  verified by the live clones + battery).
+  characters}" (missing assets3d). The require_library PRIVATE note
+  is CORRECT as written (anonymous ls-remote still fails — verified
+  s23; the repos need a token, the CDN binaries stay public).
 - STATUS FLIP (s22): the RH data source is LIVE again (was "private,
   inaccessible" through s21): beulahkemp/RH-canvas-* + RH-3d-assets all
   resolve, the CDN serves real binaries (sha-verified 2,137/2,137 FBX
