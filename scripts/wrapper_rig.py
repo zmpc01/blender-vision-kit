@@ -8,11 +8,11 @@ armature can NOT clobber it — and in the humanoid-crowd architecture
 the keys land on the GRANDPARENT anchor, one step safer still).
 
 API:
-    wrap(arm, name, scale=1.0, mesh=None, facing_probe=None) -> rep
-    rep = {"root", "armature", "mesh", "facing_sign", "scale",
+    wrap(arm, name, scale=1.0, facing_probe_bone=None) -> rep
+    rep = {"root", "armature", "meshes", "facing_sign", "scale",
            "probe_bone", "probe_axis", "fwd"}
 
-Laws (each from the audited pattern):
+Laws (each from the audited pattern; review r1 findings folded):
   1. Wrapper EMPTY named exactly `<name>.Root`, fresh, identity basis.
   2. Facing probe at bind on the AS-IMPORTED armature, BEFORE any
      transform is authored. Candidates are ±Y ONLY (a foot bone's
@@ -21,26 +21,24 @@ Laws (each from the audited pattern):
      The winner must be BOTH near-horizontal (|fwd.z| <= 0.5) AND
      Y-dominant (|fwd.y| >= 0.5); auto-pick skips `*_end` leaves.
      REFUSE fail-closed with the measured value otherwise.
-  3. arm.matrix_parent_inverse = flip @ Scale(scale) — flip (Rz(pi))
-     only when the probe faces -Y. Scale NEVER keyed.
-  4. Skinned mesh (arg or auto-found via find_armature()): parented
-     to the ARMATURE when scale == 1.0 and it is already parented
-     there; when scale != 1.0 the mesh MUST end up under the
-     armature's transform chain (D1b/D2a: a wrapper-parented mesh at
-     scale != 1.0 strands the rest pose) — this helper REQUIRES the
-     mesh to already ride the armature and refuses otherwise, so the
-     rest/posed skins can never diverge.
-  5. Refusals (RuntimeError, fail-closed): non-ARMATURE arg; armature
-     already parented (caller decides ordering); `<name>.Root` name
-     collision; no usable foot-like probe bone.
-  6. The report carries facing_sign + probe bone + winning axis + the
-     measured world forward (auditable — the s20 lesson: numbers
-     travel).
+  3. Parenting is DIRECT ASSIGNMENT ONLY (review r1 T8/T9: the
+     parent_set operator adopts the whole SELECTION — a bystander
+     hazard — and contributes nothing the direct law doesn't):
+         arm.parent = root
+         arm.matrix_parent_inverse = flip @ Scale(scale)
+     flip (Rz(pi)) only when the probe faces -Y. Scale NEVER keyed.
+     Composition law: world = root @ MPI @ arm_basis (mpi_semantics_probe).
+  4. The armature MUST already be linked into the scene (review r1
+     T4: select/eval on an unlinked object raises; an orphan rig
+     would also never export). Refuse loudly when unlinked.
+  5. Refusals (RuntimeError, fail-closed, BEFORE any mutation):
+     non-ARMATURE arg; unlinked armature; armature already parented;
+     `<name>.Root` name collision; scale != 1.0 with a skinned mesh
+     NOT parented to the armature (D1b: rest/posed skins diverge).
+  6. The report carries facing_sign + probe bone + the measured
+     world forward (auditable — the s20 lesson: numbers travel).
   7. The helper NEVER touches animation data (no action clearing —
      that is a per-loader policy).
-
-The world = parent @ MPI @ basis composition law is probed at
-mpi_semantics_probe.py (Blender 4.5/5.2).
 """
 import bpy
 from mathutils import Matrix, Vector
@@ -63,8 +61,8 @@ def facing_probe(arm, explicit=None):
     """The facing law: pick the probe bone, contest +Y vs -Y, refuse
     if neither candidate is both horizontal and Y-dominant.
 
-    Returns (bone_name, axis_sign, fwd) where axis_sign is +1 when the
-    bone's local +Y is the toe direction, -1 when -Y is.
+    Returns (bone_name, axis_sign, fwd) — axis_sign +1 when the bone's
+    local +Y is the toe direction, -1 when -Y is.
     """
     if explicit:
         fwd = _probe_forward(arm, explicit)
@@ -72,14 +70,12 @@ def facing_probe(arm, explicit=None):
             return explicit, (1 if fwd.y >= 0 else -1), fwd
         _fail(f"explicit probe {explicit!r} failed the horizontal+"
               f"Y-dominant contest (measured fwd {tuple(round(v, 3) for v in fwd)})")
-    # auto-pick: first pose bone whose lowercase name contains "foot",
-    # skipping *_end leaves (the 42-bone census provably carries
-    # Foot.L_end leaves — a leaf's +Y points OUT of the toe, not along
-    # it, and its roll axis is meaningless).
+    # auto-pick: foot-named pose bones, skipping *_end leaves (a leaf's
+    # +Y points OUT of the toe; its roll axis is meaningless).
     cands = [b.name for b in arm.pose.bones
              if "foot" in b.name.lower() and not b.name.lower().endswith("_end")]
     if not cands:
-        _fail(f"no foot-like probe bone on {arm.name} (pass facing_probe=)")
+        _fail(f"no foot-like probe bone on {arm.name} (pass explicit=)")
     for nm in cands:
         for sign in (1.0, -1.0):
             pb = arm.pose.bones[nm]
@@ -91,46 +87,54 @@ def facing_probe(arm, explicit=None):
     _fail(f"facing probe refused: {arm.name} foot bone {cands[0]!r} "
           f"forward {tuple(round(v, 3) for v in fwd)} is neither "
           f"horizontal (|z|<=0.5) nor Y-dominant (|y|>=0.5) on either "
-          f"+Y or -Y — a rig we do not understand; pass facing_probe=")
+          f"+Y or -Y — a rig we do not understand; pass explicit=")
 
 
-def wrap(arm, name, scale=1.0, mesh=None, facing_probe_bone=None):
-    """Wrap an imported armature per the D1 law. Returns the rep dict."""
+def wrap(arm, name, scale=1.0, facing_probe_bone=None):
+    """Wrap an imported armature per the D1 law. Returns the rep dict.
+
+    The armature must ALREADY be linked into the scene (law 4). Skinned
+    meshes are discovered by their Armature modifier/find_armature
+    pointing at `arm`; at scale != 1.0 any skinned mesh not parented to
+    the armature is a refusal (the check runs BEFORE any mutation).
+    """
     if not isinstance(arm, bpy.types.Object) or arm.type != 'ARMATURE':
         _fail(f"wrap() needs an ARMATURE object, got {type(arm)}")
-    if arm.parent is not None:
-        _fail(f"{arm.name} is already parented to {arm.parent.name} — "
-              f"the caller decides ordering; refusing to re-parent")
     root_name = f"{name}.Root"
     if root_name in bpy.data.objects:
         _fail(f"name collision: {root_name!r} already exists "
               f"(naming is the caller's hygiene)")
+    if arm.parent is not None:
+        _fail(f"{arm.name} is already parented to {arm.parent.name} — "
+              f"the caller decides ordering; refusing to re-parent")
+    in_scene = any(arm.name in c.objects for c in bpy.context.scene.collection.children_recursive) \
+        if hasattr(bpy.context.scene.collection, "children_recursive") else True
+    if not in_scene:
+        _fail(f"{arm.name} is not linked into the scene collection — "
+              f"link it first (review r1 T4: an orphan rig never "
+              f"exports and cannot be evaluated)")
+
+    # skinned meshes + the D1b scale law, BEFORE any mutation (r1 P2-12)
+    meshes = [ob for ob in bpy.data.objects
+              if ob.type == 'MESH' and ob.find_armature() is arm]
+    if scale != 1.0:
+        for ob in meshes:
+            if ob.parent is not arm:
+                _fail(f"skinned mesh {ob.name} is not parented to the "
+                      f"armature at scale != 1.0 — rest/posed skins "
+                      f"would diverge (D1b law); refusing")
+
     bone, axis_sign, fwd = facing_probe(arm, facing_probe_bone)
 
     root = bpy.data.objects.new(root_name, None)
     bpy.context.scene.collection.objects.link(root)
-    view_layer = bpy.context.view_layer
-    view_layer.objects.active = root
-    arm.select_set(True)
-    root.select_set(True)
-    bpy.ops.object.parent_set(type='OBJECT', keep_transform=False)
+    # DIRECT assignment law (r1 T9) — no parent_set ops (r1 T8 hazard)
     arm.parent = root
     flip = Matrix.Rotation(3.14159265358979, 4, 'Z') if axis_sign < 0 \
         else Matrix.Identity(4)
     arm.matrix_parent_inverse = flip @ Matrix.Scale(scale, 4)
 
-    # the skinned mesh: must already ride the armature (law 4)
-    if mesh is None:
-        mesh = arm.find_armature()  # no-op; meshes point AT the armature
-    meshes = []
-    for ob in bpy.data.objects:
-        if ob.type == 'MESH' and ob.find_armature() is arm:
-            meshes.append(ob)
-            if scale != 1.0 and ob.parent is not arm:
-                _fail(f"skinned mesh {ob.name} is not parented to the "
-                      f"armature at scale != 1.0 — rest/posed skins "
-                      f"would diverge (D1b law); refusing")
-    view_layer.update()
-    return {"root": root, "armature": arm, "mesh": meshes[0] if meshes else None,
+    bpy.context.view_layer.update()
+    return {"root": root, "armature": arm, "meshes": meshes,
             "facing_sign": axis_sign, "scale": scale,
             "probe_bone": bone, "probe_axis": axis_sign, "fwd": fwd}

@@ -202,13 +202,14 @@ Zed.NNNN (MESH anchor — commuter mesh, hide_render=True;
 
 ```python
 # in the film scene module (tform_scene.py rev 2):
-from humanoid_crowd import crowd_family, bind_crowd, bind_principals
-fam = crowd_family("rh_xbot")       # or "ual"
-# anchors are built as EMPTIES now (build change):
-#   new_anchored_obj(name, None, loc) -> empty, no commuter mesh
+from humanoid_crowd import crowd_family, bind_crowd, bind_principals, motion_gates
+fam = crowd_family("rh_xbot")
+# anchors STAY the commuter-mesh objects (D6-2: no build change)
 # after load_kit_cache + bake_tier2:
-bind_crowd(ctx, fam, walk_clip="rh_2899", idle_clip="rh_2781")
-bind_principals(ctx, "ual", {"Captain": "Idle_Loop", ...})
+rep = bind_crowd(ctx, fam, group_tint={"groups": [...],
+                                       "agent_group": [...]})
+motion_gates(ctx, rep["reps"], walk_cycle=rep["walk_cycle"])
+principals = bind_principals(ctx, {"Captain": ("Idle_Loop", 1.0, None), ...})
 ```
 
 - `humanoid_crowd.py` (kit-level, vision-kit scripts/): family
