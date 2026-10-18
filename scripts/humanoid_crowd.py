@@ -260,9 +260,14 @@ def bind_crowd(ctx, fam, group_tint=None):
             copies = []
             for j, tm in enumerate(tmpl["meshes"]):
                 gme = tm.copy()
+                # UNIQUE data per group — Object.copy() SHARES the data
+                # and 5 clearing passes would leave ONE group's material
+                # on the shared template data (the all-Group4 law,
+                # measured)
+                gme.data = gme.data.copy()
                 gme.name = f"Hum.Group{gi}.Body{j}"
-                gme.materials.clear()
-                gme.materials.append(gmats[j])
+                gme.data.materials.clear()
+                gme.data.materials.append(gmats[j])
                 copies.append(gme)
             group_meshes.append(copies)
 
