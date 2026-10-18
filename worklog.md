@@ -4130,3 +4130,19 @@ Stage Summary:
   split (film-lane contract gaps vs upstream obstacle types), the
   night-market film, the humanoid rollout across the older five
   films.
+
+---
+Task ID: s23-1
+Agent: orchestrator (session-23)
+Task: sandbox re-land + battery baseline (pre-audit/pre-port)
+
+Work Log:
+- Fresh sandbox: cloned vision-kit (52bbe2e incl. film-lane post-s22 worklog), mainline agent-kit (e710a15), RH-3d-assets + RH-canvas-animations + RH-canvas-characters (new PAT; OLD2 writes zmpc01; kickoff PAT dead).
+- tools/blender = real-dir copy from /home/sync (1.2GB, foreground; symlink ban holds); install.sh green (libEGL + Pillow 12.3.0 + warm cache + Cycles verify).
+- crowd-kit submodule cloned via git (OLD2 works directly now), pinned tree eada0ff carried wheel 1.5.5 -> test_crowd_e2e native.version FAIL (module 1.6.0 != wheel 1.5.5).
+- FINDING: s22 tested with the submodule working tree ahead of its recorded pin (r149 predates the 1.6.0 wheel intro at r151 b4bf76e). Fixed: pin bumped to b4bf76e (1.6.0 + SHA256SUMS, minimal drift from r149). ALL PASS 12 checks after.
+- Fixture library regenerated at /home/z/rh_fixture_lib (8 clips + 3 statues + truth.json); test_rh_fixture ALL PASS; s22_crossval vs REAL clip 2846: 9 laws, 6 match, 3 expected-deviation, 0 UNEXPECTED.
+
+Stage Summary:
+- Baseline green: full battery 37 PASS / 1 FAIL(crowd_e2e, fixed by pin bump) / 2 SKIP(fixture-absent, regenerated) -> all 40 surfaces individually green in this sandbox.
+- Submodule pin bump is an UNCOMMITTED fix ready for commit; sandbox state = battery-ready for the audit + port-back rounds.
