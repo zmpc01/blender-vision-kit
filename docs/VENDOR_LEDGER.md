@@ -53,3 +53,17 @@
 - NOTE: the RH data source (beulahkemp/RH-canvas-*) went PRIVATE
   2026-10-16 (was 404) — still inaccessible; the fixture library
   remains the data layer.
+- NEW SANCTIONED DELTA (s22): rh_canvas library-split discovery — the
+  2026-10-17 platform migration moved the director 3D assets OUT of
+  RH-canvas-characters into beulahkemp/RH-3d-assets (manifest renamed
+  director-gltf-manifest.json -> gltf-manifest.json; same join schema).
+  Discovery now resolves THREE clones (animations / characters /
+  models) with a legacy fallback probe; load_models + load_thumbnails
+  read the models root. Landed here first (tested live: test_rh_canvas
+  14/14 against the real repos), port-back queued for mainline.
+- STATUS FLIP (s22): the RH data source is LIVE again (was "private,
+  inaccessible" through s21): beulahkemp/RH-canvas-* + RH-3d-assets all
+  resolve, the CDN serves real binaries (sha-verified 2,137/2,137 FBX
+  locally), and test_rh_canvas now RUNS (was graceful-skip) — 14 rows
+  against real data. The fixture library keeps its role: the offline
+  determinism path + the CI-safe regression base.

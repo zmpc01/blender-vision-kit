@@ -67,7 +67,7 @@ PIN_CLIP = "2846"  # WALK_RUN_MOVE "Run fast" — REVIEW-RH-1b measured on it
 PIN_MODEL = "Farmer"
 
 LIBS = rh_canvas.discover_libraries()
-LIB_OK = bool(LIBS.get("animations")) and bool(LIBS.get("characters"))
+LIB_OK = all(LIBS.get(k) for k in ("animations", "characters", "models"))
 
 
 def row(row_id, fn):
@@ -76,8 +76,9 @@ def row(row_id, fn):
     if not LIB_OK:
         ROWS[row_id] = "skip"
         print(f"[SKIP] {row_id}: RH-canvas library clones absent "
-              f"(found {LIBS or 'none'}) — clone them per "
-              f"docs/rh_canvas.md; this row needs the local data only",
+              f"(found {LIBS or 'none'}) — all three clones (animations, "
+              f"characters, models) must resolve per docs/rh_canvas.md; "
+              f"this row needs the local data only",
               flush=True)
         return
     try:
@@ -602,7 +603,8 @@ def main() -> int:
         print("[SKIP] RH-canvas clones absent — the WHOLE battery skips. "
               "Clone them (see docs/rh_canvas.md):\n"
               "    git clone https://github.com/beulahkemp/RH-canvas-animations.git\n"
-              "    git clone https://github.com/beulahkemp/RH-canvas-characters.git",
+              "    git clone https://github.com/beulahkemp/RH-canvas-characters.git\n"
+              "    git clone https://github.com/beulahkemp/RH-3d-assets.git",
               flush=True)
     for row_id, fn in (("R1", r1), ("R2", r2), ("R2b", r2b),
                        ("R3", r3), ("R3b", r3b), ("R4", r4),

@@ -110,8 +110,19 @@ import urllib.request
 # --------------------------------------------------------------------------- #
 ANIM_REPO = "RH-canvas-animations"
 CHAR_REPO = "RH-canvas-characters"
+# 2026-10-17 platform migration: the director 3D assets (99 glTF + previews
+# + body-type thumbnails) MOVED OUT of RH-canvas-characters into their own
+# repo (renamed manifest: gltf-manifest.json). The portraits/character
+# reference sheets stayed in RH-canvas-characters. Discovery therefore
+# resolves THREE clones; models keeps a legacy probe for pre-split layouts.
+MODELS_REPO = "RH-3d-assets"
 ANIM_CLONE_CMD = "git clone https://github.com/beulahkemp/RH-canvas-animations.git"
 CHAR_CLONE_CMD = "git clone https://github.com/beulahkemp/RH-canvas-characters.git"
+MODELS_CLONE_CMD = "git clone https://github.com/beulahkemp/RH-3d-assets.git"
+_REPO_CLONE_CMD = {"animations": ANIM_CLONE_CMD, "characters": CHAR_CLONE_CMD,
+                   "models": MODELS_CLONE_CMD}
+_REPO_NAME = {"animations": ANIM_REPO, "characters": CHAR_REPO,
+              "models": MODELS_REPO}
 
 # Kit UA (polyhaven.py convention). CDN is public/no-auth; a unique UA is
 # good hygiene. Override via env if you fork this.
@@ -239,17 +250,31 @@ def _looks_like_animations(d: str) -> bool:
 
 
 def _looks_like_characters(d: str) -> bool:
-    return os.path.isfile(os.path.join(d, "director-gltf-manifest.json")) \
-        and os.path.isfile(os.path.join(d, "data", "characters.jsonl"))
+    """Portraits surface (2026-10-17 split: the 3D director assets no
+    longer live beside the character sheets — see MODELS_REPO)."""
+    return os.path.isfile(os.path.join(d, "data", "characters.jsonl")) \
+        and os.path.isfile(os.path.join(d, "portraits-manifest.json"))
+
+
+def _looks_like_models(d: str) -> bool:
+    """New RH-3d-assets layout (gltf-manifest.json) OR the pre-split
+    characters layout (director-gltf-manifest.json) — the join schema is
+    identical (url/size/sha256 rows), only the filename moved."""
+    return os.path.isfile(os.path.join(d, "data", "director_models.json")) \
+        and (os.path.isfile(os.path.join(d, "gltf-manifest.json"))
+             or os.path.isfile(os.path.join(d, "director-gltf-manifest.json")))
 
 
 def discover_libraries(explicit: str | None = None) -> dict:
     """Locate the RH-canvas clones. Returns
-    {'animations': path|None, 'characters': path|None}.
+    {'animations': path|None, 'characters': path|None,
+     'models': path|None} (the 2026-10-17 three-repo split: animations =
+    the mocap FBX library, characters = the portrait reference sheets,
+    models = the director 3D assets that used to live beside them).
 
     Search order for a base dir: the dir itself (when it IS a clone),
     <base>/<repo-name>, and the dir's parent's <repo-name> children —
-    so --library can point at either clone, at their common parent, or
+    so --library can point at any clone, at their common parent, or
     at any sibling directory. When --library / RH_CANVAS_LIB is given it
     is AUTHORITATIVE (fail-closed: no silent fallback probes); otherwise
     the kit's parent dir, cwd and cwd's parent are auto-probed."""
@@ -271,12 +296,18 @@ def discover_libraries(explicit: str | None = None) -> dict:
 
     found: dict = {}
     for base in bases:
-        for repo, key, check in ((ANIM_REPO, "animations", _looks_like_animations),
-                                 (CHAR_REPO, "characters", _looks_like_characters)):
+        for key in ("animations", "characters", "models"):
             if key in found:
                 continue
             probes = [base,
-                      os.path.join(base, repo)]
+                      os.path.join(base, _REPO_NAME[key])]
+            if key == "models":
+                # legacy fallback: a pre-split characters clone carries the
+                # director assets too (probe it AFTER the canonical repo)
+                probes.append(os.path.join(base, CHAR_REPO))
+            check = {"animations": _looks_like_animations,
+                     "characters": _looks_like_characters,
+                     "models": _looks_like_models}[key]
             for p in probes:
                 if os.path.isdir(p) and check(p):
                     found[key] = os.path.abspath(p)
@@ -285,19 +316,22 @@ def discover_libraries(explicit: str | None = None) -> dict:
 
 
 def require_library(which: str, explicit: str | None = None) -> str:
-    """Fail-closed library lookup. `which` in {'animations','characters'}."""
+    """Fail-closed library lookup. `which` in
+    {'animations','characters','models'}."""
     libs = discover_libraries(explicit)
     path = libs.get(which)
     if path:
         return path
-    repo = ANIM_REPO if which == "animations" else CHAR_REPO
-    clone = ANIM_CLONE_CMD if which == "animations" else CHAR_CLONE_CMD
+    repo = _REPO_NAME[which]
+    clone = _REPO_CLONE_CMD[which]
+    others = [k for k in ("animations", "characters", "models")
+              if k != which and not libs.get(k)]
     other = ""
-    if not libs.get("animations" if which == "characters" else "characters"):
-        other_repo = CHAR_REPO if which == "animations" else ANIM_REPO
-        other_clone = CHAR_CLONE_CMD if which == "animations" else ANIM_CLONE_CMD
-        other = (f"\n  (the sibling repo {other_repo} is also absent; when "
-                 f"you need it: {other_clone})")
+    if others:
+        names = ", ".join(_REPO_NAME[k] for k in others)
+        clones = "; ".join(_REPO_CLONE_CMD[k] for k in others)
+        other = (f"\n  (the sibling repo(s) {names} are also absent; when "
+                 f"you need them: {clones})")
     raise RHRefused(
         f"the {which} library repo {repo} was not found. Point --library "
         f"(or env RH_CANVAS_LIB) at the clone, its parent, or any sibling "
@@ -389,12 +423,17 @@ def load_facet_options(explicit: str | None = None) -> dict[str, list[str]]:
 
 
 def load_models(explicit: str | None = None) -> list[dict]:
-    """director_models.json joined with director-gltf-manifest.json (1:1,
-    all 99 carry sha256) -> model entries keyed by name/uuid/filename."""
-    root = require_library("characters", explicit)
+    """director_models.json joined with the gltf manifest (1:1, all 99
+    carry sha256) -> model entries keyed by name/uuid/filename. The
+    manifest is gltf-manifest.json in RH-3d-assets (the 2026-10-17
+    split), director-gltf-manifest.json in legacy layouts."""
+    root = require_library("models", explicit)
     with open(os.path.join(root, "data", "director_models.json"), encoding="utf-8") as f:
         groups = json.load(f)
-    with open(os.path.join(root, "director-gltf-manifest.json"), encoding="utf-8") as f:
+    mpath = os.path.join(root, "gltf-manifest.json")          # RH-3d-assets
+    if not os.path.isfile(mpath):                              # legacy layout
+        mpath = os.path.join(root, "director-gltf-manifest.json")
+    with open(mpath, encoding="utf-8") as f:
         manifest = json.load(f)
     by_url = {e["url"]: e for e in manifest}
     models = []
@@ -404,9 +443,9 @@ def load_models(explicit: str | None = None) -> list[dict]:
             if entry is None:                                 # fail closed
                 raise RHRefused(
                     f"director model {m.get('name')!r} has no "
-                    f"director-gltf-manifest.json entry (URL {m.get('url')}) "
+                    f"gltf-manifest.json entry (URL {m.get('url')}) "
                     f"— the two files must stay 1:1; re-clone "
-                    f"{CHAR_REPO}")
+                    f"{MODELS_REPO}")
             models.append({
                 "id": m["id"],
                 "name": m["name"],
@@ -426,7 +465,7 @@ def load_thumbnails(explicit: str | None = None) -> list[dict]:
     """The 8 in-git body-type preview PNGs (tiny UI icons, already in the
     clone — viewable offline, no fetch). bodyType taxonomy icons: baby /
     child / elder / female / male / plusSize / superhero / teen."""
-    root = require_library("characters", explicit)
+    root = require_library("models", explicit)
     tdir = os.path.join(root, "assets", "director", "canvasfile",
                         "director", "character-thumbnails")
     rows = []

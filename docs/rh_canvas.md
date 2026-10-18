@@ -28,8 +28,14 @@ into the kit) and on-demand (no bulk mirroring).
 # 0. one-time: clone the data repos (path-based; the kit never vendors them)
 git clone https://github.com/beulahkemp/RH-canvas-animations.git
 git clone https://github.com/beulahkemp/RH-canvas-characters.git
+git clone https://github.com/beulahkemp/RH-3d-assets.git
 # (any sibling dir of the kit works — discovery is by dir name; or point
 #  --library / env RH_CANVAS_LIB at a clone, their parent, or any sibling)
+# NOTE (2026-10-17 platform migration): the director 3D assets (99 glTF
+# + previews + body-type thumbnails) MOVED OUT of RH-canvas-characters
+# into RH-3d-assets (manifest renamed gltf-manifest.json). Discovery
+# resolves all three; a pre-split characters clone still satisfies the
+# models probe via the legacy fallback.
 
 # 1. browse (no network) — START HERE to discover the 19 categories:
 python3 scripts/rh_canvas.py catalog --kind categories
@@ -276,8 +282,10 @@ mirror of binaries.
 - Data: `/home/z/RH-canvas-animations` (`assets-manifest.json`,
   `data/animations.jsonl`, `data/category_tree.json`),
   `/home/z/RH-canvas-characters` (`data/characters.jsonl`,
-  `data/filter_options.json`, `data/director_models.json`,
-  `director-gltf-manifest.json`).
+  `data/filter_options.json`, `portraits-manifest.json`),
+  `/home/z/RH-3d-assets` (`data/director_models.json`,
+  `gltf-manifest.json` — the 2026-10-17 split; legacy clones keep the
+  two models files inside RH-canvas-characters).
 
 
 ## s20 amendments (the vision-kit vendor round)
