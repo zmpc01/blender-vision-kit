@@ -370,9 +370,15 @@ def bind_principals(ctx, name_clip_pairs):
     """UAL principals: ONE glTF import per hero via the vendored
     loader's _import_actor (P2-4 thin caller — no JeepRoot demand).
 
-    name_clip_pairs: {"Captain": ("Walk_Loop", scale, loc), ...}
-    The hero wrapper is parented to the film's hero record root (the
-    caller re-parents the returned root onto its keyed hero object).
+    name_clip_pairs: {"Captain": (clip, scale, loc), ...}
+    The rep's wrapper root is returned UNPARENTED; the caller parents
+    it onto its keyed hero object (identity MPI + zero local = rides
+    the hero exactly).
+
+    FEET-ORIGIN LAW (self-correcting, numbers travel): the mannequin's
+    world bbox min-z is measured post-import; a nonzero floor lifts
+    the WRAPPER so the feet sit at z=0 (the s20 lesson: never assume
+    the import's origin — measure it).
     """
     import assets_ual_actors as UAL
     out = {}
@@ -380,17 +386,28 @@ def bind_principals(ctx, name_clip_pairs):
         rep = UAL._import_actor(name, scale)
         if loc is not None:
             rep["root"].location = loc
+        bpy.context.view_layer.update()
+        arm = rep["armature"]
+        zs = [(arm.matrix_world @ __import__("mathutils").Vector(c)).z
+              for c in arm.bound_box]
+        floor = min(zs)
+        rep["floor_z"] = round(floor, 4)
+        if abs(floor) > 1e-3:
+            rep["root"].location.z -= floor
+            bpy.context.view_layer.update()
+            _P(f"feet-origin lift {name}: floor {floor:+.4f} -> 0 "
+               f"(wrapper z now {rep['root'].location.z:+.4f})")
         acts = rep.get("actions", {})
         act = acts.get(clip) or next(
             (a for k, a in acts.items() if clip.lower() in k.lower()), None)
         if act is None:
             _fail(f"UAL clip {clip!r} not in pool "
                   f"({sorted(acts)[:8]})")
-        rep["armature"].animation_data_create()
-        rep["armature"].animation_data.action = act
+        arm.animation_data_create()
+        arm.animation_data.action = act
         out[name] = rep
         _P(f"UAL principal {name}: clip {clip} "
-           f"(facing {rep.get('facing_sign', '?')})")
+           f"(facing {rep.get('facing_sign', '?')}, floor {floor:+.4f})")
     return out
 
 

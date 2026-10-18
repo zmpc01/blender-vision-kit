@@ -600,7 +600,62 @@ def _crowd_kit_branch(ctx, cache_path):
     import crowd_v6 as CV6
     CV6.bake_tier2(ctx)
     _crowd_palette(ctx)
+    if os.environ.get("TFORM_HUMANOID") == "1":
+        _humanoid_layer(ctx)
     return ctx["crowd_cache"]
+
+
+def _humanoid_layer(ctx):
+    """THE DRILL, humanized (D6 REV-2, docs/DESIGN_humanoid_crowd.md):
+    the 102 cache anchors gain RH x_bot rig assemblies (the commuter
+    anchors go hide_render=True and stay bake2's transform carriers);
+    the 2 keyed heroes gain UAL mannequins. Env-gated
+    (TFORM_HUMANOID=1) so rev 1 stays reproducible byte-for-byte.
+
+    The tint groups follow POP_PLAN's count-split (the ingest reorder
+    law: attribution by COUNT from the static table, never by slice):
+    drill 24 / watchers 72 / drummers 4 / officer_a 1 / officer_b 1
+    == the 102 pin."""
+    import humanoid_crowd as HC
+    fam = HC.crowd_family("rh_xbot")
+    groups = [("drill", 24, (0.16, 0.22, 0.45)),      # ceremonial blue
+              ("watchers", 72, (0.42, 0.36, 0.30)),   # muted earth
+              ("drummers", 4, (0.45, 0.16, 0.18)),    # deep wine
+              ("officer_a", 1, (0.08, 0.08, 0.09)),   # black
+              ("officer_b", 1, (0.08, 0.08, 0.09))]
+    agent_group = []
+    for gi, (_, cnt, _rgb) in enumerate(groups):
+        agent_group.extend([gi] * cnt)
+    if len(agent_group) != EXPECTED_AGENTS:
+        raise RuntimeError(
+            f"_humanoid_layer: POP_PLAN split {len(agent_group)} != "
+            f"pin {EXPECTED_AGENTS}")
+    gt = {"groups": [(c, rgb) for _, c, rgb in groups],
+          "agent_group": agent_group}
+    rep = HC.bind_crowd(ctx, fam, group_tint=gt)
+    HC.motion_gates(ctx, rep["reps"], walk_cycle=rep["walk_cycle"])
+    ctx["humanoid"] = rep
+    # the UAL principals: the 2 keyed heroes (branch (a)) — the mannequin
+    # rides each hero root (the keys stay on the hero object); the
+    # commuter mesh goes render-hidden; scale = 1.75/1.589 (measured)
+    UAL_SCALE = 1.75 / 1.589
+    pr = HC.bind_principals(ctx, {
+        "StandardBearer": ("Idle_Loop", UAL_SCALE, None),
+        "Captain": ("Idle_Loop", UAL_SCALE, None)})
+    for name, hero in ctx["heroes"].items():
+        if name not in pr:
+            continue
+        wrapper = pr[name]["root"]
+        wrapper.parent = hero
+        # identity MPI + zero local: the wrapper RIDES the keyed hero
+        # root exactly (the loader's own facing flip lives INSIDE the
+        # wrapper hierarchy)
+        from mathutils import Matrix
+        wrapper.matrix_parent_inverse = Matrix.Identity(4)
+        wrapper.location = (0.0, 0.0, 0.0)
+        hero.hide_render = True
+        print(f"[tform] UAL principal {name} bound (scale {UAL_SCALE:.3f})")
+    ctx["humanoid_principals"] = pr
 
 
 def _crowd_palette(ctx):
