@@ -311,6 +311,15 @@ def discover_libraries(explicit: str | None = None) -> dict:
             for p in probes:
                 if os.path.isdir(p) and check(p):
                     found[key] = os.path.abspath(p)
+                    if key == "models" and os.path.basename(p) != MODELS_REPO:
+                        # audit-B P2-1: the legacy serve must be LOUD —
+                        # a stale pre-split clone otherwise passes the
+                        # battery gate with zero signal
+                        print(f"[rh_canvas] WARNING: models resolved via "
+                              f"the LEGACY layout {p} (expected "
+                              f"{MODELS_REPO}) — stale pre-split clone; "
+                              f"re-clone {MODELS_CLONE_CMD}",
+                              flush=True)
                     break
     return found
 
@@ -446,6 +455,14 @@ def load_models(explicit: str | None = None) -> list[dict]:
                     f"gltf-manifest.json entry (URL {m.get('url')}) "
                     f"— the two files must stay 1:1; re-clone "
                     f"{MODELS_REPO}")
+            for need in ("size", "sha256"):
+                if need not in entry:
+                    # audit-B P3-5: field drift must refuse clean, not
+                    # escape as a raw KeyError (the no-traceback contract)
+                    raise RHRefused(
+                        f"director model {m.get('name')!r} manifest row "
+                        f"lacks {need!r} (URL {m.get('url')}) — the gltf "
+                        f"manifest drifted; re-clone {MODELS_REPO}")
             models.append({
                 "id": m["id"],
                 "name": m["name"],
@@ -885,6 +902,8 @@ def catalog_query(kind: str, category: str | None = None,
                         f"models|thumbnails, got {kind!r}")
     vintage = (library_vintage("animations", explicit_lib)
                if kind in ("categories", "animations")
+               else library_vintage("models", explicit_lib)
+               if kind in ("models", "thumbnails")
                else library_vintage("characters", explicit_lib))
     if vintage:
         meta["library_captured"] = vintage

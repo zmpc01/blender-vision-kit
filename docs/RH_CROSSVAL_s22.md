@@ -63,8 +63,10 @@ the F-battery's world-z behavior gates).
 
 ## Row provenance
 
-- REAL clips: catalog ids 2846/2899/2781 from
-  `/home/z/RH-canvas-animations` (sha-verified release binaries).
+- REAL clips: catalog ids 2846/2899/2781 from the
+  RH-canvas-animations clone (sha-verified release binaries; ANY real-
+  side import failure degrades the run to a loud nonzero exit — the
+  comparison never scores green on partial coverage, audit-B P2-3).
 - Fixture clip: id 9002 from the offline library
   (`scripts/rh_fixture_lib.py --force` rebuilds).
 - The expected-deviation whitelist in `s22_crossval.py` FAILS CLOSED on

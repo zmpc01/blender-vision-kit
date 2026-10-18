@@ -78,6 +78,10 @@ def measure(tag, clip_id):
             kp = fc.keyframe_points[0]
             hips_raw = round(kp.co[1], 4)
             break
+    if hips_raw is None:
+        # audit-B P3-4: a missing law measurement is not a MATCH
+        raise RuntimeError("no hips location fcurve found — the law "
+                           "census cannot run on this clip")
     prof["hips_z_firstkey_raw"] = hips_raw
     # world height via evaluated pose at frame 1
     sc.frame_set(1)
@@ -125,12 +129,14 @@ def main():
               "— build it first (scripts/rh_fixture_lib.py)", flush=True)
         raise SystemExit(2)
     real = {}
+    real_errors = {}
     for cid in REAL_IDS:
         try:
             real[cid] = measure("REAL", cid)
         except Exception as e:                    # noqa: BLE001
             P("REAL", cid, "ERROR", repr(e))
             real[cid] = {"error": repr(e)}
+            real_errors[cid] = repr(e)
     try:
         # pin discovery at the fixture lib (AUTHORITATIVE — the fixture ids
         # do not exist in the real catalog)
@@ -177,11 +183,19 @@ def main():
     P(f"SUMMARY: {len(table)} laws, "
       f"{sum(1 for t in table if t['verdict'] == 'MATCH')} match, "
       f"{len([t for t in table if t.get('verdict') == 'DEVIATION-EXPECTED'])} "
-      f"expected-deviation, {len(unexpected)} UNEXPECTED")
+      f"expected-deviation, {len(unexpected)} UNEXPECTED, "
+      f"real-clip-errors={sorted(real_errors) or 'none'} "
+      f"(compared clip: {r0['clip'] if r0 else 'none'})")
     doc = {"real": real, "fixture": fix, "laws": table}
     with open(OUT, "w") as f:
         json.dump(doc, f, indent=1)
     P("wrote", OUT)
+    if real_errors:
+        # audit-B P2-3: partial real-side coverage must not score as a
+        # green full comparison — degraded runs are loud, not silent
+        raise SystemExit(f"[XVAL] real clip(s) {sorted(real_errors)} "
+                         f"failed to import — the comparison is DEGRADED "
+                         f"(not a full pass); fix the real side first")
     if unexpected:
         raise SystemExit(f"[XVAL] {len(unexpected)} UNEXPECTED law "
                          f"deviations — the fixture recipe drifted from "
