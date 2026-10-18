@@ -31,8 +31,8 @@ for SID in S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12; do
   echo "[stills] $SID @ f$F ..."
   ./scripts/blrun.sh --background --factory-startup \
     --python scripts/tform_scene.py -- \
-    --output output/tform/stillwork --engine ${ENGINE:-eevee} --w 640 --h 360 \
-    --still $F --samples ${SAMPLES:-32} > /tmp/still_tm_$SID.log 2>&1
+    --output output/tform/stillwork --engine ${ENGINE:-cycles} --w 640 --h 360 \
+    --still $F --samples ${SAMPLES:-24} > /tmp/still_tm_$SID.log 2>&1
   rc=$?
   if [ $rc -ne 0 ] || [ ! -s output/tform/stillwork/still_$(printf %05d $F).png ]; then
     echo "[stills] $SID FAILED rc=$rc (see /tmp/still_tm_$SID.log)"; continue

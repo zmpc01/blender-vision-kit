@@ -813,11 +813,44 @@ def _cache_paths():
 def _set_engine(scene, engine, samples):
     # 5.2 law: the enum id is BLENDER_EEVEE (NEXT is 4.x) -- the
     # tfog pattern (commit 37c00b9 era); do NOT version-guess here.
+    # CYCLES wired (the humanoid rev): 102 skinned agents OOM EEVEE
+    # even on the diet — Cycles streams the same scene in bounded
+    # memory and renders the NISHITA golden-hour honestly.
+    if engine.startswith("cycles"):
+        scene.render.engine = 'CYCLES'
+        scene.cycles.samples = int(samples)
+        scene.cycles.use_denoising = True
+        scene.cycles.device = 'CPU'
+        scene.cycles.max_bounces = 4
+        scene.cycles.transmission_bounces = 2
+        scene.cycles.volume_bounces = 1
+        print("[tform] CYCLES:", samples, "samples, denoise on, CPU")
+        return
     name = "BLENDER_EEVEE" if engine.startswith("eevee") else \
         "BLENDER_WORKBENCH"
     scene.render.engine = name
     if hasattr(scene.eevee, "taa_render_samples"):
         scene.eevee.taa_render_samples = int(samples)
+    # the 4GB sandbox diet (env-gated): the rigged crowd (102 skinned
+    # agents) + the volumetric sky OOMs EEVEE at defaults. The knobs:
+    # raytracing off (SSR/SSGI buffers), half shadow cubes + cascades,
+    # fast GI off. The look: golden-hour direct+sky keeps reading
+    # (verified on film before/after).
+    if os.environ.get("TFORM_EEVEE_DIET") == "1" \
+            and name == "BLENDER_EEVEE":
+        e = scene.eevee
+        for attr, val in (("use_raytracing", False),
+                          ("shadow_cube_size", "512"),
+                          ("shadow_cascade_size", "1024"),
+                          ("use_shadow_high_bitdepth", False),
+                          ("use_fast_gi", True)):
+            if hasattr(e, attr):
+                try:
+                    setattr(e, attr, int(val) if val.isdigit() else
+                            (val == "True"))
+                except Exception:
+                    pass
+        print("[tform] EEVEE DIET: raytracing off, shadow 512/1024")
 
 
 def main():
