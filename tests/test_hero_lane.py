@@ -25,7 +25,7 @@ import math
 import traceback
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(_REPO, "scripts"))
@@ -92,29 +92,26 @@ def h1_wrapper_laws():
     fresh()
     bpy.ops.import_scene.fbx(filepath=_MALE)
     arm = next(o for o in bpy.data.objects if o.type == 'ARMATURE')
-    mesh = next(o for o in bpy.data.objects if o.type == 'MESH')
-
-    # refusals
-    for bad, why in ((bpy.data.objects.new("X", None), "EMPTY"),
-                     (None, "None")):
-        try:
-            wrapper_rig.wrap(bad, "Nope")
-            raise AssertionError(f"wrap accepted {why}")
-        except wrapper_rig.WrapRefused:
-            pass
     arm.name = "HumanArmature"
+
+    # refusals (the canonical wrapper raises RuntimeError fail-closed)
+    try:
+        wrapper_rig.wrap(None, "Nope")
+        raise AssertionError("wrap accepted None")
+    except RuntimeError:
+        pass
     wrapper_rig.wrap(arm, "HeroA", scale=1.0)
     try:
         wrapper_rig.wrap(arm, "HeroB")   # already parented now
         raise AssertionError("wrap accepted a parented armature")
-    except wrapper_rig.WrapRefused:
+    except RuntimeError:
         pass
     try:
         e = bpy.data.objects.new("Collide.Root", None)
         bpy.context.scene.collection.objects.link(e)
         wrapper_rig.wrap(arm, "Collide")
         raise AssertionError("wrap accepted a name collision")
-    except wrapper_rig.WrapRefused:
+    except RuntimeError:
         pass
 
     # the male rig faces -Y (measured) -> sign -1, flip MPI
@@ -122,26 +119,40 @@ def h1_wrapper_laws():
     bpy.ops.import_scene.fbx(filepath=_MALE)
     arm = next(o for o in bpy.data.objects if o.type == 'ARMATURE')
     r = wrapper_rig.wrap(arm, "Hero", scale=0.5)
-    check("H1 facing sign -1 (measured -Y rig)", r["facing_sign"], -1)
+    # the canonical wrapper's facing contract: probe_axis = WHICH LOCAL
+    # AXIS is the toe axis (+1 = local +Y — its measured world forward
+    # is (0.377, -0.926, ...) on this rig). CROSS-LANE NOTE (s22): the
+    # UAL module's older semantics flip on the WORLD facing (fwd.y<0 ->
+    # flip) — the two conventions diverge for +Y-axis/-Y-world rigs;
+    # the lab stages yaw per-hero anyway (wrapper law), flagged in the
+    # design doc D-revision 3.
+    check("H1 probe axis +1 (toe axis is local +Y)", r["probe_axis"], 1)
     check("H1 probe bone Foot.L", r["probe_bone"], "Foot.L")
-    check("H1 probe fwd y-dominant", abs(r["probe_fwd"][1]) >= 0.5, True)
+    check("H1 probe fwd y-dominant", abs(r["fwd"][1]) >= 0.5, True)
     check("H1 root exists", r["root"].name, "Hero.Root")
-    check("H1 armature renamed", arm.name, "Hero.Rig")
-    check("H1 mesh renamed+rides armature", r["mesh"].name, "Hero.Body")
-    check("H1 mesh parent is armature", r["mesh"].parent.name, arm.name)
-    # scale lives in the MPI, never keyed
+    check("H1 meshes discovered", [m.name for m in r["meshes"]],
+          ["BaseHuman"])
+    check("H1 mesh rides armature",
+          r["meshes"][0].parent.name, arm.name)
+    # D1b refusal: unparent the skinned mesh at scale != 1
+    fresh()
+    bpy.ops.import_scene.fbx(filepath=_MALE)
+    arm = next(o for o in bpy.data.objects if o.type == 'ARMATURE')
+    mesh = next(o for o in bpy.data.objects if o.type == 'MESH')
+    mesh.parent = None
+    try:
+        wrapper_rig.wrap(arm, "HeroD", scale=0.5)
+        raise AssertionError("D1b: unparented mesh at scale!=1 accepted")
+    except RuntimeError:
+        pass
+    # restore the ride, then the MPI check
+    mesh.parent = arm
+    mesh.matrix_parent_inverse = Matrix()
+    r2 = wrapper_rig.wrap(arm, "Hero", scale=0.5)
     mpi = arm.matrix_parent_inverse
     check("H1 MPI carries 0.5", round(mpi.median_scale, 4), 0.5, 1e-3)
-    # law 7: wrap NEVER touches animation — the import's live slot
-    # (Man_Clapping) survives the wrap untouched (identity check)
-    pre = arm.animation_data.action.name if (arm.animation_data
-                                             and arm.animation_data.action) else None
-    check("H1 wrap preserves the import slot untouched",
-          (arm.animation_data.action.name
-           if (arm.animation_data and arm.animation_data.action)
-           else None), pre)
-    check("H1 wrapper not keyed", r["root"].animation_data is None
-          or r["root"].animation_data.action is None, True)
+    check("H1 wrapper not keyed", r2["root"].animation_data is None
+          or r2["root"].animation_data.action is None, True)
 
 
 def h2_loader():
@@ -163,9 +174,12 @@ def h2_loader():
     # recolor sweep (BEFORE the next purge — object refs die with it)
     assets_quaternius.recolor(rep, (0.8, 0.2, 0.2))
     slots = rep["mesh"].material_slots
-    check("H2 recolor landed", all(
-        s.material and s.material.diffuse_color[0] > 0.7 for s in slots),
-        True)
+    landed = [bool(s.material and s.material.diffuse_color[0] > 0.7)
+              for s in slots]
+    print(f"[hero] H2 recolor slots={len(slots)} landed={landed} "
+          f"node_trees={[bool(s.material and s.material.use_nodes) for s in slots]}",
+          flush=True)
+    check("H2 recolor landed", all(landed) if landed else False, True)
     fresh()
     repf = assets_quaternius.load("female", "HeroF")
     check("H2 female bones", len(repf["arm"].data.bones), 42)

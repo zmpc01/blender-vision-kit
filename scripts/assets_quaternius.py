@@ -86,9 +86,17 @@ def load(key, name, scale=UNIT_RESCALE):
     for ob in strays:
         bpy.data.objects.remove(ob, do_unlink=True)
 
-    rep = wrapper_rig.wrap(arm, name, scale=scale, mesh=mesh,
-                           probe_bone="Foot.L")
-    arm, mesh, root = rep["armature"], rep["mesh"], rep["root"]
+    # the film lane's canonical wrapper (review r1): meshes discovered
+    # internally (plural rep), renames are the caller's hygiene, D1b
+    # scale!=1 with an unparented skinned mesh REFUSES (the quaternius
+    # meshes are armature-parented at import — rides the rescale)
+    rep = wrapper_rig.wrap(arm, name, scale=scale,
+                           facing_probe_bone="Foot.L")
+    arm, root = rep["armature"], rep["root"]
+    mesh = rep["meshes"][0] if rep["meshes"] else None
+    arm.name = f"{name}.Rig"
+    if mesh is not None:
+        mesh.name = f"{name}.Body"
 
     # loader policy (the UAL pattern): the importer leaves a LIVE
     # action slot (first pool action auto-assigned) — clear it: the
@@ -166,13 +174,14 @@ def audit(rep, pool):
                   f"silently inert under quaternion-family keying; "
                   f"fixing modes is a per-rig DECISION, not silent",
                   flush=True)
-    h = measured_height(rep["mesh"])
+    mesh0 = rep["meshes"][0] if rep["meshes"] else None
+    h = measured_height(mesh0)
     if h is not None and not (HEIGHT_MIN <= h <= HEIGHT_MAX):
         raise LoadRefused(
             f"post-rescale height {h} m outside [{HEIGHT_MIN}, "
             f"{HEIGHT_MAX}] — UNIT_RESCALE drifted from the measured "
             f"raw heights, re-pin (see module docstring)")
-    fz = measured_feet(rep["mesh"])
+    fz = measured_feet(mesh0)
     if fz is not None and abs(fz) > FEET_BAND:
         raise LoadRefused(
             f"feet z {fz} m outside the ±{FEET_BAND} ground band — "
@@ -183,13 +192,22 @@ def recolor(rep, rgb, roughness=None):
     """Single material-slot sweep (the UAL gauntlet R4 law): every slot
     of the loader's mesh via Principled Base Color + viewport
     diffuse_color (workbench + glTF stay in sync)."""
-    mesh = rep["mesh"]
+    # accepts BOTH dict shapes: the loader's return ("mesh") and the
+    # canonical wrap rep ("meshes") — the H2 sweep caught the silent
+    # no-op (a shape mismatch must not skip the sweep silently)
+    mesh = (rep.get("mesh") if rep.get("mesh") is not None
+            else (rep["meshes"][0] if rep.get("meshes") else None))
+    if mesh is None:
+        raise LoadRefused("recolor: no mesh in the rep dict")
     for slot in mesh.material_slots:
         mat = slot.material
         if mat is None:
             continue
         if mat.use_nodes:
-            bsdf = mat.node_tree.nodes.get("Principled BSDF")
+            # FBX imports name the bsdf node differently than glTF —
+            # find by TYPE, never by name (the H2 sweep caught it)
+            bsdf = next((n for n in mat.node_tree.nodes
+                         if n.type == 'BSDF_PRINCIPLED'), None)
             if bsdf is not None:
                 bsdf.inputs["Base Color"].default_value = (*rgb, 1.0)
                 if roughness is not None:

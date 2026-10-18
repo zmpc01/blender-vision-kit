@@ -107,8 +107,14 @@ def wrap(arm, name, scale=1.0, facing_probe_bone=None):
     if arm.parent is not None:
         _fail(f"{arm.name} is already parented to {arm.parent.name} — "
               f"the caller decides ordering; refusing to re-parent")
-    in_scene = any(arm.name in c.objects for c in bpy.context.scene.collection.children_recursive) \
-        if hasattr(bpy.context.scene.collection, "children_recursive") else True
+    # hero-lane battery catch (s22 cross-lane fold): the master
+    # collection's OWN objects were missed — children_recursive covers
+    # child collections only, so an FBX import linked at the scene
+    # root false-refused (tests/test_hero_lane.py H1).
+    coll = bpy.context.scene.collection
+    in_scene = (arm.name in coll.objects
+                or any(arm.name in c.objects
+                       for c in getattr(coll, "children_recursive", [])))
     if not in_scene:
         _fail(f"{arm.name} is not linked into the scene collection — "
               f"link it first (review r1 T4: an orphan rig never "
