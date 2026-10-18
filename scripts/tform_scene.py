@@ -639,9 +639,21 @@ def _humanoid_layer(ctx):
     # rides each hero root (the keys stay on the hero object); the
     # commuter mesh goes render-hidden; scale = 1.75/1.589 (measured)
     UAL_SCALE = 1.75 / 1.589
+    HERO_RGB = {"StandardBearer": (0.55, 0.42, 0.12),   # ceremonial gold
+                "Captain": (0.12, 0.12, 0.14)}          # the dark officer
     pr = HC.bind_principals(ctx, {
         "StandardBearer": ("Idle_Loop", UAL_SCALE, None),
         "Captain": ("Idle_Loop", UAL_SCALE, None)})
+    # the identity colors ride the UAL actor (the CA.Body materials on
+    # the hidden commuters remain the exporter's CAST color surface);
+    # the vendored loader is loaded BY PATH — the clone-seam law (the
+    # naive import resolved to the escape-previz copy in the film env)
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location(
+        "_ual_actors_tint", os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), "assets_ual_actors.py"))
+    _UALM = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_UALM)
     for name, hero in ctx["heroes"].items():
         if name not in pr:
             continue
@@ -653,8 +665,10 @@ def _humanoid_layer(ctx):
         from mathutils import Matrix
         wrapper.matrix_parent_inverse = Matrix.Identity(4)
         wrapper.location = (0.0, 0.0, 0.0)
+        _UALM.tint_ual_actor(pr[name], HERO_RGB[name], roughness=0.5)
         hero.hide_render = True
-        print(f"[tform] UAL principal {name} bound (scale {UAL_SCALE:.3f})")
+        print(f"[tform] UAL principal {name} bound (scale "
+              f"{UAL_SCALE:.3f}, tinted {HERO_RGB[name]})")
     ctx["humanoid_principals"] = pr
 
 

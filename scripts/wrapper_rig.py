@@ -61,6 +61,12 @@ def facing_probe(arm, explicit=None):
     """The facing law: pick the probe bone, contest +Y vs -Y, refuse
     if neither candidate is both horizontal and Y-dominant.
 
+    Order: the explicit bone first; on its failure the auto-scan (all
+    foot/toe-named bones x +-Y) still runs before any refusal (the
+    x_bot law: its LeftFoot's +Y points down-back — the TOE bones
+    carry the horizontal toe direction; a failed explicit must not
+    mask a working auto-pick).
+
     Returns (bone_name, axis_sign, fwd) — axis_sign +1 when the bone's
     local +Y is the toe direction, -1 when -Y is.
     """
@@ -68,12 +74,13 @@ def facing_probe(arm, explicit=None):
         fwd = _probe_forward(arm, explicit)
         if abs(fwd.z) <= 0.5 and abs(fwd.y) >= 0.5:
             return explicit, (1 if fwd.y >= 0 else -1), fwd
-        _fail(f"explicit probe {explicit!r} failed the horizontal+"
-              f"Y-dominant contest (measured fwd {tuple(round(v, 3) for v in fwd)})")
-    # auto-pick: foot-named pose bones, skipping *_end leaves (a leaf's
-    # +Y points OUT of the toe; its roll axis is meaningless).
+        print(f"wrapper_rig: explicit probe {explicit!r} failed the "
+              f"contest (fwd {tuple(round(v, 3) for v in fwd)}) — "
+              f"falling through to the auto-scan")
+    # auto-pick: foot/toe-named pose bones, skipping *_end leaves
     cands = [b.name for b in arm.pose.bones
-             if "foot" in b.name.lower() and not b.name.lower().endswith("_end")]
+             if ("foot" in b.name.lower() or "toe" in b.name.lower())
+             and not b.name.lower().endswith("_end")]
     if not cands:
         _fail(f"no foot-like probe bone on {arm.name} (pass explicit=)")
     for nm in cands:

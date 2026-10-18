@@ -75,27 +75,44 @@ def crowd_family(name):
 def prepare_template(fam, ratio=0.14):
     """Import + decimate the rig template ONCE. Returns the template
     records (NOT yet instanced). Decimate law: combined verts must
-    land in POLY_BAND (catches silent no-op AND collapse)."""
-    before = set(bpy.data.objects)
-    bpy.ops.import_scene.fbx(filepath=fam["rig"])
-    arm = [o for o in bpy.data.objects if o.type == 'ARMATURE'
-           and o not in before][-1]
-    meshes = [o for o in bpy.data.objects if o.type == 'MESH'
-              and o not in before]
-    if tuple(sorted(m.name for m in meshes)) != tuple(sorted(fam["mesh_names"])):
-        _fail(f"x_bot mesh census drifted: {[m.name for m in meshes]}")
-    for m in meshes:
-        bpy.context.view_layer.objects.active = m
-        md = m.modifiers.new("DEC", 'DECIMATE')
-        md.ratio = ratio
-        bpy.ops.object.modifier_apply(modifier="DEC")
-    combined = sum(len(m.data.vertices) for m in meshes)
-    if not (POLY_BAND[0] <= combined <= POLY_BAND[1]):
-        _fail(f"decimate landed {combined} verts, band {POLY_BAND} "
-              f"(ratio {ratio}) — adjust ratio")
-    _P(f"template ready: combined {combined} verts "
+    land in POLY_BAND. The ratio SELF-CALIBRATES arithmetically
+    (ratio_next = ratio x band_mid/achieved, deterministic) with a
+    FRESH IMPORT per attempt — compounding a second DECIMATE on an
+    already-decimated mesh collapses it (636-vert law, measured)."""
+    combined = None
+    for _step in range(4):
+        before = set(bpy.data.objects)
+        bpy.ops.import_scene.fbx(filepath=fam["rig"])
+        arm = [o for o in bpy.data.objects if o.type == 'ARMATURE'
+               and o not in before][-1]
+        meshes = [o for o in bpy.data.objects if o.type == 'MESH'
+                  and o not in before]
+        if tuple(sorted(m.name for m in meshes)) != tuple(sorted(fam["mesh_names"])):
+            _fail(f"x_bot mesh census drifted: {[m.name for m in meshes]}")
+        for m in meshes:
+            bpy.context.view_layer.objects.active = m
+            md = m.modifiers.new("DEC", 'DECIMATE')
+            md.ratio = ratio
+            bpy.ops.object.modifier_apply(modifier="DEC")
+        combined = sum(len(m.data.vertices) for m in meshes)
+        if POLY_BAND[0] <= combined <= POLY_BAND[1]:
+            break
+        # discard the attempt (objects + data) before re-importing
+        for ob in [o for o in bpy.data.objects if o not in before]:
+            bpy.data.objects.remove(ob, do_unlink=True)
+        if combined > POLY_BAND[1]:
+            mid = (POLY_BAND[0] + POLY_BAND[1]) / 2
+            ratio = ratio * (mid / combined)
+            continue
+        _fail(f"decimate UNDER band ({combined} < {POLY_BAND[0]}) — "
+              f"collapse risk, refusing")
+    else:
+        _fail(f"decimate did not converge in 4 attempts "
+              f"(last {combined} @ ratio {ratio:.3f})")
+    _P(f"template ready: combined {combined} verts @ ratio {ratio:.3f} "
        f"({[len(m.data.vertices) for m in meshes]})")
-    return {"arm": arm, "meshes": meshes, "combined_verts": combined}
+    return {"arm": arm, "meshes": meshes, "combined_verts": combined,
+            "ratio": ratio}
 
 
 def _wrap_action(base_act, new_name, phase, cyc, f0, f1):
@@ -225,6 +242,7 @@ def bind_crowd(ctx, fam, group_tint=None):
 
     speeds = _cache_speeds(ctx, n)
     group_mats = _make_group_materials(group_tint)
+    agent_group = (group_tint or {}).get("agent_group")
 
     reps = []
     n_walk = n_idle = 0
@@ -252,7 +270,7 @@ def bind_crowd(ctx, fam, group_tint=None):
                 if md.type == 'ARMATURE':
                     md.object = wrapper["armature"]
             if group_mats:
-                _tint_object(me, group_mats, i, len(anchors))
+                _tint_object(me, group_mats, i, agent_group=agent_group)
         # the action: walk (per-agent wrapped phase) or shared idle;
         # the SHARED idle also gets CYCLES (review r1 P2-13 — Blender-
         # side strips must loop too, not just the web viewer)
@@ -272,14 +290,15 @@ def bind_crowd(ctx, fam, group_tint=None):
                 _fail(f"wrap-band violated on agent {i}: "
                       f"{lo:.2f}..{hi:.2f} not inside [{f0},{f0 + cyc})")
         reps.append({"anchor": anchor, "ordinal": i, **wrapper})
+    # quaternion modes census (the s18 law) on the shared rig data —
+    # BEFORE the template removal (the object ref dies with the removal)
+    bad = [pb.name for pb in tmpl["arm"].pose.bones
+           if pb.rotation_mode != 'QUATERNION']
     # remove the TEMPLATE objects (review r1 P1-8: a full-height rest-
     # pose x_bot at the world origin in every render AND the GLB)
     bpy.data.objects.remove(tmpl["arm"], do_unlink=True)
     for tm in tmpl["meshes"]:
         bpy.data.objects.remove(tm, do_unlink=True)
-    # quaternion modes census (the s18 law) on the shared rig data
-    bad = [b.name for b in tmpl["arm"].data.bones
-           if b.rotation_mode != 'QUATERNION']
     if bad:
         _P(f"WARN quaternion modes: {len(bad)} bones non-QUATERNION "
            f"(first: {bad[:3]}) — the s18 law says the loader RECORDS "
@@ -339,16 +358,18 @@ def _make_group_materials(group_tint):
         bsdf.inputs["Base Color"].default_value = (*rgba[:3], 1.0)
         if "Roughness" in bsdf.inputs:
             bsdf.inputs["Roughness"].default_value = 0.6
+        # the WORKBENCH reads the viewport diffuse_color, not the
+        # Principled node (gauntlet R4 law — workbench + glTF in sync)
+        m.diffuse_color = (*rgba[:3], 1.0)
         mats.append(m)
     return mats
 
 
-def _tint_object(me, group_mats, agent_i, n_agents):
-    """Per-OBJECT material-slot links (audit P2-3). group_tint groups
-    are assigned round-robin over the agent ordinals unless the caller
-    supplied an explicit mapping."""
-    mapping = group_tint.get("agent_group")
-    gi = mapping[agent_i] if mapping else (agent_i % len(group_mats))
+def _tint_object(me, group_mats, agent_i, agent_group=None):
+    """Per-OBJECT material-slot links (audit P2-3). The group index
+    comes from the caller's POP_PLAN mapping; None = round-robin."""
+    gi = agent_group[agent_i] if agent_group is not None \
+        else (agent_i % len(group_mats))
     for slot in me.material_slots:
         slot.link = 'OBJECT'
         slot.material = group_mats[gi]
@@ -380,10 +401,23 @@ def bind_principals(ctx, name_clip_pairs):
     the WRAPPER so the feet sit at z=0 (the s20 lesson: never assume
     the import's origin — measure it).
     """
-    import assets_ual_actors as UAL
+    # THE CLONE-SEAM LAW (the failure that taught it): `import
+    # assets_ual_actors` resolved to the ESCAPE-PREVIZ copy in the
+    # film env (a parallel scripts dir on sys.path) and its loader
+    # refused our names. Load THIS repo's vendored copy BY PATH.
+    import importlib.util
+    _here = os.path.dirname(os.path.abspath(__file__))
+    _spec = importlib.util.spec_from_file_location(
+        "_ual_actors_kit", os.path.join(_here, "assets_ual_actors.py"))
+    UAL = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(UAL)
     out = {}
     for name, (clip, scale, loc) in name_clip_pairs.items():
-        rep = UAL._import_actor(name, scale)
+        # the vendored loader demands a KNOWN actor name (its SHIRT
+        # palette) — import under "Driver" and TINT to the film's
+        # identity color right after (the tint_ual_actor law)
+        rep = UAL._import_actor("Driver", scale)
+        rep["actor_kind"] = "Driver"   # the tint/census provenance
         if loc is not None:
             rep["root"].location = loc
         bpy.context.view_layer.update()
@@ -434,7 +468,13 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None):
     idlers = [r for r in reps if r not in walkers]
     picks = (walkers[:2] + idlers[:2]
              + rng.sample(reps, max(0, sample - len(walkers[:2]) - len(idlers[:2]))))
-    picks = list(dict.fromkeys(picks))[:max(sample, 4)]
+    seen, uniq = set(), []
+    for r in picks:
+        k = r["root"].name
+        if k not in seen:
+            seen.add(k)
+            uniq.append(r)
+    picks = uniq[:max(sample, 4)]
     sc = bpy.context.scene
     f0, f1 = walk_cycle if walk_cycle else (1, 38)
     f_mid = (f0 + f1) // 2
@@ -451,7 +491,9 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None):
         if hips is None:
             _fail("gate rig lacks mixamorig:Hips")
         zs, lz, rz = [], [], []
-        for f in (f0, f_mid, f1 - 1):
+        five = [f0, f0 + (f1 - f0) // 4, f_mid, f0 + 3 * (f1 - f0) // 4,
+                f1 - 1]
+        for f in five:
             sc.frame_set(f)
             bpy.context.view_layer.update()
             zs.append((arm.matrix_world @ hips.matrix).translation.z)
@@ -462,9 +504,8 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None):
         bob = max(zs) - min(zs)
         anti = None
         if is_walk:
-            pairs = [(lz[1] - lz[0], rz[1] - rz[0]),
-                     (lz[2] - lz[1], rz[2] - rz[1]),
-                     (lz[2] - lz[0], rz[2] - rz[0])]
+            pairs = [(lz[j] - lz[0], rz[j] - rz[0]) for j in (1, 2, 3, 4)]
+            pairs += [(lz[j] - lz[1], rz[j] - rz[1]) for j in (2, 3, 4)]
             anti = any((dl * dr < 0) and max(abs(dl), abs(dr)) > 0.01
                        for dl, dr in pairs)
             ok = bob >= 0.02 and anti
@@ -477,7 +518,12 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None):
             i = rep["ordinal"]
             tx = float(np.asarray(ticks["x"])[n_ticks - 1, i])
             ty = float(np.asarray(ticks["y"])[n_ticks - 1, i])
-            sc.frame_set(1)  # any frame; anchors are keyed every tick
+            # the tick->frame law: sample the SAME instant (frame 1 vs
+            # the last tick is the 5.8m false-fail class)
+            dt = float(ctx["crowd_cache"].dt) or (1.0 / 12.0)
+            fps = float(sc.render.fps) or 24.0
+            sc.frame_set(max(sc.frame_start,
+                             1 + int(round((n_ticks - 1) * dt * fps))))
             bpy.context.view_layer.update()
             ax, ay = rep["anchor"].matrix_world.translation.x, \
                 rep["anchor"].matrix_world.translation.y
