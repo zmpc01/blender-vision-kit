@@ -105,7 +105,9 @@ def build_scene():
     # cameras (3 angles + a 3/4)
     cams = {}
     for name, loc, rot, target in [
-        ("cam_wide", (0, -13, 5.0), None, (0, 0, 1.0)),
+        # s22 v2 reframe: the hero zone (x 10-13) extended the stage
+        # east — the wide cam pulls back + right to hold all 10 actors
+        ("cam_wide", (4.5, -16.5, 6.0), None, (4.5, 0, 1.0)),
         ("cam_front", (0, -8, 1.7), None, (0, 0, 1.3)),
         ("cam_side", (12, 1, 1.8), None, (0, 0, 1.2)),
     ]:
@@ -132,6 +134,94 @@ def build_scene():
         "scene": sc, "cams": cams, "platform": platform, "bench": bench,
         "actors": {}, "statues": {}, "strips": {},
     }
+    return ctx
+
+
+def stage_heroes(ctx):
+    """D4: the HERO ZONE — the three-family humanoid showcase.
+
+    H1 HeroUAL   : the UAL mannequin, native Walk_Loop (the wrapper +
+                   pool path via the vendored film-lane module).
+    H2 HeroQuatM : the Quaternius male, native Walk (the D2 loader).
+    H3 HeroQuatF : the Quaternius female with a RETARGETED UAL
+                   Walk_Loop (the D3 recipe, proven end-to-end).
+
+    D4a laws: hero records are {arm, body, clip, rep}-shaped and BOUND
+    before the union-range lines (they dereference frame_range);
+    placement moves the WRAPPER (animated-armature yaws get clobbered
+    — the wrapper is the clobber-proof surface); clip labels carry the
+    provenance (UAL:Walk_Loop / Quat:Walk / UAL:Walk_Loop->Quat).
+    """
+    import assets_quaternius
+    import assets_ual_actors as ual
+    import rig_retarget
+
+    heroes = {}
+
+    # H1: UAL mannequin, native pool walk
+    u = ual._import_actor("Girl", ual.ACTOR_SCALE)
+    u["armature"].name = "HeroUAL.Rig"
+    ad = u["armature"].animation_data
+    ad.action = u["actions"]["Walk_Loop"]
+    if u["actions"]["Walk_Loop"].slots:
+        ad.action_slot = u["actions"]["Walk_Loop"].slots[0]
+    u["root"].location = (10.0, -2.0, 0.0)
+    heroes["HeroUAL"] = {"arm": u["armature"], "body": u["mesh"],
+                         "clip": "UAL:Walk_Loop", "rep": u,
+                         "wrapper": u["root"]}
+
+    # H2: Quaternius male, native walk
+    qm = assets_quaternius.load("male", "HeroQuatM")
+    ad = qm["arm"].animation_data or qm["arm"].animation_data_create()
+    ad.action = qm["pool"]["Walk"]
+    if qm["pool"]["Walk"].slots:
+        ad.action_slot = qm["pool"]["Walk"].slots[0]
+    qm["root"].location = (10.0, 1.5, 0.0)
+    heroes["HeroQuatM"] = {"arm": qm["arm"], "body": qm["mesh"],
+                           "clip": "Quat:Walk", "rep": qm,
+                           "wrapper": qm["root"]}
+
+    # H3: Quaternius female with the RETARGETED UAL walk (the door,
+    # not the wall — the any-rig recipe proven in-scene)
+    qf = assets_quaternius.load("female", "HeroQuatF")
+    rt = rig_retarget.retarget(u["armature"],
+                               u["actions"]["Walk_Loop"],
+                               qf["arm"])
+    ad = qf["arm"].animation_data or qf["arm"].animation_data_create()
+    ad.action = rt["action"]
+    if rt["action"].slots:
+        ad.action_slot = rt["action"].slots[0]
+    rt["action"].use_fake_user = True     # the D5a one-process law
+    qf["root"].location = (13.0, -0.2, 0.0)
+    heroes["HeroQuatF"] = {"arm": qf["arm"], "body": qf["mesh"],
+                           "clip": "UAL:Walk_Loop->Quat", "rep": qf,
+                           "wrapper": qf["root"], "retarget": rt}
+    print(f"[lab] retarget: coverage={rt['coverage']} ratio={rt['ratio']} "
+          f"no_target={len(rt['no_target'])} "
+          f"drives={rt['gates']['drives_ok']}", flush=True)
+
+    # recolor the two quaternius heroes (identity at a glance)
+    assets_quaternius.recolor(qm, (0.20, 0.50, 0.85))
+    assets_quaternius.recolor(qf, (0.80, 0.35, 0.60))
+
+    # numeric tables (the two-column law: the numbers travel WITH the
+    # strips) — per-hero world-z behavior gates, post-staging
+    for name, rec in heroes.items():
+        act = rec["arm"].animation_data.action
+        rows = rig_retarget.run_world_gates(rec["arm"], act,
+                                            sample_stride=4)
+        flat = [z for pair in rows["feet_z"] for z in pair]
+        hz = [v for v in rows["hips_z"] if v is not None]
+        print(f"[lab] hero {name} ({rec['clip']}): feet "
+              f"{min(flat):.3f}..{max(flat):.3f} m, hips "
+              f"{min(hz):.3f}..{max(hz):.3f} m", flush=True)
+        rec["world_table"] = rows
+
+    ctx["heroes"] = heroes
+    # the union range covers the heroes too (D4a: bound BEFORE the
+    # union lines — stage_heroes runs before stage_actors' union)
+    for name, rec in heroes.items():
+        ctx["actors"][name] = rec
     return ctx
 
 
@@ -190,14 +280,22 @@ def stage_actors(ctx):
             ctx["statues"][sname] = objs
         except rh_canvas.RHRefused as e:
             print(f"[lab] statue {sname} refused: {e}")
-    # union scene range (the multi-actor recipe law)
+    sc.render.fps = 30
+    return ctx
+
+
+def set_union_range(ctx):
+    """Union scene range (the multi-actor recipe law) — computed AFTER
+    both stagings so the hero records are bound before the range lines
+    (the D4a law)."""
+    sc = ctx["scene"]
     lo = min(int(a["arm"].animation_data.action.frame_range[0])
              for a in ctx["actors"].values())
     hi = max(int(a["arm"].animation_data.action.frame_range[1])
              for a in ctx["actors"].values())
     sc.frame_start, sc.frame_end = lo, hi
-    sc.render.fps = 30
-    return ctx
+    print(f"[lab] union range: [{lo}, {hi}] over "
+          f"{len(ctx['actors'])} actors", flush=True)
 
 
 def render_motion_strips(ctx, out_dir, n=6, engine='WORKBENCH'):
@@ -308,6 +406,8 @@ def main():
 
     ctx = build_scene()
     stage_actors(ctx)
+    stage_heroes(ctx)
+    set_union_range(ctx)
     print_scene_summary(scene_name)
 
     if args.dry_run:

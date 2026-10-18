@@ -115,6 +115,7 @@ SUITES=(
   "test_rh_canvas|tests/test_rh_canvas.py|BL||0|\[rh-test\] ALL PASS|s20 vendor: RH-canvas mocap path battery R1-R8b (catalog/fetch-verify/import-clip laws/mannequin/bind channel-match+registry/G statue/GLB round-trip/armature placement e2e; graceful-skip when the RH library clones are absent)"
   "test_rh_fixture|tests/test_rh_fixture.py|BL||0|\\[test_rh_fix\\] ALL PASS|s20: the rh_canvas surface battery vs the OFFLINE fixture library (catalog/tags/frames data-driven, fetch-verify+poison-repair, import laws vs self-verifying truth.json, mannequin census, bind+playback, refusals, swap-unpin, registry fingerprint, statue ground band, GLB round-trip, placement ARMATURE branches, ensemble)"
   "test_rh_crossval|scripts/s22_crossval.py|BL||0|\\[XVAL\\] ALL MATCH|s22: the fixture-vs-REAL cross-validation (9 family laws measured on BOTH sides through the kit import path; 3 expected-deviations whitelisted — the s20 unit-baking class; honest-skip when either library layer is absent; docs/RH_CROSSVAL_s22.md)"
+  "test_hero_lane|tests/test_hero_lane.py|BL||0|\\[hero\\] ALL PASS|s21-D: the hero lane battery (wrapper laws on the canonical surface, the Quaternius loader audit, the retarget recipe w/ REV-3 location law + drive check, refusals, staging world gates, bind-and-play)"
 )
 
 loud_header() {
