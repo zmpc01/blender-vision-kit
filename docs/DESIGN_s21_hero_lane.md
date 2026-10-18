@@ -307,3 +307,47 @@ for each mapped pair (src b -> tgt t), parents FIRST:
   importer's fake-user pins keep the Quaternius pool alive across
   reload (intended); the export-side purge (unassigned fake-user
   actions) is D5's when wiring lands.
+
+## 6. D-revision 3 (s22 implementation round — measured law changes)
+
+- **D3-REV3a (the DISCONNECTED-TOPOLOGY fact)**: the Quaternius rigs
+  carry DISCONNECTED leg chains — Foot.L parents to the root Bone, not
+  to LowerLeg (probed 2026-10-18, scripts/s23_eval_probe.py). Their
+  clips move the feet via PER-BONE LOCATION channels. The audited
+  hips-only location policy structurally drops the gait on this family
+  (measured: rotation-only replay leaves the feet glued at rest height
+  while the source lifts 0.24 m). THE LAW REPLACES D3b's set: location
+  transfers for every mapped bone whose SOURCE ACTION carries location
+  fcurves (data-driven). Mixamo-65 sources animate location on Hips
+  only, so the old hips-only behavior falls out of the same rule.
+  Value = the conjugated basis translation × the height ratio (the
+  basis composition routes frames structurally; the separate world
+  routing (R2) is retired — the measured rotation error was 0.0 deg
+  through the audited formula, so only the location law needed the
+  fix).
+- **D3-REV3b (the FROZEN-EVALUATION trap)**: an FBX-imported rig can
+  evaluate its pose FROZEN at rest (measured: manual pose property
+  changes, update_tag, depsgraph_get, frame bounces — nothing moves
+  pb.matrix; the UAL glTF rig evaluates fine in the same session).
+  The exact-pose closure was therefore retired for a DRIVE CHECK: the
+  output action's fcurve values must reach the evaluated pose
+  properties at sampled frames (drives_ok + the teleport guard). The
+  world gates (feet floor/lift, hips band, gait anti-phase) carry the
+  behavioral verification (H5: feet 0.020→0.249 m ≈ the source's
+  0.24 m lift).
+- **D3-REV3c (anatomy gaps are not map failures)**: the coverage
+  denominator measures the TRANSFERABLE set; bones whose class the
+  target family lacks (rigify spine.003 / toes vs quaternius's
+  2-spine no-toe body) are reported as no_target, not counted against
+  coverage. Fingers are non-transferable everywhere (the stub cannot
+  carry articulation — the audited D3c policy, now with the census to
+  back it: UAL Walk_Loop animates 28 finger bones, all zero-span
+  location / pure rotation).
+- **D2-REV3 (the import-slot + stuck-pose pair)**: the loader clears
+  the import's live action slot (the UAL pattern) AND the retarget
+  resets the target's pose properties (unassigning an action leaves
+  the last evaluated pose IN the properties — location/scale would
+  evaluate from the stuck import pose). The 4.4+ slot law applies to
+  EVERY assignment (ual_bake's _assign_action precedent; a plain
+  `ad.action = X` leaves the binding stuck and the pose evaluates the
+  old action silently).
