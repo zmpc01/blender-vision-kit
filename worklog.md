@@ -4061,3 +4061,72 @@ Work Log:
 
 Stage Summary:
 - Battery 40/40 PASS. Pushed: GitHub 6b9cbf9..c81f4e7. The RH data layer is live at both ends (real + offline cross-validated). The hero lane is DONE (wrapper/loader/retarget/lab). HANDOFF/PLAN/SKILL updated this session.
+
+---
+
+Task ID: 22-film (the humanoid film lane)
+Agent: orchestrator (vision-native principal)
+
+Task: upgrade the cylinder commuter to humanoid models across the test
+films — BOTH UAL and the RH 3d assets — then collision/nav, then
+night-market.
+
+Work Log:
+- Bootstrap: the full wipe drill (~25 min): chunked_dl Blender 5.2.2,
+  install.sh BLENDER_BIN, wheels both pythons, the review app up
+  (bun + the REPO'S db:push — the npx-pulled prisma 8 trap hit once),
+  comment restore receipts exact. Disk walls hit twice (the 10GB
+  sandbox): the old escape downloads were TRACKED (restored from git,
+  not deleted); previz-review/download worktree copies trimmed
+  (git-recoverable).
+- Recon: RH-3d-assets cloned (the dummy-rigs are IN-GIT; the RW
+  character glTFs fetched from the CDN sha-verified ×8); the
+  animation library is LIVE (2,137 clips; walks/idles fetched ×6).
+  The four-family Blender census (s22_asset_probe): RH dummy rigs =
+  mixamorig 65/78 (DIRECT same-name bind with the clips — 0/0 name
+  delta, feet anti-phase numerics); RW character glTFs = STATIC
+  posed meshes (no armature — set dressing, NOT crowd); UAL =
+  Rigify-53 + 46 actions + the vendored loader.
+- DESIGN_humanoid_crowd.md REV-1 -> audit r1 (NO-GO -> GO-WITH-
+  CHANGES: bake2 crashes on empty anchors; the raw phase shift breaks
+  looping AND export; wrapper_rig didn't exist) -> REV-2 folded
+  (hidden-mesh anchors -> later superseded by the DEGENERATE CARRIER
+  law; WRAP-mod-cyc + CYCLES modifiers + idle trim).
+- Implementation: wrapper_rig.py (the D1 law) + humanoid_crowd.py
+  (D6) -> review r1 (fresh-context, empirically probed): 4 P0s + 5
+  P1s ALL folded (link-before-wrap, RB chase exclusion,
+  Armature-modifier retarget [the T-pose-statue law], wrap
+  sort+handles [the garbage-eval law], the ticks SoA view, the
+  anchor-vs-cache 1mm gate, template removal, the parent_set ops
+  removal).
+- Film proof (tform_2): the layer wired env-gated
+  (TFORM_HUMANOID=1); the bake chain re-proven byte-deterministic
+  (9024057c); 102 rigs bound (40 walk / 62 idle); motion gates green
+  (hips bob 0.025-0.031, cache-xy 0.0/0.0); UAL principals bound +
+  tinted; 12/12 CYCLES stills eye-certified; 96 filmstrips; EXPORT
+  GREEN (104 skins, 153 actions); STAGED (serves first); the web
+  viewer plays the skinned crowd (browser smoke PASS).
+- The measured laws that shaped it: the decimate self-calibration
+  (fresh-import per attempt — compounding collapses to 636 verts);
+  the toe-bone facing fallthrough (x_bot's LeftFoot +Y points
+  down-back); the workbench diffuse_color law (gauntlet R4 — again);
+  the CYCLES engine law (EEVEE OOM at 102 rigs); the per-group mesh
+  data tint law (the exporter reads DATA slots; Object.copy shares
+  data — the all-Group4 trap); the degenerate carrier law
+  (hide_render fails gates 17/24).
+- The flowstrip top-down dot law: BROKEN PRE-EXISTING in this
+  sandbox (the rev-1 control reproduces: 0 orange px, rev-1 mode
+  too) — FILED, not fixed (the ground-level renders + stills are the
+  certified surfaces).
+
+Stage Summary:
+- tform_2 "THE DRILL (humanized)" STAGED and serving FIRST (12
+  shots / 12 cams / 2 UAL characters / 153 actions / 104 skins /
+  29MB GLB / 96 strips / 12 Cycles stills). The cylinder crowd is
+  retired from the film. The layer is KIT-LEVEL
+  (humanoid_crowd.bind_crowd) — the other five films opt in with a
+  scene-side call.
+- NOT reached this session (queued in HANDOFF): the nav/collision
+  split (film-lane contract gaps vs upstream obstacle types), the
+  night-market film, the humanoid rollout across the older five
+  films.
