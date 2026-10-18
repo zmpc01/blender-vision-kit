@@ -525,3 +525,30 @@ code-level finding (--frames BLOCKER) remains valid.
 - The bare-animate family closed at ALL sites via blender_kit.call_scene_animate.
 - Coordination: the film lane's tfog scene + flow strip (3bd04ec, 73f6633) rebased under twice, zero force; the lane needs the B1 finish fix + 126-pin docs before staging.
 - Debts → next session: un-pinned s19 fixes; scene-module purge-prefix class; E12 kb note; K1 + tform (film lane).
+
+## Session-22 receipts (the RH real-data round + the hero lane — 2026-10-18)
+
+- THE RH ECOSYSTEM RETURNED (the user pointed at the relocation): the
+  three beulahkemp clones verified live, 2,137 real FBX sha-verified
+  locally, the CDN serving. The library-split discovery landed
+  (756fd45) — test_rh_canvas 14/14 against REAL data (was graceful-
+  skip since s20). THE S20 P1 IS RETIRED.
+- Track RH-XVAL (DELIVERED): the fixture library cross-validated
+  against reality — 9 family laws, 6 MATCH / 3 expected-deviation / 0
+  UNEXPECTED (docs/RH_CROSSVAL_s22.md + battery row 39 + suite 40).
+  The s20 reverse-engineered laws are now measured facts; the 3
+  documented unit-baking deviations survived contact with the real
+  files exactly as predicted.
+- Track s21-D (DELIVERED, the hero lane): D1 converged on the film
+  lane's canonical wrapper; D2 rig_family_quaternius (measured pins);
+  D3 rig_retarget with the REV-3 law changes (the disconnected-
+  topology location law, the frozen-evaluation drive check, the
+  anatomy-gap coverage split); D4 the motion lab hero zone — the
+  retargeted UAL->Quaternius walk eye-certified by the principal
+  (strips + wide reframe + numeric tables agreeing). test_hero_lane
+  6/6 = battery row 40.
+- Track AUDIT (PARTIAL): AUDIT-B folded (0 P0/P1; 3 P2 + 3 P3 all
+  fixed — c81f4e7). AUDIT-A (retarget engine) timed out — QUEUED for
+  the next session (HANDOFF queue 1).
+- Battery 40/40 PASS. The next-session queues live in HANDOFF (the
+  port-back to mainline + AUDIT-A + the diversity queue rest).

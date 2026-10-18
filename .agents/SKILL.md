@@ -116,15 +116,13 @@ this extends to E2E motion claims: world-z sampling beside every strip).
 | **Ship 5.2 LTS default, keep 4.x compat shim** | 5.2 LTS until July 2028; shim handles all breaks | ~80 lines shim, zero agent-facing change |
 
 ## The 5.x compat shim (in `blender_kit/__init__.py`)
-
-- `EEVEE_ENGINE_ID`: auto-resolves to `BLENDER_EEVEE_NEXT` (4.x) or `BLENDER_EEVEE` (5.x)
-- `normalize_engine_id()`: accepts any spelling + typos → correct id
-- `iter_fcurves(action)`: 4.x `action.fcurves` ↔ 5.x `action.layers[0].strips[0].channelbag(slot).fcurves`
-- `ensure_use_nodes()`: 4.x sets True; 5.x no-op (auto-created)
-- `add_sky_world()`: NISHITA (4.x) ↔ MULTIPLE_SCATTERING (5.x)
-- `supports_headless_gpu()`: True if `gpu.init()` available (5.2+) — but crashes on llvmpipe, Xvfb still required
-
-A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
+- EEVEE_ENGINE_ID auto-resolves per version; normalize_engine_id()
+  accepts typos; iter_fcurves() (4.x fcurves <-> 5.x slotted
+  channelbags + the scaffold); ensure_use_nodes(); add_sky_world();
+  supports_headless_gpu() (crashes on llvmpipe — Xvfb stays required).
+- A/B verified 4.2.9 + 5.2.2. fcurves_new(action, path, index, group)
+  is THE version-safe write path (bind-then-write on 5.x: fcurves.new
+  resolves pose paths against the CONTEXT object).
 
 ## When extending the kit
 
@@ -206,16 +204,12 @@ A/B verified on 4.2.9 + 5.2.2: same scene renders unchanged on both.
 - **Numeric image gates** (`scripts/image_metrics.py`): deterministic pixel stats (luma/sat/edge/range) anchor exposure/contrast verdicts and regression checkpoints. Gates complement the eyes, never substitute for them.
 
 ## Physics layer (bullet-in-Blender headless)
-
-Five measured laws (verified via probes — the `experiments/physics_facts/`
-lives in the UPSTREAM blender-agent-kit checkout, not this fork; F2D-9):
-1. **No `world_step` in 4.5** — sims advance via `scene.frame_set()`. Point cache SURVIVES object teardown → always `frame_set(1)` before every sim.
-2. **Sim pose lives only in `matrix_world`** — RNA location keeps spawn pose. Commit: capture matrix_world → remove rb → write matrices → update → clear_bvh_cache.
-3. **Collision shapes snapshot evaluated mesh at rb_add** — unapplied scale = pass-through. BOX tracks live bbox (safe for origin-centered); CONVEX_HULL is faithful; MESH pass-throughs thin shells (never use).
-4. **Bullet depenetrates flat contacts to exact rest** but ejects wedged overlaps sideways — refuse-by-default, record explicit repairs.
-5. **Margin pop ≈ SUM of contacting bodies' margins** (hull-hull ~2× margin, hull-primitive ~1×, primitive-primitive ~0). BOX-BOX rests exact. Guarded snap closes the residual.
-
-**Treadmill law** (belt streams, subject world-static): world-static + visible = paces the subject ("rider"). Compose with the belt or hide. Large belt deco crosses static cameras at `dist(t) == y_belt`.
+- Five measured laws (full: the experiments/physics_facts/ in the
+  UPSTREAM checkout): no world_step (frame_set advances); sim pose
+  lives in matrix_world; collision shapes snapshot at rb_add
+  (unapplied scale = pass-through); depenetration ejects wedges;
+  margin pop = SUM of contacting margins. Treadmill law: world-static
+  + visible = paces the subject.
 
 ## Output organization
 
@@ -246,80 +240,92 @@ For user delivery: copy whole dir to `/home/z/my-project/download/<scene_name>/`
 - **Background processes die between tool calls** — long ops must run inside one Bash call with timeout, or use `render_daemon.py` (double-fork to PID 1).
 - **Watchdog** reverts `/home/z/my-project/` every ~20s — work in `/home/z/repos/` clones (F2D-16: one path, everywhere).
 
+## SESSION 22 LAWS (the RH real-data round + the hero lane)
+
+- **Multi-credential posture**: PATs are SCOPED — test write access
+  per repo BEFORE relying on a push (the new PAT read zmpc01 fine and
+  403'd on push). Release assets: the API assets endpoint with
+  Accept: octet-stream; browser_download_url 404s under fine-grained
+  PATs. Keep a push helper script with the right PAT per repo.
+- **This sandbox bans symlinks** — tools/blender must be the RENAMED
+  real install dir (the FBX addon resolves tools/blender/5.2/...).
+  Foreground copies only (background cp is reaped).
+- **Library-split discovery**: the platform migrated the director
+  assets to RH-3d-assets (manifest RENAMED gltf-manifest.json, same
+  join schema) — discovery resolves THREE clones with a legacy
+  fallback; the fallback serve must be LOUD (a stale clone passed the
+  battery gate silently — audit-B P2-1). Vintage is PER-KIND (models
+  vintage from the models repo).
+- **Cross-validation discipline**: when a data source returns from
+  the dead, RE-MEASURE every reverse-engineered law against it
+  (scripts/s22_crossval.py pattern: 9 laws, fail-closed on any NEW
+  deviation, honest-skip on either layer absent, degraded runs exit
+  nonzero — partial coverage never scores green).
+- **THE FROZEN-EVALUATION TRAP (the round's deepest find)**: an
+  FBX-imported rig can evaluate its pose FROZEN at rest — property
+  sets, update_tag, depsgraph_get, frame bounces all ignored; the
+  UAL glTF rig evaluates fine in the same session. The defense: the
+  DRIVE CHECK (fcurve values must reach the evaluated pose
+  properties) + world gates; a closed "ALL PASS" with static feet
+  numbers was the tell.
+- **DISCONNECTED RIG TOPOLOGY**: the Quaternius rigs parent feet to
+  the ROOT bone (not the shin) — their clips move feet via per-bone
+  LOCATION channels. Location transfer must be DATA-DRIVEN (per-bone,
+  where the source animates it), never a family-declared constant.
+  The conjugated basis translation x the height ratio is the exact
+  local key; the audited rotation formula needed NO change (0.0 deg
+  measured).
+- **The stuck-pose + slot pair**: unassigning an action leaves the
+  last evaluated pose IN the properties (reset loc/scale/rotation of
+  unkeyed bones before baking); EVERY action assignment pins the
+  slot (ual_bake's 4.4+ law); 5.x fcurves.new resolves paths against
+  the CONTEXT object — bind-then-write makes the write
+  context-independent.
+- **Cross-lane add/add collisions**: when two lanes implement the
+  same D1 surface, converge on the review-hardened canonical and port
+  consumers; a foreign canonical can carry REAL bugs (the T4
+  master-collection gap) — your battery is the detector, fold the
+  fix inline with the finding documented.
+- **Kit hygiene gates apply to new modules**: scripts/assets_* is a
+  forbidden project-artifact pattern — family loaders get
+  rig_family_* names (test_kit_scope catches it at battery time).
+- FBX materials: find the Principled node by TYPE (BSDF_PRINCIPLED),
+  never by name (FBX names differ from glTF); a rep dict-shape
+  mismatch (mesh vs meshes) was a silent no-op — accept both shapes
+  or refuse loudly.
+
 ## KB entries (linked from AGENTS.md; each carries its own headlines)
 vision_loop · render_speed · placement_and_physics · semantic_labeling ·
 prop_carry · rigged_characters · glTF_export · tdawn_vision_film (the
 film recipe + export command + crowd bridge contract) · crowd_fields ·
 gait_modifiers.
-## Session-12/13 meta (full: kb/tdawn_vision_film.md + USABILITY_TD1*/R9)
+## Session-12/13 meta (condensed to one line — full: kb/tdawn_vision_film.md)
+- FACTORY-PURGE + glow law + recession occlusion + one-blrun-per-display. Full: kb.
 
-- FACTORY-PURGE: --factory-startup loads default Cube/Camera/Light —
-  purge at build_scene start. Glow law: Base Color vs Emission Color
-  set independently (F-TD11). Recession occlusion: ray-cast THROUGH
-  the vanished subject — viewpoint move, not a retime.
-- NEVER run two blrun/EEVEE pipelines on one display.
+## SESSION 14/15 LAWS (condensed to one line — full: docs/USABILITY_TD1/TF1)
+- daemonize + BLRUN_FORCE; make_material(arg3); keepout rows; export-safe
+  = SCALE keys; 5.x _iter_fcurves; BEATS canonical; rebase sides INVERT;
+  night laws; governed-pair guard. Full: docs.
 
-## SESSION 14/15 LAWS (condensed — full: docs/USABILITY_TD1/TF1 + HANDOFF session-14/15)
+## SESSION 15 FILM LAWS (condensed — full: docs/USABILITY_TF1_last_ferry.md)
+- E_InvalidRange barricades; F-TF6 arrival semantics; REFRAMES not new
+  cams; lamp gaps read dead; F-TD11 titles. Full: docs.
 
-- daemonize.py (double-fork) is the ONLY background survivor; blrun's
-  per-DISPLAY flock exits 90 (BLRUN_FORCE=1 bypass — nested-blrun
-  suites MUST set it).
-- make_material(arg3=ROUGHNESS). look.py --probe-camera on EVERY
-  reframe. Keepout rows in FRAMES; verify keepouts_applied counts ROWS.
-- Export-safe visibility = SCALE keys. 5.2 slotted actions: _iter_fcurves.
-- sfx events {name|kind, frame}; BEATS=(id,t_seconds,label) canonical.
-- Rebase sides INVERT: --theirs = YOUR replayed commit.
-- Night laws: emissives do not LIGHT; near-field emission ceiling is
-  DISTANCE-dependent. The FLOW STRIP is the geometry-seam detector.
-- Governed-pair guard: land kit fix → sync_shared --to <consumer> →
-  commit BOTH.
+## SESSION 16 LAWS (the KIT-QUALITY wave — condensed; full: docs/USABILITY_S16 + DESIGN_D19)
+- Preflight-before-export (exit 3, attributed); TWO exporters (films use
+  the CANONICAL agent-kit copy); decode-parity (the decoder is the
+  oracle); RNA-filter operator kwargs; battery = suite_runner.sh, fix
+  waves carry PINS; audit-before-implement ROI; grep-verify anchors.
 
-## SESSION 15 FILM LAWS (full: docs/USABILITY_TF1_last_ferry.md)
+## SESSION 16 LAWS (third film — condensed; full: USABILITY_TG1)
+- Capacity box = ARRIVAL TRIGGER; AgX-noon tune; clone-seam grep for the
+  PARENT'S scene module.
 
-- Barricades past the walkable edge = E_InvalidRange. F-TF6: no
-  hero-lane pushout (HERO_LANES was DEAD DATA); arrival semantics
-  FIRST (F-TG1: arrived agents are GHOSTS). N is pinned per-film.
-- REFRAMES not new cams; never-keyed cranes = the static class.
-- Night: lamp gaps read dead; titles need F-TD11 emission.
-
-## SESSION 16 LAWS (the KIT-QUALITY wave — D19 export preflight + t10; full: docs/USABILITY_S16 + DESIGN_D19)
-
-- Lane discipline: parallel lanes own SCENE work; never co-edit
-  scene_*.py. Preflight-before-export (exit 3, attributed). TWO
-  exporters: this tree's = escape/template lane; films use the
-  CANONICAL agent-kit copy — pin WHICH before writing asserts.
-- **Decode-parity**: the REAL decoder is the oracle — assert both
-  drift directions; a checker is never stricter than the decoder, but
-  None-where-decoder-raises IS a rejection.
-- **RNA-filter operator kwargs** (get_rna_type) — version-calibrated
-  kwarg sets rot. **Subprocess tests**: direct binary +
-  --python-use-system-env + PYTHONPATH=scripts; fixtures go INTO
-  scripts/; nested-blrun suites carry BLRUN_FORCE=1.
-- **Verify BOTH PATs at session start** (2-line curl).
-- **Audit-before-implement ROI**: 3 cheap read-only audits → 1 real
-  bug + the whole D19 spec. Cite file:line — but re-verify anchors by
-  grep before batch-editing (they shift; symbol-cites are drift-proof).
-## SESSION 16 LAWS (the third film — full: USABILITY_TG1)
-
-- Capacity box = ARRIVAL TRIGGER (agents GHOST on ENTER); AgX-noon =
-  tune direct:ambient ratio; clone-seam: grep a sed-cloned tool for
-  the PARENT'S scene module.
-
-
-## SESSION 17 LAWS (the second KIT-QUALITY wave — 88 findings, all ≥P2 fixed)
-
-- render_angle SWEEPS camera-bound marker bindings (the F-TD3
-  silent-wrong-camera class); look exit 4 = unreadable image.
-- Per-component location writes are PARENT-space (world-space solvers
-  via _world_delta_to_local; keyframe rebases take the BASIS delta).
-- Accepted-but-unimplemented params are fail-open lies (validate at
-  the op layer; PARAM_DOCS↔handler parity is AST-checked).
-- Operator kwargs: RNA-filter EVERY call site (filter_rna_kwargs) —
-  a TypeError fallback silently drops settings. _skinned_guard checks
-  the ARMATURE's animation (the rig poses the mesh with none of its
-  own). Battery = suite_runner.sh; fix waves carry PINS or they are
-  UNPINNED (test_s19_wave_pins is the pattern).
-
+## SESSION 17 LAWS (condensed — full: docs/USABILITY_S16 wave)
+- render_angle SWEEPS marker bindings; exit 4 = unreadable image;
+  per-component writes are PARENT-space; accepted-but-unimplemented
+  params are fail-open lies; RNA-filter EVERY call site; _skinned_guard;
+  battery fix waves carry PINS.
 
 ## SESSION 19 LAWS (the third exhaustion round + the native-vision e2e lane)
 
@@ -342,18 +348,9 @@ gait_modifiers.
   display-mangle survives repr() — ast.parse before EVERY commit.
 
 
-## SESSION 17b LAWS (the fourth film: SQUALL — ultra-condensed; full: USABILITY_TS1_squall.md + DESIGN_squall.md REV-3)
-
-- **MARKER-CAMERA LAW**: shot markers override scene.camera in their
-  span; NULLED markers STILL flip it at frame_set — DELETE + recreate
-  is the only safe probe path.
-- F-TS1 film path COMPOSES kit layers (layout_composed marker +
-  composed-aware gate); RAGDOLL WALK-CLIP class (physics moves the
-  ORIGIN — tumble overlay via the OWNING CHANNELBAG).
-- chase_frame="belt" is a PIN (F-TS2); the SILENT-REPLACE LAW (assert
-  every .replace() on a cam table — F-TS7); portal-axis naming trap
-  (F-TS3); loader N-pin expected_agents= (F-TS5).
-
+## SESSION 17b LAWS (SQUALL — ultra-condensed; full: USABILITY_TS1_squall.md)
+- MARKER-CAMERA law (nulled markers STILL flip — delete+recreate);
+  chase_frame="belt" is a PIN; the SILENT-REPLACE law; loader N-pin.
 
 ## SESSION 20 LAWS (the RH integration lane — vendor + offline fixture + dog food)
 

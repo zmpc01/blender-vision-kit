@@ -4044,3 +4044,20 @@ Stage Summary:
 - tform_1 rev 1 is LIVE in the review app (the sixth film); the review round on all six films stays open (0 comments on the films)
 - the film family's export compliance now runs against the REAL upstream gates: the 8-name KNOWN_NON_STORY + the VOLUME_SCATTER fallback are landed upstream, not sandbox-local
 - filed debts: the OTHER film modules (tfog 13 extras, squall/green/ferry/tdawn TBD) will fail the s32 discovery at their NEXT exports — same treatment (generic -> upstream exemptions if the vocabulary repeats; film-specific -> lowercase). Not churned this round (their exports are stable-staged; churn without an export gate to prove it is risk without proof)
+
+---
+Task ID: session-22
+Agent: vision-kit orchestrator (Z.ai/GLM)
+Task: RH real-data integration (the returned asset ecosystem) + the s21-D hero lane completion + cross-lane convergence
+
+Work Log:
+- Sandbox re-bootstrap: new PAT (beulahkemp — read-only on zmpc01, write on beulahkemp repos; the OLD PAT still writes zmpc01), Blender 5.2.2 from sync (wrapper-dir layout after the sandbox symlink ban; then the rename-to-tools/blender fix for the addon path), crowd-kit submodule via the API tarball + the 1.6.0 wheel both sides. Battery baseline 38/38.
+- RH ECOSYSTEM RETURNED: beulahkemp/RH-canvas-animations (2,137 clips, sha-verified 2137/2137 locally from the release volumes via the API asset endpoint — browser_download_url 404s under fine-grained PATs) + RH-canvas-characters (portraits) + RH-3d-assets (the 99 director glTFs). CDN alive.
+- THE LIBRARY-SPLIT DISCOVERY FIX: the 2026-10-17 platform migration moved the director assets OUT of RH-canvas-characters — discover_libraries now resolves THREE clones (legacy fallback probe kept), load_models/load_thumbnails read the models root. test_rh_canvas 14/14 against the REAL repos (census exact: 2032/19/667/99). Port-back to mainline queued.
+- The fixture generator mirrors the split (portraits-manifest.json surface file); test_rh_fixture 13/13.
+- CROSS-VALIDATION (the s20 assumptions became measured facts): scripts/s22_crossval.py — 9 family laws on BOTH sides through the kit import path: 6 MATCH / 3 expected-deviation (the documented s20 unit-baking class) / 0 UNEXPECTED. Battery row 39; docs/RH_CROSSVAL_s22.md. Real platform laws confirmed: 65 mixamorig bones, obj 0.01/90°, QUATERNION, 30 fps, 52 animated channels, feet ~0.03.
+- THE HERO LANE (s21-D): D1 wrapper (converged onto the film lane's review-hardened canonical after an add/add collision — their T4 master-collection gap found by my battery and folded), D2 rig_family_quaternius loader (measured truth pins: male 4.8413/female 4.6553 raw, UNIT_RESCALE 0.3718→1.80 m), D3 rig_retarget (the audited delta-composition + THREE measured law changes: REV3a the DISCONNECTED leg topology → data-driven per-bone location transfer (conjugated basis translation × ratio); REV3b the FROZEN-EVALUATION trap → the drive-check closure; REV3c anatomy gaps ≠ map failures), D4 motion_lab v2 hero zone (3 families, retargeted walk eye-certified + numeric tables). test_hero_lane 6/6 = battery row 40.
+- AUDIT-B (fresh-context): 0 P0/P1, 3 P2 + 3 P3 — ALL FOLDED (the vintage-per-kind fix, the crossval degraded-run nonzero exit, the legacy-serve loudness, manifest-drift RHRefused...). AUDIT-A timed out — queued.
+
+Stage Summary:
+- Battery 40/40 PASS. Pushed: GitHub 6b9cbf9..c81f4e7. The RH data layer is live at both ends (real + offline cross-validated). The hero lane is DONE (wrapper/loader/retarget/lab). HANDOFF/PLAN/SKILL updated this session.

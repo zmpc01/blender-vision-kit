@@ -1,5 +1,62 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
+> Session 22 close: 2026-10-18. HEAD = the RH REAL-DATA round: the
+> asset ecosystem RETURNED (beulahkemp/RH-canvas-animations +
+> RH-canvas-characters + RH-3d-assets; CDN live), the library-split
+> discovery fix landed + verified against the real repos, the fixture
+> library got CROSS-VALIDATED against reality (9 laws, 0 unexpected),
+> and the s21-D hero lane COMPLETED (wrapper/loader/retarget/lab,
+> battery row 40). This block -> the session-21 block -> PLAN Track TF.
+
+## Session-22 close state (NEWEST — read this first)
+
+- **The RH data layer is LIVE at both ends**: test_rh_canvas runs
+  14/14 rows against the REAL clones (2,032 id-deduped clips / 19
+  categories / 667 characters / 99 models — census exact; real glTF
+  statue import + real CDN FBX fetch sha-verified), and the offline
+  fixture library is cross-validated against that reality
+  (docs/RH_CROSSVAL_s22.md; battery row 39 fail-closes on any NEW
+  deviation). The s20 "single point of failure" is retired twice over.
+- **Credentials** (the session's discovery): the beulahkemp PAT
+  (ghp_vRRs...) is READ-ONLY on zmpc01 repos and WRITE on beulahkemp
+  repos; the OLD PAT (ghp_twrZ...) still writes zmpc01. Both live in
+  /home/z/creds/gh.env; /home/z/creds/push_vk.sh is the vision-kit
+  push helper (fetch+rebase+push with the OLD pat). Release-asset
+  downloads: the API assets endpoint with Accept: octet-stream (the
+  browser_download_url 404s under fine-grained PATs).
+- **The sandbox bans symlinks** — tools/blender must be the REAL
+  renamed install dir (blrun wants tools/blender/blender AND the FBX
+  addon resolves tools/blender/5.2/...). The re-land drill: copy
+  /home/sync/blender-vision-kit/tools/blender-5.2.2-linux-x64 ->
+  tools/blender (foreground; background cp gets reaped), Pillow +
+  crowd-kit wheel BOTH pythons, submodule via the API tarball.
+- **The hero lane is complete**: scripts/wrapper_rig.py is the FILM
+  LANE'S canonical (converged after an add/add collision — do not
+  re-fragment it); this lane owns scripts/rig_family_quaternius.py
+  (the D2 loader, UNIT_RESCALE 0.3718), scripts/rig_retarget.py (the
+  D3 engine + the REV-3 law changes in DESIGN_s21_hero_lane.md §6),
+  and the motion lab hero zone. test_hero_lane 6/6 (battery row 40).
+- **Cross-lane protocol that worked**: the parallel film lane landed
+  its own humanoid layer mid-session (b0e6450..aedf269); zero file
+  overlap except wrapper_rig.py — resolved by taking THEIRS as
+  canonical (upstream-first, their humanoid_crowd depends on it) and
+  porting my consumers; my battery found a REAL defect in their T4
+  check (the master-collection gap) — folded inline with the finding
+  documented in the code.
+- **Open queues for the next session**:
+  1. AUDIT-A (the retarget-engine attack audit) timed out this
+     session — re-run it against scripts/rig_retarget.py (the REV-3
+     law changes + the samples-loop D_t reuse are the surfaces; the
+     drive-check + world gates cover the freeze class meanwhile).
+  2. Port-back to mainline: the rh_canvas library-split discovery
+     (VENDOR_LEDGER carries the sanctioned-delta note; mainline's
+     two-repo predicates are broken against the live repos TODAY).
+  3. The diversity queue rest (interior/night-market) + the user
+     review round on all six films (unchanged from session-21).
+  4. The QUIET anti-regression: test_rh_crossval + test_hero_lane
+     need their honest-skip paths exercised in a library-less sandbox
+     (they were born green with libraries present).
+
 > Session 21 close: 2026-10-16. HEAD = the RESUME round: the wiped
 > sandbox re-bootstrapped from remotes (the drill now ~20 min), the
 > tform_1 re-land completed end-to-end (bake chain byte-deterministic
