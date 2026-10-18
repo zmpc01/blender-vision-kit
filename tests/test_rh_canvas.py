@@ -67,7 +67,8 @@ PIN_CLIP = "2846"  # WALK_RUN_MOVE "Run fast" — REVIEW-RH-1b measured on it
 PIN_MODEL = "Farmer"
 
 LIBS = rh_canvas.discover_libraries()
-LIB_OK = all(LIBS.get(k) for k in ("animations", "characters", "models"))
+LIB_OK = (bool(LIBS.get("animations")) and bool(LIBS.get("characters"))
+          and bool(LIBS.get("assets3d")))   # s41-A2: all three repos
 
 
 def row(row_id, fn):
@@ -76,9 +77,8 @@ def row(row_id, fn):
     if not LIB_OK:
         ROWS[row_id] = "skip"
         print(f"[SKIP] {row_id}: RH-canvas library clones absent "
-              f"(found {LIBS or 'none'}) — all three clones (animations, "
-              f"characters, models) must resolve per docs/rh_canvas.md; "
-              f"this row needs the local data only",
+              f"(found {LIBS or 'none'}) — clone them per "
+              f"docs/rh_canvas.md; this row needs the local data only",
               flush=True)
         return
     try:
@@ -527,20 +527,25 @@ ROWS_EXTRA = {}
 
 
 def r9():
-    """Preview-data integration (s40): model previewImage URLs, preset
-    portrait URLs, in-git body thumbnails, the magic-byte fetch law."""
+    """Preview-data integration (s40, amended s41): model previewImage
+    URLs + in-git sha256 copies, preset portrait URLs, in-git body
+    thumbnails, the sha256 preview fetch law (A3 taxonomy)."""
     print("== R9 preview/portrait/thumbnail surfaces ==", flush=True)
-    # a. all 99 models carry a previewImage URL
+    # a. all 99 models carry a previewImage URL (now from RH-3d-assets)
     models = rh_canvas.load_models()
     with_prev = [m for m in models if m.get("preview")]
     check("R9a models carrying previewImage URL (99/99)",
           (len(models), len(with_prev)), (99, 99))
+    # a2. s41: every model joins an in-git preview + sha256
+    check("R9a2 in-git preview_local + preview_sha256 joined (99/99)",
+          sum(1 for m in models if m.get("preview_local")
+              and m.get("preview_sha256")), 99)
     # b. presets carry 2-3 portrait URLs each (667 presets)
     chars = rh_canvas.load_characters()
     np_port = sum(len(c.get("portraits", [])) for c in chars)
     check("R9b presets count 667, portraits total > 1300 (2+ avg)",
           len(chars) == 667 and np_port > 1300, True)
-    # c. the 8 in-git body thumbnails exist with PNG magic
+    # c. the 8 in-git body thumbnails exist with PNG magic (RH-3d-assets)
     thumbs = rh_canvas.load_thumbnails()
     check("R9c thumbnails == 8 local PNGs w/ magic",
           len(thumbs) == 8 and all(
@@ -554,21 +559,33 @@ def r9():
     check("R9e max-frames<=10 rows all <= 10f", all(
         r.get("frames", 10**9) <= 10 for r in q_mf["rows"]) and
         q_mf["count"] > 0, True)
-    # e. vintage meta surfaces the snapshot date
-    vin = rh_canvas.library_vintage("characters")
-    check("R9f library vintage starts 2026-10", vin.startswith("2026-10"),
+    # e. vintage meta surfaces the snapshot date (A7 remap: models now
+    # report the assets3d vintage; characters keeps its own)
+    vin = rh_canvas.library_vintage("assets3d")
+    check("R9f assets3d library vintage starts 2026-10",
+          vin.startswith("2026-10"), True)
+    q_models = rh_canvas.catalog_query("models")
+    check("R9f2 catalog models meta carries assets3d vintage",
+          q_models["meta"].get("library_captured", "").startswith("2026-10"),
           True)
-    # f. preview fetch: live CDN, PNG magic, idempotent, poison repair
+    # f. preview fetch: the s41 A3 taxonomy — cache hit sha-verified ->
+    # ok-cached; in-git copy -> ok-git; poison -> re-fetched(repaired)
     cache = os.path.join(_OUT_ROOT, "rh_canvas_cache_r9")
-    m = next(m for m in models if m["name"] == "Female")
     res = rh_canvas.fetch_previews(["Female"], cache=cache)
-    # 'ok' on a cold cache, 'ok-cached' when a prior run verified the file —
-    # both mean a VERIFIED preview is on disk (the cache dir persists
-    # across battery runs under KIT_OUT)
-    check("R9g preview fetch status ok|ok-cached",
-          res[0]["status"] in ("ok", "ok-cached"), True)
+    check("R9g preview fetch status ok|ok-cached|ok-git",
+          res[0]["status"] in ("ok", "ok-cached", "ok-git"), True)
     head = open(res[0]["dest"], "rb").read(8)
     check("R9h preview is a real PNG", head == rh_canvas.PNG_MAGIC, True)
+    # g. in-git law: a fresh cache dir materializes from the in-git copy
+    cache_git = os.path.join(_OUT_ROOT, "rh_canvas_cache_r9_git")
+    res_git = rh_canvas.fetch_previews(["Female"], cache=cache_git)
+    check("R9g2 cold cache materializes from in-git copy (ok-git)",
+          res_git[0]["status"], "ok-git")
+    import hashlib as _hl
+    _sha = _hl.sha256(open(res_git[0]["dest"], "rb").read()).hexdigest()
+    check("R9g3 materialized preview sha == previews-manifest",
+          _sha, next(m["preview_sha256"] for m in models
+                     if m["name"] == "Female"))
     res2 = rh_canvas.fetch_previews(["Female"], cache=cache)
     check("R9i preview re-fetch idempotent (ok-cached)",
           res2[0]["status"], "ok-cached")
@@ -579,14 +596,35 @@ def r9():
           res3[0]["status"], "re-fetched(repaired)")
     check("R9k repaired file is a PNG again",
           open(res[0]["dest"], "rb").read(8) == rh_canvas.PNG_MAGIC, True)
-    # g. portrait fetch: live CDN, cdn_size verified, JPEG magic
+    # g4. A4 chain of custody: a CORRUPT in-git copy must REFUSE
+    libs3d = rh_canvas.discover_libraries().get("assets3d")
+    if libs3d:
+        import shutil as _sh
+        m_f = next(m for m in models if m["name"] == "Female")
+        src = os.path.join(libs3d, m_f["preview_local"])
+        bak = src + ".bak"
+        _sh.copyfile(src, bak)
+        try:
+            with open(src, "r+b") as fh:
+                fh.write(b"CORRUPTED-HEAD")
+            refused_git = False
+            try:
+                rh_canvas.fetch_previews(["Female"], cache=os.path.join(
+                    _OUT_ROOT, "rh_canvas_cache_r9_a4"))
+            except rh_canvas.RHRefused:
+                refused_git = True
+            check("R9g4 corrupt in-git preview REFUSED (A4 custody)",
+                  refused_git, True)
+        finally:
+            _sh.move(bak, src)
+    # h. portrait fetch: live CDN, cdn_size verified, JPEG magic
     pres = rh_canvas.fetch_portraits(["1"], cache=cache)
     check("R9l portrait fetch rows >= 2", len(pres) >= 2, True)
     ok_rows = all(p["status"].startswith("ok") for p in pres)
     magic_ok = all(open(p["dest"], "rb").read(2) == rh_canvas.JPEG_MAGIC
                    for p in pres)
     check("R9m portrait statuses ok + JPEG magic", ok_rows and magic_ok, True)
-    # h. refusal paths
+    # i. refusal paths
     refused = False
     try:
         rh_canvas.fetch_previews(["__no_such_model__"], cache=cache)
@@ -597,11 +635,119 @@ def r9():
           f"{[p['name'] for p in pres]}", flush=True)
 
 
+def r10():
+    """RH-3d-assets migration surfaces (s41, offline-safe local checks)."""
+    print("== R10 RH-3d-assets migration surfaces ==", flush=True)
+    # a. discovery: the third repo found
+    libs = rh_canvas.discover_libraries()
+    check("R10a assets3d library discovered", bool(libs.get("assets3d")), True)
+    # b. models 99 with the group census
+    models = rh_canvas.load_models()
+    from collections import Counter
+    groups = dict(Counter(m["group"] for m in models))
+    check("R10b models 99 groups {JC:12,RW:32,DJ:19,CJ:12,JT:24}",
+          (len(models), groups),
+          (99, {"JC": 12, "RW": 32, "DJ": 19, "CJ": 12, "JT": 24}))
+    # c. every model row carries sha256 + unique filename (cache safety)
+    fnames = [m["filename"] for m in models]
+    check("R10c all sha256 present + filenames unique",
+          all(len(m["sha256"]) == 64 for m in models)
+          and len(set(fnames)) == 99, True)
+    # d. the 99 in-git previews all sha-exact (chain of custody, upstream)
+    root = libs["assets3d"]
+    import hashlib as _hl
+    bad_prev = []
+    for m in models:
+        p = os.path.join(root, m["preview_local"])
+        if not os.path.isfile(p) or _hl.sha256(
+                open(p, "rb").read()).hexdigest() != m["preview_sha256"]:
+            bad_prev.append(m["name"])
+    check("R10d 99/99 in-git previews sha-exact", bad_prev, [])
+    # e. rigs: 3 rows, known names, sha256 present
+    rigs = rh_canvas.load_rigs()
+    check("R10e rigs == 3 (male_body/female_body/x_bot) with sha256",
+          (len(rigs), sorted(r["name"] for r in rigs),
+           all(len(r["sha256"]) == 64 for r in rigs)),
+          (3, ["female_body", "male_body", "x_bot"], True))
+    # f. catalog kind rigs works + carries the meta note
+    q = rh_canvas.catalog_query("rigs")
+    check("R10f catalog --kind rigs 3 rows + meta note",
+          q["count"] == 3 and "bindable" in q["meta"]["note"], True)
+    # g. refusal: unknown rig name
+    refused = False
+    try:
+        rh_canvas.fetch_rigs(["__no_such_rig__"], cache=_OUT_ROOT)
+    except rh_canvas.RHRefused:
+        refused = True
+    check("R10g unknown --rigs name REFUSED", refused, True)
+    # h. A15: pin Farmer's sha256 explicitly (R6 drift guard)
+    farmer = next((m for m in models if m["name"] == "Farmer"), None)
+    ROWS_EXTRA["R10_farmer_sha"] = farmer["sha256"] if farmer else None
+    check("R10h Farmer sha pinned in extras", bool(farmer), True)
+
+
+def r10b():
+    """Dummy-rig LIVE round-trip (s41 A6): import-rig -> bind -> playback
+    on x_bot (65-bone) AND male_body (78-bone — pins the A1 family gate)."""
+    print("== R10b dummy-rig import + bind round-trip ==", flush=True)
+    import bpy  # noqa  (battery runs inside Blender via blrun)
+    cache = os.path.join(_OUT_ROOT, "rh_canvas_cache_r10b")
+    # a. x_bot: import with placement, stub cleared, scale law kept
+    arm, rep = rh_canvas.import_rig("x_bot", at=(1.5, -0.5, 0.0),
+                                    rot_z_deg=30.0, cache=cache)
+    check("R10b-a x_bot 65 bones / 2 meshes / stub cleared",
+          (rep["bones"], rep["meshes"], rep["stub_actions_cleared"]),
+          (65, 2, ["Armature|mixamo.com|Layer0"]))
+    check("R10b-b scale law kept (obj scale ~0.01, no transform_apply)",
+          all(abs(c - 0.01) < 1e-6 for c in arm.scale[:3])
+          and abs(arm.rotation_euler.x - 1.5707963) < 0.01, True)
+    # b. bind the pinned clip onto the rig — family gate must accept
+    rep_bind = rh_canvas.bind(arm, PIN_CLIP, cache=cache)
+    m_matched, m_total = (int(v) for v in
+                          rep_bind["channels_matched"].split("/"))
+    check("R10b-c bind on x_bot: all channels matched, 0 orphaned",
+          (m_matched == m_total, rep_bind["orphaned_channels"]),
+          (True, 0))
+    sc = bpy.context.scene
+    act = arm.animation_data.action
+    check("R10b-d scene range from action + fps 30",
+          (sc.render.fps, (sc.frame_start, sc.frame_end)),
+          (30, (int(act.frame_range[0]), int(act.frame_range[1]))))
+    # c. playback band: sample hips world across the clip
+    import bpy as _b
+    zs = []
+    for f in range(sc.frame_start, sc.frame_end + 1,
+                   max(1, (sc.frame_end - sc.frame_start) // 8)):
+        sc.frame_set(f)
+        _b.context.view_layer.update()
+        pb = arm.pose.bones["mixamorig:Hips"]
+        zs.append(round(pb.matrix.translation.z, 3))
+    check("R10b-e hips moves during playback (not frozen)",
+          max(zs) - min(zs) > 0.01, True)
+    # d. male_body: the 78-bone family-gate pin (A1)
+    arm2, rep2 = rh_canvas.import_rig("male_body", at=(-1.0, 0.0, 0.0),
+                                      cache=cache)
+    check("R10b-f male_body 78 bones / 13 helper",
+          (rep2["bones"], rep2["helper_bones"]), (78, 13))
+    rep_bind2 = rh_canvas.bind(arm2, PIN_CLIP, cache=cache)
+    check("R10b-g bind on 78-bone rig accepted (family gate) w/ 0 orphans",
+          rep_bind2["orphaned_channels"], 0)
+    # e. no stub/pinned-unassigned actions left after hygiene
+    purged = rh_canvas.purge_unassigned()
+    assigned = {o.animation_data.action.name for o in _b.data.objects
+                if o.animation_data and o.animation_data.action}
+    check("R10b-h after purge: only assigned actions remain",
+          all(not (a.name not in assigned and a.use_fake_user)
+              for a in _b.data.actions), True)
+
+
 def main() -> int:
     print(f"[rh-test] libraries: {LIBS}", flush=True)
     if not LIB_OK:
         print("[SKIP] RH-canvas clones absent — the WHOLE battery skips. "
-              "Clone them (see docs/rh_canvas.md):\n"
+              "Clone them (see docs/rh_canvas.md; s41: the 3D assets moved "
+              "to RH-3d-assets — all three repos are PRIVATE, an "
+              "authorized token is required):\n"
               "    git clone https://github.com/beulahkemp/RH-canvas-animations.git\n"
               "    git clone https://github.com/beulahkemp/RH-canvas-characters.git\n"
               "    git clone https://github.com/beulahkemp/RH-3d-assets.git",
@@ -609,7 +755,8 @@ def main() -> int:
     for row_id, fn in (("R1", r1), ("R2", r2), ("R2b", r2b),
                        ("R3", r3), ("R3b", r3b), ("R4", r4),
                        ("R5", r5), ("R5b", r5b), ("R6", r6), ("R6b", r6b),
-                       ("R7", r7), ("R7b", r7b), ("R8", r8), ("R9", r9)):
+                       ("R7", r7), ("R7b", r7b), ("R8", r8), ("R9", r9),
+                       ("R10", r10), ("R10b", r10b)):
         row(row_id, fn)
     results = {
         "suite": "rh_canvas battery (spec §7 v2)",

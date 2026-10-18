@@ -10,15 +10,20 @@ What it produces (default root /home/z/rh_fixture_lib):
   RH-canvas-animations/assets-manifest.json   (the 4 keys fetch/catalog need)
   RH-canvas-animations/data/animations.jsonl
   RH-canvas-animations/data/category_tree.json
-  RH-canvas-characters/director-gltf-manifest.json  (legacy layout: also
-      satisfies the s22 models probe fallback — the 2026-10-17 platform
-      split moved the live 3D assets to RH-3d-assets/gltf-manifest.json)
   RH-canvas-characters/data/characters.jsonl
   RH-canvas-characters/data/filter_options.json
   RH-canvas-characters/portraits-manifest.json   (empty — the s22
       characters predicate requires it; the offline lib carries no
       portraits, fetch_portraits rows are out of the fixture battery)
-  RH-canvas-characters/data/director_models.json
+  RH-3d-assets/gltf-manifest.json          (s41 layout: the flat 99-schema
+      rows — url/group/groupLabel/modelId/modelName/previewImage/size/
+      sha256/dest — mirroring the 2026-10-17 upstream relocation)
+  RH-3d-assets/previews-manifest.json       (+ the in-git preview PNGs at
+      the declared paths — the s41 sha256 preview law is fixture-tested)
+  RH-3d-assets/thumbnails-manifest.json     (8 body-type PNGs + manifest)
+  RH-3d-assets/dummy-rigs-manifest.json     (3 rows sharing one fixture
+      65-bone rest FBX — the x_bot class)
+  RH-3d-assets/data/_meta.json              (fixture vintage)
   fbx/<id>.fbx ... gltf/<name>.glb ...
   truth.json  — SELF-VERIFYING ground truth: per-clip frames, hips
                 raw-cm z range, xy path length, t-pose span, animated-
@@ -551,10 +556,16 @@ def main():
     _clean_scene()
     anim_dir = os.path.join(root, "RH-canvas-animations")
     char_dir = os.path.join(root, "RH-canvas-characters")
+    rh3d_dir = os.path.join(root, "RH-3d-assets")          # s41 layout
     fbx_dir = os.path.join(root, "fbx")
     glb_dir = os.path.join(root, "gltf")
     for d in (anim_dir, os.path.join(anim_dir, "data"), char_dir,
-              os.path.join(char_dir, "data"), fbx_dir, glb_dir):
+              os.path.join(char_dir, "data"), rh3d_dir,
+              os.path.join(rh3d_dir, "data"),
+              os.path.join(rh3d_dir, "assets", "director", "previews"),
+              os.path.join(rh3d_dir, "assets", "director", "canvasfile",
+                           "director", "character-thumbnails"),
+              os.path.join(rh3d_dir, "rigs"), fbx_dir, glb_dir):
         os.makedirs(d, exist_ok=True)
 
     manifest = []
@@ -756,20 +767,90 @@ def main():
         manifest_note = "built by rh_fixture_lib (procedural)"
         print(f"[fixture] statue {spec['name']}: {path}")
 
-    # ---- characters catalog files ----
-    char_manifest = []
-    models = []
-    for spec in STATUES:
+    # ---- characters catalog files (s41: the characters repo is
+    # IMAGE-ONLY post-split — its 3D content moved to RH-3d-assets; the
+    # legacy director-gltf-manifest.json / director_models.json are NOT
+    # emitted — the fixture mirrors the stripped upstream) ----
+    _clean_scene()
+
+    # ---- s41: the RH-3d-assets layout (the 2026-10-17 upstream split —
+    # flat gltf-manifest + previews-manifest with sha256 + in-git PNGs +
+    # thumbnails-manifest + dummy-rigs-manifest; mirrors the real repo) ----
+    import struct as _struct
+    import zlib as _zlib
+
+    def _png(path, rgba):
+        """Deterministic tiny solid-color PNG (stdlib only)."""
+        w = h = 8
+        raw = b"".join(b"\x00" + bytes(rgba) * w for _ in range(h))
+
+        def chunk(tag, data):
+            c = tag + data
+            return (_struct.pack(">I", len(data)) + c
+                    + _struct.pack(">I", _zlib.crc32(c) & 0xFFFFFFFF))
+
+        png = (b"\x89PNG\r\n\x1a\n"
+               + chunk(b"IHDR", _struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
+               + chunk(b"IDAT", _zlib.compress(raw, 9))
+               + chunk(b"IEND", b""))
+        with open(path, "wb") as fh:
+            fh.write(png)
+        return png
+
+    gltf_rows = []
+    preview_records = []
+    for idx, spec in enumerate(STATUES):
         fname = spec["name"].replace(" ", "_") + ".glb"
-        path = os.path.join(glb_dir, fname)
-        char_manifest.append({
-            "url": "file://" + os.path.abspath(path),
-            "size": os.path.getsize(path),
-            "sha256": _sha256_file(path),
+        glb_path = os.path.abspath(os.path.join(glb_dir, fname))
+        model_id = f"fixture-model-{idx:03d}-{spec['group']}"
+        prev_rel = f"assets/director/previews/fixture-{idx:03d}.png"
+        prev_abs = os.path.join(rh3d_dir, prev_rel)
+        rgba = (40 + idx * 60, 120, 160, 255)
+        _png(prev_abs, rgba)
+        gltf_rows.append({
+            "url": "file://" + glb_path,
+            "group": spec["group"], "groupLabel": spec["group_label"],
+            "modelId": model_id, "modelName": spec["name"],
+            "previewImage": "file://" + prev_abs,
+            "size": os.path.getsize(glb_path),
+            "cdn_size": os.path.getsize(glb_path),
+            "sha256": _sha256_file(glb_path),
+            "dest": f"assets/director/models/{model_id}.gltf",
         })
-        models.append({"key": spec["group"], "label": spec["group_label"],
-                       "models": [{"id": spec["name"], "name": spec["name"],
-                                   "url": "file://" + os.path.abspath(path)}]})
+        preview_records.append({
+            "url": "file://" + prev_abs,
+            "group": spec["group"], "modelId": model_id,
+            "model": spec["name"], "status": 200,
+            "size": os.path.getsize(prev_abs),
+            "sha256": _sha256_file(prev_abs),
+            "path": prev_rel,
+        })
+
+    thumb_names = ["babyBody", "childBody", "elderBody", "femaleBody",
+                   "maleBody", "plusSizeBody", "superheroBody", "teenBody"]
+    thumb_records = []
+    for ti, tn in enumerate(thumb_names):
+        rel = f"assets/director/canvasfile/director/character-thumbnails/{tn}.png"
+        abs_p = os.path.join(rh3d_dir, rel)
+        _png(abs_p, (200, 60 + ti * 20, 90, 255))
+        thumb_records.append({
+            "url": "file://" + abs_p, "dest": rel, "name": tn,
+            "size": os.path.getsize(abs_p), "sha256": _sha256_file(abs_p),
+        })
+
+    # one fixture dummy-rig FBX (65-bone rest rig — the x_bot class;
+    # three manifest rows share it, mirroring the real 3-rig manifest)
+    _clean_scene()
+    rig_arm = build_rig()
+    rig_fbx = os.path.join(rh3d_dir, "rigs", "fixture_dummy.fbx")
+    export_clip_fbx(rig_arm, rig_fbx, frames=2)   # rest pose, 2 frames
+    rig_sha = _sha256_file(rig_fbx)
+    rig_bytes = os.path.getsize(rig_fbx)
+    rig_rows = [
+        {"url": "file://" + os.path.abspath(rig_fbx), "file": f"{n}.fbx",
+         "bytes": rig_bytes, "sha256": rig_sha}
+        for n in ("male_body", "female_body", "x_bot")
+    ]
     _clean_scene()
 
     # ---- write the library files ----
@@ -780,8 +861,6 @@ def main():
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     with open(os.path.join(anim_dir, "data", "category_tree.json"), "w") as f:
         json.dump(CATEGORIES, f, ensure_ascii=False, indent=1)
-    with open(os.path.join(char_dir, "director-gltf-manifest.json"), "w") as f:
-        json.dump(char_manifest, f, ensure_ascii=False, indent=1)
     with open(os.path.join(char_dir, "data", "characters.jsonl"), "w") as f:
         for c in CHARACTERS:
             f.write(json.dumps({"id": c["id"], "name": c["name"],
@@ -795,14 +874,36 @@ def main():
                   f, ensure_ascii=False, indent=1)
     with open(os.path.join(char_dir, "portraits-manifest.json"), "w") as f:
         json.dump([], f, ensure_ascii=False, indent=1)
-    with open(os.path.join(char_dir, "data", "director_models.json"), "w") as f:
-        json.dump(models, f, ensure_ascii=False, indent=1)
+    # s41: the 3D content moved to RH-3d-assets — the characters repo was
+    # STRIPPED upstream (no director-gltf-manifest.json / director_models.json
+    # there anymore); the fixture mirrors reality, so those legacy files are
+    # NOT emitted. The new-layout files:
+    with open(os.path.join(rh3d_dir, "gltf-manifest.json"), "w") as f:
+        json.dump(gltf_rows, f, ensure_ascii=False, indent=1)
+    with open(os.path.join(rh3d_dir, "previews-manifest.json"), "w") as f:
+        json.dump({"_meta": {"count": len(preview_records),
+                            "ok": len(preview_records), "failed": 0,
+                            "note": "fixture previews (s41 layout)"},
+                   "records": preview_records}, f, ensure_ascii=False, indent=1)
+    with open(os.path.join(rh3d_dir, "thumbnails-manifest.json"), "w") as f:
+        json.dump({"_meta": {"count": len(thumb_records), "ok": len(thumb_records),
+                            "failed": 0,
+                            "note": "fixture thumbnails (s41 layout)"},
+                   "records": thumb_records}, f, ensure_ascii=False, indent=1)
+    with open(os.path.join(rh3d_dir, "dummy-rigs-manifest.json"), "w") as f:
+        json.dump({"generated": "fixture", "task": "s41 dummy-rig surface",
+                   "files": rig_rows, "ok": len(rig_rows), "failed": 0},
+                  f, ensure_ascii=False, indent=1)
+    with open(os.path.join(rh3d_dir, "data", "_meta.json"), "w") as f:
+        json.dump({"captured_at": "2026-10-18T00:00:00Z",
+                   "note": "fixture vintage"}, f, ensure_ascii=False, indent=1)
     with open(truth_marker, "w") as f:
         json.dump(truth, f, ensure_ascii=False, indent=1)
 
     print(f"[fixture] library written: {root}")
     print(f"[fixture] clips={len(manifest)} statues={len(STATUES)} "
-          f"truth={truth_marker}")
+          f"rigs=3(shared-fbx) previews={len(preview_records)} "
+          f"thumbnails={len(thumb_records)} truth={truth_marker}")
 
 
 if __name__ == "__main__":

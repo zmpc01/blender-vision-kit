@@ -113,6 +113,58 @@ def _fcurves(act):
 #  F1 catalog
 # --------------------------------------------------------------------------- #
 
+def f10_rh3d_layout():
+    """s41 RH-3d-assets layout contract (offline): discovery of the
+    third repo, the flat models manifest, the sha256 preview law
+    (ok-git materialize + poison repair), thumbnails, the rigs
+    manifest, and the family-gate bind on the fixture rig."""
+    libs = rh_canvas.discover_libraries()
+    check(libs.get("assets3d") is not None,
+          f"assets3d not discovered: {libs}")
+    res = rh_canvas.catalog_query("models")
+    check(res["count"] == 3, f"models rows {res['count']} != 3")
+    check(all(m.get("preview_local") and m.get("preview_sha256")
+              for m in res["rows"]),
+          "models missing preview_local/preview_sha256 join")
+    # the sha-law: cold cache materializes from the in-git copy
+    cache = os.path.join(FIXTURE_ROOT, "_cache_s41")
+    import shutil as _sh
+    _sh.rmtree(cache, ignore_errors=True)
+    model = next(m for m in rh_canvas.load_models() if m["name"] == "Farmer")
+    out = rh_canvas.fetch_previews(["Farmer"], cache=cache)
+    check(out[0]["status"] == "ok-git",
+          f"cold preview status {out[0]['status']} != ok-git")
+    out2 = rh_canvas.fetch_previews(["Farmer"], cache=cache)
+    check(out2[0]["status"] == "ok-cached", "idempotent ok-cached")
+    with open(out[0]["dest"], "wb") as fh:
+        fh.write(b"POISON")
+    out3 = rh_canvas.fetch_previews(["Farmer"], cache=cache)
+    check(out3[0]["status"] == "re-fetched(repaired)",
+          f"poison repair status {out3[0]['status']}")
+    thumbs = rh_canvas.load_thumbnails()
+    check(len(thumbs) == 8 and all(os.path.isfile(t["path"]) for t in thumbs),
+          f"thumbnails {len(thumbs)} != 8")
+    rigs = rh_canvas.load_rigs()
+    check(len(rigs) == 3 and {r["name"] for r in rigs} ==
+          {"male_body", "female_body", "x_bot"},
+          f"rigs rows: {[r['name'] for r in rigs]}")
+    q = rh_canvas.catalog_query("rigs")
+    check(q["count"] == 3, f"catalog rigs {q['count']}")
+    # the live fixture-rig round-trip: import-rig (family gate, stub
+    # hygiene — the fixture rig is the 65-bone rest rig, 0 meshes) +
+    # bind the pinned walk clip onto it
+    arm, rep = rh_canvas.import_rig("x_bot", at=(1.0, 0.0, 0.0),
+                                    rot_z_deg=90.0, cache=cache)
+    check(rep["bones"] == 65,
+          f"fixture rig bones {rep['bones']} != 65")
+    rep_bind = rh_canvas.bind(arm, PIN_WALK, cache=cache)
+    m_matched, m_total = (int(v) for v in
+                          rep_bind["channels_matched"].split("/"))
+    check(m_matched == m_total and rep_bind["orphaned_channels"] == 0,
+          f"fixture rig bind {rep_bind['channels_matched']} "
+          f"orphans={rep_bind['orphaned_channels']}")
+
+
 def f1_catalog():
     res = rh_canvas.catalog_query("categories")
     check(res["count"] == len(TRUTH and set(
@@ -501,6 +553,7 @@ ROWS_SPEC = [
     ("F7_glb_roundtrip", f7_glb_roundtrip),
     ("F8_placement", f8_placement),
     ("F9_ensemble", f9_ensemble),
+    ("F10_rh3d_layout", f10_rh3d_layout),
 ]
 
 for rid, fn in ROWS_SPEC:

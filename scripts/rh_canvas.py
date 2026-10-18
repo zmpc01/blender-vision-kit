@@ -1,61 +1,81 @@
 """
-rh_canvas.py — RH-canvas mocap clips + director statues for the kit
+rh_canvas.py — RH-canvas mocap clips + 3D assets for the kit
 (polyhaven.py class: one file, two operating modes).
 
-  VISION-KIT VENDOR (session 40): copied from mainline blender-agent-kit
-  s40 (71eb1c3, on the s38/s39 b7c675d..6943ab5 lineage) — upstream-of-
-  record for this file. Variant deltas: UA string only (intentionally
-  zero code drift). This vendor ADDS the s40 preview-data surface
-  (model previewImage URLs + preset portrait URLs + the 8 in-git
-  thumbnails + fetch --preview/--portraits with the magic-byte verify
-  law + --tag/--max-frames browse filters — the kit s40 now carries the
-  s20 manifest-tags/frames deltas natively, so the pair is zero-drift
-  again). The library data source (beulahkemp/RH-canvas-*) went private
-  2026-10-16; tests run against the local fixture library
-  (scripts/rh_fixture_lib.py — note: scripts/, not tests/) or skip
-  loudly.
+  VISION-KIT VENDOR (session 41): copied from mainline blender-agent-kit
+  s41 (aa05cf3, on the s38/s39/s40 lineage) — upstream-of-record for
+  this file. Variant deltas: UA string only (intentionally zero code
+  drift). This vendor ADDS the s41 RH-3d-assets migration surface (the
+  2026-10-17 upstream relocation: 99 gltf models + 99 sha256'd in-git
+  previews + 8 thumbnails + 3 mixamorig: dummy-rig FBX now live in
+  beulahkemp/RH-3d-assets; the characters repo was stripped — discovery
+  key 'assets3d' replaces this lane's s22 'models' key: no external
+  callers used it, batteries updated in the same vendor round; the s22
+  legacy-layout fallback is REPLACED by the kit's fail-closed law — a
+  pre-migration characters clone REFUSES with the migration message).
+  New surfaces: fetch --rigs + import-rig (stub-action hygiene) + bind
+  family gate (78-bone rigs bind) + the preview sha256 law (A3
+  taxonomy: ok-cached / ok-git / re-fetched(repaired); corrupt in-git
+  copy REFUSES). Fixture library: scripts/rh_fixture_lib.py now emits
+  the RH-3d-assets layout (same vendor round).
 
   HOST-side  (no bpy — plain python3 or inside Blender):
     catalog      browse: --kind categories|animations|characters|models|
-                 thumbnails (categories = the 19-code discovery list with
-                 counts; thumbnails = the 8 in-git body-type preview PNGs);
+                 thumbnails|rigs (categories = the 19-code discovery list
+                 with counts; thumbnails = the 8 in-git body-type preview
+                 PNGs; rigs = the 3 mixamorig: dummy-rig FBX files);
                  animation rows carry consumer tags when present
                  (elevated_root_motion / static_pose — s39 full walk;
                  --tag / --max-frames browse filters, s40 port from VK s20)
-    fetch        sha256-verified CDN downloads into a cache dir
-                 (--ids clips+models | --preview model PNGs |
-                  --portraits character preset renders)
+    fetch        verified downloads into a cache dir (--ids clips+models
+                 | --preview model PNGs (sha256, s41) | --portraits
+                 character preset renders | --rigs dummy-rig FBX)
   BLENDER-side (via blrun.sh --background --python scripts/rh_canvas.py --):
     import-clip     FBX clip -> armature + action (scene range auto-set)
     mannequin       procedural capsule body skinned to the Mixamo rig
-    bind            assign a clip action to an armature (never the mesh)
+    bind            assign a clip action to an armature (never the mesh;
+                    family gate s41 — the 78-bone dummy rigs bind too)
     import-statue   static director GLTF (meters, Z-up, feet-at-0 verified)
+    import-rig      dummy-rig FBX (male_body/female_body/x_bot — the
+                    mixamorig: family; stub-action cleared, placement law)
 
 Library discovery is PATH-BASED (crowd-plugin precedent — data is never
 vendored into the kit): --library DIR or env RH_CANVAS_LIB pointing at
 (or containing, or sibling-of) clones named RH-canvas-animations /
-RH-canvas-characters. Missing repos fail closed with the clone command.
-NOTE: the beulahkemp/RH-canvas-* repos went PRIVATE on 2026-10-16 —
-anonymous clone now 403s (a token with access is required; the CDN
-binaries remain public and unaffected). Recovery fallback: the
+RH-canvas-characters / RH-3d-assets. Missing repos fail closed with the
+clone command.
+NOTE: the beulahkemp/RH-canvas-* + RH-3d-assets repos are PRIVATE
+(2026-10-16/17) — anonymous clone 403s (a token with access is required;
+the CDN binaries remain public and unaffected). Recovery fallback: the
 /home/sync bundle backups.
+MIGRATION (2026-10-17, s41): the 3D model library (99 director glTF
+models + 99 preview PNGs + 8 thumbnails + 3 dummy rigs) MOVED from
+RH-canvas-characters to RH-3d-assets (upstream separated 3D scene
+assets from image character references); pre-migration characters
+clones will NOT satisfy the assets3d probe.
 
-Sources: github.com/beulahkemp/RH-canvas-animations (2,137 mocap FBX rows,
-id-dedup -> 2,032 unique; 19 categories; the platform API exposes NO
-per-asset preview — category tree is the only taxonomy) +
+Sources: github.com/beulahkemp/RH-canvas-animations (2,137 mocap FBX
+rows, id-dedup -> 2,032 unique; 19 categories; the platform API exposes
+NO per-asset preview — category tree is the only taxonomy) +
 RH-canvas-characters (667 9-facet character presets, each with 2-3
 portrait render URLs — images[] in characters.jsonl + the 2,001-row
-portraits-manifest; 99 static director GLTF models, each with a
-previewImage CDN PNG; 8 in-git body-type thumbnail PNGs under
-assets/director/canvasfile/director/character-thumbnails/).
-Preview verification law: previews/portraits carry NO sha256 upstream —
-verify = magic bytes (PNG/JPEG) + size sanity (+ cdn_size when the
-portraits manifest declares it). The sha256 law applies to the FBX/GLTF
-manifests that actually carry hashes.
+portraits-manifest) + RH-3d-assets (99 static director glTF models —
+gltf-manifest.json with sha256 per file; 99 preview PNGs IN GIT with
+sha256 in previews-manifest.json; 8 in-git body-type thumbnails; 3
+mixamorig: dummy-rig FBX files — male_body/female_body 78-bone,
+x_bot 65-bone, live-proven bindable with the clips s41).
+Preview verification law (s41): previews now carry sha256 upstream —
+in-git copy sha-verified first (mismatch = corrupt clone, REFUSED),
+else CDN fetch sha-verified. Portraits still carry NO sha256 —
+verify = magic bytes (JPEG) + size sanity (+ cdn_size when declared).
+The sha256 law applies to everything that carries hashes (FBX/GLTF/
+previews/rigs manifests).
 Ground truth: RH-RECON-1 (/home/z/rh_recon/REPORT.md — 28 binaries
 live-probed on Blender 5.2.2) + REVIEW-RH-1b (mannequin/bind/round-trip
-verified). Cache: env RH_CANVAS_CACHE else /home/z/rh_canvas_cache
-(NEVER inside the clones — keeps them clean).
+verified) + the s41 rig recon (bind round-trips on x_bot 65-bone and
+male_body 78-bone, all verts animating). Cache: env RH_CANVAS_CACHE
+else /home/z/rh_canvas_cache (NEVER inside the clones — keeps them
+clean).
 
 THE PLACEMENT LAW (read before moving anything):
   Place the ARMATURE, never the skinned mesh; translate/snap_z the
@@ -101,6 +121,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import sys
 import urllib.parse
 import urllib.request
@@ -110,19 +131,10 @@ import urllib.request
 # --------------------------------------------------------------------------- #
 ANIM_REPO = "RH-canvas-animations"
 CHAR_REPO = "RH-canvas-characters"
-# 2026-10-17 platform migration: the director 3D assets (99 glTF + previews
-# + body-type thumbnails) MOVED OUT of RH-canvas-characters into their own
-# repo (renamed manifest: gltf-manifest.json). The portraits/character
-# reference sheets stayed in RH-canvas-characters. Discovery therefore
-# resolves THREE clones; models keeps a legacy probe for pre-split layouts.
-MODELS_REPO = "RH-3d-assets"
+RH3D_REPO = "RH-3d-assets"            # the 2026-10-17 migration home (s41)
 ANIM_CLONE_CMD = "git clone https://github.com/beulahkemp/RH-canvas-animations.git"
 CHAR_CLONE_CMD = "git clone https://github.com/beulahkemp/RH-canvas-characters.git"
-MODELS_CLONE_CMD = "git clone https://github.com/beulahkemp/RH-3d-assets.git"
-_REPO_CLONE_CMD = {"animations": ANIM_CLONE_CMD, "characters": CHAR_CLONE_CMD,
-                   "models": MODELS_CLONE_CMD}
-_REPO_NAME = {"animations": ANIM_REPO, "characters": CHAR_REPO,
-              "models": MODELS_REPO}
+RH3D_CLONE_CMD = "git clone https://github.com/beulahkemp/RH-3d-assets.git"
 
 # Kit UA (polyhaven.py convention). CDN is public/no-auth; a unique UA is
 # good hygiene. Override via env if you fork this.
@@ -250,31 +262,28 @@ def _looks_like_animations(d: str) -> bool:
 
 
 def _looks_like_characters(d: str) -> bool:
-    """Portraits surface (2026-10-17 split: the 3D director assets no
-    longer live beside the character sheets — see MODELS_REPO)."""
+    # s41: the 2026-10-17 upstream strip removed all 3D content from the
+    # characters repo (director-gltf-manifest.json / director_models.json /
+    # the thumbnails dir are gone). Post-strip signature = the image-based
+    # character-reference data only.
     return os.path.isfile(os.path.join(d, "data", "characters.jsonl")) \
         and os.path.isfile(os.path.join(d, "portraits-manifest.json"))
 
 
-def _looks_like_models(d: str) -> bool:
-    """New RH-3d-assets layout (gltf-manifest.json) OR the pre-split
-    characters layout (director-gltf-manifest.json) — the join schema is
-    identical (url/size/sha256 rows), only the filename moved."""
-    return os.path.isfile(os.path.join(d, "data", "director_models.json")) \
-        and (os.path.isfile(os.path.join(d, "gltf-manifest.json"))
-             or os.path.isfile(os.path.join(d, "director-gltf-manifest.json")))
+def _looks_like_rh3d(d: str) -> bool:
+    # the migrated 3D home: probe only files the kit actually consumes
+    # (A12) — the flat joined gltf manifest + the previews manifest.
+    return os.path.isfile(os.path.join(d, "gltf-manifest.json")) \
+        and os.path.isfile(os.path.join(d, "previews-manifest.json"))
 
 
 def discover_libraries(explicit: str | None = None) -> dict:
     """Locate the RH-canvas clones. Returns
-    {'animations': path|None, 'characters': path|None,
-     'models': path|None} (the 2026-10-17 three-repo split: animations =
-    the mocap FBX library, characters = the portrait reference sheets,
-    models = the director 3D assets that used to live beside them).
+    {'animations': path|None, 'characters': path|None}.
 
     Search order for a base dir: the dir itself (when it IS a clone),
     <base>/<repo-name>, and the dir's parent's <repo-name> children —
-    so --library can point at any clone, at their common parent, or
+    so --library can point at either clone, at their common parent, or
     at any sibling directory. When --library / RH_CANVAS_LIB is given it
     is AUTHORITATIVE (fail-closed: no silent fallback probes); otherwise
     the kit's parent dir, cwd and cwd's parent are auto-probed."""
@@ -296,58 +305,54 @@ def discover_libraries(explicit: str | None = None) -> dict:
 
     found: dict = {}
     for base in bases:
-        for key in ("animations", "characters", "models"):
+        for repo, key, check in ((ANIM_REPO, "animations", _looks_like_animations),
+                                 (CHAR_REPO, "characters", _looks_like_characters),
+                                 (RH3D_REPO, "assets3d", _looks_like_rh3d)):
             if key in found:
                 continue
             probes = [base,
-                      os.path.join(base, _REPO_NAME[key])]
-            if key == "models":
-                # legacy fallback: a pre-split characters clone carries the
-                # director assets too (probe it AFTER the canonical repo)
-                probes.append(os.path.join(base, CHAR_REPO))
-            check = {"animations": _looks_like_animations,
-                     "characters": _looks_like_characters,
-                     "models": _looks_like_models}[key]
+                      os.path.join(base, repo)]
             for p in probes:
                 if os.path.isdir(p) and check(p):
                     found[key] = os.path.abspath(p)
-                    if key == "models" and os.path.basename(p) != MODELS_REPO:
-                        # audit-B P2-1: the legacy serve must be LOUD —
-                        # a stale pre-split clone otherwise passes the
-                        # battery gate with zero signal
-                        print(f"[rh_canvas] WARNING: models resolved via "
-                              f"the LEGACY layout {p} (expected "
-                              f"{MODELS_REPO}) — stale pre-split clone; "
-                              f"re-clone {MODELS_CLONE_CMD}",
-                              flush=True)
                     break
     return found
 
 
+# discovery key -> (repo name, clone command) — the 3-key map (A14)
+_LIB_REPOS = {
+    "animations": (ANIM_REPO, ANIM_CLONE_CMD),
+    "characters": (CHAR_REPO, CHAR_CLONE_CMD),
+    "assets3d": (RH3D_REPO, RH3D_CLONE_CMD),
+}
+
+
 def require_library(which: str, explicit: str | None = None) -> str:
     """Fail-closed library lookup. `which` in
-    {'animations','characters','models'}."""
+    {'animations','characters','assets3d'}."""
+    if which not in _LIB_REPOS:
+        raise RHRefused(f"unknown library {which!r} (expected one of "
+                        f"{sorted(_LIB_REPOS)})")
     libs = discover_libraries(explicit)
     path = libs.get(which)
     if path:
         return path
-    repo = _REPO_NAME[which]
-    clone = _REPO_CLONE_CMD[which]
-    others = [k for k in ("animations", "characters", "models")
-              if k != which and not libs.get(k)]
-    other = ""
-    if others:
-        names = ", ".join(_REPO_NAME[k] for k in others)
-        clones = "; ".join(_REPO_CLONE_CMD[k] for k in others)
-        other = (f"\n  (the sibling repo(s) {names} are also absent; when "
-                 f"you need them: {clones})")
+    repo, clone = _LIB_REPOS[which]
+    missing = [f"{r} ({c})" for k, (r, c) in _LIB_REPOS.items()
+               if k != which and not libs.get(k)]
+    other = ("\n  (these sibling repos are also absent, clone them when "
+             f"you need them: {'; '.join(missing)})") if missing else ""
     raise RHRefused(
         f"the {which} library repo {repo} was not found. Point --library "
         f"(or env RH_CANVAS_LIB) at the clone, its parent, or any sibling "
         f"dir — or clone it:\n    {clone}{other}\n"
         f"  NOTE (2026-10-16): the beulahkemp/RH-canvas-* repos are now "
         f"PRIVATE — anonymous clone returns 403; an authorized token is "
-        f"required (the CDN binaries remain public).")
+        f"required (the CDN binaries remain public).\n"
+        f"  NOTE (2026-10-17): the 3D model library (99 director glTF "
+        f"models + previews + thumbnails + dummy rigs) MOVED from "
+        f"RH-canvas-characters to {RH3D_REPO} — a pre-migration characters "
+        f"clone will NOT satisfy the assets3d probe.")
 
 
 # --------------------------------------------------------------------------- #
@@ -432,68 +437,88 @@ def load_facet_options(explicit: str | None = None) -> dict[str, list[str]]:
 
 
 def load_models(explicit: str | None = None) -> list[dict]:
-    """director_models.json joined with the gltf manifest (1:1, all 99
-    carry sha256) -> model entries keyed by name/uuid/filename. The
-    manifest is gltf-manifest.json in RH-3d-assets (the 2026-10-17
-    split), director-gltf-manifest.json in legacy layouts."""
-    root = require_library("models", explicit)
-    with open(os.path.join(root, "data", "director_models.json"), encoding="utf-8") as f:
-        groups = json.load(f)
-    mpath = os.path.join(root, "gltf-manifest.json")          # RH-3d-assets
-    if not os.path.isfile(mpath):                              # legacy layout
-        mpath = os.path.join(root, "director-gltf-manifest.json")
-    with open(mpath, encoding="utf-8") as f:
-        manifest = json.load(f)
-    by_url = {e["url"]: e for e in manifest}
+    """gltf-manifest.json from RH-3d-assets (the s41 migration home; flat
+    99 rows — upstream joined the two old files) -> model entries keyed
+    by name/uuid/filename, each joined with its in-git preview path +
+    sha256 from previews-manifest.json (D2/A10)."""
+    root = require_library("assets3d", explicit)
+    with open(os.path.join(root, "gltf-manifest.json"), encoding="utf-8") as f:
+        rows = json.load(f)
+    by_model = {r.get("modelId"): r for r in
+                json.load(open(os.path.join(root, "previews-manifest.json"),
+                               encoding="utf-8"))["records"]}
     models = []
-    for g in groups:
-        for m in g.get("models", []):
-            entry = by_url.get(m.get("url"))
-            if entry is None:                                 # fail closed
+    for e in rows:
+        for req in ("url", "sha256", "modelName", "size", "group"):
+            if not e.get(req):                             # fail closed
                 raise RHRefused(
-                    f"director model {m.get('name')!r} has no "
-                    f"gltf-manifest.json entry (URL {m.get('url')}) "
-                    f"— the two files must stay 1:1; re-clone "
-                    f"{MODELS_REPO}")
-            for need in ("size", "sha256"):
-                if need not in entry:
-                    # audit-B P3-5: field drift must refuse clean, not
-                    # escape as a raw KeyError (the no-traceback contract)
-                    raise RHRefused(
-                        f"director model {m.get('name')!r} manifest row "
-                        f"lacks {need!r} (URL {m.get('url')}) — the gltf "
-                        f"manifest drifted; re-clone {MODELS_REPO}")
-            models.append({
-                "id": m["id"],
-                "name": m["name"],
-                "group": g["key"],
-                "group_label": g.get("label", ""),
-                "size": entry["size"],
-                "sha256": entry["sha256"],
-                "url": entry["url"],
-                "preview": m.get("previewImage", ""),   # s40: CDN PNG
-                "filename": os.path.basename(
-                    urllib.parse.urlsplit(entry["url"]).path),
-            })
+                    f"gltf-manifest.json row {e.get('modelId') or e.get('modelName')!r} "
+                    f"is missing {req!r} — the manifest must carry it; "
+                    f"re-clone {RH3D_REPO}")
+        prev = by_model.get(e["modelId"], {})
+        models.append({
+            "id": e["modelId"],
+            "name": e["modelName"],
+            "group": e["group"],
+            "group_label": e.get("groupLabel", ""),
+            "size": e["size"],
+            "sha256": e["sha256"],
+            "url": e["url"],
+            "preview": e.get("previewImage", ""),   # CDN PNG
+            "preview_local": prev.get("path", ""),  # in-git copy (s41)
+            "preview_sha256": prev.get("sha256", ""),
+            "preview_size": prev.get("size", 0),
+            "filename": os.path.basename(
+                urllib.parse.urlsplit(e["url"]).path),
+        })
     return models
 
 
 def load_thumbnails(explicit: str | None = None) -> list[dict]:
-    """The 8 in-git body-type preview PNGs (tiny UI icons, already in the
-    clone — viewable offline, no fetch). bodyType taxonomy icons: baby /
-    child / elder / female / male / plusSize / superhero / teen."""
-    root = require_library("models", explicit)
-    tdir = os.path.join(root, "assets", "director", "canvasfile",
-                        "director", "character-thumbnails")
+    """The 8 body-type preview PNGs, manifest-driven (A13: name/dest/size/
+    sha256 from thumbnails-manifest.json — survives directory-layout
+    changes; the files are in the RH-3d-assets clone, viewable offline).
+    bodyType taxonomy icons: baby / child / elder / female / male /
+    plusSize / superhero / teen."""
+    root = require_library("assets3d", explicit)
+    with open(os.path.join(root, "thumbnails-manifest.json"),
+              encoding="utf-8") as f:
+        records = json.load(f)["records"]
     rows = []
-    if not os.path.isdir(tdir):
-        return rows
-    for fn in sorted(os.listdir(tdir)):
-        if fn.lower().endswith(".png"):
-            rows.append({"name": fn[:-4],
-                         "path": os.path.join(tdir, fn),
-                         "size": os.path.getsize(os.path.join(tdir, fn))})
+    for r in records:
+        p = r["dest"]
+        full = os.path.join(root, p)
+        if not os.path.isfile(full):                       # fail closed
+            raise RHRefused(
+                f"thumbnail {p!r} is declared in thumbnails-manifest.json "
+                f"but missing on disk — re-clone {RH3D_REPO}")
+        rows.append({"name": r["name"], "path": full,
+                     "size": r["size"], "sha256": r["sha256"]})
     return rows
+
+
+def load_rigs(explicit: str | None = None) -> list[dict]:
+    """dummy-rigs-manifest.json -> the 3 B15 pose-mannequin FBX rigs
+    (male_body 78-bone / female_body 78 / x_bot 65 — ALL mixamorig:*
+    skeleton, the same family as the 2,032 clips; live-proven bindable
+    s41). name = file stem (A11)."""
+    root = require_library("assets3d", explicit)
+    with open(os.path.join(root, "dummy-rigs-manifest.json"),
+              encoding="utf-8") as f:
+        doc = json.load(f)
+    rigs = []
+    for r in doc.get("files", []):
+        for req in ("url", "file", "bytes", "sha256"):
+            if not r.get(req):                             # fail closed
+                raise RHRefused(
+                    f"dummy-rigs-manifest.json row {r.get('file')!r} is "
+                    f"missing {req!r} — re-clone {RH3D_REPO}")
+        rigs.append({
+            "name": r["file"][:-4] if r["file"].endswith(".fbx") else r["file"],
+            "file": r["file"], "bytes": r["bytes"],
+            "sha256": r["sha256"], "url": r["url"],
+        })
+    return rigs
 
 
 def library_vintage(which: str, explicit: str | None = None) -> str:
@@ -663,9 +688,20 @@ def preview_cache_path(cache: str, model: dict) -> str:
 
 def fetch_previews(refs: list[str], cache: str | None = None,
                    explicit_lib: str | None = None) -> list[dict]:
-    """Download director-model preview PNGs (99 CDN thumbnails, ~186 KB
-    each) by model name/uuid/filename — see before you fetch a 74.5 MB
-    GLTF. Magic-byte verified (no sha256 upstream)."""
+    """Materialize director-model preview PNGs (99, ~186 KB each) by
+    model name/uuid/filename — see before you fetch a 74.5 MB GLTF.
+
+    s41 LAW (upstream now ships sha256 + in-git copies — the upgrade
+    from the s40 magic-byte law, which was the strongest honest check
+    when no hash existed):
+      1. cache hit            -> sha256 re-verify -> ok-cached
+      2. in-git copy (RH-3d-assets) -> sha256 verify; MISMATCH = corrupt
+         clone -> REFUSED (chain of custody — never silently fall back
+         to CDN); match -> copy to cache -> ok-git (or
+         re-fetched(repaired) when repairing a poisoned cache entry)
+      3. in-git absent        -> CDN fetch under the FULL sha256 verify
+         law (fetch_verified) -> ok
+    """
     cache = cache or DEFAULT_CACHE
     results = []
     for raw in refs:
@@ -675,15 +711,87 @@ def fetch_previews(refs: list[str], cache: str | None = None,
             raise RHRefused(
                 f"--preview {key!r} is not a director model (see `catalog "
                 f"--kind models` for names). Nothing was fetched.")
-        if not model.get("preview"):
+        if not model.get("preview") and not model.get("preview_local"):
             raise RHRefused(
-                f"model {model['name']!r} carries no previewImage URL "
-                f"(upstream gap — the platform record has none).")
+                f"model {model['name']!r} carries neither a previewImage "
+                f"URL nor an in-git preview copy (upstream gap — the "
+                f"platform record has none).")
         dest = preview_cache_path(cache, model)
-        status = fetch_verified_light(
-            model["preview"], dest, f"preview {model['name']}")
+        status: str | None = None
+        if model.get("preview_sha256"):
+            entry = {"url": model.get("preview", ""),
+                     "size": model.get("preview_size") or 0,
+                     "sha256": model["preview_sha256"]}
+            # A3 taxonomy, in order: cache-hit sha-verified -> ok-cached;
+            # then repair/materialize from in-git -> ok-git; then CDN -> ok
+            if os.path.exists(dest) and _verify(
+                    dest, entry["size"], entry["sha256"]):
+                status = "ok-cached"
+            else:
+                poisoned = os.path.exists(dest)
+                if poisoned:
+                    os.remove(dest)          # poisoned cache -> repair
+                if model.get("preview_local"):
+                    root = require_library("assets3d", explicit_lib)
+                    src = os.path.join(root, model["preview_local"])
+                    if os.path.isfile(src):
+                        if not _verify(src, entry["size"], entry["sha256"]):
+                            raise RHRefused(      # A4 chain of custody
+                                f"the in-git preview copy for model "
+                                f"{model['name']!r} ({model['preview_local']}) "
+                                f"is CORRUPT (sha256 mismatch vs "
+                                f"previews-manifest.json) — re-clone "
+                                f"{RH3D_REPO}. Nothing was fetched.")
+                        os.makedirs(os.path.dirname(
+                            os.path.abspath(dest)), exist_ok=True)
+                        shutil.copyfile(src, dest)
+                        status = ("re-fetched(repaired)" if poisoned
+                                  else "ok-git")
+                    elif entry["url"]:
+                        status = fetch_verified(
+                            entry, dest, f"preview {model['name']}")
+                elif entry["url"]:
+                    status = fetch_verified(
+                        entry, dest, f"preview {model['name']}")
+        else:
+            # legacy no-sha rows (not the current upstream): magic+size
+            if not model.get("preview"):
+                raise RHRefused(
+                    f"model {model['name']!r} has no preview URL and the "
+                    f"manifest carries no sha256 — nothing to verify "
+                    f"against. Re-clone {RH3D_REPO}.")
+            status = fetch_verified_light(
+                model["preview"], dest, f"preview {model['name']}")
         results.append({"id": model["name"], "kind": "preview",
                         "name": model["name"], "status": status,
+                        "dest": dest})
+    return results
+
+
+def fetch_rigs(names: list[str], cache: str | None = None,
+               explicit_lib: str | None = None) -> list[dict]:
+    """Download the dummy-rig FBX files (male_body / female_body /
+    x_bot — mixamorig: skeleton family, directly bindable with the
+    2,032 clips; live-proven s41) — FULL sha256 law (the manifest
+    carries hashes), streamed + verified before replace."""
+    cache = cache or DEFAULT_CACHE
+    results = []
+    for raw in names:
+        key = str(raw).strip()
+        rig = next((r for r in load_rigs(explicit_lib)
+                    if r["name"] == key or r["file"] == key), None)
+        if rig is None:
+            raise RHRefused(
+                f"--rigs {key!r} matches no dummy-rigs-manifest.json row "
+                f"(names: male_body / female_body / x_bot). "
+                f"Nothing was fetched.")
+        dest = os.path.join(cache, "rigs", rig["file"])
+        status = fetch_verified(
+            {"url": rig["url"], "size": rig["bytes"],
+             "sha256": rig["sha256"]},
+            dest, f"rig {rig['name']}")
+        results.append({"id": rig["name"], "kind": "rig",
+                        "name": rig["name"], "status": status,
                         "dest": dest})
     return results
 
@@ -796,6 +904,22 @@ def ensure_model(name: str, cache: str | None = None,
     return dest
 
 
+def ensure_rig(name: str, cache: str | None = None,
+               explicit_lib: str | None = None) -> str:
+    """Fetch-if-missing a dummy-rig FBX (sha256 law) -> cache path."""
+    rig = next((r for r in load_rigs(explicit_lib)
+                if r["name"] == str(name).strip()), None)
+    if rig is None:
+        raise RHRefused(
+            f"dummy rig {name!r} not found (names: male_body / "
+            f"female_body / x_bot; see `catalog --kind rigs`).")
+    dest = os.path.join(cache or DEFAULT_CACHE, "rigs", rig["file"])
+    fetch_verified({"url": rig["url"], "size": rig["bytes"],
+                    "sha256": rig["sha256"]},
+                   dest, f"rig {rig['name']}")
+    return dest
+
+
 # --------------------------------------------------------------------------- #
 #  Catalog filtering + CLI (host-side)
 # --------------------------------------------------------------------------- #
@@ -888,8 +1012,9 @@ def catalog_query(kind: str, category: str | None = None,
             rows = [r for r in rows
                     if s in r["name"].lower() or s in r["group_label"].lower()]
         meta = {"groups": sorted({r["group"] for r in rows}),
-                "preview_note": "rows carry a preview PNG URL "
-                                "(fetch: --preview <name>)"}
+                "preview_note": "rows carry a preview PNG URL + in-git "
+                                "copy (fetch: --preview <name> — sha256 "
+                                "verified, s41)"}
     elif kind == "thumbnails":
         rows = load_thumbnails(explicit_lib)
         if search:
@@ -897,14 +1022,21 @@ def catalog_query(kind: str, category: str | None = None,
             rows = [r for r in rows if s in r["name"].lower()]
         meta = {"note": "in-git body-type UI icons — local files, "
                         "viewable without any fetch"}
+    elif kind == "rigs":
+        rows = load_rigs(explicit_lib)
+        meta = {"note": "3 B15 pose-mannequin FBX rigs (mixamorig: "
+                        "skeleton family — bindable with the 2,032 "
+                        "clips; fetch: --rigs <name>, then Blender-side "
+                        "import-rig <name>)"}
     else:
         raise RHRefused(f"--kind must be categories|animations|characters|"
-                        f"models|thumbnails, got {kind!r}")
+                        f"models|thumbnails|rigs, got {kind!r}")
+    # s41-A7 vintage remap: models/thumbnails/rigs live in RH-3d-assets
     vintage = (library_vintage("animations", explicit_lib)
                if kind in ("categories", "animations")
-               else library_vintage("models", explicit_lib)
-               if kind in ("models", "thumbnails")
-               else library_vintage("characters", explicit_lib))
+               else library_vintage("characters", explicit_lib)
+               if kind == "characters"
+               else library_vintage("assets3d", explicit_lib))
     if vintage:
         meta["library_captured"] = vintage
     return {"kind": kind, "count": len(rows), "rows": rows, "meta": meta}
@@ -935,8 +1067,12 @@ def _print_catalog(res: dict, limit: int, as_json: bool) -> None:
             print(f"  {r['id']:>4}  {r['name']}  {fcts}{pnote}")
         elif res["kind"] == "thumbnails":
             print(f"  {r['name']:<16} {r['size']/1024:.1f}KB  {r['path']}")
+        elif res["kind"] == "rigs":
+            print(f"  {r['name']:<14} {r['bytes']/1048576:.2f}MB  "
+                  f"sha:{r['sha256'][:12]}…  {r['url']}")
         else:
-            prev = "preview:yes" if r.get("preview") else "preview:NONE"
+            prev = ("preview:git+cdn" if r.get("preview_local")
+                    else "preview:yes" if r.get("preview") else "preview:NONE")
             print(f"  {r['group']:<3}  {r['name']:<24}  {r['group_label']:<14} "
                   f"{r['size']/1048576:.2f}MB  {prev}  {r['filename']}")
 
@@ -968,9 +1104,10 @@ def _action_fcurves(act):
 
 
 def check_mixamo_rig(arm, ctx: str = "") -> dict:
-    """Teacher-check an armature against the Mixamo family contract
-    (65 bones, every one prefixed 'mixamorig:'). Returns a census dict;
-    raises RHRefused on violation."""
+    """Teacher-check an armature against the strict Mixamo clip contract
+    (exactly 65 bones, every one prefixed 'mixamorig:') — the gate for
+    import-clip / mannequin (the capsule table and clip census are
+    65-bone contracts). Returns a census dict; raises RHRefused."""
     bones = list(arm.data.bones)
     n = len(bones)
     bad = [b.name for b in bones
@@ -989,6 +1126,33 @@ def check_mixamo_rig(arm, ctx: str = "") -> dict:
             f"Mixamo-family rig. If you renamed bones for testing, restore "
             f"the prefix; RH-canvas clips drive 'mixamorig:' names only.")
     return {"bones": n, "prefix_ok": True}
+
+
+def check_mixamo_family(arm, ctx: str = "") -> dict:
+    """Family-level gate for BIND targets (s41-A1): all bones 'mixamorig:'
+    prefixed AND n >= 65. The 65-bone clip actions' channels are then
+    validated by name by bind()'s channel-match (the dummy rigs
+    male_body/female_body carry 78 bones = 65 standard + 13 helper
+    '_end' bones — live-proven bindable s41; the strict-65 gate would
+    wrongly refuse them)."""
+    bones = list(arm.data.bones)
+    n = len(bones)
+    bad = [b.name for b in bones
+           if not b.name.startswith(MIXAMO_PREFIX)]
+    head = f"[{ctx}] " if ctx else ""
+    if bad:
+        raise RHRefused(
+            f"{head}armature '{arm.name}' has {len(bad)} bone(s) without "
+            f"the '{MIXAMO_PREFIX}' prefix (first: {bad[0]!r}) — not a "
+            f"Mixamo-family rig; RH-canvas clips drive 'mixamorig:' names "
+            f"only.")
+    if n < MIXAMO_BONE_COUNT:
+        raise RHRefused(
+            f"{head}armature '{arm.name}' has {n} bones — fewer than the "
+            f"{MIXAMO_BONE_COUNT}-bone clip contract (a partial Mixamo "
+            f"rig; binding would orphan channels).")
+    return {"bones": n, "prefix_ok": True,
+            "helper_bones": n - MIXAMO_BONE_COUNT}
 
 
 def import_clip(clip_id: str, name: str | None = None,
@@ -1288,7 +1452,7 @@ def bind(target, clip, cache: str | None = None,
     retarget)."""
     bpy = _bpy()
     arm = _resolve_armature_arg(target)
-    check_mixamo_rig(arm, "bind")
+    check_mixamo_family(arm, "bind")          # s41-A1 family gate
     act, src_arm = _resolve_clip_action(clip, cache, explicit_lib)
     # a hand-named action must target mixamorig pose bones
     n_mix = 0
@@ -1465,6 +1629,80 @@ def import_statue(model_name: str, ground_snap: bool = False,
     return new, report
 
 
+def import_rig(rig_name: str, at: tuple[float, float, float] = (0.0, 0.0, 0.0),
+               rot_z_deg: float = 0.0, cache: str | None = None,
+               explicit_lib: str | None = None) -> tuple:
+    """Import a dummy-rig FBX (male_body / female_body / x_bot — the B15
+    pose-mannequin rigs, mixamorig: skeleton family = the same family as
+    the 2,032 clips; bind any clip onto them, live-proven s41).
+
+    LAWS applied:
+      - SCALE LAW: FBX import lands object scale (0.01,0.01,0.01) + rot
+        X~=+90deg — NEVER transform_apply (identical to import-clip).
+      - PLACEMENT LAW: `at`/`rot_z_deg` move the ARMATURE only (never
+        the skinned meshes — moving the mesh after binding breaks it).
+        rot_z_deg is a world-Z yaw ADDED to the imported X+90deg.
+      - STUB-ACTION HYGIENE (s41-A5): x_bot imports with an ASSIGNED
+        1-2 frame stub action 'Armature|mixamo.com|Layer0' — purge_unassigned
+        canNOT remove assigned actions, so the stub is cleared HERE
+        (unassign + unpin + purge) keeping the canonical action name free
+        for the next clip import (all Mixamo FBX actions share that name —
+        the s39 fingerprint law).
+    Returns (armature_object, report_dict)."""
+    bpy = _bpy()
+    path = ensure_rig(rig_name, cache, explicit_lib)
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=path)   # default settings (scale law)
+    new = [o for o in bpy.data.objects if o not in before]
+    arms = [o for o in new if o.type == 'ARMATURE']
+    if not arms:
+        raise RHRefused(
+            f"FBX import of rig {rig_name!r} produced no armature — "
+            f"unexpected (all 3 rigs carry a mixamorig: skeleton).")
+    arm = arms[0]
+    census = check_mixamo_family(arm, "import-rig")
+    meshes = [o for o in new if o.type == 'MESH']
+    polys = sum(len(o.data.polygons) for o in meshes)
+
+    # stub-action hygiene (A5): clear ASSIGNED stubs so the canonical
+    # 'Armature|mixamo.com|Layer0' name stays free for clip imports
+    stub_names = []
+    stub = arm.animation_data.action if arm.animation_data else None
+    if stub is not None:
+        stub_names.append(stub.name)
+        arm.animation_data.action = None
+        stub.use_fake_user = False
+    purged = purge_unassigned()
+
+    # placement law: move the ARMATURE (world offset + yaw), never meshes
+    import math
+    from mathutils import Matrix
+    arm.matrix_world = (
+        Matrix.Translation((at[0], at[1], at[2]))
+        @ Matrix.Rotation(math.radians(rot_z_deg), 4, 'Z')
+        @ arm.matrix_world)
+    bpy.context.view_layer.update()
+
+    report = {
+        "rig": str(rig_name),
+        "file": os.path.basename(path),
+        "armature": arm.name,
+        "bones": census["bones"],
+        "helper_bones": census["helper_bones"],
+        "meshes": len(meshes),
+        "polys": polys,
+        "placed_at": list(at),
+        "rot_z_deg": rot_z_deg,
+        "stub_actions_cleared": stub_names,
+        "unassigned_purged": purged["removed"],
+        "scale_law": "kept (obj scale 0.01 + rot X+90deg; no transform_apply)",
+        "note": "mixamorig: family rig — bind any RH clip onto it: "
+                "`rh_canvas.py bind <armature> --clip <catalog id>`; "
+                "bind by catalog id, never by the raw action name",
+    }
+    return arm, report
+
+
 # --------------------------------------------------------------------------- #
 #  CLI
 # --------------------------------------------------------------------------- #
@@ -1529,7 +1767,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("catalog", help="browse catalogs (no network)")
     p.add_argument("--kind", default="animations",
                    choices=["categories", "animations", "characters",
-                            "models", "thumbnails"])
+                            "models", "thumbnails", "rigs"])
     p.add_argument("--category", default=None,
                    help="animations: category CODE (list them: --kind "
                         "categories); models: group JC/RW/DJ/CJ/JT")
@@ -1547,18 +1785,22 @@ def main(argv=None) -> int:
     p.add_argument("--json", action="store_true")
     p.add_argument("--limit", type=int, default=40)
 
-    p = sub.add_parser("fetch", help="verified CDN download (idempotent): "
-                       "--ids (sha256) | --preview (PNG magic) | "
-                       "--portraits (jpg size+magic)")
+    p = sub.add_parser("fetch", help="verified download (idempotent): "
+                       "--ids (sha256) | --preview (sha256, s41) | "
+                       "--portraits (jpg size+magic) | --rigs (sha256)")
     p.add_argument("--ids", default=None,
                    help="comma-separated animation ids and/or model names "
                         "(e.g. 2846,2825,Farmer) — sha256-verified")
     p.add_argument("--preview", default=None,
                    help="comma-separated director model names/uuids — "
-                        "download their preview PNGs (magic-verified)")
+                        "materialize their preview PNGs (in-git copy "
+                        "sha-verified first, else CDN sha-verified)")
     p.add_argument("--portraits", default=None,
                    help="comma-separated character preset ids — download "
                         "their portrait renders (size+magic verified)")
+    p.add_argument("--rigs", default=None,
+                   help="comma-separated dummy-rig names (male_body / "
+                        "female_body / x_bot) — sha256-verified FBX")
 
     p = sub.add_parser("import-clip", help="FBX clip -> armature + action")
     p.add_argument("--id", required=True, help="animation catalog id (STRING)")
@@ -1582,6 +1824,18 @@ def main(argv=None) -> int:
     p.add_argument("--ground-snap", action="store_true",
                    help="offset root-object z so feet sit at exactly 0")
 
+    p = sub.add_parser("import-rig", help="dummy-rig FBX (male_body / "
+                       "female_body / x_bot — mixamorig: skeleton family, "
+                       "bindable with the 2,032 clips)")
+    p.add_argument("--name", required=True,
+                   help="rig name (male_body | female_body | x_bot)")
+    p.add_argument("--at", default="0,0,0",
+                   help="world x,y,z for the ARMATURE (placement law: the "
+                        "skinned meshes are never moved directly)")
+    p.add_argument("--rot", type=float, default=0.0,
+                   help="world-Z yaw in degrees ADDED to the imported "
+                        "X+90deg (scale law: never transform_apply)")
+
     args = ap.parse_args(argv)
     # hoisted common flags win over the parse defaults (they may have
     # appeared before OR after the subcommand)
@@ -1602,11 +1856,11 @@ def main(argv=None) -> int:
                                 tag=args.tag, max_frames=args.max_frames)
             _print_catalog(res, args.limit, args.json)
         elif args.cmd == "fetch":
-            if not (args.ids or args.preview or args.portraits):
+            if not (args.ids or args.preview or args.portraits or args.rigs):
                 raise RHRefused(
-                    "fetch needs one of --ids / --preview / --portraits "
-                    "(e.g. --ids 2846,Farmer | --preview Bomber | "
-                    "--portraits 1)")
+                    "fetch needs one of --ids / --preview / --portraits / "
+                    "--rigs (e.g. --ids 2846,Farmer | --preview Bomber | "
+                    "--portraits 1 | --rigs x_bot)")
             results = []
             if args.ids:
                 ids = [i.strip() for i in args.ids.split(",") if i.strip()]
@@ -1617,6 +1871,9 @@ def main(argv=None) -> int:
             if args.portraits:
                 cids = [i.strip() for i in args.portraits.split(",") if i.strip()]
                 results += fetch_portraits(cids, args.cache, args.library)
+            if args.rigs:
+                rnames = [i.strip() for i in args.rigs.split(",") if i.strip()]
+                results += fetch_rigs(rnames, args.cache, args.library)
             for r in results:
                 print(f"[rh] fetch {r['kind']} {r['id']} ({r['name']}): "
                       f"{r['status']} -> {r['dest']}")
@@ -1643,6 +1900,17 @@ def main(argv=None) -> int:
         elif args.cmd == "import-statue":
             _objs, rep = import_statue(args.model, args.ground_snap,
                                        args.cache, args.library)
+            _json_print(rep)
+        elif args.cmd == "import-rig":
+            try:
+                at = tuple(float(v) for v in args.at.split(","))
+                if len(at) != 3:
+                    raise ValueError
+            except ValueError:
+                raise RHRefused(
+                    f"--at expects x,y,z, got {args.at!r}")
+            _arm, rep = import_rig(args.name, at, args.rot,
+                                   args.cache, args.library)
             _json_print(rep)
         else:                                   # pragma: no cover
             ap.error(f"unknown subcommand {args.cmd!r}")
