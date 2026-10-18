@@ -4146,3 +4146,21 @@ Work Log:
 Stage Summary:
 - Baseline green: full battery 37 PASS / 1 FAIL(crowd_e2e, fixed by pin bump) / 2 SKIP(fixture-absent, regenerated) -> all 40 surfaces individually green in this sandbox.
 - Submodule pin bump is an UNCOMMITTED fix ready for commit; sandbox state = battery-ready for the audit + port-back rounds.
+
+---
+Task ID: s23-orchestrator-final
+Agent: orchestrator (session-23)
+Task: audit-everything + port-back-to-mainline round (complete)
+
+Work Log:
+- AUDIT-A (the s22 timeout) finally ran as scoped A1 (math+module): formula layer cleared by independent re-derivation (numpy-probed exact to 1e-9); the GATE layer was fail-open (3 P1). All folded + enforced; 6/6 hero green; the connected-location refusal was REPLACED by skip+report after the measurement (the strict form fired on the working path for a channel that is a dead no-op in the source too).
+- AUDIT-C (port-delta review): delta sound, port-ready, 0 P0-P2 — but the REBASE mid-session surfaced upstream s41 (aa05cf3) landing a SUPERSET migration design; the s22 port-back booking CLOSED-BY-UPSTREAM; the vendor (68fbb1e, film lane) replaced my s22 rh_canvas implementation in-tree.
+- Post-vendor validation caught TWO real defects in the vendored battery: the vacuous-score class (R10b printed ALL PASS with a [FAIL] check on the wire — row() scored exceptions only, fixed in BOTH rh suites with the hero-lane delta law) and two determinism landmines (R10b factory reset for the stub-action name collision; R9g2 cold-cache purge). 16/16 real + 14/14 fixture + crossval 9-laws green after.
+- PORT-BACK TO MAINLINE (the user directive): mainline reproduced BOTH test defects live (same lie: FAIL printed, ALL PASS). Ported the three fixes + the docstring drift fix upstream (17e3ef1); mainline now TRULY 16/16 against the live clones. The RH repos remain PRIVATE (anonymous ls-remote fails — verified; my first ledger claim was wrong, corrected).
+- Honest-skip exercise (queue 4): crossval exit 2 + sentinel with libs hidden; hero_lane 6/6 with libs hidden — library-INDEPENDENT by design (queue premise half-wrong, documented).
+- AUDIT-B survival check: all folds verified (P2-1 by supersession — s41's refusal stronger than my warning; P2-2/P2-3/P3-5/P3-6 by presence).
+- FULL BATTERY: 40/40 PASS 0 SKIP (first fully-green in this sandbox).
+
+Stage Summary:
+- Commits: 2c99697 (pin bump), 43f6d24 (A1 fold), 9d9977b (determinism+scoring), 19fe9f0 (ledger correction) @ VK; 17e3ef1 @ mainline.
+- Next-session: AUDIT-A2 (loader/wrapper/lab surfaces, lighter coverage this round), the user review round (7 packages, THE open item), P2-7 multi-slot pin nuance, film-lane queues (collision/nav, night-market).
