@@ -1,5 +1,85 @@
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
+> Session 23 close: 2026-10-18. HEAD = the AUDIT-EVERYTHING round:
+> the s22 AUDIT-A finally ran (scoped) and its gate-layer P1s are
+> ENFORCED (the retarget docstring's fail-closed claim is now
+> load-bearing); the s22 port-back booking was CLOSED BY UPSTREAM
+> (mainline s41 landed a superset migration design — vendored here by
+> the film lane mid-session); the post-vendor validation caught the
+> VACUOUS-SCORE class live (ALL PASS with a [FAIL] on the wire) in
+> both RH suites + two determinism landmines, all fixed; the residual
+> port-back (the same test fixes + a docstring drift) LANDED UPSTREAM
+> (agent-kit 17e3ef1) — mainline now truly 16/16 against the live
+> clones. Battery 40/40 0 SKIP. This block -> the session-22 block ->
+> PLAN Track TF -> worklog (session-23 record).
+
+## Session-23 close state (NEWEST — read this first)
+
+- **AUDIT-A verdict + fold (43f6d24)**: the retarget MATH is sound
+  (conjugate-basis rotation + parent-cancellation independently
+  re-derived and numpy-probed exact to 1e-9; slot discipline, frame
+  freshness, unpack ordering all cleared). The GATE layer was
+  fail-open: drives_ok/teleport_ok computed but never enforced; no
+  source anti-frozen defense; location channels never drive-checked.
+  ALL ENFORCED NOW: gates raise inside retarget(); the source
+  data-vs-evaluated span check refuses the stuck-source rest-bake
+  (static actions stay legal); the drive check covers locations.
+- **THE CONNECTED-LOCATION LAW (as measured — the auditor's strict
+  form was wrong)**: a location fcurve cannot drive a use_connect
+  bone in ANY rig, and the same-class channel is an equally dead
+  no-op in the SOURCE (the UAL walk replays gait from rotations
+  alone). Law: SKIP + report (rep loc_no_op), NEVER refuse — the
+  refusal form fired on the real hero path and would have broken a
+  working bake over a channel carrying zero information.
+- **THE VACUOUS-SCORE CLASS (the round's headline catch)**: a suite
+  row() that scores only EXCEPTIONS prints ALL PASS with [FAIL]
+  checks on the wire — caught LIVE on the vendored R10b row, and
+  REPRODUCED ON MAINLINE (the same lie). Law: row scoring fails on
+  check-level failures (the test_hero_lane delta pattern — n0 =
+  len(FAIL) before, compare after); suites predating the pattern are
+  landmines. Fixed in test_rh_canvas + test_rh_fixture, ported
+  upstream.
+- **Determinism preconditions must be SELF-GUARANTEED**: R10b relied
+  on a fresh sandbox (R10's stub action collided -> Layer0.001 vs an
+  exact-name expectation — row-ORDER dependent); R9g2 relied on a
+  never-run cache path (warm from a previous RUN -> ok-cached).
+  Factory-reset / purge INSIDE the row; "passed in a fresh sandbox"
+  is not a result.
+- **The upstream-tip law re-proven the hard way**: the s22
+  "port-back queued" booking was ALREADY obsolete when this session
+  started (upstream s41 aa05cf3 landed the migration fix as a
+  superset; the film lane vendored it into this tree mid-session).
+  Re-read origin/main after EVERY rebase; re-verify any booking
+  against the current tip before working it.
+- **Submodule pin hygiene (2c99697)**: the recorded gitlink pin
+  (r149) was STALE vs what s22 actually tested (working tree at
+  r151+, wheel 1.6.0) — a faithful re-land reproduced the drift as
+  a crowd_e2e version-coherence FAIL. Pin bumped to b4bf76e. LAW:
+  bump the pin at WRAP time, not re-land time.
+- **The RH repos remain PRIVATE** (anonymous ls-remote fails —
+  verified this session; my first ledger claim said public, it was
+  WRONG and is corrected). PATs: OLD2 writes zmpc01, the beulahkemp
+  PAT reads the RH repos; both in /home/z/creds/gh.env (recreate
+  from this file if wiped); push helper /home/z/creds/push_vk.sh.
+- **Open queues for the next session**:
+  1. THE USER REVIEW ROUND now spans SEVEN packages (tform_2
+     humanoid on top) — still THE lane-level open item.
+  2. AUDIT-A2: the retarget MODULE is hardened; the loader
+     (rig_family_quaternius) + wrapper_rig + the lab hero zone got
+     lighter coverage (context files in A1) — a scoped wave each.
+  3. P2-7 (deferred, documented in DESIGN §7): _assign_action pins
+     slots[0] — structurally unpinned for a fresh action pre-write,
+     wrong for multi-slot actions; every real path is
+     fresh-single-slot today; revisit when a multi-slot source
+     arrives.
+  4. Upstream residual (all tiny, non-blocking): none open — the
+     docstring drift + test fixes landed (17e3ef1); the PRIVATE
+     note is correct as written.
+  5. Film-lane queues (NOT this lane's scope): collision/navigation
+     rollout, the night-market film, the humanoid rollout to the
+     other five films.
+
+
 > Session 22 close: 2026-10-18. HEAD = the RH REAL-DATA round: the
 > asset ecosystem RETURNED (beulahkemp/RH-canvas-animations +
 > RH-canvas-characters + RH-3d-assets; CDN live), the library-split

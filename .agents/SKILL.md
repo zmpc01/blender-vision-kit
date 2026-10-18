@@ -352,70 +352,72 @@ gait_modifiers.
 - MARKER-CAMERA law (nulled markers STILL flip — delete+recreate);
   chase_frame="belt" is a PIN; the SILENT-REPLACE law; loader N-pin.
 
-## SESSION 20 LAWS (the RH integration lane — vendor + offline fixture + dog food)
+## SESSION 20 LAWS (the RH lane — condensed to the laws; full: docs/rh_canvas.md s20 amendments)
 
-- **THE SELF-SYCOPHANCY CATCH (the round's headline)**: pose-bone
-  LOCATION is BONE-LOCAL (a +Z-world Hips bone => local Y = world up,
-  local Z = horizontal). "Vertical" root motion keyed on local Z hops
-  SIDEWAYS; the per-actor-follow camera masked it and the principal
-  eye-certified an illusion. TWO independent numeric probes caught it.
-  LAW: every eye-certified motion claim needs a numeric corroboration
-  (world-z sampling at sampled frames) — the two-column law extends to
-  E2E: the numbers travel WITH the strips.
-- The RH data source went DARK (repos 404, no mirrors) — the module
-  surface survived via the OFFLINE FIXTURE LIBRARY
-  (scripts/rh_fixture_lib.py): contract-conformant 65-bone clips built
-  by a STRUCTURED FBX REWRITE (the addon's own parse_fbx ->
-  mutable encode_bin tree -> patch -> encode; byte-structure-safe:
-  replace-only P records, per-slot type packing, S/R length-prefix
-  finalize). Empirical importer law: bone rests read the A-FLAGGED
-  CURVE records, not the P records (rest edits are inert; curves drive).
-  Documented deviations pinned in truth.json (obj scale 1.0, rot X 0 —
-  the platform's Maya-time unit baking is unrecoverable offline).
-- GATE ANIMATED BEHAVIOR, not just rest state: the fixture pipeline
-  shipped a dead stage + a wrong axis green because the laws only
-  measured rest. The generator now frame-evaluates WORLD hips z and
-  fails closed (jump span, die drop).
-- placement ARMATURE law: the box-proxy BVH and _polys_world quads MUST
-  share one face table (_ARMATURE_QUADS — index alignment by
-  construction; create_cube's face order differs = wrong poly tested =
-  false crossings). Blender bound_box corner order (probed): i&1->z,
-  i&2->y, i&4->x. An ARMATURE's .data is a TRUTHY Armature block with
-  no .vertices — type-check 'MESH', never getattr-truthiness.
-- Imported RH armatures are ANIMATED OBJECTS: move/place needs
-  override='keyframe'; anchors move on the BBOX BOTTOM-CENTER; armature
-  yaw is CLOBBERED by object-level rotation keys (facing = wrapper-empty).
-- Renaming a pose bone AUTO-REMAPS the action's fcurve paths — a decoy
-  must bind a DIFFERENT clip.
-- Battery = 38 suites (honest-skip protocol: exit 2 + SUITE-SKIP
-  marker — zero coverage must NOT score PASS). Fine-grained-PAT
-  signature: API 200 + git 401 — provision via the API tarball.
+- **THE SELF-SYCOPHANCY CATCH**: pose-bone LOCATION is BONE-LOCAL —
+  "vertical" root motion on local Z hops SIDEWAYS; the follow-cam
+  masked it and the eye certified an illusion; TWO numeric probes
+  caught it. LAW: every eye-certified motion claim needs world-z
+  numeric corroboration — the numbers travel WITH the strips.
+- The RH source went dark s20 -> the OFFLINE FIXTURE LIBRARY
+  (rh_fixture_lib.py) via STRUCTURED FBX REWRITE (parse_fbx ->
+  encode_bin tree -> patch -> encode; bone rests read the A-FLAGGED
+  CURVES, not P records; unit-baking deviations pinned in truth.json).
+- GATE ANIMATED BEHAVIOR, not rest state (frame-evaluated WORLD hips
+  z, fail-closed). placement ARMATURE law: _ARMATURE_QUADS shared face
+  table; bound_box corner order i&1->z, i&2->y, i&4->x; type-check
+  'MESH' not truthiness. Imported RH armatures are ANIMATED OBJECTS
+  (override='keyframe'; bbox bottom-center anchors; object-level
+  rotation keys clobber yaw). Renaming a pose bone AUTO-REMAPS fcurve
+  paths — a decoy needs a DIFFERENT clip.
+- Battery honest-skip protocol: exit 2 + SUITE-SKIP marker. PAT
+  signature: API 200 + git 401 -> provision via the API tarball.
 
-## SESSION 21 LAWS (the resume + re-land round — tform_1 staged + upstream export compliance)
+## SESSION 21 LAWS (re-land round — condensed; full: docs/USABILITY_TF1)
 
-- **THE RE-LAND DRILL IS CHEAP NOW (~20 min)**: chunked_dl Blender →
-  wheel FROM THE VENDORED crowd-kit wheels → install.sh BLENDER_BIN →
-  tools/blender symlinks the DIRECTORY (blrun wants tools/blender/
-  blender) → warm cache → server (bun install + the REPO'S db:push
-  contract — bare `npx prisma db push` hits the wrong db; daemonize
-  needs an ABSOLUTE log path) → restore receipts check.
-- **5.2 ENGINE ENUM**: BLENDER_EEVEE (NEXT is 4.x-only). Scene
-  modules must startswith-match + hasattr the samples knob — never
-  version-guess the enum.
-- **THE CANONICAL EXPORTER IS agent-kit's** — the wrapper refuses
-  any KIT_EXPORTER lacking the "export stamped OK" marker (r084#9);
-  the escape-previz copy is NOT exportable.
-- **THE s32 DISCOVERY GATE** fail-closes UPPERCASE payload-shaped
-  constants the story contract doesn't map. Taxonomy: generic
-  film-lane vocabulary → KNOWN_NON_STORY with a documented
-  destination (8 names upstream 2fa345e); film knobs → LOWERCASE
-  in-module (tform_scene is the worked example). Counted replaces.
-- **RENDER EXT LAW**: render.filepath's ext is REPLACED by the
-  format's canonical ext (.png) — derive manifests from the FILES.
-- **Check the UPSTREAM TIP before re-deriving a fix** — the tfog-era
-  atmosphere VOLUME_SCATTER fallback died with its sandbox; re-landed
-  at the source (2fa345e). GIT IS THE DISK applies to agent-kit TOO.
-- **GitLab posture**: vision-kit github-canonical is non-FF by
-  lineage law — per-round archive branches (s21 current); agent-kit +
-  previz-review mirror FF. /home/sync is REPO-BY-REPO (a whole-lab
-  rsync exceeds the 10-min tool cap).
+- Re-land drill ~20 min: chunked_dl Blender → wheel from the vendored
+  crowd-kit wheels → install.sh BLENDER_BIN → warm cache → server
+  (bun install + the REPO'S db:push contract; daemonize needs an
+  ABSOLUTE log path). 5.2 engine enum BLENDER_EEVEE (NEXT is 4.x).
+- THE CANONICAL EXPORTER is agent-kit's (r084#9 marker refused
+  otherwise); s32 discovery gate taxonomy (generic → KNOWN_NON_STORY
+  with destination; film knobs lowercase in-module); render.filepath
+  ext is REPLACED by the canonical ext — derive manifests from FILES.
+- Check the UPSTREAM TIP before re-deriving (GIT IS THE DISK applies
+  to agent-kit too). GitLab: per-round archive branches; /home/sync
+  is REPO-BY-REPO.
+
+## SESSION 23 LAWS (the audit-everything round — condensed)
+
+- **THE VACUOUS-SCORE CLASS**: a suite row() that scores only
+  EXCEPTIONS prints ALL PASS with [FAIL] checks on the wire — caught
+  LIVE (vendored R10b), then REPRODUCED ON MAINLINE (the same lie).
+  LAW: row scoring fails on check-level failures (the n0=len(FAIL)
+  delta pattern); suites predating the pattern are landmines — sweep
+  every suite's row() before trusting its green.
+- **Determinism preconditions must be SELF-GUARANTEED**: row state
+  that depends on a fresh sandbox (datablock-name registries, cache
+  dirs) WILL fail on a re-land or second run (R10b's stub-action
+  .001 collision was row-ORDER dependent; R9g2's cold cache was
+  run-history dependent). Factory-reset/purge INSIDE the row.
+- **The auditor's strict form can be wrong vs measurement**: the
+  connected-location REFUSAL fired on the working hero path — a
+  location fcurve cannot drive a use_connect bone in ANY rig and the
+  same channel is a dead no-op in the SOURCE (gait replays from
+  rotations). Fold audit findings WITH judgment; skip+report beat
+  refuse when the refused channel carries zero information.
+- **Gates must be enforced, not returned**: the retarget drive/
+  teleport gates were computed and embedded in the rep for a full
+  session while the docstring claimed fail-closed — nothing raised.
+  A gate the caller must remember to assert is a gate that won't be.
+- **Check the upstream tip before porting (re-proven)**: the s22
+  port-back booking was already obsolete at session start (upstream
+  s41 landed a superset; the vendor arrived via a rebase mid-round).
+  Re-read origin/main after EVERY rebase; re-verify bookings.
+- **Submodule pin hygiene**: the recorded gitlink can be STALE vs
+  what the last session actually tested (working tree ahead of the
+  pin) — a faithful re-land reproduces the drift as a version-
+  coherence FAIL. Bump the pin at WRAP time.
+- **A booking's obituary goes in the ledger**: CLOSED-BY-UPSTREAM
+  with the superseding tip + what replaced what; auditors after you
+  need the trail (the s22 delta's audit is retired WITH the delta).

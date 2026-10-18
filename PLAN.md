@@ -93,6 +93,32 @@ critique rounds — audit 5-a incorporated in DRAFT-2).
 - [x] Battery 38/38 ALL GREEN; GitLab archive BLOCKED by WAF all
       session (first chore next session); docs amendments landed
 
+
+### M15 — The audit-everything round (session 23, 2026-10-18 — COMPLETE)
+
+- [x] Sandbox re-land from remotes (the drill: ~25 min incl. the
+      submodule-pin drift fix 2c99697 — r149 pin predates the 1.6.0
+      wheel; s22 tested ahead of its own pin)
+- [x] AUDIT-A ran (scoped A1: math + module): formula layer cleared
+      by independent re-derivation (probed exact 1e-9); gate layer
+      fail-open (3 P1) — ALL ENFORCED (43f6d24); the connected-
+      location refusal replaced by skip+report after measurement
+- [x] AUDIT-C (port-delta): sound/port-ready — then CLOSED-BY-
+      UPSTREAM (mainline s41 superset design, vendored 68fbb1e by
+      the film lane mid-session; ledger carries the obituary)
+- [x] Post-vendor validation: the VACUOUS-SCORE class caught live +
+      reproduced on mainline; two determinism landmines (R10b order
+      dependency, R9g2 run-history dependency); all fixed (9d9977b);
+      16/16 real + 14/14 fixture + crossval green
+- [x] PORT-BACK TO MAINLINE (the user directive): the residual test
+      fixes + docstring drift landed upstream (agent-kit 17e3ef1) —
+      mainline TRULY 16/16 against the live clones (was 16/16 with
+      a hidden FAIL)
+- [x] Honest-skip exercise (queue 4): crossval exit 2 + sentinel;
+      hero_lane library-INDEPENDENT by design (premise corrected)
+- [x] AUDIT-B survival: all folds verified (1 by supersession)
+- [x] FULL BATTERY 40/40 PASS 0 SKIP; GitLab archive + sync bundle
+
 ### M5 — Perception tuning campaign (CURRENT, session 4, 2026-09-30)
 Owner IS the vision agent; tuning targets what WE actually perceive best.
 Sub-agent vision reality (re-confirmed empirically, sessions 2+3): this
