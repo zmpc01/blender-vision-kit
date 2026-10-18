@@ -43,7 +43,27 @@
   porting my consumers; my battery found a REAL defect in their T4
   check (the master-collection gap) — folded inline with the finding
   documented in the code.
+- **THE HUMANOID FILM IS LIVE (the film lane's close, this lane's
+  convergence consumer)**: tform_2 "THE DRILL (humanized)" is STAGED
+  in previz-review and serves FIRST (12 shots / 12 cams / 2 UAL
+  characters / 153 actions / **104 skins** / 29MB GLB / 96 strips /
+  12 Cycles stills — 12/12 eye-certified). The web viewer plays the
+  skinned crowd (three.js r186 bone textures — the RQ3 perf worry
+  retired empirically). The film's laws (all measured, in the code):
+  the PER-GROUP MESH DATA tint law (the glTF exporter resolves
+  materials from mesh DATA slots — object-level links render in
+  Cycles but export raw; the unique-data-per-group trap: Object.copy
+  SHARES data, 5 clearing passes left one group's material on all
+  102), the DEGENERATE CARRIER law (hide_render excludes objects
+  from the GLB and fails gates 17/24 — swap the anchor's data to a
+  1-vert no-face mesh instead: invisible in render, present in the
+  GLB), the CYCLES ENGINE LAW (102 skinned agents OOM EEVEE even on
+  the diet — Cycles streams it; wired in _set_engine CPU+denoise).
 - **Open queues for the next session**:
+  0. THE USER REVIEW ROUND now spans SEVEN packages (tform_2
+     humanoid on top; the 6 older films unchanged). The humanoid
+     rollout to the other five films = flip TFORM_HUMANOID-equivalents
+     per film (the layer is kit-level: humanoid_crowd.bind_crowd).
   1. AUDIT-A (the retarget-engine attack audit) timed out this
      session — re-run it against scripts/rig_retarget.py (the REV-3
      law changes + the samples-loop D_t reuse are the surfaces; the
@@ -51,8 +71,14 @@
   2. Port-back to mainline: the rh_canvas library-split discovery
      (VENDOR_LEDGER carries the sanctioned-delta note; mainline's
      two-repo predicates are broken against the live repos TODAY).
-  3. The diversity queue rest (interior/night-market) + the user
-     review round on all six films (unchanged from session-21).
+  3. The COLLISION/NAVIGATION ask (the user's next frontier): the
+     sim's obstacle model is crowd-kit's (environment.py Blocked
+     squares + the camera keepouts are SEPARATE); the films' statics
+     (colonnade walls, market stalls) are declared per-film. Split:
+     film-lane contract gaps -> declare more obstacles per film;
+     missing obstacle TYPES (cylinders/segments) -> upstream request.
+     Then the night-market film (stall obstacles + the humanoid
+     crowd are the natural proof).
   4. The QUIET anti-regression: test_rh_crossval + test_hero_lane
      need their honest-skip paths exercised in a library-less sandbox
      (they were born green with libraries present).
