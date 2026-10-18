@@ -152,7 +152,7 @@ def stage_heroes(ctx):
     — the wrapper is the clobber-proof surface); clip labels carry the
     provenance (UAL:Walk_Loop / Quat:Walk / UAL:Walk_Loop->Quat).
     """
-    import assets_quaternius
+    import rig_family_quaternius as assets_quaternius
     import assets_ual_actors as ual
     import rig_retarget
 

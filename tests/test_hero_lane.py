@@ -31,7 +31,7 @@ _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(_REPO, "scripts"))
 
 import wrapper_rig            # noqa: E402
-import assets_quaternius      # noqa: E402
+import rig_family_quaternius as assets_quaternius      # noqa: E402
 import rig_retarget           # noqa: E402
 
 FAIL = []
