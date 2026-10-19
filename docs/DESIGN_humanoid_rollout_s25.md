@@ -1,6 +1,7 @@
 # DESIGN_humanoid_rollout_s25.md — the humanoid rollout to all films + the collision/nav round
 
-> Session-25 design (REV-1). The user directives driving this doc:
+> Session-25 design (REV-2 — the audit folds; REV-1's force-field
+> section was re-derived on corrected engine truth, see §0a). The user directives driving this doc:
 > (1) "apply to other films" — the humanoid crowd layer goes to the
 > five non-humanoid films; (2) "make sure you also get the latest kits
 > ... dog-food the latest" — port the s42 upstream improvements;
@@ -33,14 +34,28 @@
   obstacle fully across a spawn->destination line = total jam);
   pressure-soft pushout (agents penetrate up to ~0.59 m under jam);
   crowd_obstacles.py is the scene-geometry -> Blocked bridge.
-- **The force-field seam discovery (this session)**: at the vendored
-  pin b4bf76e the ENGINE has the seam (sim.rs:712
-  `apply_field_bias`) but the PYTHON bake never calls
-  `split_bake_fields` (fields inert — what the s41 doc measured).
-  At crowd-kit HEAD (92e5f33, 131 commits ahead of the pin) the bake
-  wiring EXISTS (`_disposition_force_fields` -> `kwargs["force_fields"]
-  = _eligible`). REPULSION/DANGER fields compile into IR at both.
-  => A pin bump may light up real steering. PROBE FIRST (D2).
+- **The force-field truth (REV-2 correction — the audit's P0-1/P0-2,
+  both verified against the trees)**: the bake wiring is LIVE at the
+  vendored pin b4bf76e (`bake.py:81` import, `:874-891`
+  `_disposition_force_fields`, `:989-1040` the IR hand-off; f7688a6
+  "stale inertness docs superseded" is an ancestor) AND at the
+  standalone HEAD. tfog_bake.py:158-181 already authors a DANGER
+  field whose recoil probe passes because fields are live. The s41
+  bridge docstring's "inert" claim is STALE DOC (superseded in-code).
+  REV-1's pin-bump-for-fields rationale is DEAD (zero functional
+  gain) and the probe-as-designed would misfire. What actually needs
+  measuring: per-film REPULSION adoption on V2 scenes, where
+  behavior controllers make fields ADVISORY-ONLY (`bake.py:995-1006`)
+  and the t_active=45 s trap can read false-RED (issue #7).
+- **The bake lane does NOT run the vendored pin (the audit's P0-2)**:
+  the film bake drivers bootstrap the STANDALONE clone
+  `/home/z/lab/blender-crowd-kit` (HEAD 92e5f33) + escape-previz
+  (tfog_bake.py:49-61, tsquall_bake.py:60-68); tdawn/tferry/tgreen
+  hardcode /home/z/work with a sibling fallback. `import scripts.crowd`
+  resolves to the standalone. Consequence: the submodule pin is
+  irrelevant to the bake lane; determinism rides the per-bake payload
+  pins + a RECORDED WHEEL SHA per film (the venv wheel 1.6.0, pin-era,
+  is what the engine actually loads). NO pin bump this session.
 
 ## D1 — The kit dog-food port (upstream s42 -> vision-kit)
 
@@ -57,8 +72,10 @@ session:
    surface; vision-kit pins 24 (+4 sanctioned deltas documented).
    Port = adopt the 30-name surface + re-derive the sanctioned-delta
    note (VK's +4 authoring names stay documented in lockstep).
-3. `vendor/blender-crowd-kit` submodule pin: b4bf76e -> decision in D2
-   (bump only with the probe green + the wheel ABI check).
+3. `vendor/blender-crowd-kit` submodule pin: NO BUMP (the audit's
+   P0-1/P0-2: the fields wiring is already at the pin; the bakes run
+   the standalone anyway). The pin advances only at a WRAP-time sync
+   round with its own receipt, per the s22 law.
 
 Port discipline: zero-drift vendored rounds with the sanctioned-delta
 notes re-derived, battery green before close (the M16 law).
@@ -75,7 +92,7 @@ notes re-derived, battery green before close (the M16 law).
 - FILM-LANE gaps (which obstacles the sim knows about) = OURS. Fix
   per film THIS session.
 
-**The film-lane fix, per film:**
+**The film-lane fix, per film (REV-2 additions folded):**
 1. Census the film's statics that agents plausibly cross (colonnade
    walls, kiosks, stalls, benches, the drum, platform furniture,
    gate pylons, board) — the placed mesh collections.
@@ -91,23 +108,30 @@ notes re-derived, battery green before close (the M16 law).
    (film-story authority; the layout intent stays).
 5. Re-bake -> new payload pins per film (the byte-determinism claim
    moves to the NEW pin; documented per film).
-6. Verify: the crowd_obstacles scan re-run on the BAKED cache
-   (zero-violation target on the declared rects) + crowd_look nav
-   encodings (the s24 lane) + the stills eye pass.
+6. Verify (REV-2, the audit's P1-4): the CACHE-SIDE violation scan
+   is `crowd_look.py` (the nav lane's cache-decode arm), NOT
+   crowd_obstacles (which scans SCENE geometry pre-bake); zero-
+   violation target on the declared rects + **the arrival/state
+   delta gate**: per film, the arrival counts and per-agent state
+   distribution at the NEW pin vs the old recorded bake — a rect
+   that seals a spawn->destination line total-jams a population
+   while the geometry scan stays green (the no-path-planning
+   engine truth); the arrival delta is the tripwire that catches
+   it. THEN crowd_look nav encodings + the stills eye pass.
 
-**The force-field probe (before any pin decision):**
-- Tiny scene: one Blocked rect + one REPULSION field on the line;
-  20 agents; bake at the PIN (fields inert expected) and at a
-  TEMP checkout of HEAD's bake.py over the pin's engine (the wiring
-  is python-side). Measure: mean trajectory bend around the field
-  center + penetration depth.
-- GREEN (agents bend, wheel parses the IR): bump the pin to the
-  commit that wired the bake (92e5f33 or the minimal ancestor),
-  re-run the wheel ABI check (the manylinux wheel at HEAD
-  ce485ead 18,035,558 B), adopt REPULSION fields per film for the
-  top obstacle clusters (the biggest penetration risks).
-- RED: keep the pin, document, Blocked-only per film, and the issue
-  #15 comment carries the measured result instead.
+**The force-field adoption measurement (REV-2 — replaces the dead
+pin-vs-HEAD probe):**
+- Per film that adopts REPULSION: one measurement bake on the film's
+  OWN scene (V2 semantics — fields are ADVISORY-ONLY under behavior
+  controllers, bake.py:995-1006) with the field t_active span
+  covering the film's FULL tick range (the 45 s trap), vs the same
+  bake without the field. Measure: mean trajectory bend around the
+  obstacle cluster + penetration telemetry. Adopt where the bend is
+  material (>half a personal-space radius at the cluster approach);
+  record both payloads in the film receipt.
+- The wheel under test is NAMED in the receipt (venv 1.6.0 sha) per
+  the audit's Q1 answer — a GREEN/RED without the wheel identity is
+  meaningless.
 
 ## D3 — The humanoid rollout (five films + the tform rebuild)
 
@@ -125,20 +149,41 @@ notes re-derived, battery green before close (the M16 law).
   - tgreen (GREEN LIGHT, noon crossing): the x-sign stream split
     (two stream tints), statue+runner heroes as UAL principals.
   - tsquall (SQUALL, storm market): vendor tarp colors + the queue
-    group; the M5 slip performers stay RB (never rigged).
+    group; the slip faller is rigged with the documented gate
+    exemption (below — the audit's Q2 correction).
   - tfog (THE EXPRESS, blue-hour platform): platform drab + rail
     staff; the heroes per tfog's cast block.
-- `bind_crowd(ctx, fam, group_tint, rb_exclusions=None)`: NEW
-  optional parameter — the RB placeholder chase indices are
-  FILM-SPECIFIC (escape's RB_FALLS_V3=(2,5,8) is not universal).
-  Default stays RB_FALLS_V3 (backward compat); the film modules pass
-  their own. The `from crowd_v6.contract import RB_FALLS_V3` import
-  goes LAZY (only when the default is used) — the clone-seam law
-  (that import is an escape-previz dependency).
+- RB placeholders (REV-2, the audit's P1-1): the rb_exclusions
+  parameter is DROPPED — every film authors chase RB slots at
+  exactly (2,5,8) (verified in all five scene modules + tform), so
+  the universal default IS the per-film truth. The
+  `from crowd_v6.contract import RB_FALLS_V3` import (an
+  escape-previz dependency — the clone-seam hazard) is replaced by
+  a LOCAL constant + a fail-closed assert: the film's Zed.RB.*
+  anchor count must equal len(RB_FALLS_V3) (mismatch = the bake
+  pairing moved; refuse loudly).
 - Heroes: bind_principals per film's cast (the Idle_Loop +
   film UAL_SCALE + identity tints), hero mesh -> degenerate carrier.
 - Motion gates run per film (the s20 two-column law; the anchor
-  gate + the bob gate with 5 samples).
+  gate + the bob gate with 5 samples). REV-2 (the audit's P2):
+  tsquall's SLIP FALLER is a cache agent (scene_squall.py:507-519)
+  and WILL be rigged — its hips-bob gate is special-cased under
+  the film's tumble overlay (a documented exemption row, not a
+  silent skip).
+- **The flowstrip/filmstrip rig-body override is NEW per-film work
+  (REV-2, the audit's P1-2)**: the committed tform_flowstrip dot-
+  override targets the Zed.* anchors — which the humanoid layer
+  turns into 1-vert carriers; the strips would go BLANK. The
+  override is re-derived (name-prefix find of the rig bodies +
+  object-level slot links, position-free — no camera table needed,
+  the audit's Q3), lands as a KIT-LEVEL helper all five films +
+  tform share, and gets the A2 code review before the first strip
+  render.
+- **Per-film ingest-order tripwire (REV-2, the audit's P1-3)**:
+  the count-split palettes ride ingest order; tfog pins the law
+  (spawn-table = add order + N_CACHE tripwire). The other four
+  drivers get the same documented alignment BEFORE their POP_PLAN
+  palettes land.
 
 **Cache/speed/phase channels**: the five films' bakes carry the
 tick speed channel (clip_source="speed"); the K1 tick phase channel
@@ -182,25 +227,24 @@ tint law holds everywhere.
 
 ## D5 — The orchestration map (sub-agent lanes)
 
-- A1 (audit): THIS design doc, fresh context, attack mandate — the
-  P0s come back before implementation.
-- A2 (code review): the bind_crowd rb_exclusions change + the per-
-  film layer modules, after implementation, before the first bake.
+- A1 (audit): DONE (GO-WITH-CHANGES; both P0s + 5 P1s + 3 P2s
+  folded into this REV-2).
+- A2 (code review): the humanoid_crowd amendments + the kit-level
+  strip-override helper + the first film layer, before the first
+  bake consumes them.
 - B-lane (non-visual QA per film): bake receipts, gate outputs,
   scan JSONs — sub-agent verifiable.
 - The principal keeps ALL visual verdicts (the M5 division of
   labor) + the orchestrator-level probes.
 
-## Open questions for the audit round
+## Audit answers (closed)
 
-- Q1: does the pin bump risk the film bakes' determinism story
-  (the wheel ABI change re-orders float paths)? Mitigation: the new
-  pins are recorded per film regardless; the bump happens BEFORE
-  the six bakes, never mid-family.
-- Q2: tsquall's RB slip performers — rig or not? Proposal: NEVER
-  (they are physics performers; rigging a ragdoll is a D6 scope
-  breach). The audit may know a better read.
-- Q3: the filmstrip dot override on rig bodies needs the bodies'
-  world positions at strip time — the tform implementation is the
-  source; confirm it ports without the per-film camera table
-  knowledge.
+- Q1: the bakes never consult the vendored pin (P0-2) — determinism
+  rides the per-bake payload pins + the recorded wheel sha per
+  film. The pin-bump risk question is moot this session.
+- Q2: there ARE no RB slip performers — the slip is a cache-agent
+  faller + film tumble keys; the faller is rigged with the
+  documented gate exemption (D3).
+- Q3: no camera table needed — name-prefix find of the rig bodies
+  + object-level slot links; the tform source was never committed
+  (§0), so the helper is re-derived fresh + A2-reviewed.
