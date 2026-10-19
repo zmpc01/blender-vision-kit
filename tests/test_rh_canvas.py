@@ -759,6 +759,16 @@ def r10b():
     check("R10b-h after purge: only assigned actions remain",
           all(not (a.name not in assigned and a.use_fake_user)
               for a in _b.data.actions), True)
+    # f. s42 height truth (friction 3-a/F1): rest_height_m telemetry is a
+    # FACT on every import (heads-only core span; x_bot ~1.82), and the
+    # male_body bind WARNs under the DISTINCT height_deviation key (its
+    # 2.66 m deviates >0.30 m from the 1.95 m clip-skeleton family)
+    check("R10b-i rest_height_m telemetry + male_body height_deviation WARN",
+          (round(rep["rest_height_m"], 2),
+           round(rep2["rest_height_m"], 2),
+           "height_deviation" in rep_bind2,
+           rep_bind2.get("height_deviation", {}).get("family_height_m")),
+          (1.82, 2.66, True, 1.95))
 
 
 def main() -> int:

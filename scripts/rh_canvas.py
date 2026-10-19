@@ -2,23 +2,6 @@
 rh_canvas.py — RH-canvas mocap clips + 3D assets for the kit
 (polyhaven.py class: one file, two operating modes).
 
-  VISION-KIT VENDOR (session 41): copied from mainline blender-agent-kit
-  s41 (aa05cf3, on the s38/s39/s40 lineage) — upstream-of-record for
-  this file. Variant deltas: UA string only (intentionally zero code
-  drift). This vendor ADDS the s41 RH-3d-assets migration surface (the
-  2026-10-17 upstream relocation: 99 gltf models + 99 sha256'd in-git
-  previews + 8 thumbnails + 3 mixamorig: dummy-rig FBX now live in
-  beulahkemp/RH-3d-assets; the characters repo was stripped — discovery
-  key 'assets3d' replaces this lane's s22 'models' key: no external
-  callers used it, batteries updated in the same vendor round; the s22
-  legacy-layout fallback is REPLACED by the kit's fail-closed law — a
-  pre-migration characters clone REFUSES with the migration message).
-  New surfaces: fetch --rigs + import-rig (stub-action hygiene) + bind
-  family gate (78-bone rigs bind) + the preview sha256 law (A3
-  taxonomy: ok-cached / ok-git / re-fetched(repaired); corrupt in-git
-  copy REFUSES). Fixture library: scripts/rh_fixture_lib.py now emits
-  the RH-3d-assets layout (same vendor round).
-
   HOST-side  (no bpy — plain python3 or inside Blender):
     catalog      browse: --kind categories|animations|characters|models|
                  thumbnails|rigs (categories = the 19-code discovery list
@@ -70,6 +53,21 @@ else CDN fetch sha-verified. Portraits still carry NO sha256 —
 verify = magic bytes (JPEG) + size sanity (+ cdn_size when declared).
 The sha256 law applies to everything that carries hashes (FBX/GLTF/
 previews/rigs manifests).
+  VISION-KIT VENDOR (session 42): copied from mainline blender-agent-kit
+  s42 (20c6a3a lineage: af428bd the 3d-lane friction round) —
+  upstream-of-record for this file. Variant deltas: UA string only
+  (intentionally zero code drift). This vendor ADDS the s42 height
+  truth: rest_height_m telemetry on every import_rig (heads-only
+  world-z span over the 65 CORE bones — the '_end' helpers excluded,
+  they fly ~0.5 m above the body) + bind()'s height_deviation WARN
+  (distinct key; fires when |h-1.95|>0.30 — the ~1.95 m law-1 figure
+  is the CLIP-SKELETON family, the dummy rigs run taller: male 2.66 /
+  female 2.50 / x_bot 1.82). Battery: R10b-i pins both (16/16 live).
+  (s41 vendor lineage: the RH-3d-assets migration + dummy-rig surface
+  — discovery key 'assets3d', fetch --rigs + import-rig + bind family
+  gate + the preview sha256 law; fixture library emits the
+  RH-3d-assets layout.)
+
 Ground truth: RH-RECON-1 (/home/z/rh_recon/REPORT.md — 28 binaries
 live-probed on Blender 5.2.2) + REVIEW-RH-1b (mannequin/bind/round-trip
 verified) + the s41 rig recon (bind round-trips on x_bot 65-bone and
@@ -148,6 +146,13 @@ DEFAULT_CACHE = os.environ.get("RH_CANVAS_CACHE", "/home/z/rh_canvas_cache")
 
 MIXAMO_PREFIX = "mixamorig:"
 MIXAMO_BONE_COUNT = 65          # one identical rig across every sampled clip
+# The clip-skeleton family height (the FBX clip rigs stand ~1.95 m tall;
+# measured clip-2846 rest bbox [0.029, 1.982]). The dummy RIGS deviate
+# from this (male_body ~2.66, female_body ~2.50, x_bot ~1.82 — s42
+# telemetry); bind() WARNs on deviations > _HEIGHT_TOL_M so agents frame
+# cameras against the TRUE height, not the family figure.
+FAMILY_HEIGHT_M = 1.95
+_HEIGHT_TOL_M = 0.30
 FBX_FPS = 30                    # every clip is 30 fps (recon PART 2)
 
 # Browse-time consumer tags, derived from the s39 FULL-library walk
@@ -279,7 +284,9 @@ def _looks_like_rh3d(d: str) -> bool:
 
 def discover_libraries(explicit: str | None = None) -> dict:
     """Locate the RH-canvas clones. Returns
-    {'animations': path|None, 'characters': path|None}.
+    {'animations': path|None, 'characters': path|None,
+     'assets3d': path|None} (three keys since s41 — the 2026-10-17
+    migration moved the 3D director assets to RH-3d-assets).
 
     Search order for a base dir: the dir itself (when it IS a clone),
     <base>/<repo-name>, and the dir's parent's <repo-name> children —
@@ -1128,6 +1135,19 @@ def check_mixamo_rig(arm, ctx: str = "") -> dict:
     return {"bones": n, "prefix_ok": True}
 
 
+def _rig_rest_height(arm) -> float:
+    """Heads-only WORLD-z span (max-min) over the CORE bone set (the
+    65 standard 'mixamorig:' names; the '_end'-suffixed display helpers
+    the 78-bone dummy rigs carry are EXCLUDED — they fly ~0.5 m above
+    the body and would inflate the figure, s42-A-P0-1). Span is
+    placement-invariant by construction (any uniform offset cancels;
+    placement is location+yaw only, which never changes world-z)."""
+    mw = arm.matrix_world
+    zs = [(mw @ b.head_local).z for b in arm.data.bones
+          if not b.name.endswith("_end")]
+    return (max(zs) - min(zs)) if zs else 0.0
+
+
 def check_mixamo_family(arm, ctx: str = "") -> dict:
     """Family-level gate for BIND targets (s41-A1): all bones 'mixamorig:'
     prefixed AND n >= 65. The 65-bone clip actions' channels are then
@@ -1522,6 +1542,21 @@ def bind(target, clip, cache: str | None = None,
                           f"do not exist on '{arm.name}' — those joints "
                           f"will NOT animate (renamed bones? restore the "
                           f"'mixamorig:' names or retarget).")
+    # s42 height truth (friction 3-a/F1): the documented ~1.95 m family
+    # height is the CLIP-SKELETON figure; the dummy rigs run taller.
+    # Distinct key from 'warning' (taken by orphaned channels).
+    h = round(_rig_rest_height(arm), 3)
+    if abs(h - FAMILY_HEIGHT_M) > _HEIGHT_TOL_M:
+        rep["height_deviation"] = {
+            "rest_height_m": h,
+            "family_height_m": FAMILY_HEIGHT_M,
+            "note": (f"rest height {h:.2f} m deviates >{_HEIGHT_TOL_M} m from the "
+                     f"{FAMILY_HEIGHT_M} m clip-skeleton family height — "
+                     f"frame cameras against the TRUE height"),
+        }
+        print(f"[rh] WARN: rest height {h:.2f} m deviates from the "
+              f"{FAMILY_HEIGHT_M} m clip-skeleton family height — frame "
+              f"cameras against the true height (rest_height_m={h})")
     return rep
 
 
@@ -1695,6 +1730,7 @@ def import_rig(rig_name: str, at: tuple[float, float, float] = (0.0, 0.0, 0.0),
         "rot_z_deg": rot_z_deg,
         "stub_actions_cleared": stub_names,
         "unassigned_purged": purged["removed"],
+        "rest_height_m": round(_rig_rest_height(arm), 3),
         "scale_law": "kept (obj scale 0.01 + rot X+90deg; no transform_apply)",
         "note": "mixamorig: family rig — bind any RH clip onto it: "
                 "`rh_canvas.py bind <armature> --clip <catalog id>`; "
