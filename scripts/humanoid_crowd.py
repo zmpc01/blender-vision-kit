@@ -740,16 +740,28 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None, exempt=()):
             i = rep["ordinal"]
             tx = float(np.asarray(ticks["x"])[n_ticks - 1, i])
             ty = float(np.asarray(ticks["y"])[n_ticks - 1, i])
-            # the tick->frame law: sample the SAME instant (frame 1 vs
-            # the last tick is the 5.8m false-fail class)
+            # the tick->frame law: sample the frame the BAKE keyed the
+            # final tick on. plan_frames (crowd_v6.bake2) decimates the
+            # key grid to EVERY=2 (keys at EVEN ticks only: f1, f5, ...
+            # f1077) and the law-106 hold forces the LAST tick onto
+            # total_frames — so tick n_ticks-1 is keyed at frame_end
+            # (f1080), NOT at 1+round((n_ticks-1)*dt*fps) (f1079: an
+            # UNKEYED frame whose linear ride f1077->f1080 lands 2/3
+            # across the final step — the tsquall Zed.0064 dx=5.9mm
+            # dy=9.4mm drift class: any sampled agent still walking at
+            # the last tick fails it; parked-at-end films read 0.0 and
+            # masked the bug). Import the plan itself: the law stays
+            # single-sourced with the bake, and the 5-r fps-warn +
+            # frame_end clamp semantics are preserved.
             dt = float(ctx["crowd_cache"].dt) or (1.0 / 12.0)
             fps = float(sc.render.fps) or 24.0
             if fps != 24:
                 _P(f"WARN gates: scene fps is {fps} (expected 24 — "
                    f"the timebase law); the probe window may be off")
+            from crowd_v6.bake2 import plan_frames
+            probe = int(plan_frames(n_ticks, dt)[-1][0])
             sc.frame_set(max(sc.frame_start,
-                             min(int(sc.frame_end),
-                                 1 + int(round((n_ticks - 1) * dt * fps)))))
+                             min(int(sc.frame_end), probe)))
             bpy.context.view_layer.update()
             ax, ay = rep["anchor"].matrix_world.translation.x, \
                 rep["anchor"].matrix_world.translation.y

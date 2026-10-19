@@ -188,8 +188,8 @@ CAMS_V1 = [
 # the keepout rows are CONTRACT-AUTHORITATIVE (tfog_contract.CAM_KEEPOUTS,
 # the exact rows the bake clamped against -- cache digest
 # keepouts_applied=3); re-exported here as the scene's keepout surface
-KEEPOUTS = tuple(C.CAM_KEEPOUTS)
-KEEPOUT_R = float(C.CAM_KEEPOUT_R)
+keepouts = tuple(C.CAM_KEEPOUTS)
+keepout_r = float(C.CAM_KEEPOUT_R)
 
 CROWD_TIER_PINS = []
 
@@ -214,23 +214,23 @@ CAST = {
 
 # the blue-hour palette (docs section 6: cool blue-gray W crowd, warm
 # sodium tints E) -- the split rides the ingest order, not literals
-CROWD_COOL = [(0.22, 0.25, 0.32), (0.18, 0.21, 0.27),
+crowd_cool = [(0.22, 0.25, 0.32), (0.18, 0.21, 0.27),
               (0.26, 0.29, 0.35), (0.20, 0.23, 0.30)]
-CROWD_WARM = [(0.36, 0.26, 0.16), (0.30, 0.22, 0.14), (0.40, 0.30, 0.18)]
-QUEUE_TONES = [(0.16, 0.20, 0.28), (0.20, 0.24, 0.32)]
+crowd_warm = [(0.36, 0.26, 0.16), (0.30, 0.22, 0.14), (0.40, 0.30, 0.18)]
+queue_tones = [(0.16, 0.20, 0.28), (0.20, 0.24, 0.32)]
 
 # the tgreen-pattern per-zone speed map (m/s mu, sig): bench slow,
 # aisle fast (ledger 6 -- read-only driver, the cache is baked bytes)
-ZONE_SPEED_MAP = {
+zone_speed_map = {
     "bench_w": (0.55, 0.10),
     "bench_e": (0.55, 0.10),
     "aisle_center": (1.10, 0.15),
 }
 
 # --- board flip ladder (per-row glyph emission, the tferry pattern) ---
-BOARD_DIM = 0.10             # the quiet SERVICE SUSPENDED ghost rows
-BOARD_HOT = 1.25             # the near-board measured cap (L-TF1 class)
-BOARD_TITLE = 1.45           # the title card pushes slightly past it
+board_dim = 0.10             # the quiet SERVICE SUSPENDED ghost rows
+board_hot = 1.25             # the near-board measured cap (L-TF1 class)
+board_title = 1.45           # the title card pushes slightly past it
 
 BEATS = []                   # derived verbatim from cast.beats at build
 
@@ -528,7 +528,7 @@ def _kf_board(ctx):
                            "are not the authored 5-flip ladder")
     flips = [1] + flips[1:]
     rm = ctx["board_row_mats"]
-    dim, hot, title = BOARD_DIM, BOARD_HOT, BOARD_TITLE
+    dim, hot, title = board_dim, board_hot, board_title
     ctx["board_flips"] = [1, 192, 528, 792, 1009]   # normalized ladder
     _em_keys(rm[1], [(1, dim), (191, dim), (192, hot),
                      (527, hot), (528, dim), (1080, dim)])
@@ -668,19 +668,19 @@ def _crowd_palette(ctx):
         if n["cool"] < n_wait:      # the W drifters
             ob.data.materials.append(make_material(
                 f"CA.Comm.TF.Cool.{n['cool'] % 4}",
-                CROWD_COOL[n["cool"] % 4]))
+                crowd_cool[n["cool"] % 4]))
             n["cool"] += 1
         else:                       # the E/door cohorts
             ob.data.materials.append(make_material(
                 f"CA.Comm.TF.Warm.{n['warm'] % 3}",
-                CROWD_WARM[n["warm"] % 3]))
+                crowd_warm[n["warm"] % 3]))
             n["warm"] += 1
     for ob in chars["chase"]:
         if ob.data.users > 1:
             ob.data = ob.data.copy()
         ob.data.materials.clear()
         ob.data.materials.append(make_material(
-            f"CA.Comm.TF.Queue.{n['q'] % 2}", QUEUE_TONES[n["q"] % 2]))
+            f"CA.Comm.TF.Queue.{n['q'] % 2}", queue_tones[n["q"] % 2]))
         n["q"] += 1
     print(f"[tfog] crowd palette: {n['cool']} cool W / {n['warm']} warm "
           f"E / {n['q']} queue steel (ingest-order split)")
@@ -697,12 +697,12 @@ def _zone_speed_driver(ctx):
                if bid.startswith("bench") and (r[0] + r[2]) / 2 < 0]
     bench_e = [bid for bid, r in C.BLOCKED
                if bid.startswith("bench") and (r[0] + r[2]) / 2 > 0]
-    zones = {f"bench_w[{','.join(bench_w)}]": ZONE_SPEED_MAP["bench_w"],
-             f"bench_e[{','.join(bench_e)}]": ZONE_SPEED_MAP["bench_e"],
+    zones = {f"bench_w[{','.join(bench_w)}]": zone_speed_map["bench_w"],
+             f"bench_e[{','.join(bench_e)}]": zone_speed_map["bench_e"],
              "aisle_center[y -1.6..1.6 open strip]":
-                 ZONE_SPEED_MAP["aisle_center"]}
+                 zone_speed_map["aisle_center"]}
     bench_mu = max(v[0] for k, v in zones.items() if k.startswith("bench"))
-    aisle_mu = ZONE_SPEED_MAP["aisle_center"][0]
+    aisle_mu = zone_speed_map["aisle_center"][0]
     if not bench_mu < aisle_mu:
         raise RuntimeError("tfog_scene: zone speed map violates "
                            "bench-slow / aisle-fast")
@@ -988,10 +988,10 @@ def _honesty(ctx):
     applied = int(ctx["cache_block"]["crowd"]["keepouts_applied"])
     # the count is contract-vs-cache agreement (4 rows since the
     # round-1 re-stage; never a literal — the row set evolves)
-    fails += _ok("keepout count", len(KEEPOUTS) == applied,
-                 f"{len(KEEPOUTS)} rows == cache keepouts_applied "
+    fails += _ok("keepout count", len(keepouts) == applied,
+                 f"{len(keepouts)} rows == cache keepouts_applied "
                  f"({applied})")
-    for name, px, py, f0, f1 in KEEPOUTS:
+    for name, px, py, f0, f1 in keepouts:
         cam = ctx["cams"].get(name)
         row_ok = cam is not None
         if row_ok:
@@ -1007,7 +1007,7 @@ def _honesty(ctx):
               if c["loc0"][2] < 2.5 and abs(c["loc0"][0]) < 32.0
               and abs(c["loc0"][1]) < 4.0]
     fails += _ok("ground lenses covered",
-                 sorted(ground) == sorted(k[0] for k in KEEPOUTS),
+                 sorted(ground) == sorted(k[0] for k in keepouts),
                  f"walkable ground lenses {sorted(ground)} == the rows")
 
     # 5. the sfx spine
