@@ -16,17 +16,20 @@ findings below are LIVE-MEASURED (5-seed bake study, tests O11):
      matrix: "Path planning: None (point-target only)". An obstacle
      across the spawn->destination line = TOTAL JAM: 0/20 agents
      reach the destination across seeds 11-15. Agents need A* +
-     corridor + string-pulling on the navmesh (upstream issue #1).
+     corridor + string-pulling on the navmesh (gap 1 of the 8 filed
+     in upstream crowd-kit issue #15).
   2. PRESSURE-SOFT PUSHOUT — under jam pressure agents penetrate the
      obstacle up to ~0.59 m (max penetration 0.316/0.363/0.590/0.014/
      0.220 m across seeds 11-15; none fully traverse). The
-     integrate-phase pushout is not a hard wall (upstream issue #2).
+     integrate-phase pushout is not a hard wall (gap 2 of upstream
+     crowd-kit issue #15).
 `CrowdScene.force_fields` are SILENTLY INERT at bake time (bake()
-never calls the fields adapter — M2.5 future work, upstream issue
-#3). Therefore:
+never calls the fields adapter — M2.5 future work; gap 3 of
+     upstream crowd-kit issue #15). Therefore:
   - this bridge emits Blocked rects ONLY (no disc twins);
   - ANIMATED objects are REFUSED (the engine cannot track a moving
-    obstacle in a bake; upstream #3 + #6) — place a static stand-in
+    obstacle in a bake; gaps 3+6 of upstream crowd-kit issue
+     #15) — place a static stand-in
     or wait for the wiring.
 The battery PINS both findings (O11c flips loudly when routing
 lands; O11d records penetration telemetry).
@@ -39,6 +42,11 @@ lands; O11d records penetration telemetry).
                                id:bounds [...] [--margin M] [--z-band lo,hi]
                                [--json] — evaluates world footprints and
                                prints the Blocked declarations
+    (to scan a SAVED .blend: pass --blend /path/to/scene.blend — the
+     s24 VK sanctioned delta, which opens the file before the scan —
+     or give the file to Blender BEFORE the --:
+     `blrun.sh --background /path/to/scene.blend --python
+      scripts/crowd_obstacles.py -- scan ...`)
 
 THE LAWS (fail-closed, teacher messages — CrowdObstacleRefused):
   SELECTION   the scan requires --collection and/or --prefixes (both
@@ -55,7 +63,7 @@ THE LAWS (fail-closed, teacher messages — CrowdObstacleRefused):
               to the walkable (the Rust compiler requires
               blocked ⊆ walkable — InvalidRange otherwise). Rotated
               objects over-block: the v1 IR is axis-aligned only
-              (upstream issue #1); margin is the tunable.
+              (gap 1 of upstream crowd-kit issue #15); margin is the tunable.
   ANIMATED    objects with any animation signal (fcurves via
               blender_kit.iter_all_fcurves — 5.x multi-slot aware —
               OR animated parents OR a frame_start-vs-frame_end bbox
@@ -148,16 +156,45 @@ def _slug(name: str) -> str:
 
 def _walkable_bounds(w):
     """Accept ('id', ((minx,miny),(maxx,maxy))) tuples or objects with
-    .id/.bounds (the vendored Walkable dataclass)."""
-    if isinstance(w, (tuple, list)) and len(w) == 2:
-        return str(w[0]), w[1]
-    wid = getattr(w, "id", None)
-    bnd = getattr(w, "bounds", None)
-    if wid is None or bnd is None:
+    .id/.bounds (the vendored Walkable dataclass). Validates shape +
+    orientation at the kit boundary (s42 D14, nav-F7): flat/inverted/
+    NaN bounds previously died as a bare unpack ValueError deep in the
+    clip loop, or silently degraded to skipped-nooverlap rows."""
+    if isinstance(w, (tuple, list)) and len(w) == 2 and \
+            not (isinstance(w[0], (tuple, list))):
+        wid, bnd = str(w[0]), w[1]
+    else:
+        wid = getattr(w, "id", None)
+        bnd = getattr(w, "bounds", None)
+        if wid is None or bnd is None:
+            raise CrowdObstacleRefused(
+                f"walkable entry {w!r} must be (id, ((minx,miny),(maxx,maxy))) "
+                f"or a Walkable-like object with .id/.bounds")
+        wid = str(wid)
+    try:
+        (x0, y0), (x1, y1) = bnd
+        x0, y0, x1, y1 = float(x0), float(y0), float(x1), float(y1)
+    except (TypeError, ValueError):
         raise CrowdObstacleRefused(
-            f"walkable entry {w!r} must be (id, ((minx,miny),(maxx,maxy))) "
-            f"or a Walkable-like object with .id/.bounds")
-    return str(wid), bnd
+            f"walkable {wid!r} bounds must be ((minx,miny),(maxx,maxy)) — "
+            f"a pair of 2-tuples — got {bnd!r}. (A flat 4-tuple like "
+            f"(11,5,13,7) is the vendor-constructor form confusion: the "
+            f"engine IR schema is nested pairs, and the vendor "
+            f"constructors take the SAME nested form — a flat tuple dies "
+            f"as a raw TypeError inside the vendor adapter, upstream "
+            f"issue filed.)") from None
+    import math as _m
+    if not all(_m.isfinite(v) for v in (x0, y0, x1, y1)):
+        raise CrowdObstacleRefused(
+            f"walkable {wid!r} bounds carry NaN/Inf ({bnd!r}) — a "
+            f"non-finite region cannot contain agents.")
+    if x0 >= x1 or y0 >= y1:
+        raise CrowdObstacleRefused(
+            f"walkable {wid!r} bounds are inverted/degenerate ({bnd!r}): "
+            f"min must be < max on both axes — inverted bounds previously "
+            f"degraded to silent skipped-nooverlap rows (every obstacle "
+            f"overlapping them was dropped without a trace).")
+    return wid, ((x0, y0), (x1, y1))
 
 
 def obstacles_from_specs(specs, walkables, *, margin=DEFAULT_MARGIN,
@@ -215,6 +252,18 @@ def obstacles_from_specs(specs, walkables, *, margin=DEFAULT_MARGIN,
         used_ids.add(sid)
         return sid
 
+    # s42 re-audit N4: type gate at the boundary — a tuple/dict guess
+    # previously died as a raw AttributeError inside the sort/attrs
+    # (the F7 error class surviving on the SPEC path). BEFORE the sort.
+    for spec in specs:
+        if not isinstance(spec, ObstacleSpec):
+            raise CrowdObstacleRefused(
+                f"specs entries must be ObstacleSpec objects (got "
+                f"{type(spec).__name__}: {spec!r}) — build them via "
+                f"scan_scene(...) or ObstacleSpec(name, cx, cy, hx, hy, "
+                f"zmin, zmax, animated=False); plain tuples/dicts are "
+                f"not accepted (the vendor constructors take nested "
+                f"bounds pairs — a different shape; see the docstring).")
     for spec in sorted(specs, key=lambda s: s.name):
         # NaN / degenerate guards (REFUSED — data corruption, not noise)
         vals = (spec.cx, spec.cy, spec.hx, spec.hy, spec.zmin, spec.zmax)
@@ -236,14 +285,15 @@ def obstacles_from_specs(specs, walkables, *, margin=DEFAULT_MARGIN,
             raise CrowdObstacleRefused(
                 f"object {spec.name!r} is ANIMATED — the engine's bake "
                 f"cannot track moving obstacles today (force_fields are "
-                f"not wired into bake; upstream issue #0/#3). Place a "
+                f"not wired into bake; gaps 0+3 of upstream crowd-kit "
+                f"issue #15). Place a "
                 f"static stand-in, or re-run with emit_anyway=True to "
                 f"scan the REST of the scene (this object is reported "
                 f"as skipped, loudly).")
         if spec.animated:
             report.append({"name": spec.name, "decision": "skipped-animated",
                            "reason": "engine cannot track animated obstacles "
-                                     "at bake time (upstream #0/#3); "
+                                     "at bake time (gaps 0+3 of upstream crowd-kit issue #15); "
                                      "emit_anyway=True was set"})
             continue
 
@@ -495,17 +545,17 @@ def main(argv=None) -> int:
                    help="scene .blend to open BEFORE scanning (s24 VK "
                         "sanctioned delta — without it the scan runs on "
                         "the factory scene and refuses; the raw-blender "
-                        "positional form also works but was undocumented)")
+                        "positional form also works)")
     p.add_argument("--json-out", default=None,
-                   help="write the scan JSON VERBATIM to this file (s24 VK "
-                        "sanctioned delta — stdout is interleaved with "
-                        "Blender logs; a file is pipeable)")
+                   help="write the scan JSON VERBATIM to this file (s24 "
+                        "VK sanctioned delta — stdout is interleaved "
+                        "with Blender logs; a file is pipeable)")
     args = ap.parse_args(argv)
+    if getattr(args, "blend", None):
+        import bpy
+        bpy.ops.wm.open_mainfile(filepath=args.blend)
 
     try:
-        if getattr(args, "blend", None):
-            import bpy
-            bpy.ops.wm.open_mainfile(filepath=args.blend)
         walkables = [_parse_walkable(w) for w in args.walkable]
         zlo, zhi = (float(v) for v in args.z_band.split(","))
         prefixes = ([p.strip() for p in args.prefixes.split(",")]
@@ -519,14 +569,12 @@ def main(argv=None) -> int:
         print(f"[crowd-obst] REFUSED: {e}", file=sys.stderr)
         return 2
 
+    if getattr(args, "json_out", None):
+        with open(args.json_out, "w") as f:
+            f.write(json.dumps(out, indent=1) + "\n")
+        print(f"[crowd-obst] json -> {args.json_out}")
     if args.json:
-        blob = json.dumps(out, indent=1)
-        if getattr(args, "json_out", None):
-            with open(args.json_out, "w") as f:
-                f.write(blob + "\n")
-            print(f"[crowd-obst] json -> {args.json_out}")
-        else:
-            print(blob)
+        print(json.dumps(out, indent=1))
     else:
         print(f"[crowd-obst] {len(out['blocked'])} Blocked region(s):")
         for b in out["blocked"]:

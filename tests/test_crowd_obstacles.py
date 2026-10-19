@@ -228,7 +228,7 @@ def o8():
     # guide's own authoring names DeterminismMode/NavigationSettings/
     # PopulationDistributions/FidelityProfile are re-exported now —
     # documented in the VK VENDOR_LEDGER; gate test updated in lockstep)
-    check("O8a the 24-name contract", len(sc.__all__), 24)
+    check("O8a the 30-name contract", len(sc.__all__), 30)
     check("O8b alias-qualified modules",
           all(n.__module__.startswith("_vendored_blender_crowd_kit.")
               for n in (Blocked, Walkable, Destination, ForceFieldType,

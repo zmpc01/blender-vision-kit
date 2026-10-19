@@ -15,10 +15,11 @@ package-level imports only:
     result = bake(scene, cache_dir="/tmp/crowd_cache")
     attach_to_scene(bpy.context.scene, result.cache_path)
 
-The 10 canonical kit symbols (the kit's own __all__) plus the 3 legacy
-names this kit documented pre-fork (CrowdProject, Population,
-apply_to_scene) are all importable from here; ``from scripts.crowd
-import *`` yields exactly those 13.
+The kit's canonical 10 symbols (the crowd kit's own __all__) plus
+the legacy names this kit documented pre-fork (CrowdProject, Population,
+apply_to_scene) plus the s41 authoring dataclasses and the s42
+authoring surface are all importable from here; ``from scripts.crowd
+import *`` yields exactly the 30 names in __all__.
 
 How it loads: the kit is imported under a private alias parent package
 (``_vendored_blender_crowd_kit``) anchored at the submodule checkout.
@@ -70,7 +71,7 @@ __all__ = [
     "apply_to_scene",
     # s41 authoring dataclasses (the crowd_obstacles bridge + IR
     # round-trip consumers; kit-owned surface extension — same alias
-    # load, same 13+7=20-name contract, vendor-gate pinned)
+    # load, vendor-gate pinned)
     "Blocked",
     "Walkable",
     "Destination",
@@ -78,14 +79,24 @@ __all__ = [
     "ForceFieldType",
     "FalloffProfile",
     "kit_to_bgyss_project_ir",
-    # s24 VK sanctioned delta (+4): the authoring types the vendored
-    # kit guide's own custom-CrowdScene snippet imports — the 20-name
-    # contract made that snippet ImportError (the U1 finding); gate
-    # updated in lockstep (20+4=24).
+    # s42 authoring surface (friction nav-F3: the vendor guide's
+    # documented custom-scene names must resolve through THIS namespace
+    # too — review 4-R1 verified all 10 through the alias load).
+    # VK PARITY NOTE (s25): this supersedes the s24 "+4 sanctioned
+    # delta" — those four authoring names (DeterminismMode,
+    # NavigationSettings, PopulationDistributions, FidelityProfile)
+    # are INSIDE the s42 30-name surface; the vendor gate moved
+    # 24 -> 30 in lockstep (test_crowd_vendor_gate + the O8 pin).
     "DeterminismMode",
     "NavigationSettings",
-    "PopulationDistributions",
     "FidelityProfile",
+    "PopulationDistributions",
+    "Archetype",
+    "Appearance",
+    "Portal",
+    "PortalEvent",
+    "PortalAxis",
+    "register_scenario",
 ]
 
 _ALIAS = "_vendored_blender_crowd_kit"
@@ -162,12 +173,20 @@ FalloffProfile = _env.FalloffProfile
 SpawnSource = _popmod.SpawnSource
 kit_to_bgyss_project_ir = _irmod.kit_to_bgyss_project_ir
 
-# s24 VK sanctioned delta (+4): the authoring types the vendored kit's
-# own guide imports (DeterminismMode/NavigationSettings live on the
-# project module; PopulationDistributions/FidelityProfile on population)
-DeterminismMode = _kit_crowd.DeterminismMode
-NavigationSettings = _kit_crowd.NavigationSettings
-PopulationDistributions = _kit_crowd.PopulationDistributions
-FidelityProfile = _kit_crowd.FidelityProfile
+# s42: the vendor guide's documented authoring surface (nav-F3) — same
+# alias package, resolved through the vendored kit's own modules so
+# relative imports stay kit-canonical.
+_projmod = _il.import_module(_ALIAS + ".crowd.project")
+_scenmod = _il.import_module(_ALIAS + ".crowd.scenarios")
+DeterminismMode = _projmod.DeterminismMode
+NavigationSettings = _projmod.NavigationSettings
+FidelityProfile = _projmod.FidelityProfile
+PopulationDistributions = _popmod.PopulationDistributions
+Archetype = _popmod.Archetype
+Appearance = _popmod.Appearance
+Portal = _env.Portal
+PortalEvent = _env.PortalEvent
+PortalAxis = _env.PortalAxis
+register_scenario = _scenmod.register_scenario
 
 __crowd_kit_version__ = getattr(_kit_crowd, "__version__", "unknown")
