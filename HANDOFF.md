@@ -74,6 +74,14 @@
      exists in DESIGN_crowd_vision_s24.md.
   6. origin_junk_frac > 0 on a real bake = investigate the
      engine's near-zero writes (the N4 rule's blind spot).
+  7. THE GITLAB MIRROR DIVERGED for real: github-canonical's tip
+     (f546837) is the PRE-rewrite s17 lineage — the same content as
+     local 5c39b86 under a different hash (the s16 push-protection
+     history rewrite split the lineages; main:github-canonical now
+     rejects non-fast-forward). The s24 archive lives on the branch
+     github-canonical-s24 (the SKILL s21 per-round-archive law).
+     Next sessions: push main:github-canonical-s<N>; do NOT force
+     github-canonical; the raw lineage there is a provenance record.
 
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
