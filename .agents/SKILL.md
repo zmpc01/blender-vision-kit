@@ -240,23 +240,14 @@ For user delivery: copy whole dir to `/home/z/my-project/download/<scene_name>/`
 - **Background processes die between tool calls** — long ops must run inside one Bash call with timeout, or use `render_daemon.py` (double-fork to PID 1).
 - **Watchdog** reverts `/home/z/my-project/` every ~20s — work in `/home/z/repos/` clones (F2D-16: one path, everywhere).
 
-## SESSION 22 LAWS (the RH real-data round — ultra-condensed; full: worklog s22 + docs/RH_CROSSVAL_s22.md)
-- PATs are SCOPED (test write per repo before relying on a push);
-  release assets via the API endpoint (browser_download_url 404s
-  under fine-grained PATs). Symlinks banned: tools/blender is the
-  RENAMED real dir, copied FOREGROUND (background gets reaped).
-- Library-split discovery resolves THREE clones, vintage PER-KIND;
-  the offline fixture library is CROSS-VALIDATED against reality
-  (9 laws, fail-closed on NEW deviations, honest-skip exits 2).
-- THE FROZEN-EVALUATION TRAP: an FBX rig can evaluate FROZEN at
-  rest — the DRIVE CHECK + world gates are the defense. DISCONNECTED
-  leg topology: location transfer is DATA-DRIVEN per-bone (REV-3).
-  Stuck-pose + slot pair: reset unkeyed bones before bakes; EVERY
-  assignment pins the slot; 5.x fcurves.new resolves against the
-  CONTEXT object — bind-then-write. Cross-lane add/add: converge on
-  the review-hardened canonical, port consumers, fold found bugs
-  with the finding documented. Loader names are family_* (scope
-  gate); FBX materials by TYPE not name.
+## SESSION 22 LAWS (the RH real-data round — one line; full: worklog s22 + docs/RH_CROSSVAL_s22.md)
+- PATs SCOPED (test-write per repo); release assets via the API
+  endpoint; library-split discovery resolves THREE clones PER-KIND
+  vintage; the fixture library CROSS-VALIDATED against reality (9
+  laws, fail-closed on new deviations, honest-skip exits 2); the
+  FROZEN-EVALUATION TRAP (DRIVE CHECK + world gates are the
+  defense); stuck-pose + slot pair; 5.x fcurves.new = bind-then-
+  write; loader names family_*; FBX materials by TYPE.
 
 ## KB entries (linked from AGENTS.md; each carries its own headlines)
 vision_loop · render_speed · placement_and_physics · semantic_labeling ·
@@ -344,6 +335,32 @@ gait_modifiers.
   is REPO-BY-REPO.
 
 
+## SESSION 25 LAWS (the humanoid rollout + collision/nav round — condensed; full: kb/s25_humanoid_rollout.md)
+
+- **THE 24FPS TIMEBASE LAW**: the FBX imports (rig/walk/idle/UAL)
+  SILENTLY flip scene.render.fps 24→30 — the GLB plays at the SCENE
+  fps, so the film exports playing 1.25x fast. _fps_guard
+  saves+restores around EVERY import; the gate that catches it:
+  key-interval bands (apparent speed = sim × 1.25 — tform_2 slipped
+  UNDER the band at drill speeds and SHIPPED the latent look bug;
+  tform_3 re-export carries the fix).
+- **THE DATA-NAME LAW**: structural finders must resolve at the
+  mesh-DATA level — per-group copies rename BOTH object and data
+  (Object.copy SHARES data; the rename happens on the unique data
+  copy, else the finder matches 0 bodies).
+- **THE ARRIVAL-DELTA GATE**: any obstacle-declaration change proves
+  baseline-vs-new probe arrivals MATCH before the geometry scan is
+  trusted — a sealing rect jams silently (tsquall 84/38 identical).
+- **THE ANIMATION-BAKE OOM LEVER**: export_frame_step=2 at the
+  bake's own 12Hz halves the 28M-key bake; gates are interval-
+  normalized.
+- **THE STAGE-COMMIT LAW**: stage and the app-repo commit in the
+  SAME micro-step — the tform_2 loss class (a staged package without
+  its commit is unreproducible; the sandbox wipe proved it).
+- **THE EXEMPT-ROW LAW**: film overlay performers (the tsquall slip
+  faller's tumble) get documented EXEMPT rows, never silent skips;
+  the report printer is shape-agnostic (the 5-d KeyError class).
+
 ## SESSION 24 LAWS (the sync + vision-lane round — condensed)
 
 - **Probe before you clone**: the credential matrix AND the repo
@@ -388,36 +405,19 @@ gait_modifiers.
   row, and the O8a pin — one contract, N pins, update N sites or
   the battery lies.
 
-## SESSION 23 LAWS (the audit-everything round — condensed)
-
-- **THE VACUOUS-SCORE CLASS**: a suite row() that scores only
-  EXCEPTIONS prints ALL PASS with [FAIL] checks on the wire — caught
-  LIVE (vendored R10b), then REPRODUCED ON MAINLINE (the same lie).
-  LAW: row scoring fails on check-level failures (the n0=len(FAIL)
-  delta pattern); suites predating the pattern are landmines — sweep
-  every suite's row() before trusting its green.
-- **Determinism preconditions must be SELF-GUARANTEED**: row state
-  that depends on a fresh sandbox (datablock-name registries, cache
-  dirs) WILL fail on a re-land or second run (R10b's stub-action
-  .001 collision was row-ORDER dependent; R9g2's cold cache was
-  run-history dependent). Factory-reset/purge INSIDE the row.
-- **The auditor's strict form can be wrong vs measurement**: the
-  connected-location REFUSAL fired on the working hero path — a
-  location fcurve cannot drive a use_connect bone in ANY rig and the
-  same channel is a dead no-op in the SOURCE (gait replays from
-  rotations). Fold audit findings WITH judgment; skip+report beat
-  refuse when the refused channel carries zero information.
-- **Gates must be enforced, not returned**: the retarget drive/
-  teleport gates were computed and embedded in the rep for a full
-  session while the docstring claimed fail-closed — nothing raised.
-  A gate the caller must remember to assert is a gate that won't be.
-- **Check the upstream tip before porting (re-proven x2)**: a
-  booking can be obsolete at session start. Re-read origin/main
-  after EVERY rebase; re-verify bookings.
-- **Submodule pin hygiene**: the recorded gitlink can be STALE vs
-  what the last session actually tested (working tree ahead of the
-  pin) — a faithful re-land reproduces the drift as a version-
-  coherence FAIL. Bump the pin at WRAP time.
-- **A booking's obituary goes in the ledger**: CLOSED-BY-UPSTREAM
-  with the superseding tip + what replaced what; auditors after you
-  need the trail (the s22 delta's audit is retired WITH the delta).
+## SESSION 23 LAWS (the audit-everything round — one line each; full: worklog s23)
+- THE VACUOUS-SCORE CLASS (caught live in BOTH rh suites): a suite
+  row() scoring only EXCEPTIONS prints ALL PASS with [FAIL] on the
+  wire — row scoring fails on check-level failures; sweep every
+  suite's row() before trusting its green.
+- Determinism preconditions are SELF-GUARANTEED: row state from a
+  fresh sandbox (name registries, cache dirs) fails on re-land —
+  factory-reset INSIDE the row.
+- Gates must be ENFORCED, not returned (computed-printed-never-
+  raised is fail-open); fold audit findings WITH judgment — the
+  connected-location refusal was wrong vs measurement (skip+report
+  beat refuse on a zero-information channel).
+- Check the upstream tip before porting (re-proven x2); bump the
+  submodule pin at WRAP time (the working tree drifts); a booking's
+  obituary goes in the ledger (CLOSED-BY-UPSTREAM + what replaced
+  what).

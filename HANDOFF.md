@@ -1,3 +1,69 @@
+> Session 25 close: 2026-10-19. HEAD = the humanoid rollout + the
+> collision/nav round (the D6-pattern rollout to five films + the
+> obstacle wave + the arrival-delta gate + the export round with the
+> 24fps timebase find + THE OPEN EYE GATE). This block -> the
+> session-24 block -> PLAN M16 + session-25 receipts -> worklog
+> (session-25 record).
+
+## Session-25 close state (NEWEST — read this first)
+
+- **HEAD = the humanoid rollout + collision/nav round**: the D6
+  pattern (the tform worked example) rolled to five films — RH x_bot
+  rigged crowds + UAL principals, env-gated per film; the obstacle
+  wave landed per film; exports green with the 24fps timebase find
+  (tform_3 re-exports the fixed film).
+- **Credential matrix UNCHANGED**: vision-kit =
+  zmpc01/blender-vision-kit (OLD2 PAT writes zmpc01; the beulahkemp
+  PAT reads/writes the RH repos); both PATs /home/z/creds/gh.env;
+  push helper /home/z/creds/push_vk.sh.
+- **The caches' payload pins (all green this session)**: tdawn
+  fb50b6b9 (obstacles in) / tferry 9ae53649 (lamps) / tgreen
+  d9e2f234 (plinth r0.55 envelope held) / tsquall 2457bf87 (16
+  rects; the arrival-delta gate green 84/38) / tfog 6b5b4313 (bins)
+  / tform 9024057c (reproduced byte-exact from the wiped sandbox —
+  unchanged inputs, obstacles complete as-is).
+- **The six staged packages + the app commit**: bab6098 stages
+  tdawn_4 / tferry_2 / tgreen_2 / tsquall_2 / tfog_2 / tform_3
+  (129/129/129/135/126/102 rigs; 72 stills; 96 filmstrips each) —
+  stage + app-repo commit in the SAME micro-step.
+- **THE LAWS (one line each)**:
+  - 24FPS TIMEBASE: FBX imports flip scene.render.fps 24→30 —
+    _fps_guard saves/restores around EVERY import; the GLB plays at
+    the scene fps (the silent 1.25x fast-film class; gate17's
+    key-interval bands catch it).
+  - DATA-NAME: structural finders resolve at the mesh-DATA level;
+    per-group copies rename BOTH object and data (Object.copy
+    shares data — rename the unique DATA copy).
+  - STRIP OVERRIDE: the strip_dot_override finder is structural
+    (data-level), not name-luck — the data-name law is what keeps
+    it resolving.
+  - FRAME_STEP OOM LEVER: export_frame_step=2 at the bake's own
+    12Hz halves the 28M-key bake; gates are interval-normalized.
+  - ARRIVAL-DELTA GATE: any obstacle-declaration change proves
+    baseline-vs-new probe arrivals MATCH before the geometry scan
+    is trusted (a sealing rect jams silently; tsquall 84/38
+    identical).
+  - STAGE-COMMIT: stage and the app-repo commit in the SAME
+    micro-step (the tform_2 loss class — a staged package without
+    its commit is unreproducible).
+- **QUEUE ITEM 0 — THE OPEN EYE GATE**: the orchestrator's vision
+  channel was DOWN at close; the 72 stills (6 films × 12) await the
+  principal's certification; sheets at /home/sync/s25_sheets/
+  (tdawn_4/tferry_2/tgreen_2/tsquall_2/tfog_2/tform_3_sheet.jpg).
+- **Open queues**:
+  1. THE BROWSER PLAYBACK SMOKE: the six films in the review app —
+     playback at true 24fps is the tform_3 claim's last mile.
+  2. The LOWERCASE SWEEP DEBT: CAST/BEATS/CAMS_V3/SYNOPSIS on the
+     four older films at their next exports (tfog's 9 in-module
+     lowercase knobs are the worked example; the s32 discovery
+     gate).
+  3. NIGHT-MARKET: the diversity queue's uncovered regime.
+  4. The upstream issue #15 COMMENT: add the fields-seam evidence
+     (the engine-lane probe evidence; docs/crowd_system/STATUS.md).
+  5. The RH clip fetch recipe pointer: vendor/rh_clips carries the
+     two load-bearing clips (2899 walk / 2781 idle); fetch via the
+     release-volume octet-stream law + zstd (commit 60caaeb).
+
 > Session 24 close: 2026-10-19. HEAD = the SYNC + VISION-LANE +
 > round (the user directive: mainline sync on 3d-asset/animation/crowd-
 > nav + native-vision refinements + previz ports + the audit waves).

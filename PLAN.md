@@ -146,6 +146,56 @@ critique rounds — audit 5-a incorporated in DRAFT-2).
 - [x] FULL BATTERY 42/42 at close; GitHub pushed each wave; GitLab
       archive + /home/sync bundles in the wrap
 
+## Session-25 receipts (the humanoid rollout + the collision/nav round — 2026-10-19)
+
+- THE D6-PATTERN ROLLOUT: five films gain RH x_bot rigged crowd
+  layers + UAL principals via the tform worked example (env-gated
+  per film so prior revs stay byte-reproducible). POP_PLAN palettes
+  per film with the ORDINALS laws: chase-last zones for
+  tdawn/tferry/tgreen (contract order 40/40/40+9, 44/40/36+9,
+  40/36/44+9; pins 129), VENDORS-FIRST for tsquall (the 6 count-1
+  vendor pops id-sort to ordinals 0-5, then zones 44/40/36, chase 9
+  — pin 135), the pinned slices 66/51/9 for tfog (the s19-B4
+  cache-ordinal law; pin 126).
+- THE OBSTACLE WAVE (film-lane collision/nav; engine gaps stay filed
+  on upstream issue #15): tdawn benches/pylons/RB carts (10 rows);
+  tferry sodium lamps in-walkable (12 rows; MaintGate outboard = no
+  row); tgreen plinth r0.55 EMPIRICAL envelope (0.90 fails at 129 —
+  E_UnreachableDestination/E_SceneCompile; 0.55 held) + NW pole +
+  15 N bollards (SE pole/S bollards outboard, no rows); tsquall 16
+  EXACT rects via the scene2 blocked= replace — the gate-line slalom
+  left open by the jam law; tfog 2 bins (the blocked table at 19
+  rows).
+- THE ARRIVAL DELTA GATE: baseline-vs-new probe arrivals must MATCH
+  before a geometry scan is trusted — tsquall 84/38 IDENTICAL across
+  the 16 rects, zero jam (a sealing rect jams silently).
+- THE EXPORTS: 5 films green + tform_3. THE 24FPS TIMEBASE LAW: FBX
+  imports flip scene fps 24→30 — gate17 caught the 1.25x time-warp
+  (chase 2.1-2.7 m/s apparent = sim 3.8 × 1.25); tform_2 had the
+  LATENT bug SHIPPED (drill speeds slipped under the band), tform_3
+  carries the fix (_fps_guard save/restore at all 5 import sites).
+- The ANCHOR-GATE FRAME LAW: the gate samples plan_frames' LAST
+  entry (f1080) — the old formula landed f1079, the off-by-1 class
+  (parked-at-end films masked it reading 0.0).
+- The STRIP DATA-NAME LAW: per-group copies rename BOTH object and
+  mesh DATA (Hum.Group{gi}.Body{j}) — Object.copy shares data, so
+  the rename must hit the unique data copy or the structural finder
+  matches 0 bodies (the 6-b find).
+- The OOM LEVER: export_frame_step=2 at the bake's own 12Hz halves
+  the 28M-key bake; gates are interval-normalized.
+- The tsquall SLIP FALLER gets a documented motion-gate EXEMPT row
+  (never a silent skip; the report printer is shape-agnostic).
+- STAGING: six packages staged (app bab6098 — tdawn_4 / tferry_2 /
+  tgreen_2 / tsquall_2 / tfog_2 / tform_3, 129/129/129/135/126/102
+  rigs), stage + app-repo commit in the SAME micro-step (the
+  tform_2 loss class → the STAGE-COMMIT law).
+- THE OPEN EYE GATE: the orchestrator's vision channel was DOWN at
+  close — the 72 stills (6 films × 12) await the principal's
+  certification; sheets at /home/sync/s25_sheets/.
+- Next queues: night-market (the uncovered regime); the CAST/BEATS/
+  CAMS_V3/SYNOPSIS lowercase sweep debt on the four older films'
+  next exports.
+
 ### M5 — Perception tuning campaign (CURRENT, session 4, 2026-09-30)
 Owner IS the vision agent; tuning targets what WE actually perceive best.
 Sub-agent vision reality (re-confirmed empirically, sessions 2+3): this
