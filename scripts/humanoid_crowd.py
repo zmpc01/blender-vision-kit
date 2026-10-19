@@ -448,7 +448,8 @@ def ride_principals(ctx, pr, hero_rgb, roughness=0.5):
         "_ual_actors_tint", os.path.join(_here, "assets_ual_actors.py"))
     UALM = importlib.util.module_from_spec(_spec)
     _spec.loader.exec_module(UALM)
-    heroes = ctx.get("heroes") or {}
+    heroes = ctx.get("heroes") or ctx.get("humans") or {}
+    # (tdawn is the family's "humans" outlier — both keys checked)
     out = {}
     for name, rep in pr.items():
         hero = heroes.get(name)
