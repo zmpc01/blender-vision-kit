@@ -1070,6 +1070,16 @@ def _write_json(path, payload):
 
 
 def main(argv=None):
+    if argv is None:
+        # the kit convention (blender_kit.script_argv): args after '--' on
+        # the blrun CLI — argparse must NEVER see Blender's own flags
+        # (the U1 finding: raw sys.argv made every documented invocation
+        # die with 'unrecognized arguments' before doing any work)
+        try:
+            from blender_kit import script_argv
+            argv = script_argv()
+        except Exception:
+            argv = None
     ap = argparse.ArgumentParser(
         prog="crowd_look.py",
         description="the crowd-nav vision lane (navmap + trajectory "
@@ -1232,7 +1242,10 @@ def main(argv=None):
                           "per_destination", "max_penetration_m",
                           "median_displacement_m", "invariant_ok"):
                     print(f"  {k}: {tel[k]}", flush=True)
-                print(f"  jam_centroid: {dens['jam_centroid']} "
+                jc = dens["jam_centroid"]
+                jc_fmt = ([round(float(jc[0]), 3), round(float(jc[1]), 3)]
+                          if jc else None)
+                print(f"  jam_centroid: {jc_fmt} "
                       f"(peak/agent {dens['peak_per_agent']}, denominator "
                       f"{dens['denominator']})", flush=True)
                 # verdict class (D7/F13): authoring P1s dominate; the

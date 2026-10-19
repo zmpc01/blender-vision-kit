@@ -33,13 +33,16 @@ NAMES = [
     # s41 authoring-surface extension (crowd_obstacles bridge)
     "Blocked", "Walkable", "Destination", "SpawnSource",
     "ForceFieldType", "FalloffProfile", "kit_to_bgyss_project_ir",
+    # s24 VK sanctioned delta (+4): the vendored guide's authoring names
+    "DeterminismMode", "NavigationSettings", "PopulationDistributions",
+    "FidelityProfile",
 ]
 
 PROBE_OK = (
     "import sys; sys.path.insert(0, %r); "
     "from scripts.crowd import (%s, __crowd_kit_version__); "
     "import scripts.crowd as _sc; "
-    "assert len(_sc.__all__) == 20, _sc.__all__; "
+    "assert len(_sc.__all__) == 24, _sc.__all__; "
     "_names = [CrowdScene, CrowdProject, Population, ForceField, "
     "BehaviorGraph, BakeResult, Blocked, Walkable, Destination, "
     "SpawnSource, ForceFieldType, FalloffProfile, "

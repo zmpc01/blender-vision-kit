@@ -78,6 +78,14 @@ __all__ = [
     "ForceFieldType",
     "FalloffProfile",
     "kit_to_bgyss_project_ir",
+    # s24 VK sanctioned delta (+4): the authoring types the vendored
+    # kit guide's own custom-CrowdScene snippet imports — the 20-name
+    # contract made that snippet ImportError (the U1 finding); gate
+    # updated in lockstep (20+4=24).
+    "DeterminismMode",
+    "NavigationSettings",
+    "PopulationDistributions",
+    "FidelityProfile",
 ]
 
 _ALIAS = "_vendored_blender_crowd_kit"
@@ -153,5 +161,13 @@ ForceFieldType = _env.ForceFieldType
 FalloffProfile = _env.FalloffProfile
 SpawnSource = _popmod.SpawnSource
 kit_to_bgyss_project_ir = _irmod.kit_to_bgyss_project_ir
+
+# s24 VK sanctioned delta (+4): the authoring types the vendored kit's
+# own guide imports (DeterminismMode/NavigationSettings live on the
+# project module; PopulationDistributions/FidelityProfile on population)
+DeterminismMode = _kit_crowd.DeterminismMode
+NavigationSettings = _kit_crowd.NavigationSettings
+PopulationDistributions = _kit_crowd.PopulationDistributions
+FidelityProfile = _kit_crowd.FidelityProfile
 
 __crowd_kit_version__ = getattr(_kit_crowd, "__version__", "unknown")

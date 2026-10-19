@@ -224,7 +224,11 @@ def o8():
                                ForceFieldType, FalloffProfile,
                                kit_to_bgyss_project_ir)
     import scripts.crowd as sc
-    check("O8a the 20-name contract", len(sc.__all__), 20)
+    # s24 VK sanctioned delta: the contract grew 20 -> 24 (the vendored
+    # guide's own authoring names DeterminismMode/NavigationSettings/
+    # PopulationDistributions/FidelityProfile are re-exported now —
+    # documented in the VK VENDOR_LEDGER; gate test updated in lockstep)
+    check("O8a the 24-name contract", len(sc.__all__), 24)
     check("O8b alias-qualified modules",
           all(n.__module__.startswith("_vendored_blender_crowd_kit.")
               for n in (Blocked, Walkable, Destination, ForceFieldType,

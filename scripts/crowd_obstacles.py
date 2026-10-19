@@ -491,9 +491,21 @@ def main(argv=None) -> int:
                    help="animated objects: report-skip instead of REFUSE")
     p.add_argument("--json", action="store_true",
                    help="machine-readable full output")
+    p.add_argument("--blend", default=None,
+                   help="scene .blend to open BEFORE scanning (s24 VK "
+                        "sanctioned delta — without it the scan runs on "
+                        "the factory scene and refuses; the raw-blender "
+                        "positional form also works but was undocumented)")
+    p.add_argument("--json-out", default=None,
+                   help="write the scan JSON VERBATIM to this file (s24 VK "
+                        "sanctioned delta — stdout is interleaved with "
+                        "Blender logs; a file is pipeable)")
     args = ap.parse_args(argv)
 
     try:
+        if getattr(args, "blend", None):
+            import bpy
+            bpy.ops.wm.open_mainfile(filepath=args.blend)
         walkables = [_parse_walkable(w) for w in args.walkable]
         zlo, zhi = (float(v) for v in args.z_band.split(","))
         prefixes = ([p.strip() for p in args.prefixes.split(",")]
@@ -508,7 +520,13 @@ def main(argv=None) -> int:
         return 2
 
     if args.json:
-        print(json.dumps(out, indent=1))
+        blob = json.dumps(out, indent=1)
+        if getattr(args, "json_out", None):
+            with open(args.json_out, "w") as f:
+                f.write(blob + "\n")
+            print(f"[crowd-obst] json -> {args.json_out}")
+        else:
+            print(blob)
     else:
         print(f"[crowd-obst] {len(out['blocked'])} Blocked region(s):")
         for b in out["blocked"]:
