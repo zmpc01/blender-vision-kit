@@ -324,6 +324,12 @@ def bind_crowd(ctx, fam, group_tint=None):
                 # measured)
                 gme.data = gme.data.copy()
                 gme.name = f"Hum.Group{gi}.Body{j}"
+                # s25 THE DATA-NAME LAW: the DATA carries the object's
+                # name too — the structural lookup law: name-prefix
+                # finders must resolve at the data level (6-b find:
+                # objects renamed, data kept FBX names -> 0 bodies
+                # matched by the strip predicate)
+                gme.data.name = gme.name
                 gme.data.materials.clear()
                 gme.data.materials.append(gmats[j])
                 copies.append(gme)
@@ -370,6 +376,14 @@ def bind_crowd(ctx, fam, group_tint=None):
         for j, tm in enumerate(srcs):
             me = tm.copy()
             me.name = f"{anchor.name}.Body{j}"
+            if not group_meshes:
+                # s25 data-name law (no-tint films only): the body DATA
+                # follows the object name so the data-level finder
+                # resolves too. Tinted films SKIP this — the per-agent
+                # copy SHARES the group's data and the rename would
+                # clobber the Hum.Group{gi}.Body{j} data name (measured:
+                # 0 bodies in the 6-c strip census)
+                me.data.name = me.name
             me.parent = wrapper["armature"]
             bpy.context.scene.collection.objects.link(me)
             for md in me.modifiers:
@@ -519,6 +533,16 @@ def strip_dot_override(mat, anchor_prefix="Zed."):
     Returns the census {"bodies": n_data, "anchors": n_data} — the
     caller prints it (numbers travel).
     """
+    # the WORKBENCH law (gotcha #56 / gauntlet R4): MATERIAL color_type
+    # shades the viewport diffuse_color, NOT the Principled Base Color —
+    # an unsynced override dot renders the 0.8 gray default and lands
+    # INVISIBLE on the 0.8-gray yard. Sync from the node so the dots
+    # carry their authored color (measured in the 6-c lane).
+    if mat.use_nodes:
+        _nb = mat.node_tree.nodes.get("Principled BSDF")
+        if _nb is not None:
+            _bc = _nb.inputs["Base Color"].default_value
+            mat.diffuse_color = (_bc[0], _bc[1], _bc[2], 1.0)
     bodies, anchors, seen = set(), set(), set()
     for ob in bpy.data.objects:
         if ob.type != 'MESH' or ob.data.name in seen:

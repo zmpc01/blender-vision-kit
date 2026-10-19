@@ -19,6 +19,9 @@
 set -u
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 export CROWD_CACHE_DIR=${CROWD_CACHE_DIR:-/tmp/crowdcache_tform}
+export TFORM_HUMANOID=${TFORM_HUMANOID:-1}
+export RH_ASSETS=${RH_ASSETS:-/home/z/lab/RH-3d-assets}
+export RH_ANIMS=${RH_ANIMS:-/home/z/lab/RH-canvas-animations}
 OUT=${OUT:-output/tform/stills}
 mkdir -p "$OUT"
 declare -A FRAMES=( [S1]=60 [S2]=144 [S3]=264 [S4]=410 [S5]=461 [S6]=560 \
