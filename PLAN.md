@@ -119,6 +119,33 @@ critique rounds — audit 5-a incorporated in DRAFT-2).
 - [x] AUDIT-B survival: all folds verified (1 by supersession)
 - [x] FULL BATTERY 40/40 PASS 0 SKIP; GitLab archive + sync bundle
 
+
+### M16 — The sync + vision-lane round (session 24, 2026-10-19 — COMPLETE)
+
+- [x] Sandbox re-land (~20 min drill; the battery runner restored as
+      a tool — scripts/run_battery.sh, two invocation contracts)
+- [x] MAINLINE SYNC: the s41 crowd_obstacles bridge + scripts.crowd
+      re-export + batteries + STATUS doc vendored zero-drift (the
+      film lane's vendor was rh_canvas-only); pin superset verified
+      live (VK b4bf76e ahead of mainline bc11fcb, gate 1.6.0 OK)
+- [x] THE CROWD-NAV VISION LANE: DESIGN_crowd_vision_s24.md through
+      two critique rounds (F1-F18 + N1-N6, two P0s caught pre-code);
+      crowd_look.py + 11-row battery + eye-certified encodings;
+      AGENTS.md + kb/crowd_look.md
+- [x] PREVIZ DIRECTIVE: ab_evaluate native-vision form (prep/decide,
+      the swap law kept, the VLM seam replanted by the agent's
+      eyes), previz_canon verbatim, the reviewer-comments protocol
+      + schema fixture (docs/REVIEW_COMMENTS_PROTOCOL.md)
+- [x] THE DOG-FOOD ROUND: docs-only consumer simulation; 4 blockers
+      found and folded (script_argv, --blend/--json-out, the 24-name
+      re-export, the answers skeleton); doc lines corrected verbatim
+- [x] AUDIT-A2: the loader (3 P1 + 4 P2 + 4 P3) and the
+      wrapper/lab (1 P1 + 4 P2) — all folded with probes (H7);
+      the lab's world gates now ENFORCE (the s23 fail-open class,
+      third occurrence, now with the law named)
+- [x] FULL BATTERY 42/42 at close; GitHub pushed each wave; GitLab
+      archive + /home/sync bundles in the wrap
+
 ### M5 — Perception tuning campaign (CURRENT, session 4, 2026-09-30)
 Owner IS the vision agent; tuning targets what WE actually perceive best.
 Sub-agent vision reality (re-confirmed empirically, sessions 2+3): this

@@ -240,59 +240,23 @@ For user delivery: copy whole dir to `/home/z/my-project/download/<scene_name>/`
 - **Background processes die between tool calls** — long ops must run inside one Bash call with timeout, or use `render_daemon.py` (double-fork to PID 1).
 - **Watchdog** reverts `/home/z/my-project/` every ~20s — work in `/home/z/repos/` clones (F2D-16: one path, everywhere).
 
-## SESSION 22 LAWS (the RH real-data round + the hero lane)
-
-- **Multi-credential posture**: PATs are SCOPED — test write access
-  per repo BEFORE relying on a push (the new PAT read zmpc01 fine and
-  403'd on push). Release assets: the API assets endpoint with
-  Accept: octet-stream; browser_download_url 404s under fine-grained
-  PATs. Keep a push helper script with the right PAT per repo.
-- **This sandbox bans symlinks** — tools/blender must be the RENAMED
-  real install dir (the FBX addon resolves tools/blender/5.2/...).
-  Foreground copies only (background cp is reaped).
-- **Library-split discovery**: the platform migrated the director
-  assets to RH-3d-assets (manifest RENAMED gltf-manifest.json, same
-  join schema) — discovery resolves THREE clones with a legacy
-  fallback; the fallback serve must be LOUD (a stale clone passed the
-  battery gate silently — audit-B P2-1). Vintage is PER-KIND (models
-  vintage from the models repo).
-- **Cross-validation discipline**: when a data source returns from
-  the dead, RE-MEASURE every reverse-engineered law against it
-  (scripts/s22_crossval.py pattern: 9 laws, fail-closed on any NEW
-  deviation, honest-skip on either layer absent, degraded runs exit
-  nonzero — partial coverage never scores green).
-- **THE FROZEN-EVALUATION TRAP (the round's deepest find)**: an
-  FBX-imported rig can evaluate its pose FROZEN at rest — property
-  sets, update_tag, depsgraph_get, frame bounces all ignored; the
-  UAL glTF rig evaluates fine in the same session. The defense: the
-  DRIVE CHECK (fcurve values must reach the evaluated pose
-  properties) + world gates; a closed "ALL PASS" with static feet
-  numbers was the tell.
-- **DISCONNECTED RIG TOPOLOGY**: the Quaternius rigs parent feet to
-  the ROOT bone (not the shin) — their clips move feet via per-bone
-  LOCATION channels. Location transfer must be DATA-DRIVEN (per-bone,
-  where the source animates it), never a family-declared constant.
-  The conjugated basis translation x the height ratio is the exact
-  local key; the audited rotation formula needed NO change (0.0 deg
-  measured).
-- **The stuck-pose + slot pair**: unassigning an action leaves the
-  last evaluated pose IN the properties (reset loc/scale/rotation of
-  unkeyed bones before baking); EVERY action assignment pins the
-  slot (ual_bake's 4.4+ law); 5.x fcurves.new resolves paths against
-  the CONTEXT object — bind-then-write makes the write
-  context-independent.
-- **Cross-lane add/add collisions**: when two lanes implement the
-  same D1 surface, converge on the review-hardened canonical and port
-  consumers; a foreign canonical can carry REAL bugs (the T4
-  master-collection gap) — your battery is the detector, fold the
-  fix inline with the finding documented.
-- **Kit hygiene gates apply to new modules**: scripts/assets_* is a
-  forbidden project-artifact pattern — family loaders get
-  rig_family_* names (test_kit_scope catches it at battery time).
-- FBX materials: find the Principled node by TYPE (BSDF_PRINCIPLED),
-  never by name (FBX names differ from glTF); a rep dict-shape
-  mismatch (mesh vs meshes) was a silent no-op — accept both shapes
-  or refuse loudly.
+## SESSION 22 LAWS (the RH real-data round — ultra-condensed; full: worklog s22 + docs/RH_CROSSVAL_s22.md)
+- PATs are SCOPED (test write per repo before relying on a push);
+  release assets via the API endpoint (browser_download_url 404s
+  under fine-grained PATs). Symlinks banned: tools/blender is the
+  RENAMED real dir, copied FOREGROUND (background gets reaped).
+- Library-split discovery resolves THREE clones, vintage PER-KIND;
+  the offline fixture library is CROSS-VALIDATED against reality
+  (9 laws, fail-closed on NEW deviations, honest-skip exits 2).
+- THE FROZEN-EVALUATION TRAP: an FBX rig can evaluate FROZEN at
+  rest — the DRIVE CHECK + world gates are the defense. DISCONNECTED
+  leg topology: location transfer is DATA-DRIVEN per-bone (REV-3).
+  Stuck-pose + slot pair: reset unkeyed bones before bakes; EVERY
+  assignment pins the slot; 5.x fcurves.new resolves against the
+  CONTEXT object — bind-then-write. Cross-lane add/add: converge on
+  the review-hardened canonical, port consumers, fold found bugs
+  with the finding documented. Loader names are family_* (scope
+  gate); FBX materials by TYPE not name.
 
 ## KB entries (linked from AGENTS.md; each carries its own headlines)
 vision_loop · render_speed · placement_and_physics · semantic_labeling ·
@@ -386,6 +350,51 @@ gait_modifiers.
 - Check the UPSTREAM TIP before re-deriving (GIT IS THE DISK applies
   to agent-kit too). GitLab: per-round archive branches; /home/sync
   is REPO-BY-REPO.
+
+
+## SESSION 24 LAWS (the sync + vision-lane round — condensed)
+
+- **Probe before you clone**: the credential matrix AND the repo
+  locations drift between sessions (vision-kit is zmpc01's, not
+  beulahkemp's — a lossy summary said otherwise; the direct API probe
+  settled it in one call). Re-verify every "known" fact against the
+  remote.
+- **A runner-shaped hole is a tool**: the suite_runner the worklog
+  recorded was absent from the tree — every re-land re-derived the
+  loop by hand. Restored as scripts/run_battery.sh with BOTH
+  invocation contracts (bpy suites via blrun; bpy-less vendored
+  unittest via host python3 — unittest.main consumes blrun's flags).
+  Sweep tests/ for bpy-less files before trusting a blrun-only runner.
+- **The sync law bites on PARTIAL vendors**: a lane's "kit s41
+  wholesale" vendor carried rh_canvas only — the crowd_obstacles
+  bridge never arrived. Diff the SOURCE commit's file list against
+  the vendored tree, never trust the vendor message's scope claim.
+- **Submodule pin supersets are safe to vendor against**: VK's pin
+  (b4bf76e) is 467 commits AHEAD of mainline's — the vendor gate +
+  battery verify the superset live. Newer-pin vendors need a gate run,
+  not a pin downgrade.
+- **AUDITS read code; CONSUMERS read docs** (the U1 law): four
+  blockers no code audit saw (argparse vs blender argv — always
+  script_argv(); a CLI that cannot see a scene; an undiscoverable
+  answers schema; an ImportError in the vendored guide's own
+  snippet). Run a docs-only consumer wave on EVERY new CLI surface.
+- **The fail-open class recurs wherever gates meet callers** (third
+  occurrence): computed-printed-never-enforced (the lab's world
+  gates). The fix is ALWAYS the same shape: assert at the collection
+  site, carry the verdict into the artifact.
+- **A gate's strict form is falsified by the happy path** (second
+  proof): slotless-over-LIVE refuses, but a FRESH slotless bind is
+  the legitimate bake shape. Measure the refusal against the real
+  path before landing it (the connected-location lesson, again).
+- **Render-encoding laws are measured, never assumed**: 0.012m
+  outlines anti-alias away; an outline at floor z is OCCLUDED by its
+  own object; a fixed bevel is 0.5px at 19m ortho; RGB-distance
+  visibility never fires on AA-blended pixels (hue bands do). Probe
+  render, LOOK at the probe, then pin the law in the module.
+- **Sanctioned deltas travel in lockstep**: the +4 re-export names
+  touched the re-export, BOTH gate tests (count pins), the ledger
+  row, and the O8a pin — one contract, N pins, update N sites or
+  the battery lies.
 
 ## SESSION 23 LAWS (the audit-everything round — condensed)
 
