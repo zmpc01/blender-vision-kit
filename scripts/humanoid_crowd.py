@@ -412,6 +412,47 @@ def _cache_speeds(ctx, n):
     return None
 
 
+def strip_dot_override(mat, anchor_prefix="Zed."):
+    """The s25 strip law (the rollout audit's P1-2): post-bind, the
+    strip-visible crowd surface is the RIG BODIES — the Zed.* anchors
+    are 1-vert degenerate carriers (no faces) and a strip override
+    that only dots the anchors renders an EMPTY crowd.
+
+    Applies `mat` at the MESH-DATA level to:
+      1. every mesh object that carries an ARMATURE modifier (the
+         skinned bodies; structurally found — no naming convention
+         to drift). The bodies share data PER GROUP (the tint law's
+         copies), so one data write retints the whole group;
+      2. the anchor carrier data (harmless: no faces to shade) so a
+         pre-bind build keeps its legacy anchor-dot behavior.
+
+    Returns the census {"bodies": n_data, "anchors": n_data} — the
+    caller prints it (numbers travel).
+    """
+    bodies, anchors, seen = set(), set(), set()
+    for ob in bpy.data.objects:
+        if ob.type != 'MESH' or ob.data.name in seen:
+            continue
+        seen.add(ob.data.name)
+        has_arm = any(md.type == 'ARMATURE' for md in ob.modifiers)
+        if has_arm and ob.data.name.startswith("Hum."):
+            # the RH crowd bodies only — the UAL principals deform via
+            # armature too but carry their own (non-Hum.) data; the
+            # strips keep their identity colors (s25 scope law)
+            bodies.add(ob.data.name)
+        elif ob.name.startswith(anchor_prefix):
+            anchors.add(ob.data.name)
+    for name in bodies | anchors:
+        me = bpy.data.meshes.get(name)
+        if me is None:
+            continue
+        me.materials.clear()
+        me.materials.append(mat)
+    _P(f"strip_dot_override: {len(bodies)} rig-body data(s) + "
+       f"{len(anchors)} anchor data(s) <- {mat.name}")
+    return {"bodies": len(bodies), "anchors": len(anchors)}
+
+
 def _make_group_materials(group_tint):
     if not group_tint:
         return None

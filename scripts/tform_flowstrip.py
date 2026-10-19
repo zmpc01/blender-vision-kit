@@ -63,14 +63,16 @@ def main():
         nb.inputs["Emission Strength"].default_value = 0.6
     ndot = 0
     seen = set()
-    for ob in bpy.data.objects:     # nested collections: data.objects
-        if ob.name.startswith("Zed.") and ob.type == 'MESH' \
-                and ob.data.name not in seen:
-            seen.add(ob.data.name)
-            ob.data.materials.clear()
-            ob.data.materials.append(ov)
-            ndot += 1
-    print(f"[tform_flowstrip] crowd dot override on {ndot} mesh data(s)")
+    # s25: the strip law — post-bind, the crowd surface is the RIG
+    # BODIES (the Zed.* anchors are 1-vert carriers and an anchor-only
+    # dot override renders an EMPTY strip). The kit helper dots the
+    # Hum.* rig-body data (shared per group: one write per group) AND
+    # the anchor data (harmless pre-bind: keeps the legacy behavior).
+    import humanoid_crowd as _HC
+    _cen = _HC.strip_dot_override(ov, anchor_prefix="Zed.")
+    ndot = _cen["bodies"] + _cen["anchors"]
+    print(f"[tform_flowstrip] crowd dot override on {ndot} mesh data(s) "
+          f"(bodies {_cen['bodies']} / anchors {_cen['anchors']})")
     if args.hide_roof:
         hidden = 0
         for ob in bpy.data.objects:
