@@ -28,6 +28,7 @@ THIS import's actions via the acts-before/after diff (D2b — binding
 hero #2 to hero #1's datablock is the "first import wins" bug).
 """
 import os
+import re
 
 import bpy
 
@@ -47,6 +48,11 @@ HEIGHT_MIN, HEIGHT_MAX = 1.2, 2.2     # post-rescale world gate (m)
 FEET_BAND = 0.15             # feet-ground band (m)
 BONE_CENSUS = 42
 ACTION_CENSUS = 11
+# P3-8 (the A2a audit): the census is IDENTITY, not just count — a
+# renamed-clip 11-pack must not sail. Pinned from the H2 row.
+EXPECTED_ACTION_KEYS = frozenset(
+    {"Walk", "Idle", "Jump", "Death", "Clapping", "Punch", "Run",
+     "RunningJump", "Sitting", "Standing", "SwordSlash"})
 
 
 class LoadRefused(ValueError):
@@ -59,14 +65,28 @@ def load(key, name, scale=UNIT_RESCALE):
     Returns rep = {"arm", "mesh", "root", "pool", "actions", "probe",
     "height", "feet_z"} where pool maps stripped action keys to Action
     datablocks of THIS import (acts-diff law, D2b).
+
+    The A2a audit law: every refusal AFTER the import ROLLS BACK the
+    import (objects + actions) — a leaked rig used to trap the retry
+    behind a wrapper name-collision error that blamed the wrong layer.
     """
     path = FBX_FILES.get(key)
     if not path or not os.path.isfile(path):
         raise LoadRefused(f"unknown key {key!r} (male|female) or missing "
                           f"FBX at {path}")
-    if name in bpy.data.objects:
-        raise LoadRefused(f"object name collision: {name!r} already in "
-                          f"the scene (naming is the caller's hygiene)")
+    if scale <= 0:
+        raise LoadRefused(f"scale {scale!r} must be > 0 (a sign-blind "
+                          f"rescale passes the height gate and wrecks the "
+                          f"feet band — refuse before importing)")
+    # P2-5: the DERIVED names must be free too (a pre-existing
+    # 'X.Body' silently renamed the mesh to 'X.Body.001' and every
+    # name-keyed downstream contract drifted)
+    for derived in (name, f"{name}.Rig", f"{name}.Root", f"{name}.Body"):
+        if derived in bpy.data.objects:
+            raise LoadRefused(f"object name collision: {derived!r} already "
+                              f"in the scene (the loader renames to "
+                              f"<name>.Rig/.Root/.Body — all four must be "
+                              f"free)")
 
     acts_before = {a.name for a in bpy.data.actions}
     obs_before = {o.name for o in bpy.data.objects}
@@ -74,61 +94,113 @@ def load(key, name, scale=UNIT_RESCALE):
     new_obs = [o for o in bpy.data.objects if o.name not in obs_before]
     new_acts = [a for a in bpy.data.actions if a.name not in acts_before]
 
-    arm = next((o for o in new_obs if o.type == 'ARMATURE'), None)
-    if arm is None:
-        raise LoadRefused(f"{key}: no armature in the import "
-                          f"({[o.name for o in new_obs]})")
-    mesh = next((o for o in new_obs
-                 if o.type == 'MESH' and o.find_armature() is not None),
-                None)
-    # stray-object law (the UAL Icosphere class): DELETE with a report
-    strays = [o for o in new_obs if o not in (arm, mesh)]
-    for ob in strays:
-        bpy.data.objects.remove(ob, do_unlink=True)
+    def _rollback(exc):
+        """Remove EVERYTHING this import brought, then re-raise (the
+        P1-1 law: enforcement must not cost the session). The object
+        diff is RE-COMPUTED at rollback time: the wrapper's Root empty
+        (created post-import) is not in the import diff."""
+        now_new = [o for o in bpy.data.objects
+                   if o.name not in obs_before]
+        for ob in list(now_new) + list(new_obs):
+            try:
+                bpy.data.objects.remove(ob, do_unlink=True)
+            except Exception:
+                pass
+        for a in list(new_acts):
+            try:
+                bpy.data.actions.remove(a)
+            except Exception:
+                pass
+        return exc
 
-    # the film lane's canonical wrapper (review r1): meshes discovered
-    # internally (plural rep), renames are the caller's hygiene, D1b
-    # scale!=1 with an unparented skinned mesh REFUSES (the quaternius
-    # meshes are armature-parented at import — rides the rescale)
-    rep = wrapper_rig.wrap(arm, name, scale=scale,
-                           facing_probe_bone="Foot.L")
-    arm, root = rep["armature"], rep["root"]
-    mesh = rep["meshes"][0] if rep["meshes"] else None
-    arm.name = f"{name}.Rig"
-    if mesh is not None:
-        mesh.name = f"{name}.Body"
-
-    # loader policy (the UAL pattern): the importer leaves a LIVE
-    # action slot (first pool action auto-assigned) — clear it: the
-    # caller's bind owns slot assignment (fresh-bake law). The action
-    # datablocks stay in the pool.
-    ad = arm.animation_data
-    rep["import_slot_cleared"] = None
-    if ad is not None and ad.action is not None:
-        rep["import_slot_cleared"] = ad.action.name
-        ad.action = None
-
-    # pool: THIS import's actions, keys = last pipe segment minus the
-    # gender prefix (D2b). Duplicate stripped keys collide loudly —
-    # one import carries 11 distinct actions by contract.
-    pool = {}
-    for a in new_acts:
-        tail = a.name.split("|")[-1]
-        for pre in GENDER_PREFIX:
-            if tail.startswith(pre):
-                tail = tail[len(pre):]
-                break
-        if tail in pool:
+    try:
+        arm = next((o for o in new_obs if o.type == 'ARMATURE'), None)
+        if arm is None:
+            raise LoadRefused(f"{key}: no armature in the import "
+                              f"({[o.name for o in new_obs]})")
+        arms = [o for o in new_obs if o.type == 'ARMATURE']
+        if len(arms) > 1:
+            raise LoadRefused(f"{key}: ambiguous import — {len(arms)} "
+                              f"armatures {[o.name for o in arms]}; the "
+                              f"family contract is ONE rig per FBX")
+        # P1-3: the skinned mesh is part of the family CONTRACT — a
+        # mesh skinned to a DIFFERENT armature (or none) used to slip
+        # through with both world gates silently vacated
+        mesh = next((o for o in new_obs
+                     if o.type == 'MESH' and o.find_armature() is arm),
+                    None)
+        if mesh is None:
+            mesh_info = [
+                (o.name,
+                 (o.find_armature().name if o.find_armature() else None))
+                for o in new_obs if o.type == 'MESH']
             raise LoadRefused(
-                f"pool key collision {tail!r} on import {name!r} — "
-                f"the 11-action contract changed, re-probe")
-        pool[tail] = a
-    if len(pool) != ACTION_CENSUS:
-        raise LoadRefused(
-            f"{key}: expected {ACTION_CENSUS} actions, import diff "
-            f"yielded {len(pool)} ({sorted(pool)}) — re-probe")
+                f"{key}: no mesh skinned to the imported armature "
+                f"({mesh_info}) — the family contract is a skinned "
+                f"body; refusing before the height/feet gates can "
+                f"silently skip")
+        # stray-object law (the UAL Icosphere class): DELETE with a
+        # report (the A2a P2-4 fold: the comment promised a report the
+        # code never printed)
+        strays = [o for o in new_obs if o not in (arm, mesh)]
+        for ob in strays:
+            print(f"[quat-loader] stray removed: {ob.name!r} "
+                  f"({ob.type})", flush=True)
+            bpy.data.objects.remove(ob, do_unlink=True)
 
-    audit(rep, pool)
+        # the film lane's canonical wrapper (review r1): meshes discovered
+        # internally (plural rep), renames are the caller's hygiene, D1b
+        # scale!=1 with an unparented skinned mesh REFUSES (the quaternius
+        # meshes are armature-parented at import — rides the rescale)
+        rep = wrapper_rig.wrap(arm, name, scale=scale,
+                               facing_probe_bone="Foot.L")
+        arm, root = rep["armature"], rep["root"]
+        mesh = rep["meshes"][0] if rep["meshes"] else None
+        arm.name = f"{name}.Rig"
+        if mesh is not None:
+            mesh.name = f"{name}.Body"
+
+        # loader policy (the UAL pattern): the importer leaves a LIVE
+        # action slot (first pool action auto-assigned) — clear it: the
+        # caller's bind owns slot assignment (fresh-bake law). The action
+        # datablocks stay in the pool.
+        ad = arm.animation_data
+        rep["import_slot_cleared"] = None
+        if ad is not None and ad.action is not None:
+            rep["import_slot_cleared"] = ad.action.name
+            ad.action = None
+
+        # pool: THIS import's actions, keys = last pipe segment minus the
+        # gender prefix (D2b). The DATABLOCK dedup suffix (.001 on the
+        # second same-family import in one session) is stripped too —
+        # the P1-2 law: import #2 must map the SAME 11 clean keys onto
+        # ITS OWN .001 datablocks, or the motion-lab pattern
+        # pool["Walk"] KeyErrors downstream.
+        pool = {}
+        for a in new_acts:
+            tail = re.sub(r"\.\d{3}$", "", a.name.split("|")[-1])
+            for pre in GENDER_PREFIX:
+                if tail.startswith(pre):
+                    tail = tail[len(pre):]
+                    break
+            if tail in pool:
+                raise LoadRefused(
+                    f"pool key collision {tail!r} on import {name!r} — "
+                    f"the 11-action contract changed, re-probe")
+            pool[tail] = a
+        if len(pool) != ACTION_CENSUS:
+            raise LoadRefused(
+                f"{key}: expected {ACTION_CENSUS} actions, import diff "
+                f"yielded {len(pool)} ({sorted(pool)}) — re-probe")
+        missing = EXPECTED_ACTION_KEYS - set(pool)
+        if missing:
+            raise LoadRefused(f"{key}: action-key identity drift — missing "
+                              f"{sorted(missing)} (got {sorted(pool)})")
+        audit(rep, pool, scale=scale)
+    except LoadRefused as e:
+        raise _rollback(e)
+    except Exception as e:                       # noqa: BLE001
+        raise _rollback(e)
     return {"arm": arm, "mesh": mesh, "root": root, "pool": pool,
             "actions": sorted(pool), "probe": rep,
             "import_slot_cleared": rep.get("import_slot_cleared"),
@@ -157,10 +229,13 @@ def measured_feet(mesh):
     return round(min((mw @ v.co).z for v in mesh.data.vertices), 4)
 
 
-def audit(rep, pool):
+def audit(rep, pool, scale=None):
     """The D2 audit gates — RECORD-AND-WARN posture for rig-authoring
     choices, FAIL for contract violations (bone census, height band,
-    feet band)."""
+    feet band). The A2a law: a MISSING mesh is a contract violation,
+    not a skip (the height/feet gates used to vacate silently); the
+    height refusal names the CALLER's scale when a non-default scale
+    was chosen ("UNIT_RESCALE drifted" lied about who chose it)."""
     arm = rep["armature"]
     n = len(arm.data.bones)
     if n != BONE_CENSUS:
@@ -176,13 +251,22 @@ def audit(rep, pool):
                   flush=True)
     mesh0 = rep["meshes"][0] if rep["meshes"] else None
     h = measured_height(mesh0)
-    if h is not None and not (HEIGHT_MIN <= h <= HEIGHT_MAX):
+    if h is None:
+        raise LoadRefused("audit: no mesh to measure — the height/feet "
+                          "gates cannot pass vacuously (P1-3)")
+    if not (HEIGHT_MIN <= h <= HEIGHT_MAX):
+        if scale is not None and scale != UNIT_RESCALE:
+            raise LoadRefused(
+                f"post-rescale height {h} m outside [{HEIGHT_MIN}, "
+                f"{HEIGHT_MAX}] with the CALLER-SUPPLIED scale={scale} "
+                f"(the family default is {UNIT_RESCALE}) — the caller's "
+                f"scale is the variable here, not UNIT_RESCALE")
         raise LoadRefused(
             f"post-rescale height {h} m outside [{HEIGHT_MIN}, "
             f"{HEIGHT_MAX}] — UNIT_RESCALE drifted from the measured "
             f"raw heights, re-pin (see module docstring)")
     fz = measured_feet(mesh0)
-    if fz is not None and abs(fz) > FEET_BAND:
+    if fz is None or abs(fz) > FEET_BAND:
         raise LoadRefused(
             f"feet z {fz} m outside the ±{FEET_BAND} ground band — "
             f"the family stopped being feet-origin, re-probe")
@@ -203,17 +287,22 @@ def recolor(rep, rgb, roughness=None):
         mat = slot.material
         if mat is None:
             continue
-        if mat.use_nodes:
-            # FBX imports name the bsdf node differently than glTF —
-            # find by TYPE, never by name (the H2 sweep caught it)
-            bsdf = next((n for n in mat.node_tree.nodes
-                         if n.type == 'BSDF_PRINCIPLED'), None)
-            if bsdf is not None:
-                bsdf.inputs["Base Color"].default_value = (*rgb, 1.0)
-                if roughness is not None:
-                    try:
-                        bsdf.inputs["Roughness"].default_value = roughness
-                    except KeyError:
-                        pass
+        # ADR-tracked shim (5.2 deprecation-warns on raw use_nodes —
+        # Blender 6.0 removal already announced); idempotent
+        from blender_kit import ensure_use_nodes
+        ensure_use_nodes(mat)
+        # FBX imports name the bsdf node differently than glTF —
+        # find by TYPE, never by name (the H2 sweep caught it)
+        bsdf = next((n for n in mat.node_tree.nodes
+                     if n.type == 'BSDF_PRINCIPLED'), None)
+        if bsdf is not None:
+            bsdf.inputs["Base Color"].default_value = (*rgb, 1.0)
+            if roughness is not None:
+                try:
+                    bsdf.inputs["Roughness"].default_value = roughness
+                except KeyError:
+                    print("[quat-loader] WARN: no Roughness socket on "
+                          "this material — the roughness arg is a "
+                          "silent no-op otherwise (A2a P3-9)", flush=True)
         mat.diffuse_color = (*rgb, 1.0)
     return rep

@@ -1,0 +1,86 @@
+{
+ "schema_version": "2.1",
+ "package_id": "tdawn_2",
+ "package_schema": "2.3",
+ "exported_at": "2026-10-12T21:54:28.592Z",
+ "fps": 24,
+ "shot_count": 12,
+ "comment_count": 5,
+ "comments": [
+  {
+   "id": "cmv5sco8i0000qobxglypweus",
+   "shot": "S1",
+   "shot_frames": [
+    1,
+    84
+   ],
+   "frame": 1,
+   "time_s": 0.042,
+   "anchor_objects": [],
+   "anchor_object": null,
+   "author": "overall",
+   "body": "we have too many colors used for the population, make sure you use color only for any characters we need call out (for previz purpose) it is not for the visual diversity",
+   "created_at": "2026-10-12T21:50:13.939Z"
+  },
+  {
+   "id": "cmv5sgy6g0002qobx1a5anz1c",
+   "shot": "S10",
+   "shot_frames": [
+    817,
+    912
+   ],
+   "frame": 910,
+   "time_s": 37.917,
+   "anchor_objects": [],
+   "anchor_object": null,
+   "author": "overall",
+   "body": "the spatial separation may need to be more clear here there's lack of even a wall",
+   "created_at": "2026-10-12T21:53:33.448Z"
+  },
+  {
+   "id": "cmv5sh7io0003qobxairfs8fu",
+   "shot": "S12",
+   "shot_frames": [
+    1009,
+    1080
+   ],
+   "frame": 1042,
+   "time_s": 43.417,
+   "anchor_objects": [],
+   "anchor_object": null,
+   "author": "overall",
+   "body": "FYI this is constantly visible",
+   "created_at": "2026-10-12T21:53:45.553Z"
+  },
+  {
+   "id": "cmv5shwqu0004qobxqa5mia9x",
+   "shot": "S12",
+   "shot_frames": [
+    1009,
+    1080
+   ],
+   "frame": 1080,
+   "time_s": 45,
+   "anchor_objects": [],
+   "anchor_object": null,
+   "author": "overall",
+   "body": "good job overall - beautiful cinemtography. visual storytelling is strong.",
+   "created_at": "2026-10-12T21:54:18.247Z"
+  },
+  {
+   "id": "cmv5sfyq70001qobxm14ltnb8",
+   "shot": "S5",
+   "shot_frames": [
+    349,
+    444
+   ],
+   "frame": 401,
+   "time_s": 16.708,
+   "anchor_objects": [],
+   "anchor_object": null,
+   "author": "overall",
+   "body": "the model looks very strange, although the animation conveys the point quite well still. do RCA (or project context if this is justified reasoning to go this way) otherwise vision check clearly failed on this one",
+   "created_at": "2026-10-12T21:52:47.504Z"
+  }
+ ]
+}

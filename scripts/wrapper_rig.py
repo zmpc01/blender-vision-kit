@@ -40,6 +40,8 @@ Laws (each from the audited pattern; review r1 findings folded):
   7. The helper NEVER touches animation data (no action clearing —
      that is a per-loader policy).
 """
+import math
+
 import bpy
 from mathutils import Matrix, Vector
 
@@ -48,12 +50,36 @@ def _fail(msg):
     raise RuntimeError(f"wrapper_rig: {msg}")
 
 
-def _probe_forward(arm, bone_name):
-    """World-space +Y of the pose bone, as a unit vector."""
+def _pose_divergence(arm, bone_name):
+    """How far the CURRENT evaluated pose bone sits from its REST state
+    (armature-space translation + rotation-angle deltas). The A2b P2-4
+    law: the probe used to measure the EVALUATED pose — a bound action
+    at a mid-clip frame can flip the ±Y contest silently. The probe now
+    reads REST (deterministic); the divergence is REPORTED so a posed
+    wrap is loud, never wrong."""
+    pb = arm.pose.bones.get(bone_name)
+    bone = arm.data.bones.get(bone_name)
+    if pb is None or bone is None:
+        return None
+    dp = (pb.matrix.to_translation() - bone.matrix_local.to_translation())
+    ang = pb.matrix.to_quaternion().rotation_difference(
+        bone.matrix_local.to_quaternion()).angle
+    return {"trans_m": round(float(dp.length), 4),
+            "rot_deg": round(float(math.degrees(ang)), 2)}
+
+
+def _probe_forward(arm, bone_name, rest=False):
+    """World-space +Y of the probe bone, as a unit vector. rest=True
+    reads the REST matrix (deterministic, pose-immune — the A2b law);
+    the default stays pose-based for any external caller."""
     pb = arm.pose.bones.get(bone_name)
     if pb is None:
         _fail(f"probe bone {bone_name!r} not in {arm.name}")
-    M = arm.matrix_world @ pb.matrix
+    if rest:
+        bone = arm.data.bones.get(bone_name)
+        M = arm.matrix_world @ bone.matrix_local
+    else:
+        M = arm.matrix_world @ pb.matrix
     return (M.to_3x3() @ Vector((0.0, 1.0, 0.0))).normalized()
 
 
@@ -67,16 +93,21 @@ def facing_probe(arm, explicit=None):
     carry the horizontal toe direction; a failed explicit must not
     mask a working auto-pick).
 
-    Returns (bone_name, axis_sign, fwd) — axis_sign +1 when the bone's
-    local +Y is the toe direction, -1 when -Y is.
+    Returns (bone_name, axis_sign, fwd, probe_source) — axis_sign +1
+    when the bone's local +Y is the toe direction, -1 when -Y is;
+    probe_source is 'explicit' | 'auto' (the A2b P3-4 rep field — the
+    rep can now distinguish 'explicit won' from 'auto-picked').
     """
+    probe_source = None
     if explicit:
-        fwd = _probe_forward(arm, explicit)
+        fwd = _probe_forward(arm, explicit, rest=True)
+        probe_source = "explicit"
         if abs(fwd.z) <= 0.5 and abs(fwd.y) >= 0.5:
-            return explicit, (1 if fwd.y >= 0 else -1), fwd
+            return explicit, (1 if fwd.y >= 0 else -1), fwd, probe_source
         print(f"wrapper_rig: explicit probe {explicit!r} failed the "
               f"contest (fwd {tuple(round(v, 3) for v in fwd)}) — "
               f"falling through to the auto-scan")
+        probe_source = None
     # auto-pick: foot/toe-named pose bones, skipping *_end leaves
     cands = [b.name for b in arm.pose.bones
              if ("foot" in b.name.lower() or "toe" in b.name.lower())
@@ -85,12 +116,12 @@ def facing_probe(arm, explicit=None):
         _fail(f"no foot-like probe bone on {arm.name} (pass explicit=)")
     for nm in cands:
         for sign in (1.0, -1.0):
-            pb = arm.pose.bones[nm]
-            M = arm.matrix_world @ pb.matrix
+            bone = arm.data.bones[nm]
+            M = arm.matrix_world @ bone.matrix_local      # REST (A2b)
             fwd = (M.to_3x3() @ Vector((0.0, sign, 0.0))).normalized()
             if abs(fwd.z) <= 0.5 and abs(fwd.y) >= 0.5:
-                return nm, int(sign), fwd
-    fwd = _probe_forward(arm, cands[0])
+                return nm, int(sign), fwd, "auto"
+    fwd = _probe_forward(arm, cands[0], rest=True)
     _fail(f"facing probe refused: {arm.name} foot bone {cands[0]!r} "
           f"forward {tuple(round(v, 3) for v in fwd)} is neither "
           f"horizontal (|z|<=0.5) nor Y-dominant (|y|>=0.5) on either "
@@ -137,7 +168,15 @@ def wrap(arm, name, scale=1.0, facing_probe_bone=None):
                       f"armature at scale != 1.0 — rest/posed skins "
                       f"would diverge (D1b law); refusing")
 
-    bone, axis_sign, fwd = facing_probe(arm, facing_probe_bone)
+    bone, axis_sign, fwd, probe_source = facing_probe(arm, facing_probe_bone)
+    # the pose-divergence report (A2b P2-4): a wrap over a POSED rig is
+    # loud — the probe is rest-derived, so the MPI is correct either
+    # way, but the divergence explains any staging surprise downstream
+    div = _pose_divergence(arm, bone)
+    if div and (div["trans_m"] > 0.01 or div["rot_deg"] > 5.0):
+        print(f"wrapper_rig: WARN probe bone {bone!r} is POSED "
+              f"({div}) — the probe read REST; clear the import slot "
+              f"if you expected a rest wrap", flush=True)
 
     root = bpy.data.objects.new(root_name, None)
     bpy.context.scene.collection.objects.link(root)
@@ -150,4 +189,6 @@ def wrap(arm, name, scale=1.0, facing_probe_bone=None):
     bpy.context.view_layer.update()
     return {"root": root, "armature": arm, "meshes": meshes,
             "facing_sign": axis_sign, "scale": scale,
+            "probe_source": probe_source,
+            "probe_pose_divergence": div,
             "probe_bone": bone, "probe_axis": axis_sign, "fwd": fwd}

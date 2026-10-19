@@ -1,3 +1,80 @@
+> Session 24 close: 2026-10-19. HEAD = the SYNC + VISION-LANE +
+> round (the user directive: mainline sync on 3d-asset/animation/crowd-
+> nav + native-vision refinements + previz ports + the audit waves).
+> The s41 crowd_obstacles bridge + scripts.crowd re-export landed here
+> (the film lane's vendor was rh_canvas-only); the crowd-nav vision
+> lane (crowd_look.py) was designed through two critique rounds,
+> implemented, eye-certified; ab_evaluate landed in its native-vision
+> form; the dog-food round found 4 blockers (all dead); AUDIT-A2
+> hardened the loader/wrapper/lab. Battery 42/42. This block -> the
+> session-23 block -> PLAN M15/M16 -> worklog (session-24 record).
+
+## Session-24 close state (NEWEST — read this first)
+
+- **Credential matrix (re-verified empirically this session)**: vision-
+  kit = zmpc01/blender-vision-kit (OLD2 PAT writes zmpc01; the NEW
+  beulahkemp PAT reads/writes the RH repos). The s23 summary's
+  "beulahkemp/blender-vision-kit" claim was WRONG — probe before you
+  clone. Both PATs live in /home/z/creds/gh.env; push helper
+  /home/z/creds/push_vk.sh.
+- **The battery runner exists again** (scripts/run_battery.sh): two
+  invocation contracts — bpy suites via blrun, bpy-less vendored
+  unittest via host python3 (test_hero_gates through blrun dies on
+  unittest.main consuming blrun's flags). 42 suites at close.
+- **The s41 sync**: crowd_obstacles.py + scripts/crowd/ (the 24-name
+  re-export after the s24 +4) + their batteries + docs/crowd_system/
+  STATUS.md — ZERO code drift except the documented sanctioned deltas
+  (--blend/--json-out on the scan CLI; the +4 authoring names; O8a's
+  24 pin). VK's submodule pin b4bf76e is 467 commits AHEAD of
+  mainline's bc11fcb (1.6.0 wheel) — superset verified live.
+- **crowd_look.py (the crowd-nav vision lane)**: the design doc
+  carries the full critique trail (F1-F18 + N1-N6); the module's
+  header maps every law to its decision ID. The measured render laws
+  (anti-alias, self-occlusion, scale-aware bevel, hue-band matching)
+  are in kb/crowd_look.md. The L10 row CROSS-CHECKS the O11c jam pin
+  on real bake bytes. The N4 ghost rule + origin_junk_frac diagnostic
+  answer the "why is the centroid at origin" question.
+- **The U1 dog-food law**: a docs-only consumer simulation caught 4
+  blockers no code audit saw (argparse vs blender argv; a CLI that
+  could never see a scene; an undiscoverable answers schema; an
+  ImportError in the vendored guide's own snippet). LAW: run a
+  docs-only consumer wave on EVERY new CLI surface before close —
+  audits read code, consumers read docs.
+- **AUDIT-A2's deepest find**: the LAB's hero world gates were
+  computed, printed, and stored — never enforced (the s23 fail-open
+  class, third occurrence: retarget gates, then nothing, now the
+  lab). LAW: a gate the caller must remember to assert is a gate
+  that won't be. The fold: _assert_hero_bands raises with measured
+  numbers; the verdict lands in world_table + metadata.
+- **The slot law's measured form**: slotless-over-LIVE-binding
+  refuses; a FRESH binding of a slotless action is the legitimate
+  bake shape (the strict form over-fired on the real hero path —
+  the s23 connected-location lesson repeating: fold audit findings
+  WITH judgment).
+- **Open queues for the next session**:
+  1. THE USER REVIEW ROUND on the seven staged films — still the
+     lane-level open item (the reviewer-comments protocol +
+     schema are now IN the kit: docs/REVIEW_COMMENTS_PROTOCOL.md).
+  2. Upstream nits (mainline-owned, tiny): the vendored guide's
+     syntax errors (walkables=all] x2) + false archetype defaults
+     + the 24-name re-export contract (VK carries sanctioned
+     deltas; mainline's scripts.crowd still pins 20) + the ual
+     slotless-over-live law (mainline's _assign_action lacks the
+     zero-slots refusal). File as one upstream commit when the
+     lane next pushes upstream.
+  3. The blind-leak note (ab_evaluate): the worksheet records
+     a_left per pair and the readability stills carry side labels
+     in filenames — the blind is partial for a native agent that
+     reads filenames; a hash-named redesign is queued (low
+     priority: the swap law already debiases the preference).
+  4. P2-7 (carried, documented in DESIGN §7): _assign_action pins
+     slots[0] — revisit when a multi-slot source arrives.
+  5. D9 catalog contact sheet (rh_canvas previews -> labeled
+     grids): DEFERRED by critique concurrence; the design row
+     exists in DESIGN_crowd_vision_s24.md.
+  6. origin_junk_frac > 0 on a real bake = investigate the
+     engine's near-zero writes (the N4 rule's blind spot).
+
 # HANDOFF.md — blender-vision-kit (immediate next-session scope)
 
 > Session 23 close: 2026-10-18. HEAD = the AUDIT-EVERYTHING round:

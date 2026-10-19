@@ -715,27 +715,46 @@ cold-start, not pixels).
 ## Crowd system (sibling repo composition)
 
 The crowd SIMULATION ENGINE — agent population, bake, the controller —
-lives in **zmpc01/blender-crowd-kit** (pre-v1, M2). This kit ships no
-crowd sim engine of its own, but it DOES ship scene-agnostic crowd
-PRIMITIVES (see the KB links below): `scripts/crowd_fields.py` (signed
-influence fields + the relax PBD solver + the gait phase law, pure
-numpy) and `scripts/gait_modifiers.py` (funny-walk data-only modifier
-stacks). Composition (the sim/bake side):
+lives in **zmpc01/blender-crowd-kit** (vendored as a git submodule at
+`vendor/blender-crowd-kit`, pinned; the s41 sync brought the
+`scripts/crowd/` re-export package — 20-name contract incl. the
+authoring dataclasses Blocked/Walkable/Destination/SpawnSource). Scene-
+agnostic crowd PRIMITIVES also ship kit-level: `scripts/crowd_fields.py`
+(signed influence fields + the relax PBD solver + the gait phase law,
+pure numpy) and `scripts/gait_modifiers.py` (funny-walk data-only
+modifier stacks). Composition (the sim/bake side):
 ```bash
-git clone https://github.com/zmpc01/blender-crowd-kit.git <sibling>
-# in your scene script, BEFORE importing crowd:
+# the vendored path (no sibling needed):
+from scripts.crowd import CrowdScene, bake, attach_to_scene
+# or the sibling import (pre-fork pattern, still supported):
 import sys; sys.path.insert(0, "<sibling>")
 from scripts.crowd import CrowdProject, Population, bake, apply_to_scene
 ```
-The variant's own `scripts/crowd/` stub was DELETED so the sibling import
-cannot be shadowed (the top-level `crowd_fields.py`/`gait_modifiers.py`
-primitives are NOT that stub — they are kit-level, no sibling needed).
-Vision workflow for crowds: look.py grids at default
-resolutions for layout/density; keyframe contact sheets for gait motion;
-manifest/validator for agent counts and ground contact. NOTE: a red flag
-box storm on instanced crowd agents usually means validator bbox overlaps
-— normal for dense crowds; judge crowds by density/flow, gate individual
-actors by id.
+**Obstacles (s41, crowd_obstacles.py):** placed kit geometry carries NO
+crowd-obstacle declaration by default — scan it:
+`blrun.sh --background --python scripts/crowd_obstacles.py -- scan
+--blend my_scene.blend --collection Statues --walkable floor:-10,-10:10,10
+--json-out /tmp/scan.json` → Blocked rects for CrowdScene authoring
+(--blend loads your scene — without it the scan refuses on the factory
+scene; --json-out gives pipeable bytes). ENGINE TRUTH (live-measured, s41): no path
+planning — an obstacle across the spawn→destination beeline = TOTAL JAM
+(0 reach; pinned in the O-battery, flips loudly when upstream routing
+lands); pushout is pressure-soft; force_fields are inert at bake.
+**The vision lane (s24, crowd_look.py):** ONE invocation makes nav
+SEEABLE — `--navmap` renders the declaration as a top-down ortho map
+(green walkable / red blocked / blue dest / yellow spawn outlines +
+strangle/overlap/severance findings with coordinates; P1 exit 3 on
+authoring bugs, ENGINE_GAP_JAM exit 0 = the expected no-routing truth),
+`--traj` renders the bake as trajectory strips + a masked density heat
+pass with reach/penetration/ghost telemetry beside the images (numbers
+from the SAME cache bytes the engine wrote). Both modes write a
+machine-routable --json verdict. Refusals are teacher-grade (exit 2).
+Vision workflow for crowds: crowd_look for nav truth; look.py grids at
+default resolutions for layout/density; keyframe contact sheets for gait
+motion; manifest/validator for agent counts and ground contact. NOTE: a
+red flag box storm on instanced crowd agents usually means validator
+bbox overlaps — normal for dense crowds; judge crowds by density/flow,
+gate individual actors by id.
 
 ## What's NOT in this kit
 
@@ -775,6 +794,7 @@ batched question round.
 - `/kb/render_speed.md` — engine benchmarks, AA/cavity tradeoffs
 - `/kb/glTF_export.md` — export flags, three.js loader quirks
 - `/kb/crowd_fields.md` — influence fields, relax PBD, gait phase engine
+- `/kb/crowd_look.md` — the crowd-nav vision lane: navmap + trajectory/density encodings, the two-input contract, verdict classes (s24)
 - `/kb/prop_carry.md` — generalized prop anchoring & clamped carry
 - `/kb/semantic_labeling.md` — D16 ops: kit_label vocabulary, label_objects/split_mesh on imported assets
 - `/kb/tdawn_vision_film.md` — the film recipe + export contract (the crowd-mode review lane)
