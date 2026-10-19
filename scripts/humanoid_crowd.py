@@ -47,6 +47,11 @@ IDLE_CLIP = "2781.fbx"      # Center of gravity shift standby (500f -> trim 64)
 IDLE_TRIM = 64
 STATIONARY_MPS = 0.05       # the K1 clip-channel threshold
 
+# The chase RB placeholder slots (s25: local — was an escape-previz
+# import; the audit's P1-1). loader.py renames chase[2]/[5]/[8] to
+# Zed.RB.*; these anchors are physics performers, NOT cache agents.
+RB_FALLS_V3 = (2, 5, 8)
+
 
 def _fail(msg):
     raise RuntimeError(f"humanoid_crowd: {msg}")
@@ -190,14 +195,28 @@ def bind_crowd(ctx, fam, group_tint=None):
     crowd = list(zombies["crowd"])
     chase = list(zombies["chase"])
     # bake2 pairs crowd + [chase[j] for j not in RB_FALLS_V3] — the 3
-    # RB placeholders are NOT cache agents (review r1 P0-2)
+    # RB placeholders are NOT cache agents (review r1 P0-2).
+    # s25 (the rollout audit's P1-1): RB_FALLS_V3 is a LOCAL constant
+    # now — the escape-previz import was a clone-seam hazard (the
+    # film env resolved it, a fresh kit env did not). Every film in
+    # the family authors the RB chase placeholders at indices
+    # (2, 5, 8) (verified across all five scene modules + tform), so
+    # the constant IS the family law; the Zed.RB.* census assert
+    # below fail-closes the day any film moves its slots.
+    rb_idx = set(RB_FALLS_V3)
+    rb_named = [ob for ob in chase if ob.name.startswith("Zed.RB.")]
+    if len(rb_named) != len(RB_FALLS_V3):
+        _fail(f"RB placeholder census: {len(rb_named)} Zed.RB.* anchors "
+              f"!= len(RB_FALLS_V3)={len(RB_FALLS_V3)} — the bake pairing "
+              f"moved; update the constant WITH the film modules, never "
+              f"silently")
     anchors = crowd + [ob for j, ob in enumerate(chase)
-                       if j not in set(RB_FALLS_V3)]
+                       if j not in rb_idx]
     n = int(cache.n_agents)
     if len(anchors) != n:
         _fail(f"anchors {len(anchors)} != cache n_agents {n} "
               f"(crowd {len(crowd)} + non-RB chase "
-              f"{len(chase) - len(set(RB_FALLS_V3) & set(range(len(chase))))})")
+              f"{len(chase) - len(rb_idx & set(range(len(chase))))})")
     for a in anchors:
         if a.type != 'MESH':
             _fail(f"anchor {a.name} is {a.type} — the D6-2 law requires "
@@ -491,7 +510,7 @@ def bind_principals(ctx, name_clip_pairs):
     return out
 
 
-def motion_gates(ctx, reps, sample=6, walk_cycle=None):
+def motion_gates(ctx, reps, sample=6, walk_cycle=None, exempt=()):
     """The s20 two-column law, crowd edition (review r1 P1-7/P2-10
     folded):
 
@@ -505,15 +524,27 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None):
     - ANCHOR-vs-CACHE: anchor world xy vs the cache tick xy at the
       last baked tick (+-1 mm) — the numbers-travel law;
     - IDLERS: hips drift < 0.05 m across the trimmed cycle.
+
+    exempt (s25, the rollout audit's P2): root names EXCLUDED from
+    the pass/fail math and reported as explicit 'exempt' rows — for
+    film-keyed overlay performers whose motion the walk-cycle
+    assumptions cannot judge (e.g. tsquall's slip faller, whose
+    ~80-deg tumble overlay rides rot_x/rot_y on top of the cache
+    walk). Exemptions are DOCUMENTED rows, never silent skips.
     """
     import random
     import numpy as np
     rng = random.Random(22)
+    exempt_names = {getattr(r["root"], "name", r) if not isinstance(r, str)
+                    else r for r in exempt}
     walkers = [r for r in reps
-               if r["armature"].animation_data.action.name.startswith("walk_")]
-    idlers = [r for r in reps if r not in walkers]
+               if r["armature"].animation_data.action.name.startswith("walk_")
+               and r["root"].name not in exempt_names]
+    idlers = [r for r in reps if r not in walkers
+              and r["root"].name not in exempt_names]
+    eligible = [r for r in reps if r["root"].name not in exempt_names]
     picks = (walkers[:2] + idlers[:2]
-             + rng.sample(reps, max(0, sample - len(walkers[:2]) - len(idlers[:2]))))
+             + rng.sample(eligible, max(0, sample - len(walkers[:2]) - len(idlers[:2]))))
     seen, uniq = set(), []
     for r in picks:
         k = r["root"].name
@@ -529,6 +560,13 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None):
     ticks = getattr(soa, "ticks", None)
     n_ticks = int(ctx["crowd_cache"].n_ticks) if ctx.get("crowd_cache") else 0
     report = []
+    # the documented exemption rows first (never silent skips)
+    for rep in reps:
+        if rep["root"].name in exempt_names:
+            report.append({"root": rep["root"].name, "verdict": "EXEMPT",
+                           "why": "film-keyed overlay performer — the "
+                                  "walk-cycle assumptions cannot judge the "
+                                  "tumble/overlay motion (s25 exempt law)"})
     for rep in picks:
         arm = rep["armature"]
         act = arm.animation_data.action
@@ -587,4 +625,8 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None):
                   f"walk={is_walk} (the s20 two-column law)")
     _P("motion gates:", [(r['agent'], r['action'], r['hips_bob'],
                           r['cache_xy_err']) for r in report])
+    n_exc = sum(1 for r in report if r.get("verdict") == "EXEMPT")
+    if n_exc:
+        _P(f"motion gates: {n_exc} documented exemption row(s)",
+           [r['root'] for r in report if r.get('verdict') == 'EXEMPT'])
     return report
