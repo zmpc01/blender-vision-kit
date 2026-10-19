@@ -74,7 +74,7 @@ def main():
 
     bridge = _bootstrap()
     out = Path(args.out)
-    if any(out.iterdir()):
+    if out.exists() and any(out.iterdir()):
         raise SystemExit(
             f"[tgreen_bake] --out {out} is not empty -- the native bake "
             "refuses an existing cache path; use a fresh dir (the "
