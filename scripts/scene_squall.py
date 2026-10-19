@@ -630,7 +630,65 @@ def _crowd_kit_branch(ctx, cache_path):
     CV6.bake_tier2(ctx)
     _crowd_palette(ctx)
     _kf_faller_tumble(ctx)   # bake2 keyed loc+rot_z; the x/y rot is ours
+    if os.environ.get("TSQUALL_HUMANOID") == "1":
+        _humanoid_layer(ctx)
     return ctx["crowd_cache"]
+
+
+def _humanoid_layer(ctx):
+    """SQUALL, humanized (s25 rollout — the D6 pattern): the 135 cache
+    anchors gain RH x_bot rig assemblies; the Bystander hero gains a
+    UAL mannequin. Env-gated (TSQUALL_HUMANOID=1) so tsquall_1 rev2
+    stays reproducible byte-for-byte. Binds AFTER _kf_faller_tumble so
+    the rig assemblies inherit the film's tumble overlay keys (they
+    ride the anchor's rot_x/rot_y).
+
+    POP_PLAN — THE ORDINAL LAW IS DIFFERENT HERE (the s19-B4 id-sort):
+    the 6 count-1 vendor pops hash-sort FIRST (ordinals 0-5), then the
+    zones in contract order 44/40/36 (6-125), then the chase 9
+    (126-134). The bake's own comment pins it: "vendors occupy the
+    FIRST six ordinals (id-sorted stall pops)".
+
+    The SLIP FALLER (ctx['cast']['faller_ordinal'], a zone-pop member)
+    carries the ~80-deg tumble overlay — EXEMPT from the walk-cycle
+    motion gates (the documented EXEMPT row, never a silent skip).
+    """
+    import humanoid_crowd as HC
+    fam = HC.crowd_family("rh_xbot")
+    groups = [("vendors", 6, (0.45, 0.30, 0.14)),      # tarp ochre
+              ("zone0_fast", 44, (0.28, 0.26, 0.30)),
+              ("zone1_mid", 40, (0.30, 0.28, 0.26)),
+              ("zone2_far", 36, (0.26, 0.28, 0.27)),
+              ("queue", 9, (0.18, 0.20, 0.24))]         # the queue dark
+    agent_group = []
+    for gi, (_, cnt, _rgb) in enumerate(groups):
+        agent_group.extend([gi] * cnt)
+    if len(agent_group) != 135:
+        raise RuntimeError(
+            f"_humanoid_layer: POP_PLAN split {len(agent_group)} != pin 135")
+    gt = {"groups": [(c, rgb) for _, c, rgb in groups],
+          "agent_group": agent_group}
+    rep = HC.bind_crowd(ctx, fam, group_tint=gt)
+    # the faller exemption: cache ordinal -> anchor name (the loader's
+    # 1:1 pairing law anchors[i] <-> cache ordinal i)
+    fo = int((ctx.get("cast") or {}).get("faller_ordinal", -1))
+    exempt = []
+    if 0 <= fo < 135:
+        anchors = (ctx["chars"]["zombies"]["crowd"]
+                   + [ob for ob in ctx["chars"]["zombies"]["chase"]
+                      if not ob.name.startswith("Zed.RB.")])
+        exempt.append(anchors[fo].name)
+        print(f"[tsquall] faller anchor {anchors[fo].name} (ordinal {fo}) "
+              f"-> motion-gate EXEMPT (the tumble overlay)")
+    HC.motion_gates(ctx, rep["reps"], walk_cycle=rep["walk_cycle"],
+                    exempt=exempt)
+    ctx["humanoid"] = rep
+    # the UAL principal: the Bystander (the film's one hero, 0.62,0.42,0.16)
+    UAL_SCALE = 1.75 / 1.589
+    pr = HC.bind_principals(ctx, {
+        "Bystander": ("Idle_Loop", UAL_SCALE, None)})
+    ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
+        "Bystander": (0.62, 0.42, 0.16)})
 
 
 def _crowd_palette(ctx):

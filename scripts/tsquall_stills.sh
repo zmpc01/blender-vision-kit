@@ -1,5 +1,8 @@
 #!/bin/bash
 # tsquall_stills.sh -- one EEVEE process per shot (the OOM law), stills
+# s25: the CYCLES ENGINE LAW (tform_2 measured: skinned crowds OOM
+# EEVEE even on the knob diet) -- ENGINE defaults to cycles now;
+# ENGINE=eevee keeps the legacy pre-humanoid path reproducible.
 # named shot_<id>.png (the package contract), mid-shot frame each.
 # Written FRESH for SQUALL (the clone-seam law: never sed-clone a
 # runner across films -- the scene module path is the seam).
@@ -19,7 +22,7 @@ for SID in S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12; do
   echo "[stills] $SID @ f$F ..."
   ./scripts/blrun.sh --background --factory-startup \
     --python scripts/scene_squall.py -- \
-    --output output/tsquall/stillwork --engine ${ENGINE:-eevee} --w 640 --h 360 \
+    --output output/tsquall/stillwork --engine ${ENGINE:-cycles} --w 640 --h 360 \
     --still $F --samples ${SAMPLES:-32} > /tmp/still_ts_$SID.log 2>&1
   rc=$?
   if [ $rc -ne 0 ] || [ ! -s output/tsquall/stillwork/still_$(printf %05d $F).png ]; then

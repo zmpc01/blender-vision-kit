@@ -502,7 +502,51 @@ def _crowd_kit_branch(ctx, cache_path):
     import crowd_v6 as CV6
     CV6.bake_tier2(ctx)
     _crowd_palette(ctx)
+    if os.environ.get("TFERRY_HUMANOID") == "1":
+        _humanoid_layer(ctx)
     return ctx["crowd_cache"]
+
+
+def _humanoid_layer(ctx):
+    """LAST FERRY, humanized (s25 rollout -- the D6 pattern, the tdawn
+    worked example): the 129 cache anchors gain RH x_bot rig
+    assemblies; the 2 keyed heroes gain UAL mannequins. Env-gated
+    (TFERRY_HUMANOID=1) so tferry_1 rev2 stays reproducible
+    byte-for-byte.
+
+    POP_PLAN (the ordinal law: zones in CONTRACT order, chase LAST --
+    the bridge's ingest order; tferry_contract ZONES rows 44/40/36,
+    the verbatim-129 law 120 zone + 9 tail):
+      zone0 44 deck_fore ink / zone1 40 deck_mid drab /
+      zone2 36 deck_aft slate / chase 9 crew oilskin amber-drab
+      (group identity, the film's previz semantics).
+    """
+    import humanoid_crowd as HC
+    fam = HC.crowd_family("rh_xbot")
+    groups = [("deck_fore", 44, (0.16, 0.18, 0.22)),
+              ("deck_mid", 40, (0.24, 0.23, 0.21)),
+              ("deck_aft", 36, (0.20, 0.22, 0.24)),
+              ("crew", 9, (0.35, 0.30, 0.18))]
+    agent_group = []
+    for gi, (_, cnt, _rgb) in enumerate(groups):
+        agent_group.extend([gi] * cnt)
+    if len(agent_group) != 129:
+        raise RuntimeError(
+            f"_humanoid_layer: POP_PLAN split {len(agent_group)} != pin 129")
+    gt = {"groups": [(c, rgb) for _, c, rgb in groups],
+          "agent_group": agent_group}
+    rep = HC.bind_crowd(ctx, fam, group_tint=gt)
+    HC.motion_gates(ctx, rep["reps"], walk_cycle=rep["walk_cycle"])
+    ctx["humanoid"] = rep
+    # the UAL principals: Deckhand (amber) + Latecomer (crimson) -- the
+    # identity colors from _heroes (:156-157), the branch-a law
+    UAL_SCALE = 1.75 / 1.589
+    pr = HC.bind_principals(ctx, {
+        "Deckhand": ("Idle_Loop", UAL_SCALE, None),
+        "Latecomer": ("Idle_Loop", UAL_SCALE, None)})
+    ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
+        "Deckhand": (0.85, 0.42, 0.05),
+        "Latecomer": (0.62, 0.07, 0.10)})
 
 
 def _crowd_palette(ctx):

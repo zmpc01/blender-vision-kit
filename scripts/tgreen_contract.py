@@ -63,6 +63,37 @@ CAM_KEEPOUTS_V3 = [
 
 CAM_KEEPOUT_R = 1.3
 
+# --- static obstacles inside the walkable (x, y, r): the bridge turns
+# each row into a Blocked square ((x-r, y-r), (x+r, y+r)); the native
+# engine REFUSES squares that leave the walkable (E_InvalidRange --
+# measured on the s25 smoke bake), and blocked squares must never sit
+# on a destination point (UnreachableDestination -- the hero_pos
+# destination IS the plinth top at (0,0), which sized the plinth row).
+# s25 (the collision/nav round): the undeclared walkable statics --
+# the Statue plinth (tgreen_world.py:234-235, TG.Plinth 1.2x1.2 at the
+# origin), the NW signal pole (:242-246, POST_NW), and the N bollard
+# line (:285-290). r ~ footprint + the personal-space margin.
+#   plinth r 0.55: centered on the granite (its center is (0,0), not
+#   the hero's (0,0.25)); 0.55 + agent 0.34 = 0.89 >= the 1.2x1.2
+#   half-diagonal 0.849, so agent capsules cannot clip the granite
+#   while the hero_pos point stays reachable (r >= 0.60 near the
+#   origin kills the bake at 129 -- measured twice). A naive r 0.90
+#   row fails E_SceneCompile at the full count -- do not raise it.
+#   pole signs are the WORLD's (POST_NW x -4.2); the SE pole (4.2,
+#   -6.15) and the S bollard line sit OUTSIDE the walkable (y0 = -6.0
+#   vs lip y -6.15) -- crowd-free by construction, no rows (and the
+#   straddling squares would be E_InvalidRange-refused; the bollards'
+#   0.01 m north-face sliver is sub-agent-width, impassable).
+#   bollard gaps are 3.4 m between squares (centers 4.0, r 0.30) --
+#   the freeze flow crosses the N lip between posts (bake-verified).
+BARRICADES = [
+    (0.0, 0.0, 0.55),              # TG.Plinth (the Statue's granite)
+    (-4.2, 3.35, 0.45),            # TG.SignalPole.NW (POST_NW)
+] + [
+    (float(x), 3.35, 0.30)         # TG.Bollard.N01..15 (x -28..28 step 4)
+    for x in range(-28, 29, 4)
+]
+
 # --- SPEED_PLAN (the driver's single authority; the driver adds NO
 # numbers of its own). Envelope law: the bridge pins max_speed =
 # populations[0]'s mu+3sigma on EVERY agent -- far's envelope is the

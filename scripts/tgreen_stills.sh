@@ -1,8 +1,11 @@
 #!/bin/bash
-# tgreen_stills.sh -- one EEVEE process per shot (the OOM law), stills
+# tgreen_stills.sh -- one process per shot (the OOM law), stills
 # named shot_<id>.png (the package contract), mid-shot frame each.
 # scene_green_light.py writes straight into --output (the tdawn law:
-# the caller owns the dir). ENGINE=workbench for the framing rounds.
+# the caller owns the dir).
+# s25: the CYCLES ENGINE LAW (tform_2 measured: skinned crowds OOM
+# EEVEE even on the knob diet) -- ENGINE defaults to cycles now;
+# ENGINE=eevee keeps the legacy pre-humanoid path reproducible.
 set -u
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 export CROWD_CACHE_DIR=/tmp/crowdcache_tgreen
@@ -19,8 +22,8 @@ for SID in S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12; do
   echo "[stills] $SID @ f$F ..."
   ./scripts/blrun.sh --background --factory-startup \
     --python scripts/scene_green_light.py -- \
-    --output output/tgreen/stillwork --engine ${ENGINE:-eevee} --w 640 --h 360 \
-    --still $F --samples ${SAMPLES:-32} > /tmp/still_tg_$SID.log 2>&1
+    --output output/tgreen/stillwork --engine ${ENGINE:-cycles} --w 640 --h 360 \
+    --still $F --samples ${SAMPLES:-24} > /tmp/still_tg_$SID.log 2>&1
   rc=$?
   if [ $rc -ne 0 ] || [ ! -s output/tgreen/stillwork/still_$(printf %05d $F).png ]; then
     echo "[stills] $SID FAILED rc=$rc (see /tmp/still_tg_$SID.log)"; continue

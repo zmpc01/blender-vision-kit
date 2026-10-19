@@ -210,11 +210,54 @@ def main():
         stall_pops.append(vp)
     pops = pops + stall_pops
 
+    # --- s25 (the collision/nav round): the undeclared walkable
+    # statics become Blocked rects. The BARRICADES squares (stall
+    # counters + fountain) already ride ingest_contract; these are the
+    # geometry tsquall_world.py places that agents plausibly cross:
+    # the arcade walls (FacadeSeg :313-317, Shopfront :319-323,
+    # BackWall :335-336), the food counter (:337-338), the 3 facade
+    # benches (:399-405), the 4 planters (:407-413; the south pair
+    # sits OUTSIDE the walkable y0=-6 — no rows), the 2 trash
+    # cylinders (:415-416), and the 3 fountain-approach bollards
+    # (:390-393; the GATE-line bollards stay undeclared — they ARE
+    # the queue's entry slalom and a line of blocks on the only
+    # approach would partial-jam it, the no-path-planning engine
+    # truth). Rects must fit FULLY inside the walkable
+    # ((-30,-6),(30,15)) — a straddling rect is natively refused
+    # (E_InvalidRange); the 0.15 margin is the personal-space law.
+    from scripts.crowd import Blocked
+    _rects = [
+        ("facade_w", (-8.0, 5.85), (-5.0, 6.15)),
+        ("facade_e", (5.0, 5.85), (8.0, 6.15)),
+        ("shopfront_w", (-30.0, 5.85), (-8.0, 6.15)),
+        ("shopfront_e", (8.0, 5.85), (30.0, 6.15)),
+        ("back_wall", (-8.0, -6.0), (8.0, -5.7)),
+        ("food_counter", (5.05, -5.98), (7.95, -5.3)),
+        ("bench_w1", (-14.25, 6.27), (-12.15, 7.07)),
+        ("bench_w2", (-11.85, 6.27), (-9.75, 7.07)),
+        ("bench_e1", (12.95, 6.27), (15.05, 7.07)),
+        ("planter_nw", (-10.15, 7.05), (-9.05, 8.15)),
+        ("planter_ne", (9.05, 7.05), (10.15, 8.15)),
+        ("trash_w", (-25.05, 8.85), (-23.75, 10.15)),
+        ("trash_e", (23.75, 8.85), (25.05, 10.15)),
+        ("bollard_f1", (10.61, 2.81), (11.39, 3.59)),
+        ("bollard_f2", (13.61, 2.51), (14.39, 3.29)),
+        ("bollard_f3", (16.61, 2.81), (17.39, 3.59)),
+    ]
+    _blocked = list(scene.blocked) + [
+        Blocked(id=f"sq_static_{nm}", walkable_id="street",
+                bounds=(lo, hi))
+        for nm, lo, hi in _rects
+    ]
+    print(f"[tsquall_bake] s25 static rects: +{len(_rects)} blocked "
+          f"(was {len(scene.blocked)})")
+
     scene2 = dataclasses.replace(
         scene,
         populations=pops,
         portals=[portal],
         queues=[queue],
+        blocked=_blocked,
         behavior_graphs=list(scene.behavior_graphs)
         + [queue_graph, vendor_graph],
     )

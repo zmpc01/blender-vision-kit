@@ -53,6 +53,15 @@ BLOCKED = (
     ("lamp4", (-20.14, -3.34, -19.86, -3.06)),
     ("lamp5", (-0.14, -3.34, 0.14, -3.06)),
     ("lamp6", (19.86, -3.34, 20.14, -3.06)),
+    # s25 (the collision/nav round): the 2 trash bins (tfog_world.py
+    # :328-330, r0.56 at (+/-18.5, -/+0.9)) — undeclared, ON the
+    # platform between the column rows; the 0.1 margin is the
+    # personal-space law. The W-exit stairs straddle the walkable
+    # edge (x -35..-32 vs x0=-32) — no row (clip would be refused;
+    # the stairs are half-out by construction). The trains/board/
+    # gantry all sit outside the 8m platform band.
+    ("bin_w", (-19.15, -1.55, -17.85, -0.25)),
+    ("bin_e", (17.85, 0.25, 19.15, 1.55)),
 )
 
 # --- destinations -------------------------------------------------------

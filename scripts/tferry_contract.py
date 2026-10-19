@@ -98,6 +98,18 @@ BARRICADES = [
     # impassable in practice.
     (x, -2.7, 0.55)
     for x in (-4.9, -3.8, -2.7, 2.7, 3.8, 4.9)
+] + [
+    # s25 (the collision/nav round): the sodium lamp posts (tferry_world.py
+    # :206-217) stand at x=+/-5.6 INSIDE the +/-6.0 walkable -- undeclared,
+    # agents brushed them; r 0.35 = post 0.14 + the 0.15 personal-space
+    # margin, squares (5.25..5.95) fully inside the walkable. The
+    # MaintGate (tferry_world.py:247, x 6.2) needs NO row: it is OUTBOARD
+    # of the walkable edge, behind the +/-6.2 rail line -- crowd-free by
+    # construction, and a straddling square is refused by the native
+    # engine (E_InvalidRange, measured on the smoke bake).
+    (sx * 5.6, y, 0.35)
+    for sx in (-1, 1)
+    for y in (8.0, 12.0, 20.0, 24.0, 32.0, 34.0)
 ]
 
 # camera keepouts: (name, px, py, f0, f1) in FRAMES (the F-TD13 law

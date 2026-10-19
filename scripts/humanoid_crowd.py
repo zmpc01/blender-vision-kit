@@ -412,6 +412,56 @@ def _cache_speeds(ctx, n):
     return None
 
 
+def ride_principals(ctx, pr, hero_rgb, roughness=0.5):
+    """The s25 rollout's shared principal-riding block (was inline in
+    tform_scene._humanoid_layer; every film repeats it — the D6
+    branch-a law):
+
+    - the UAL wrapper RIDES the film's keyed hero root exactly
+      (identity parent-inverse + zero local; the loader's own facing
+      flip lives inside the wrapper hierarchy);
+    - the identity colors ride the UAL actor (tint_ual_actor — the
+      tint module loads BY PATH, the clone-seam law);
+    - the hero commuter mesh -> degenerate carrier (the GLB node must
+      SURVIVE for the exporter's declared refs; hide_render excludes
+      it — the carrier law).
+
+    hero_rgb: {hero_name: (r, g, b)}; heroes missing from ctx die
+    loud (a silently-unparented principal floats at the origin).
+    Returns {name: {"wrapper", "hero"}} (numbers travel).
+    """
+    import importlib.util
+    import bmesh
+    _here = os.path.dirname(os.path.abspath(__file__))
+    _spec = importlib.util.spec_from_file_location(
+        "_ual_actors_tint", os.path.join(_here, "assets_ual_actors.py"))
+    UALM = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(UALM)
+    heroes = ctx.get("heroes") or {}
+    out = {}
+    for name, rep in pr.items():
+        hero = heroes.get(name)
+        if hero is None:
+            _fail(f"ride_principals: no hero object {name!r} in "
+                  f"ctx['heroes'] ({sorted(heroes)})")
+        wrapper = rep["root"]
+        wrapper.parent = hero
+        wrapper.matrix_parent_inverse = Matrix.Identity(4)
+        wrapper.location = (0.0, 0.0, 0.0)
+        rgb = hero_rgb.get(name)
+        if rgb is not None:
+            UALM.tint_ual_actor(rep, rgb, roughness=roughness)
+        me = bpy.data.meshes.new(f"{name}.carrier")
+        bm = bmesh.new()
+        bm.verts.new((0.0, 0.0, 0.0))
+        bm.to_mesh(me)
+        bm.free()
+        hero.data = me
+        out[name] = {"wrapper": wrapper, "hero": hero}
+        _P(f"UAL principal {name} riding {hero.name} (tinted {rgb})")
+    return out
+
+
 def strip_dot_override(mat, anchor_prefix="Zed."):
     """The s25 strip law (the rollout audit's P1-2): post-bind, the
     strip-visible crowd surface is the RIG BODIES — the Zed.* anchors
@@ -578,12 +628,18 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None, exempt=()):
     rng = random.Random(22)
     exempt_names = {getattr(r["root"], "name", r) if not isinstance(r, str)
                     else r for r in exempt}
+    # s25: the film layer knows the faller by its ANCHOR name (the
+    # cache ordinal pairing); the reps know it by the wrapper root
+    # name — match either (the exemption is by PERFORMER, not by
+    # naming convention).
+    def _is_exempt(r):
+        return (r["root"].name in exempt_names
+                or getattr(r.get("anchor"), "name", None) in exempt_names)
     walkers = [r for r in reps
                if r["armature"].animation_data.action.name.startswith("walk_")
-               and r["root"].name not in exempt_names]
-    idlers = [r for r in reps if r not in walkers
-              and r["root"].name not in exempt_names]
-    eligible = [r for r in reps if r["root"].name not in exempt_names]
+               and not _is_exempt(r)]
+    idlers = [r for r in reps if r not in walkers and not _is_exempt(r)]
+    eligible = [r for r in reps if not _is_exempt(r)]
     picks = (walkers[:2] + idlers[:2]
              + rng.sample(eligible, max(0, sample - len(walkers[:2]) - len(idlers[:2]))))
     seen, uniq = set(), []
@@ -603,7 +659,7 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None, exempt=()):
     report = []
     # the documented exemption rows first (never silent skips)
     for rep in reps:
-        if rep["root"].name in exempt_names:
+        if _is_exempt(rep):
             report.append({"root": rep["root"].name, "verdict": "EXEMPT",
                            "why": "film-keyed overlay performer — the "
                                   "walk-cycle assumptions cannot judge the "

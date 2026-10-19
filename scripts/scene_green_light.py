@@ -505,7 +505,50 @@ def _crowd_kit_branch(ctx, cache_path):
     import crowd_v6 as CV6
     CV6.bake_tier2(ctx)
     _crowd_palette(ctx)
+    if os.environ.get("TGREEN_HUMANOID") == "1":
+        _humanoid_layer(ctx)
     return ctx["crowd_cache"]
+
+
+def _humanoid_layer(ctx):
+    """GREEN LIGHT, humanized (s25 rollout -- the D6 pattern, the tdawn
+    worked example): the 129 cache anchors gain RH x_bot rig
+    assemblies; the 2 keyed heroes gain UAL mannequins. Env-gated
+    (TGREEN_HUMANOID=1) so tgreen_1 rev2 stays reproducible
+    byte-for-byte.
+
+    POP_PLAN (the ordinal law: zones in CONTRACT order, chase LAST --
+    the bridge's ingest order; tgreen_contract SPAWN_ZONES_V5 rows
+    40/36/44, the verbatim-129 law 120 zone + 9 tail):
+      zone0 40 stream_n / zone1 36 stream_s / zone2 44 cross_wait /
+      chase 9 crew (group identity, the film's previz semantics).
+    """
+    import humanoid_crowd as HC
+    fam = HC.crowd_family("rh_xbot")
+    groups = [("stream_n", 40, (0.28, 0.30, 0.34)),
+              ("stream_s", 36, (0.34, 0.30, 0.26)),
+              ("cross_wait", 44, (0.22, 0.26, 0.24)),
+              ("crew", 9, (0.40, 0.28, 0.16))]
+    agent_group = []
+    for gi, (_, cnt, _rgb) in enumerate(groups):
+        agent_group.extend([gi] * cnt)
+    if len(agent_group) != 129:
+        raise RuntimeError(
+            f"_humanoid_layer: POP_PLAN split {len(agent_group)} != pin 129")
+    gt = {"groups": [(c, rgb) for _, c, rgb in groups],
+          "agent_group": agent_group}
+    rep = HC.bind_crowd(ctx, fam, group_tint=gt)
+    HC.motion_gates(ctx, rep["reps"], walk_cycle=rep["walk_cycle"])
+    ctx["humanoid"] = rep
+    # the UAL principals: Statue (gold) + Runner (crimson) -- the
+    # identity colors from _heroes (:204-205), the branch-a law
+    UAL_SCALE = 1.75 / 1.589
+    pr = HC.bind_principals(ctx, {
+        "Statue": ("Idle_Loop", UAL_SCALE, None),
+        "Runner": ("Idle_Loop", UAL_SCALE, None)})
+    ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
+        "Statue": (0.72, 0.55, 0.22),
+        "Runner": (0.62, 0.07, 0.10)})
 
 
 def _crowd_palette(ctx):

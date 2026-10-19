@@ -864,7 +864,47 @@ def _crowd_kit_branch(ctx, cache_path):
     CV6.bake_tier2(ctx)
     _crowd_palette(ctx)
     _zone_speed_driver(ctx)
+    if os.environ.get("TFOG_HUMANOID") == "1":
+        _humanoid_layer(ctx)
     return ctx["crowd_cache"]
+
+
+def _humanoid_layer(ctx):
+    """THE EXPRESS, humanized (s25 rollout — the D6 pattern): the 126
+    cache anchors gain RH x_bot rig assemblies; the 2 keyed heroes
+    gain UAL mannequins. Env-gated (TFOG_HUMANOID=1) so tfog_1 rev1
+    stays reproducible byte-for-byte.
+
+    POP_PLAN — THE PINNED SLICE LAW (tfog_bake.py:194-200, s19-B4):
+    cache ordinal order == POP_PLAN ingest order — waiters [0:66],
+    cohorts [66:117], doorq [117:126]. The N_CACHE assert in the bake
+    is the tripwire that keeps these slices honest.
+    """
+    import humanoid_crowd as HC
+    fam = HC.crowd_family("rh_xbot")
+    groups = [("waiters", 66, (0.27, 0.28, 0.31)),    # platform drab
+              ("cohorts", 51, (0.23, 0.25, 0.28)),    # the boarding cohorts
+              ("doorq", 9, (0.16, 0.19, 0.24))]       # the door queue dark
+    agent_group = []
+    for gi, (_, cnt, _rgb) in enumerate(groups):
+        agent_group.extend([gi] * cnt)
+    if len(agent_group) != 126:
+        raise RuntimeError(
+            f"_humanoid_layer: POP_PLAN split {len(agent_group)} != pin 126")
+    gt = {"groups": [(c, rgb) for _, c, rgb in groups],
+          "agent_group": agent_group}
+    rep = HC.bind_crowd(ctx, fam, group_tint=gt)
+    HC.motion_gates(ctx, rep["reps"], walk_cycle=rep["walk_cycle"])
+    ctx["humanoid"] = rep
+    # the UAL principals: LatePassenger (0.62,0.40,0.14) + Stationmaster
+    # (0.16,0.19,0.24) — the identity tones from _heroes (:328-331)
+    UAL_SCALE = 1.75 / 1.589
+    pr = HC.bind_principals(ctx, {
+        "LatePassenger": ("Idle_Loop", UAL_SCALE, None),
+        "Stationmaster": ("Idle_Loop", UAL_SCALE, None)})
+    ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
+        "LatePassenger": (0.62, 0.40, 0.14),
+        "Stationmaster": (0.16, 0.19, 0.24)})
 
 
 def emit_sfx_events(ctx, out_dir):
