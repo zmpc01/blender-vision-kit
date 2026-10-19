@@ -35,6 +35,17 @@ RH_ASSETS = os.environ.get("RH_ASSETS",
                            "/home/z/lab/RH-3d-assets")
 RH_ANIMS = os.environ.get("RH_ANIMS",
                           "/home/z/lab/RH-canvas-animations")
+# s25 durability: the two load-bearing clips (walk 2899 / idle 2781,
+# sha-verified) are COMMITTED at vendor/rh_clips/ — a fresh sandbox
+# without the RH-canvas-animations checkout still binds. The env var
+# wins; the repo-local copy is the fallback when the env path lacks
+# the clips (the release-volume fetch recipe lives in the worklog).
+if not os.path.exists(os.path.join(RH_ANIMS, "assets", "fbx", "2899.fbx")):
+    _repo_clips = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "..", "vendor", "rh_clips")
+    if os.path.exists(os.path.join(_repo_clips, "assets", "fbx",
+                                   "2899.fbx")):
+        RH_ANIMS = os.path.abspath(_repo_clips)
 
 FILM_HEIGHT = 1.75          # the films author commuters at 1.75 m
 RIG_HEIGHT = {              # measured (s22_asset_probe receipt)

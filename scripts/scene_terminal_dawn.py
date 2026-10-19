@@ -34,8 +34,11 @@ _here = str(Path(__file__).resolve().parent)
 if _here not in sys.path:
     sys.path.insert(0, _here)
 
+_lab = Path("/home/z/lab")
+_sib = _lab / "blender-escape-previz" / "scripts"
 _previz_scripts = os.environ.get(
-    "TPREVIZ_SCRIPTS", "/home/z/work/blender-escape-previz/scripts")
+    "TPREVIZ_SCRIPTS",
+    str(_sib) if _sib.is_dir() else "/home/z/work/blender-escape-previz/scripts")
 if _previz_scripts not in sys.path:
     sys.path.insert(0, _previz_scripts)
 
