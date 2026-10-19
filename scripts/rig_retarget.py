@@ -181,9 +181,25 @@ def _assign_action(arm, act):
     """The Blender 4.4+ action-slot law (ual_bake's live-probed
     precedent): `ad.action = X` alone does NOT reliably rebind — a
     legacy-slot binding stays STUCK and later assignments are silently
-    ignored. Every assignment pins the slot too."""
+    ignored. Every assignment pins the slot too. The A2b P2-2 law, as
+    MEASURED (the s23 fold-with-judgment form): a SLOTLESS action is a
+    refusal ONLY when it would overwrite a LIVE binding (the stale-slot
+    hazard is the overwrite); a FRESH binding of a slotless action is
+    the legitimate fresh-bake shape (a newly baked action has no slots
+    until the slotted API touches it) and proceeds with a loud print."""
     ad = arm.animation_data or arm.animation_data_create()
+    had_live = ad.action is not None
     ad.action = act
+    if act is not None and not act.slots:
+        if had_live:
+            raise RetargetRefused(
+                f"_assign_action: {act.name!r} has ZERO slots and would "
+                f"overwrite a LIVE binding on {arm.name} — the previous "
+                f"slot stays stuck (the silent no-op drive class); clear "
+                f"the binding first or fix the action")
+        print(f"wrapper note: binding slotless {act.name!r} on "
+              f"{arm.name} (fresh binding — no stale-slot hazard)",
+              flush=True)
     if act is not None and act.slots:
         ad.action_slot = act.slots[0]
     return ad
@@ -380,6 +396,29 @@ def retarget(src_arm, src_action, tgt_arm, tgt_family=None,
                        if src_arm.animation_data else None)
     _assign_action(src_arm, src_action)
     sc = bpy.context.scene
+    # the SOURCE side of the stuck-pose law (A2b P2-3 — the s22 law
+    # was implemented target-only): unassigning/clearing leaves the
+    # last evaluated pose IN the properties; mapped source bones the
+    # action does NOT key would bake that T-pose residue silently at
+    # coverage 1.0. Reset unkeyed mapped bones to rest before sampling.
+    keyed_src_bones = set()
+    for fc in _iter_fcurves(src_action):
+        dp = getattr(fc, "data_path", "") or ""
+        if '"' in dp:
+            keyed_src_bones.add(dp.split('"')[1])
+    for cls in _pairs_in_order(pairs, order):
+        sb = pairs[cls][0]
+        if sb in keyed_src_bones:
+            continue
+        pb = src_arm.pose.bones.get(sb)
+        if pb is None:
+            continue
+        pb.location = (0.0, 0.0, 0.0)
+        pb.scale = (1.0, 1.0, 1.0)
+        if pb.rotation_mode == 'QUATERNION':
+            pb.rotation_quaternion = (1.0, 0.0, 0.0, 0.0)
+        else:
+            pb.rotation_euler = (0.0, 0.0, 0.0)
 
     samples = {}    # frame -> {tgt_bone: {"q": Quaternion, "loc": Vector}}
     for f in frames:

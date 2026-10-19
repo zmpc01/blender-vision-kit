@@ -137,6 +137,35 @@ def build_scene():
     return ctx
 
 
+def _assert_hero_bands(name, rows):
+    """The A2b P1-1 enforcement: the H5/H6-measured wrapper-scaled
+    bands (tests/test_hero_lane.py) — feet floor >= -0.08, gait span
+    >= 0.02, lift <= 0.6, hips within [0.5, 1.5]. Raises RuntimeError
+    with the measured numbers; returns the verdict string that also
+    lands in the world_table + metadata."""
+    flat = [z for pair in rows["feet_z"] for z in pair]
+    hz = [v for v in rows["hips_z"] if v is not None]
+    floor_z, lift_z = min(flat), max(flat)
+    span = lift_z - floor_z
+    hips_lo, hips_hi = min(hz), max(hz)
+    fails = []
+    if floor_z < -0.08:
+        fails.append(f"feet floor {floor_z:.3f} < -0.08 (underground)")
+    if span < 0.02:
+        fails.append(f"gait span {span:.3f} < 0.02 (frozen walk)")
+    if lift_z > 0.6:
+        fails.append(f"feet lift {lift_z:.3f} > 0.6 (launch-off)")
+    if not (0.5 <= hips_lo and hips_hi <= 1.5):
+        fails.append(f"hips span [{hips_lo:.3f}, {hips_hi:.3f}] outside "
+                     f"[0.5, 1.5]")
+    if fails:
+        raise RuntimeError(
+            f"[lab] hero {name} WORLD GATE FAIL: {'; '.join(fails)} — "
+            f"the staged walk is broken (wrapper-MPI/staging class)")
+    return (f"PASS feet [{floor_z:.3f}, {lift_z:.3f}] hips "
+            f"[{hips_lo:.3f}, {hips_hi:.3f}]")
+
+
 def stage_heroes(ctx):
     """D4: the HERO ZONE — the three-family humanoid showcase.
 
@@ -161,10 +190,9 @@ def stage_heroes(ctx):
     # H1: UAL mannequin, native pool walk
     u = ual._import_actor("Girl", ual.ACTOR_SCALE)
     u["armature"].name = "HeroUAL.Rig"
-    ad = u["armature"].animation_data
-    ad.action = u["actions"]["Walk_Loop"]
-    if u["actions"]["Walk_Loop"].slots:
-        ad.action_slot = u["actions"]["Walk_Loop"].slots[0]
+    # the A2b slot law: ONE canonical assignment helper (the inline
+    # `if slots:` copies were the fail-open class)
+    rig_retarget._assign_action(u["armature"], u["actions"]["Walk_Loop"])
     u["root"].location = (10.0, -2.0, 0.0)
     heroes["HeroUAL"] = {"arm": u["armature"], "body": u["mesh"],
                          "clip": "UAL:Walk_Loop", "rep": u,
@@ -172,10 +200,7 @@ def stage_heroes(ctx):
 
     # H2: Quaternius male, native walk
     qm = assets_quaternius.load("male", "HeroQuatM")
-    ad = qm["arm"].animation_data or qm["arm"].animation_data_create()
-    ad.action = qm["pool"]["Walk"]
-    if qm["pool"]["Walk"].slots:
-        ad.action_slot = qm["pool"]["Walk"].slots[0]
+    rig_retarget._assign_action(qm["arm"], qm["pool"]["Walk"])
     qm["root"].location = (10.0, 1.5, 0.0)
     heroes["HeroQuatM"] = {"arm": qm["arm"], "body": qm["mesh"],
                            "clip": "Quat:Walk", "rep": qm,
@@ -187,10 +212,7 @@ def stage_heroes(ctx):
     rt = rig_retarget.retarget(u["armature"],
                                u["actions"]["Walk_Loop"],
                                qf["arm"])
-    ad = qf["arm"].animation_data or qf["arm"].animation_data_create()
-    ad.action = rt["action"]
-    if rt["action"].slots:
-        ad.action_slot = rt["action"].slots[0]
+    rig_retarget._assign_action(qf["arm"], rt["action"])
     rt["action"].use_fake_user = True     # the D5a one-process law
     qf["root"].location = (13.0, -0.2, 0.0)
     heroes["HeroQuatF"] = {"arm": qf["arm"], "body": qf["mesh"],
@@ -205,7 +227,9 @@ def stage_heroes(ctx):
     assets_quaternius.recolor(qf, (0.80, 0.35, 0.60))
 
     # numeric tables (the two-column law: the numbers travel WITH the
-    # strips) — per-hero world-z behavior gates, post-staging
+    # strips) — per-hero world-z behavior gates, post-staging. The A2b
+    # P1-1 law: the gates are ENFORCED here, not just printed — the
+    # engine printed a green lab while a staged walk went underground.
     for name, rec in heroes.items():
         act = rec["arm"].animation_data.action
         rows = rig_retarget.run_world_gates(rec["arm"], act,
@@ -215,7 +239,9 @@ def stage_heroes(ctx):
         print(f"[lab] hero {name} ({rec['clip']}): feet "
               f"{min(flat):.3f}..{max(flat):.3f} m, hips "
               f"{min(hz):.3f}..{max(hz):.3f} m", flush=True)
+        rows["gate_verdict"] = _assert_hero_bands(name, rows)
         rec["world_table"] = rows
+        # the gate verdict travels into the metadata (A2b P1-1)
 
     ctx["heroes"] = heroes
     # the union range covers the heroes too (D4a: bound BEFORE the
@@ -289,9 +315,12 @@ def set_union_range(ctx):
     both stagings so the hero records are bound before the range lines
     (the D4a law)."""
     sc = ctx["scene"]
-    lo = min(int(a["arm"].animation_data.action.frame_range[0])
+    # the A2b P3-1 law: floor/ceil the range ENDS — int() truncation
+    # silently dropped the tail frame of a fractional range (24fps
+    # glTF: 61.958 -> 61)
+    lo = min(math.floor(a["arm"].animation_data.action.frame_range[0])
              for a in ctx["actors"].values())
-    hi = max(int(a["arm"].animation_data.action.frame_range[1])
+    hi = max(math.ceil(a["arm"].animation_data.action.frame_range[1])
              for a in ctx["actors"].values())
     sc.frame_start, sc.frame_end = lo, hi
     print(f"[lab] union range: [{lo}, {hi}] over "

@@ -165,6 +165,8 @@ def h2_loader():
                   "SwordSlash"]))
     check("H2 male height band", 1.2 <= rep["height"] <= 2.2, True)
     check("H2 male feet band", abs(rep["feet_z"]) <= 0.15, True)
+    check("H2 male pool identity", set(rep["pool"]),
+          set(assets_quaternius.EXPECTED_ACTION_KEYS))
     check("H2 pool actions are THIS import's datablocks",
           all(a.name.startswith("HumanArmature|")
               for a in rep["pool"].values()), True)
@@ -184,6 +186,13 @@ def h2_loader():
     repf = assets_quaternius.load("female", "HeroF")
     check("H2 female bones", len(repf["arm"].data.bones), 42)
     check("H2 female height band", 1.2 <= repf["height"] <= 2.2, True)
+    # the A2a P3-12 fold: the female row was under-pinned (a Female_
+    # prefix drift sailed); pool identity + feet now pinned too
+    check("H2 female pool identity", set(repf["pool"]),
+          set(assets_quaternius.EXPECTED_ACTION_KEYS))
+    check("H2 female feet band", abs(repf["feet_z"]) <= 0.15, True)
+    check("H2 female datablocks distinct from male's",
+          repf["arm"] is not rep["arm"], True)
 
 
 def h3_retarget():
@@ -318,10 +327,119 @@ def h6_bind_and_play():
     print(f"[hero] H6 hips-z world seq {seq}", flush=True)
 
 
+
+
+# ------------------------------------------------------------------ #
+def h7_loader_and_wrapper_laws():
+    """The A2a+A2b audit folds' probes (s24): the loader refusals roll
+    back (retry-clean), the pool keys survive a double import, the
+    unskinned/derived-name/scale refusals fire pre-import, the T4
+    unlinked refusal + child-collection clause are exercised, and the
+    lab's world-band assert rejects a planted bad table."""
+    fresh()
+    # 7a: derived-name refusal (P2-5) — pre-import, no leak
+    bpy.ops.mesh.primitive_cube_add(size=0.1, location=(99, 99, 99))
+    blocker = bpy.context.active_object
+    blocker.name = "HeroX.Body"
+    try:
+        assets_quaternius.load("male", "HeroX")
+        raise AssertionError("derived-name collision not refused")
+    except assets_quaternius.LoadRefused as e:
+        check("H7a derived-name refusal names .Body", "HeroX.Body" in str(e),
+              True)
+    bpy.data.objects.remove(blocker, do_unlink=True)
+
+    # 7b: scale>0 refusal (P2-6)
+    try:
+        assets_quaternius.load("male", "HeroNeg", scale=-0.3718)
+        raise AssertionError("negative scale not refused")
+    except assets_quaternius.LoadRefused as e:
+        check("H7b negative scale refused pre-import", "must be > 0"
+              in str(e), True)
+
+    # 7c: rollback + retry-clean (P1-1) — force a census refusal via a
+    # monkeypatched BONE_CENSUS, then verify the retry succeeds clean
+    import importlib
+    orig_census = assets_quaternius.BONE_CENSUS
+    try:
+        assets_quaternius.BONE_CENSUS = 41
+        try:
+            assets_quaternius.load("male", "HeroR")
+            raise AssertionError("census mismatch not refused")
+        except assets_quaternius.LoadRefused:
+            pass
+        leaked = [o for o in bpy.data.objects
+                  if o.name.startswith(("HeroR.", "HumanArmature"))]
+        check("H7c rollback: no leaked rig objects", leaked, [])
+        leaked_acts = [a.name for a in bpy.data.actions
+                       if "HumanArmature" in a.name]
+        check("H7c rollback: no leaked actions", leaked_acts, [])
+    finally:
+        assets_quaternius.BONE_CENSUS = orig_census
+    rep = assets_quaternius.load("male", "HeroR")
+    check("H7c retry after rollback succeeds", len(rep["pool"]), 11)
+
+    # 7d: double same-family import keeps the CLEAN pool keys (P1-2)
+    rep2 = assets_quaternius.load("male", "HeroR2")
+    check("H7d second import clean keys", set(rep2["pool"]),
+          set(assets_quaternius.EXPECTED_ACTION_KEYS))
+    check("H7d second import binds ITS OWN datablocks",
+          all(a is not rep["pool"][k] for k, a in rep2["pool"].items()),
+          True)
+
+    # 7e: the T4 unlinked refusal + child-collection clause (A2b P2-1)
+    bpy.ops.wm.read_homefile(use_empty=True)
+    unlinked_arm = bpy.data.armatures.new("UnlinkedArm")
+    unlinked_obj = bpy.data.objects.new("UnlinkedArm", unlinked_arm)
+    # deliberately NOT linked into any collection
+    try:
+        wrapper_rig.wrap(unlinked_obj, "HeroU")
+        raise AssertionError("unlinked armature not refused")
+    except RuntimeError as e:
+        check("H7e unlinked armature refused", "linked" in str(e).lower(),
+              True)
+    sub = bpy.data.collections.new("Sub")
+    bpy.context.scene.collection.children.link(sub)
+    linked_ok = bpy.data.objects.new("SubArm", unlinked_arm)
+    sub.objects.link(linked_ok)
+    # a rest bone whose +Y is horizontal and Y-dominant — the probe
+    # needs a real foot-like bone (a boneless armature is a REFUSAL)
+    bpy.context.view_layer.objects.active = linked_ok
+    bpy.ops.object.mode_set(mode='EDIT')
+    eb = unlinked_arm.edit_bones.new("Foot.L")
+    eb.head = (0.0, 0.0, 0.0)
+    eb.tail = (0.0, 0.2, 0.0)          # +Y toe direction at rest
+    bpy.ops.object.mode_set(mode='OBJECT')
+    r = wrapper_rig.wrap(linked_ok, "HeroU", scale=1.0)
+    check("H7e child-collection wrap succeeds (the T4 fix body)",
+          r["root"] is not None, True)
+    check("H7e probe_source reported", r.get("probe_source") in
+          ("explicit", "auto"), True)
+
+    # 7f: the lab's world-band assert rejects a planted bad table
+    # (A2b P1-1 — the enforcement probe; _assert_hero_bands is pure)
+    import scene_motion_lab as lab
+    good = {"feet_z": [[0.02, 0.22]] * 5,
+            "hips_z": [0.9, 1.0, 0.95, 1.05, 0.9]}
+    v = lab._assert_hero_bands("ProbeHero", good)
+    check("H7f good table passes", v.startswith("PASS"), True)
+    bad = {"feet_z": [[-0.3, -0.1]] * 5,   # underground + frozen span
+           "hips_z": [0.2, 0.25, 0.2, 0.3, 0.2]}
+    try:
+        lab._assert_hero_bands("ProbeHero", bad)
+        raise AssertionError("bad table not refused")
+    except RuntimeError as e:
+        # the planted table's span (0.2) is legal — the refusal names
+        # the two REAL violations (underground feet + collapsed hips)
+        check("H7f bad table refused with numbers",
+              "underground" in str(e) and "outside" in str(e), True)
+
+
 def main() -> int:
     for rid, fn in (("H1", h1_wrapper_laws), ("H2", h2_loader),
                     ("H3", h3_retarget), ("H4", h4_refusals),
-                    ("H5", h5_world_gates), ("H6", h6_bind_and_play)):
+                    ("H5", h5_world_gates), ("H6", h6_bind_and_play),
+                    ("H7", h7_loader_and_wrapper_laws)):
         row(rid, fn)
     print(f"[hero] SUMMARY: "
           f"{sum(1 for v in ROWS.values() if v == 'pass')} pass, "
