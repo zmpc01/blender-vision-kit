@@ -692,10 +692,16 @@ def density_histogram(pos, decls, floor, bin_size=None, blocked_bounds=None):
     if Hm[peak_idx] > 0:
         centroid = (round(ax + (peak_idx[0] + 0.5) * bs, 3),
                     round(ay + (peak_idx[1] + 0.5) * bs, 3))
+    # the U1 s24 diagnostic: the N4 ghost rule excludes the EXACT
+    # float32 zero pair — NEAR-zero junk (a different engine write)
+    # would count as origin occupancy and drag the argmax home; the
+    # fraction is REPORTED so a suspicious centroid is checkable
+    near_origin = ((np.abs(pts[:, 0]) < 0.01) & (np.abs(pts[:, 1]) < 0.01))
     return {"hist": Hm, "extent": (ax, ay, nx, ny, bs),
             "jam_centroid": centroid,
             "peak_per_agent": round(float(Hm[peak_idx]), 4),
-            "denominator": int(pts.shape[0])}
+            "denominator": int(pts.shape[0]),
+            "origin_junk_frac": round(float(near_origin.mean()), 4)}
 
 
 # --------------------------------------------------------------------------- #
