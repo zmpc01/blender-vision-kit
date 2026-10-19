@@ -17,13 +17,15 @@ THE SEAM IS DIFFERENT HERE (the scope doctrine): this kit has NO VLM
 bridge — the perception is the AGENT'S OWN EYES. The z-ai vlm() call is
 replaced by a two-phase native loop:
 
-  1) `prep`  — builds the stills, BOTH-ordering pairs, and an
+  1) `prep`  — builds the stills, BOTH-ordering pairs, an
      ab_worksheet.json (the exact questions + image paths, blind
-     labels seeded). The agent LOOKS at each pair/still and records
-     answers into ab_answers.json (schema in the worksheet itself).
-  2) `decide` — validates the answers against the worksheet (every
-     pair answered; the swap structure preserved), computes the SAME
-     rule verdict the s38 tool computed, and emits ab_decision.json.
+     labels seeded) AND an ab_answers.json SKELETON (the exact shape
+     decide consumes — fill it in place). The agent LOOKS at each
+     pair/still and records answers.
+  2) `decide` — validates the answers (every pair answered; the swap
+     structure preserved; inline worksheet answers also accepted),
+     computes the SAME rule verdict the s38 tool computed plus a
+     computed `verdict` field, and emits ab_decision.json.
 
 A preference that flips with the ordering is an ordering artifact, not
 a preference — the swap law does the debiasing the VLM-era tool got
@@ -39,7 +41,9 @@ Usage:
   # ab_answers.json ...
   python3 scripts/ab_evaluate.py decide --dir <out>
 
-Frame convention: <side_dir>/<shot>/frame_<f:04d>.png (or .jpg).
+Frame convention (the ONLY one prep reads):
+  <side_dir>/<shot>/frame_<f:04d>.png (or .jpg)
+  e.g. build_a/S2/frame_0101.png
 """
 from __future__ import annotations
 
@@ -196,11 +200,34 @@ def cmd_prep(args):
               f"-> {out}")
     with open(os.path.join(out, WORKSHEET_NAME), "w") as f:
         json.dump(worksheet, f, indent=1)
+    # the answers SKELETON (the U1 finding: the schema was
+    # undiscoverable — ship the exact shape, fill it in place)
+    skeleton = {"shots": {}}
+    n_pairs_total = 0
+    for sid, shot in worksheet["shots"].items():
+        if shot.get("skipped"):
+            continue
+        n_pairs_total += len(shot["pairs"])
+        skeleton["shots"][sid] = {
+            "pairs": {str(p["k"]): None for p in shot["pairs"]},
+            "read": {lab: None for lab in shot["read"]},
+        }
+    apath = os.path.join(out, ANSWERS_NAME)
+    with open(apath, "w") as f:
+        json.dump(skeleton, f, indent=1)
+    if n_pairs_total == 0:
+        raise SystemExit(
+            f"[ab] REFUSED: zero pairs built from {windows} — no frame "
+            f"matched the convention <side_dir>/<shot>/frame_<f:04d>.png"
+            f"(.jpg). List the side dirs and check the frame numbers "
+            f"(the fractions land at int(f0+(f1-f0)*frac)).")
     print(f"[ab] worksheet -> {os.path.join(out, WORKSHEET_NAME)}")
-    print(f"[ab] NEXT: look at every pair image, answer 'LEFT'/'RIGHT' + "
-          f"reason into 'answer'; score the two readability stills "
-          f"(3 axes 1-5 + any defect keywords); write answers IN PLACE; "
-          f"then run: ab_evaluate.py decide --dir {out}")
+    print(f"[ab] answers skeleton -> {apath}")
+    print(f"[ab] NEXT: look at every pair image; write 'LEFT'/'RIGHT' + "
+          f"reason into each pairs[k] entry and the 3-axis scores + any "
+          f"defect keywords into each read entry OF {ANSWERS_NAME} "
+          f"(bare '4 4 4' scores parse; 'a:4 b:4 c:4' does NOT); then "
+          f"run: ab_evaluate.py decide --dir {out}")
     return 0
 
 
@@ -211,12 +238,24 @@ def cmd_decide(args):
         raise SystemExit(f"no worksheet at {wpath} — run prep first")
     with open(wpath) as f:
         ws = json.load(f)
-    if not os.path.isfile(apath):
-        raise SystemExit(f"no answers at {apath} — look at the pairs and "
-                         f"fill the worksheet's answer fields, saved as "
-                         f"{ANSWERS_NAME}")
-    with open(apath) as f:
-        ans = json.load(f)
+    if os.path.isfile(apath):
+        with open(apath) as f:
+            ans = json.load(f)
+    else:
+        # the in-place worksheet answers are ALSO accepted (the U1
+        # finding: prep's old instruction said 'in place' while decide
+        # demanded the answers file — both shapes work now)
+        ans = {"shots": {}}
+        for sid, shot in ws["shots"].items():
+            if shot.get("skipped"):
+                continue
+            ans["shots"][sid] = {
+                "pairs": {str(p["k"]): p.get("answer")
+                          for p in shot["pairs"]},
+                "read": {lab: r.get("answer")
+                         for lab, r in shot["read"].items()}}
+        print("[ab] no ab_answers.json — using the INLINE worksheet "
+              "answers")
     labels = ws["labels"]
     defect_label = labels[ws["defect_side"]]
     result = {"seed": ws["seed"], "labels": labels,
@@ -258,7 +297,14 @@ def cmd_decide(args):
                 readability[key].append(0)
                 continue
             out_shot["read"][lab] = str(text)[:400]
-            readability[key].append(parse_scores(text))
+            parsed = parse_scores(text)
+            readability[key].append(parsed)
+            # the U1 finding: self-evident score formats silently zeroed
+            if str(text).strip() and parsed == 0:
+                print(f"[ab] WARNING {sid} read[{lab}]: text present but "
+                      f"no 1-5 scores parsed (bare '4 4 4' parses; "
+                      f"'a:4 b:4 c:4' does NOT) — counting 0",
+                      flush=True)
             if lab == defect_label and any(
                     kw in str(text).lower() for kw in DEFECT_KEYWORDS):
                 anatomy_defects += 1
@@ -276,6 +322,17 @@ def cmd_decide(args):
     result["rule"]["unanswered"] = unanswered
     result["rule"]["gates_green"] = "TODO merge by hand"
     result["rule"]["cost_p95_ratio"] = "TODO merge by hand"
+    # the computed verdict (the U1 finding: the last mile was manual)
+    if pref_total == 0 or unanswered:
+        result["rule"]["verdict"] = "NO_DECISION"
+    elif anatomy_defects:
+        result["rule"]["verdict"] = "VETO_DEFECTS"
+    elif (result["rule"]["pref_b_share"] >= 2 / 3 and mb >= ma):
+        result["rule"]["verdict"] = "PREFER_" + labels["b"]
+    elif ((1 - result["rule"]["pref_b_share"]) >= 2 / 3 and ma >= mb):
+        result["rule"]["verdict"] = "PREFER_" + labels["a"]
+    else:
+        result["rule"]["verdict"] = "NO_DECISION"
     with open(os.path.join(args.dir, DECISION_NAME), "w") as f:
         json.dump(result, f, indent=1)
     print(f"[ab] preference {labels['b']} {pref_b}/{pref_total} "

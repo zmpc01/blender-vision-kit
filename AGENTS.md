@@ -733,8 +733,10 @@ from scripts.crowd import CrowdProject, Population, bake, apply_to_scene
 **Obstacles (s41, crowd_obstacles.py):** placed kit geometry carries NO
 crowd-obstacle declaration by default — scan it:
 `blrun.sh --background --python scripts/crowd_obstacles.py -- scan
---collection Statues --walkable floor:...` → Blocked rects for
-CrowdScene authoring. ENGINE TRUTH (live-measured, s41): no path
+--blend my_scene.blend --collection Statues --walkable floor:-10,-10:10,10
+--json-out /tmp/scan.json` → Blocked rects for CrowdScene authoring
+(--blend loads your scene — without it the scan refuses on the factory
+scene; --json-out gives pipeable bytes). ENGINE TRUTH (live-measured, s41): no path
 planning — an obstacle across the spawn→destination beeline = TOTAL JAM
 (0 reach; pinned in the O-battery, flips loudly when upstream routing
 lands); pushout is pressure-soft; force_fields are inert at bake.

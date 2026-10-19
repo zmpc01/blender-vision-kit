@@ -16,9 +16,11 @@ re-derivation.
 
 ## The two-input contract (the part people get wrong)
 
-- `--rects` = the **bridge scan output VERBATIM** (`crowd_obstacles.py
-  scan --json`): `{"blocked": [...], "report": [...]}`. Bounds are
-  LISTS of lists. These are the bytes the bake consumes.
+- `--rects` = the **bridge scan output VERBATIM** — produce it with
+  `crowd_obstacles.py scan --blend <scene.blend> ... --json-out
+  scan.json` (the FILE is the verbatim bytes; stdout is interleaved
+  with Blender logs): `{"blocked": [...], "report": [...]}`. Bounds
+  are LISTS of lists. These are the bytes the bake consumes.
 - `--decls` = the **CrowdScene authoring JSON** with the EXACT schema:
   `{"walkables": [{"id", "bounds"}], "destinations": [{"id",
   "walkable_id", "point", "capacity_bounds"}], "spawn_sources":
@@ -36,8 +38,8 @@ re-derivation.
   capped flat labels (full ids live in the verdict block). Findings:
   sub-floor gaps and wallhugs = WARN rows with coordinates; P1 (exit 3)
   ONLY for what matters: walkable SEVERANCE (grid-BFS at floor/4
-  cells, strict < floor/2 walls, ONE row per severance with frontier
-  rects) and the overlap class (blocked ∩ spawn / ∩ destination
+  cells, strict < floor/2 walls, ONE row per severance with
+  frontier rect ids when the cut's culprits are identified) and the overlap class (blocked ∩ spawn / ∩ destination
   capacity / covering dest.point).
 - `--traj --bake-cache <BakeResult.cache_path>` (post-bake): TWO
   separate passes — (1) trajectory polylines (scale-aware bevel; the

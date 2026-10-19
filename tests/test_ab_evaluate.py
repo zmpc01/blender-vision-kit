@@ -97,16 +97,31 @@ def a1():
     check("A1 blind images on disk",
           any(os.path.isfile(os.path.join(out, f)) for f in
               os.listdir(out) if f.endswith(".png")), True)
-    # missing side -> loud skip IN the worksheet, exit 0
+    # missing side -> the U1 teacher-grade refusal when NO window pairs
+    # (zero-stills silently exiting 0 was the U1 finding), and a
+    # PARTIAL skip stays loud in the worksheet with exit 0
     empty = os.path.join(tmp, "empty_side")
     os.makedirs(empty)
-    rc = ab.main(["prep", "--side-a", a, "--side-b", empty,
-                  "--windows", "S2:5:7", "--out", os.path.join(tmp, "e2"),
-                  "--seed", "7"])
-    ws2 = json.load(open(os.path.join(tmp, "e2", "ab_worksheet.json")))
-    check("A1 missing side skipped loudly", ws2["shots"]["S2"]["skipped"],
-          True)
-    check("A1 missing-side prep still exits 0", rc, 0)
+    try:
+        ab.main(["prep", "--side-a", a, "--side-b", empty,
+                 "--windows", "S2:5:7", "--out", os.path.join(tmp, "e2"),
+                 "--seed", "7"])
+        check("A1 zero-pairs refused", "no-exception", "SystemExit")
+    except SystemExit as e:
+        check("A1 refusal names the convention",
+              "frame_<f:04d>.png" in str(e), True)
+    # partial: S1 present on BOTH sides, S2 missing on side b ->
+    # S2 skips loudly in the worksheet, S1 pairs, exit 0
+    partial = os.path.join(tmp, "partial_side")
+    _frame_tree(partial, "b", {"S1": [14, 20, 26]})
+    rc = ab.main(["prep", "--side-a", a, "--side-b", partial,
+                  "--windows", "S1:10:30,S2:5:7",
+                  "--out", os.path.join(tmp, "e3"), "--seed", "7"])
+    ws3 = json.load(open(os.path.join(tmp, "e3", "ab_worksheet.json")))
+    check("A1 partial skip is loud in the worksheet",
+          ws3["shots"]["S2"].get("skipped"), True)
+    check("A1 S1 still pairs", len(ws3["shots"]["S1"]["pairs"]), 3)
+    check("A1 partial-skip prep exits 0", rc, 0)
 
 
 def _answer(ws, pref_side, read_scores, defect_text="clean"):
