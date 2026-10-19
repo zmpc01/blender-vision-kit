@@ -411,10 +411,9 @@ gait_modifiers.
   teleport gates were computed and embedded in the rep for a full
   session while the docstring claimed fail-closed — nothing raised.
   A gate the caller must remember to assert is a gate that won't be.
-- **Check the upstream tip before porting (re-proven)**: the s22
-  port-back booking was already obsolete at session start (upstream
-  s41 landed a superset; the vendor arrived via a rebase mid-round).
-  Re-read origin/main after EVERY rebase; re-verify bookings.
+- **Check the upstream tip before porting (re-proven x2)**: a
+  booking can be obsolete at session start. Re-read origin/main
+  after EVERY rebase; re-verify bookings.
 - **Submodule pin hygiene**: the recorded gitlink can be STALE vs
   what the last session actually tested (working tree ahead of the
   pin) — a faithful re-land reproduces the drift as a version-
