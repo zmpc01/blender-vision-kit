@@ -271,10 +271,6 @@ gait_modifiers.
   = SCALE keys; 5.x _iter_fcurves; BEATS canonical; rebase sides INVERT;
   night laws; governed-pair guard. Full: docs.
 
-## SESSION 15 FILM LAWS (condensed — full: docs/USABILITY_TF1_last_ferry.md)
-- E_InvalidRange barricades; F-TF6 arrival semantics; REFRAMES not new
-  cams; lamp gaps read dead; F-TD11 titles. Full: docs.
-
 ## SESSION 16 LAWS (the KIT-QUALITY wave — condensed; full: docs/USABILITY_S16 + DESIGN_D19)
 - Preflight-before-export (exit 3, attributed); TWO exporters (films use
   the CANONICAL agent-kit copy); decode-parity (the decoder is the
@@ -311,10 +307,6 @@ gait_modifiers.
   battery needs; Edit+Bash in one parallel block races files (serialize);
   display-mangle survives repr() — ast.parse before EVERY commit.
 
-
-## SESSION 17b LAWS (SQUALL — ultra-condensed; full: USABILITY_TS1_squall.md)
-- MARKER-CAMERA law (nulled markers STILL flip — delete+recreate);
-  chase_frame="belt" is a PIN; the SILENT-REPLACE law; loader N-pin.
 
 ## SESSION 20 LAWS (the RH lane — condensed to the laws; full: docs/rh_canvas.md s20 amendments)
 
