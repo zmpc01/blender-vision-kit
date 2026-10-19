@@ -80,4 +80,16 @@ BARRICADES = [
     # ON the converge line at y=0 — undeclared, the crowd clips them
     (x, 0.0, 0.55)
     for x in (-8.0, -5.2, 5.2, 8.0)
-]
+] + [
+    # s25 (the collision/nav round): the undeclared walkable statics —
+    # benches (tdawn_world.py:275-286), pylons (:288-297), and the 3
+    # RB luggage carts (:299-309). The perimeter walls (x=+/-12,
+    # y=32/-8) bound the walkable already; the bridge clips every
+    # rect to it, so the walls need no rows. r ~ half the footprint
+    # + the 0.15 m personal-space margin.
+    (x, y, 0.75) for x in (-4.6, 4.6) for y in (12.0, 20.0)      # benches
+] + [
+    (x, y, 0.60) for (x, y) in ((-3.2, 8.6), (3.2, 8.6), (0.0, 24.0))
+] + [                                                            # pylons
+    (x, y, 0.70) for (x, y) in ((-4.4, 3.4), (4.5, 3.6), (-4.8, 5.2))
+]                                                                # RB carts

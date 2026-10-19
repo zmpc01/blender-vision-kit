@@ -34,8 +34,25 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-CROWD_KIT_REPO = Path("/home/z/work/blender-crowd-kit")
-PREVIZ_SCRIPTS = Path("/home/z/work/blender-escape-previz/scripts")
+LAB = HERE.parent.parent
+
+
+def _resolve(env_key, legacy):
+    """s25: the family bootstrap law (tferry/tgreen/tsquall/tfog all
+    resolve this way) — env var wins, else the LAB sibling, else the
+    legacy /home/z/work path. tdawn hardcoded the legacy path and a
+    fresh sandbox has no /home/z/work — the bake could never boot."""
+    env = os.environ.get(env_key)
+    if env and (Path(env) / "scripts" / "crowd" / "previz_bridge.py").is_file():
+        return Path(env)
+    sibling = LAB / legacy
+    if (sibling / "scripts" / "crowd" / "previz_bridge.py").is_file():
+        return sibling
+    return Path("/home/z/work") / legacy
+
+
+CROWD_KIT_REPO = _resolve("TDAWN_CROWD_KIT", "blender-crowd-kit")
+PREVIZ_SCRIPTS = _resolve("TDAWN_PREVIZ", "blender-escape-previz") / "scripts"
 
 # deterministic distribution plan (never unseeded -- D-TD2 REV-2)
 SPEED_PLAN = {
@@ -75,6 +92,12 @@ def main():
     bridge = _bootstrap()
     sys.path.insert(0, str(HERE))
     import tdawn_contract as C
+    n_agents = int(args.count)
+    if n_agents != int(C.N_RELEASE):
+        raise SystemExit(
+            f"[tdawn_bake] count law broken: {n_agents} != "
+            f"N_RELEASE {C.N_RELEASE} (the verbatim-129 law — the s25 "
+            f"family assert; tdawn was the one driver without it)")
 
     t0 = time.time()
     # F-TS2: chase_frame pinned EXPLICITLY — the r109 bridge default
