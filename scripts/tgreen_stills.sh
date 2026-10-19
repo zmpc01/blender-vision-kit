@@ -9,6 +9,9 @@
 set -u
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 export CROWD_CACHE_DIR=/tmp/crowdcache_tgreen
+export TGREEN_HUMANOID=${TGREEN_HUMANOID:-1}
+export RH_ASSETS=${RH_ASSETS:-/home/z/lab/RH-3d-assets}
+export RH_ANIMS=${RH_ANIMS:-/home/z/lab/RH-canvas-animations}
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}"
 OUT=output/tgreen/stills
 mkdir -p "$OUT"

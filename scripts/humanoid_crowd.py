@@ -732,8 +732,10 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None, exempt=()):
         if not ok:
             _fail(f"motion gate FAILED on {rep['root'].name}: bob={bob:.3f} "
                   f"walk={is_walk} (the s20 two-column law)")
-    _P("motion gates:", [(r['agent'], r['action'], r['hips_bob'],
-                          r['cache_xy_err']) for r in report])
+    _P("motion gates:", [
+        (r.get("agent", r.get("root")), r.get("action", r.get("verdict")),
+         r.get("hips_bob"), r.get("cache_xy_err"))
+        for r in report])
     n_exc = sum(1 for r in report if r.get("verdict") == "EXEMPT")
     if n_exc:
         _P(f"motion gates: {n_exc} documented exemption row(s)",

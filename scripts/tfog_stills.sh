@@ -8,6 +8,9 @@
 set -u
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 export CROWD_CACHE_DIR=${CROWD_CACHE_DIR:-/tmp/crowdcache_tfog}
+export TFOG_HUMANOID=${TFOG_HUMANOID:-1}
+export RH_ASSETS=${RH_ASSETS:-/home/z/lab/RH-3d-assets}
+export RH_ANIMS=${RH_ANIMS:-/home/z/lab/RH-canvas-animations}
 OUT=${OUT:-output/tfog/stills}
 mkdir -p "$OUT"
 declare -A FRAMES=( [S1]=50 [S2]=140 [S3]=270 [S4]=320 [S5]=470 [S6]=570 \

@@ -10,6 +10,9 @@
 set -u
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 export CROWD_CACHE_DIR=${CROWD_CACHE_DIR:-/tmp/crowdcache_tsquall}
+export TSQUALL_HUMANOID=${TSQUALL_HUMANOID:-1}
+export RH_ASSETS=${RH_ASSETS:-/home/z/lab/RH-3d-assets}
+export RH_ANIMS=${RH_ANIMS:-/home/z/lab/RH-canvas-animations}
 OUT=${OUT:-output/tsquall/stills}
 mkdir -p "$OUT"
 declare -A FRAMES=( [S1]=42 [S2]=126 [S3]=220 [S4]=300 [S5]=400 [S6]=470 \
