@@ -68,6 +68,31 @@ def _fail(msg):
     raise RuntimeError(f"humanoid_crowd: {msg}")
 
 
+class _fps_guard:
+    """THE 24FPS TIMEBASE LAW (s25, the export-lane find): EVERY FBX
+    import in this module (the rig template, the walk clip, the idle
+    clip, the UAL principals) can silently flip scene.render.fps to
+    the clip's own timebase (Mixamo clips carry 30). The film bakes
+    key on a 24 fps timebase (crowd_v6/contract FPS law) — an fps flip
+    at bind time makes the WHOLE film export 1.25x fast (the gate17
+    key-interval class caught it: chase steps 2.1-2.7 m/s apparent =
+    sim 3.8 x 1.25; tform_2 slipped UNDER the band at drill speeds and
+    shipped playing fast — the latent look bug). Save + restore around
+    every import, loudly."""
+
+    def __enter__(self):
+        self._fps = bpy.context.scene.render.fps
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        now = bpy.context.scene.render.fps
+        if now != self._fps:
+            _P(f"fps guard: import flipped scene.render.fps "
+               f"{self._fps} -> {now}; restoring {self._fps}")
+            bpy.context.scene.render.fps = self._fps
+        return False
+
+
 def _P(*a):
     print("HUMANCROWD", *a)
 
@@ -233,15 +258,17 @@ def bind_crowd(ctx, fam, group_tint=None):
             _fail(f"anchor {a.name} is {a.type} — the D6-2 law requires "
                   f"MESH anchors (the hidden-commuter carrier)")
 
-    tmpl = prepare_template(fam)
+    with _fps_guard():
+        tmpl = prepare_template(fam)
     # the walk clip (import standalone: it brings its own armature —
     # strip it after stealing the action)
-    before = set(bpy.data.actions)
-    before_ob = set(bpy.data.objects)
-    bpy.ops.import_scene.fbx(filepath=fam["walk"])
-    walk_act = [a for a in bpy.data.actions if a not in before][0]
-    for ob in [o for o in bpy.data.objects if o not in before_ob]:
-        bpy.data.objects.remove(ob, do_unlink=True)   # the clip's skeleton
+    with _fps_guard():
+        before = set(bpy.data.actions)
+        before_ob = set(bpy.data.objects)
+        bpy.ops.import_scene.fbx(filepath=fam["walk"])
+        walk_act = [a for a in bpy.data.actions if a not in before][0]
+        for ob in [o for o in bpy.data.objects if o not in before_ob]:
+            bpy.data.objects.remove(ob, do_unlink=True)   # the clip's skeleton
     f0, f1 = (int(v) for v in walk_act.frame_range)
     cyc = f1 - f0
     # bone census (the audit's direct-bind law)
@@ -257,12 +284,13 @@ def bind_crowd(ctx, fam, group_tint=None):
     phases = _cache_phases(ctx, n)
 
     # the shared trimmed idle (one bpy action for ALL parked agents)
-    before = set(bpy.data.actions)
-    before_ob = set(bpy.data.objects)
-    bpy.ops.import_scene.fbx(filepath=fam["idle"])
-    idle_act = [a for a in bpy.data.actions if a not in before][0]
-    for ob in [o for o in bpy.data.objects if o not in before_ob]:
-        bpy.data.objects.remove(ob, do_unlink=True)
+    with _fps_guard():
+        before = set(bpy.data.actions)
+        before_ob = set(bpy.data.objects)
+        bpy.ops.import_scene.fbx(filepath=fam["idle"])
+        idle_act = [a for a in bpy.data.actions if a not in before][0]
+        for ob in [o for o in bpy.data.objects if o not in before_ob]:
+            bpy.data.objects.remove(ob, do_unlink=True)
     _trim_action(idle_act, IDLE_TRIM)
     _cycles_action(idle_act)
     idle_names = {fc.data_path.split('"')[1] for fc in _iter_fcurves(idle_act)
@@ -584,7 +612,8 @@ def bind_principals(ctx, name_clip_pairs):
         # the vendored loader demands a KNOWN actor name (its SHIRT
         # palette) — import under "Driver" and TINT to the film's
         # identity color right after (the tint_ual_actor law)
-        rep = UAL._import_actor("Driver", scale)
+        with _fps_guard():
+            rep = UAL._import_actor("Driver", scale)
         rep["actor_kind"] = "Driver"   # the tint/census provenance
         if loc is not None:
             rep["root"].location = loc
@@ -715,8 +744,12 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None, exempt=()):
             # the last tick is the 5.8m false-fail class)
             dt = float(ctx["crowd_cache"].dt) or (1.0 / 12.0)
             fps = float(sc.render.fps) or 24.0
+            if fps != 24:
+                _P(f"WARN gates: scene fps is {fps} (expected 24 — "
+                   f"the timebase law); the probe window may be off")
             sc.frame_set(max(sc.frame_start,
-                             1 + int(round((n_ticks - 1) * dt * fps))))
+                             min(int(sc.frame_end),
+                                 1 + int(round((n_ticks - 1) * dt * fps)))))
             bpy.context.view_layer.update()
             ax, ay = rep["anchor"].matrix_world.translation.x, \
                 rep["anchor"].matrix_world.translation.y
