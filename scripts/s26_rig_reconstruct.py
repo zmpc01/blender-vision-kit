@@ -38,6 +38,20 @@ def _P(*a):
     print("[recon]", *a, flush=True)
 
 
+def _basis_scale(arm):
+    """The rotation-free uniform scale of the object matrix (a 90-deg
+    axis rotation must not leak into the scale read)."""
+    import math
+    m = arm.matrix_world.to_3x3()
+    # strip rotation: singular values of a rot@scale = the scales
+    try:
+        import numpy as np
+        sv = np.linalg.svd(np.array(m), compute_uv=False)
+        return float(sv[0])
+    except Exception:
+        return arm.scale[0]
+
+
 def _bake_armature_matrix(arm):
     """THE MEASURED ARMATURE-APPLY LAW (s26 probe): transform_apply on an
     ARMATURE resets the object scale to 1 WITHOUT baking the data —
@@ -111,12 +125,28 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
         o.scale = (k, k, k)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     bpy.context.view_layer.update()
+    # ground the body: object-origin scaling SHIFTED the bbox (the
+    # origins sit at the staged anchors) — translate so the bbox
+    # BOTTOM CENTER is the world origin (deterministic, convention-
+    # free; the skeleton aligns to this same anchor)
+    xs, ys, zs = [], [], []
+    for o in bound:
+        for c in o.bound_box:
+            w = o.matrix_world @ Vector(c)
+            xs.append(w.x); ys.append(w.y); zs.append(w.z)
+    bot = Vector((sum(xs) / len(xs), sum(ys) / len(ys), min(zs)))
+    for o in bound:
+        o.location -= bot
+    bpy.ops.object.transform_apply(location=True, rotation=False,
+                                   scale=False)
+    bpy.context.view_layer.update()
     zs = []
     for o in bound:
         for c in o.bound_box:
             zs.append((o.matrix_world @ Vector(c)).z)
     span2 = max(zs) - min(zs)
-    _P(f"restored mesh bbox z-span (x{extra:.4f}): {span2:.4f}")
+    _P(f"restored mesh bbox z-span (x{extra:.4f}): {span2:.4f} "
+       f"(grounded at z=0)")
 
     # drop the staged GLB's imported actions BEFORE the re-skin (the
     # clip import below brings its own action, which we also drop —
@@ -181,6 +211,20 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
     span_rec = span2
     base = tuple(arm_clip.scale)
     k_fit = span_rec / _span(arm_clip)
+    # THE SCALE-1 OBJECT LAW (the s26 invisible-crowd find): the bind
+    # parents the rig meshes to the ARMATURE COPY — an armature object
+    # carrying a live 0.01 scale shrinks every skinned mesh to ~2cm
+    # (the rigs bind, gates pass, and NOTHING renders). The (0.01 x
+    # k_fit) factor moves INTO the data (edit-bone multiply — scale is
+    # roll-safe, unlike the rotation bake that twisted every frame);
+    # the object ends scale-1 with the import rotation PRESERVED
+    # (frames = the production convention only under that rotation).
+    # THE CHANNEL-COHERENCE LAW (the s26 bob-3.4m find): scaling the
+    # clip DATA breaks the action-channel semantics (the importer
+    # authored rest-scales + cm channels + data as ONE coherent system
+    # — any data-space rescale lands the walk translations 100x). The
+    # object matrix is the ONLY safe scale knob; the mesh-inheritance
+    # problem it creates is compensated at SAVE time below.
     arm_clip.scale = tuple(s * k_fit for s in base)
     bpy.context.view_layer.update()
     mzs, mxs, mys = [], [], []
@@ -195,8 +239,18 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
            for c in arm_clip.bound_box]
     bys = [(arm_clip.matrix_world @ Vector(c)).y
            for c in arm_clip.bound_box]
-    botc = Vector((sum(bxs) / len(bxs), sum(bys) / len(bys), min(bzs)))
-    arm_clip.location += (bot - botc)
+    # align by the FEET (the skeleton's own lowest foot-bone heads),
+    # not the object bbox — the rotated clip armature's bbox bottom is
+    # NOT its feet (the s26 measured 1.322-off signature)
+    foot_z = min((arm_clip.matrix_world @ Vector(
+        arm_clip.data.bones[n].head_local)).z
+        for n in ('mixamorig:LeftFoot', 'mixamorig:RightFoot'))
+    fxy = [ (arm_clip.matrix_world @ Vector(
+        arm_clip.data.bones[n].head_local))
+        for n in ('mixamorig:LeftFoot', 'mixamorig:RightFoot')]
+    foot_c = Vector((sum(p.x for p in fxy) / 2, sum(p.y for p in fxy) / 2,
+                     foot_z))
+    arm_clip.location += (Vector((0.0, 0.0, 0.0)) - foot_c)
     bpy.context.view_layer.update()
     clip_hips = arm_clip.matrix_world @ Vector(
         arm_clip.data.bones['mixamorig:Hips'].head_local)
@@ -206,8 +260,12 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
     _P(f"re-skin fit: k={k_fit:.4f} clip_hips_z={clip_hips.z:.3f} "
        f"(mesh z {min(mzs):.3f}..{max(mzs):.3f}) "
        f"clip_feet_z={clip_foot:.3f}")
-    if not (min(mzs) - 0.1 < clip_foot < max(mzs)):
-        raise SystemExit("[recon] skeleton feet outside the mesh band")
+    if not (-0.15 < clip_foot < 0.15):
+        raise SystemExit(f"[recon] skeleton feet at {clip_foot:.3f} "
+                         f"(grounded body expects ~0)")
+    if not (0.7 < clip_hips.z < 1.3):
+        raise SystemExit(f"[recon] skeleton hips at {clip_hips.z:.3f} "
+                         f"(outside the human band)")
 
     # re-parent the meshes onto the fitted clip skeleton
     for m in bound:
@@ -217,6 +275,28 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
         m.parent = arm_clip
     arm = arm_clip
     _P(f"re-skinned onto {arm_clip.name} (the clip's production frames)")
+
+    # THE MESH-COMPENSATION LAW (the s26 invisible-crowd find): the
+    # bind parents the rig meshes to the ARMATURE COPY (object scale
+    # 0.01 x k_fit live) — uncompensated, every skinned mesh renders
+    # at ~2cm (129 rigs bound, gates green, nothing visible). The
+    # template meshes carry the inverse scale; through the parenting
+    # the world lands 1:1. (Object.copy preserves per-object scale;
+    # the glTF export flattens world transforms.)
+    arm_w = _basis_scale(arm_clip)   # matrix_world already has it all
+    inv = 1.0 / arm_w
+    for m in bound:
+        m.scale = (inv, inv, inv)
+    _P(f"mesh compensation: x{inv:.2f} against armature world scale "
+       f"{arm_w:.5f}")
+
+    # clear the imported frame-0 POSE (the walk clip ships posed; the
+    # served template must carry the REST or the bind's rest reads skew)
+    bpy.context.view_layer.objects.active = arm_clip
+    bpy.ops.object.mode_set(mode='POSE')
+    bpy.ops.pose.transforms_clear()
+    bpy.ops.object.mode_set(mode='OBJECT')
+    _P("imported pose cleared (rest served)")
 
     bound.sort(key=lambda m: len(m.data.vertices))
     bound[0].name = "Beta_Joints"
