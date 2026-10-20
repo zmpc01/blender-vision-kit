@@ -1,3 +1,81 @@
+> Session 26 close: 2026-10-20. HEAD = the eye-gate verdict + the
+> Cycles world re-tune design + THE RIG RECONSTRUCTION (the humanoid
+> lane unblocked without RH-3d-assets) + the tferry Cycles tune
+> (sky+lights) — ONE open rig bug (the feet-align placement) stands
+> between this state and the 4-film re-render wave. This block ->
+> the session-25 block -> PLAN M16/s26 receipts -> worklog.
+
+## Session-26 close state (NEWEST — read this first)
+
+- **THE EYE GATE IS CLOSED** (queue 0 from s25): the 72 staged stills
+  certified sheet-by-sheet + full-res spot checks + strip verification.
+  VERDICT: tdawn_4 + tform_3 CERTIFIED; tferry_2 / tgreen_2 / tfog_2 /
+  tsquall_2 FAIL the look (the s25 Cycles engine swap invalidated the
+  EEVEE-era world tunes; tfog severe — the volume scatter blows out).
+  ROOT CAUSE measured live: the tferry S6 cylinder repro (EEVEE = the
+  certified night; Cycles = flat gray; the world build identical).
+- **THE RIG RECONSTRUCTION (the unblock)**: RH-3d-assets is UNREACHABLE
+  (the beulahkemp PAT died with the wiped sandbox; release volumes
+  checked — no rig; the vendored clip carries the armature but NO skin).
+  The x_bot template is RECONSTRUCTED from tform_3's staged scene.glb:
+  the meshes (weights intact, vertex-group keyed) re-skinned onto the
+  VENDORED CLIP's own skeleton (production frames). Served as a
+  LOSSLESS .blend at vendor/rh_rig/x_bot_reconstructed.blend via the
+  crowd_family env-wins/repo-fallback law. Acceptance G1-G7
+  (scripts/s26_rig_accept.py): G1 POLY_BAND 2796 pre-decimated / G3
+  bone census / G4 FULL tdawn bind 129 + motion gates / G5 skin-alive
+  (multi-vertex evaluated) / G6 trajectory diff vs the clip 3.8% / G7
+  no-tint — ALL GREEN (G2/G6 pending the align fix below).
+- **THE OPEN BUG (s27's FIRST block)**: the feet-align placement. The
+  ground cameras show the rigs SUNK with limbs up (the top-down aerial
+  HIDES it — the S6 probe exposed it). The object-location align gets
+  rotated away by the bind's flip; the data-baked attempt (Mlin^-1
+  compose) moved G2 +4% / G6 36.7x — wrong space. THE MAP (worklog
+  s26-wrap): compute the correction in DATA space, bake into the
+  bones, ROUND-TRIP ASSERT the world foot z on the re-appended
+  artifact, recompute the basis pairing AFTER the align lands.
+- **THE MEASURED LAWS (the kit's new survival kit — full: worklog s26
+  + SKILL s26 block)**: the armature transform_apply silent-reset;
+  the FBX round-trip frame twist (object-level fit only); the GLB
+  bone-heuristic inversion (re-skin onto the clip skeleton); the
+  channel coherence (data-space rescale breaks the cm action
+  channels); the basis pairing (mesh basis = arm_world^-1); the
+  dangling-modifier statue class; the 11-sample gate aliasing fix;
+  the keep-transform unparent law; the SystemExit message swallow
+  (Blender swallows it — "silent crashes" may be your own gate).
+- **THE TFERRY TUNE (the worked example, MID-FLIGHT)**: the sky
+  engine-conditional (EEVEE 0.12 certified / Cycles 0.012 — the
+  BOTH-ENGINE delta pinned in tferry_world); the practicals x3.5
+  under Cycles (the ladder: 2.2 dim). The S1 aerial eye-verified
+  night. The 12-still re-render + the re-export + the re-stage WAIT
+  on the align fix.
+- **THE A9 RECEIPTS (settled)**: the fresh bake pins (tdawn 5ccf6565 /
+  tferry 60a1a64f) supersede the s25 receipts — the upstream
+  standalone crowd-kit engine drifted (b3f8f46 wheel 1.7.0 -> HEAD);
+  gates re-green on the fresh caches; the re-exports carry s26-engine
+  caches (documented sanctioned delta).
+- **Open queues (s27 order)**:
+  1. THE ALIGN FIX (the map above) + the accept ALL-GREEN.
+  2. THE 4-FILM RE-RENDER WAVE: tferry (the tune is mid-flight) ->
+     tgreen (the noon sun: tgreen_world.py sun block + the ladder
+     constants) -> tfog (the white-out: tfog_scene.py TFG.BlueHour +
+     the fog density tfog_world.py:65 — the SKY LIVES IN THE SCENE
+     MODULE) -> tsquall (the storm sky + the wet sheen). Eye-in-loop,
+     image_metrics, the A12 corpus (the film's certified EEVEE-era
+     stills = the reference).
+  3. THE RE-SHIP PATH per film: 12 stills -> the canonical exporter ->
+     the re-stage + the app-repo commit IN THE SAME MICRO-STEP ->
+     the browser playback smoke -> the eye gate re-runs on the new
+     sheets (scripts/s26_eye_sheets.py regenerates from the packages).
+  4. NIGHT-MARKET (the diversity queue's uncovered regime): the first
+     film BORN under the corrected Cycles night laws — design doc +
+     audit rounds per the standing process, then build.
+  5. The 24fps timebase law holds (the films play true 24fps); the
+     lowercase sweep debt (the s32 discovery) at each re-export.
+- **The credential note**: only the zmpc01 PAT exists this session
+  (gh.env). The beulahkemp PAT (the RH repos) is LOST — if the user
+  re-provisions it, the ORIGINAL x_bot.fbx template should replace
+  the reconstruction (crowd_family prefers env RH_ASSETS — drop-in).
 > Session 25 close: 2026-10-19. HEAD = the humanoid rollout + the
 > collision/nav round (the D6-pattern rollout to five films + the
 > obstacle wave + the arrival-delta gate + the export round with the
