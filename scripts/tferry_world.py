@@ -272,9 +272,18 @@ def build_world(scene):
     lights = []
     sodium = (1.0, 0.60, 0.22)
 
+    # s26 CYCLES LIGHT COMPENSATION: the certified EEVEE energies read
+    # ~2/3 dimmer under Cycles at the same wattage (measured S1/S3/S6
+    # probes: the sodium pools barely fired while the sky fix read).
+    # EEVEE untouched; Cycles x3.5 on every practical (2.2 measured still dim vs the tferry_1 corpus; 3.5 = the pool ladder's second rung) (the BOTH-ENGINE
+    # delta lives in the sky block above).
+    _cyc = normalize_engine_id(
+        scene.render.engine).startswith("CYCLES")
+    _lw = 3.5 if _cyc else 1.0
+
     def _spot(name, loc, energy, color, size_deg, blend):
         ld = bpy.data.lights.new(name, type='SPOT')
-        ld.energy = energy
+        ld.energy = energy * _lw
         ld.color = color
         ld.spot_size = math.radians(size_deg)
         ld.spot_blend = blend
@@ -285,6 +294,7 @@ def build_world(scene):
         return ob
 
     def _area(name, loc, energy, color, size, size_y=None):
+        energy = energy * _lw
         ld = bpy.data.lights.new(name, type='AREA')
         ld.energy = energy
         ld.color = color

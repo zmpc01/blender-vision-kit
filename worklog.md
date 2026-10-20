@@ -4272,3 +4272,24 @@ Work Log:
 Stage Summary:
 - The tferry tune resumes with: (1) the sodium/area energies up for Cycles until the pools read; (2) the 12 stills re-render on the final rig; (3) the re-export + re-stage + re-commit (the STAGE-COMMIT law); (4) then tgreen/tfog/tsquall follow the proven recipe.
 - The pinned new cache receipts: tdawn 5ccf6565 / tferry 60a1a64f (npz==payload pins, s26 engine).
+
+---
+Task ID: s26-wrap
+Agent: main orchestrator (session-26)
+Task: session close — state protection, the precise debug map for the one open rig bug, HANDOFF/PLAN/SKILL updates.
+
+Work Log:
+- THE TFERRY TUNE PROGRESS: sky fix verified by eye (near-black); sodium x3.5 (the ladder: 2.2 dim -> 3.5 second rung); the S6 ground-camera probe EXPOSED the buried-crowd class the top-down aerial HID (bodies sunk, limbs up — the world-space align stored as object LOCATION gets rotated by the bind's flip in matrix_parent_inverse).
+- THE DATA-BAKED ALIGN ATTEMPT: the correction converted via Mlin^-1 @ delta_world into the edit bones — the re-accept measured G2 span 2.1328 (+4%) and G6 trajectory 36.7x — THE ALIGN BUG IS NOT CLOSED. The conversion's space arithmetic is suspect (Mlin = matrix_world.to_3x3() at align time — possibly the wrong frame or a wrong-order compose).
+- DECISION: stop the rig iteration here (the context budget), protect the state, hand the final alignment to s27 with this map.
+
+Stage Summary:
+- WHAT WORKS (proven this session): the whole reconstruction pipeline EXCEPT the final feet-align placement; G1/G3/G4/G5/G7 green; the aerial crowd reads correct-scale articulated; the tferry sky+light Cycles re-tune (eye-verified); the eye gate closed (the s26 verdict); the design/audit round; the worklog/HANDOFF/PLAN/SKILL protection.
+- THE OPEN BUG (s27's first block, ~1-2 iterations): the feet-align placement. The map:
+  1. SYMPTOM: ground-level cameras show the rigs sunk with limbs up; the top-down aerial reads fine (it hides the burial).
+  2. THE FAILED FIX: converting the world delta via Mlin^-1 @ delta_world into edit-bone head/tail (G2 +4%, G6 36.7x — the span/ranges MOVED, so the conversion is wrong-space, not just mis-signed).
+  3. THE LIKELY TRUTH: the align must be computed and baked in the armature's DATA space directly — measure the bones' data-space foot z (head_local after the object matrix maps data->world: foot_data_z = (matrix_world^-1 @ foot_world).z), subtract from every eb.head/tail.z in DATA space (a pure data-space z shift — no matrix conversion needed since the correction is a pure translation along the WORLD z which in data space is the matrix-linear mapped direction — CAREFUL: a world-z translation is NOT a data-z translation under the rot90X; the correct data-space delta = Mlin^-1 @ (0,0,-foot_z) — which is what was tried; audit the compose ORDER and the matrix state at align time (the k_fit object scale was set BEFORE the align — matrix_world includes it — verify with a numeric round-trip assert: after the bake, re-measure the world foot z and assert ~0 BEFORE saving; the assert would have caught the wrong-space bake immediately).
+  4. THE ROUND-TRIP ASSERT IS THE REAL FIX: whatever align mechanism, assert |world_foot_z| < 1cm on the FINAL saved-and-re-appended artifact (the extractor's verify step reads the armature span — extend it to the foot z), plus G2/G6 in the accept.
+  5. ALSO BROKEN and waiting on the align: the basis-pairing step reads arm_clip.matrix_world AFTER the align — recompute AFTER the align lands (the pairing must use the FINAL matrix).
+- The stale-stills law: every still rendered before the align closes is stale; the re-render wave (12 stills x 4 films) follows the align close.
+- Commits this session: 5862a57 (s25 worklog restore), c38f04d (eye gate verdict), f370e27+edde84b (design REV-1/2), 2b7c17e+28013a4 (rig + gates), c6eded8+5031e5f (final rig laws), 005d715 (tune wave). All pushed BOTH remotes.

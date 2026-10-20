@@ -357,7 +357,22 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
         for n in ('mixamorig:LeftFoot', 'mixamorig:RightFoot')]
     foot_c = Vector((sum(p.x for p in fxy) / 2, sum(p.y for p in fxy) / 2,
                      foot_z))
-    arm_clip.location += (Vector((0.0, 0.0, 0.0)) - foot_c)
+    # THE DATA-BAKED ALIGN LAW (the s6 buried-crowd find): a WORLD
+    # correction stored as object LOCATION gets rotated by the bind's
+    # parent chain (the flip is in matrix_parent_inverse) — the rigs
+    # landed sunk with limbs up (the aerial top-down HIDES it; the S6
+    # ground camera exposed it). Bake the correction into the BONES
+    # (pure translation: frames untouched), object location -> 0.
+    delta_world = Vector((0.0, 0.0, 0.0)) - foot_c
+    Mlin = arm_clip.matrix_world.to_3x3()
+    delta_local = Mlin.inverted() @ delta_world
+    bpy.context.view_layer.objects.active = arm_clip
+    bpy.ops.object.mode_set(mode='EDIT')
+    for eb in arm_clip.data.edit_bones:
+        eb.head = eb.head + delta_local
+        eb.tail = eb.tail + delta_local
+    bpy.ops.object.mode_set(mode='OBJECT')
+    arm_clip.location = (0.0, 0.0, 0.0)
     bpy.context.view_layer.update()
     clip_hips = arm_clip.matrix_world @ Vector(
         arm_clip.data.bones['mixamorig:Hips'].head_local)
