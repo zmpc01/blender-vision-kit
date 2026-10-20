@@ -97,11 +97,48 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
        f"meshes={[(m.name, len(m.data.vertices)) for m in bound]}")
 
     keep = list(bound)
+    # THE KEEP-TRANSFORM LAW (the s26 anisotropic-data find): a plain
+    # o.parent = None collapses each mesh to its LOCAL frame (the
+    # parent chain's rotation/scale vanish) — the body then bakes
+    # lying-down and every later z-measurement normalizes garbage
+    # (the served data measured x=11.5 / z=2.05). Unparent by MATRIX:
+    # world position preserved, then measured honestly.
+    import json
+    truths = {}
     for o in bound:
+        bpy.context.view_layer.update()
+        xs, ys, zs = [], [], []
+        for c in o.bound_box:
+            w = o.matrix_world @ Vector(c)
+            xs.append(w.x); ys.append(w.y); zs.append(w.z)
+        # LOCAL base-data ratios (pose-independent — the world AABB of
+        # a SKINNED mesh reads the imported walk pose, not the rest;
+        # the s26 gate-premise fix)
+        lx, ly, lz = [], [], []
+        for c in o.bound_box:
+            v = Vector(c)
+            lx.append(v.x); ly.append(v.y); lz.append(v.z)
+        truths[o.name] = (max(lx) - min(lx), max(ly) - min(ly),
+                          max(lz) - min(lz))
+        # clear the DANGLING armature modifier (the rec armature is
+        # deleted below; a modifier pointing at a dead object is the
+        # s26 deterministic-crash class — the weights live in the
+        # vertex groups, the modifier is reborn at the re-skin)
+        for md in list(o.modifiers):
+            o.modifiers.remove(md)
+        W = o.matrix_world.copy()
         o.parent = None
+        o.matrix_world = W
+        bpy.context.view_layer.update()
+        _P(f"DBG {o.name} post-unparent world scale="
+           f"{tuple(round(v,4) for v in o.matrix_world.to_scale())} "
+           f"targetW={tuple(round(v,4) for v in W.to_scale())}")
     for o in list(bpy.data.objects):
         if o not in keep:
             bpy.data.objects.remove(o, do_unlink=True)
+    _P("import body truths (world spans): "
+       + json.dumps({k: tuple(round(v, 3) for v in val)
+                     for k, val in truths.items()}))
 
     # meshes: transform_apply is mesh-safe — bake the wrapper chain,
     # then restore template scale from the MESH span (the body IS the
@@ -120,7 +157,13 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
     span = max(zs) - min(zs)
     _P(f"post-apply raw mesh bbox z-span: {span:.4f} "
        f"(target {TARGET_HEIGHT})")
+    # scale from the MESHES' own height (the armature's 68m blob is
+    # the GLB bone-heuristic's garbage tails, not a size reference)
     k = TARGET_HEIGHT / span * extra
+    truth_sorted = {n: sorted([t[0] / max(t[2], 1e-6),
+                               t[1] / max(t[2], 1e-6), 1.0],
+                              reverse=True)
+                    for n, t in truths.items()}
     for o in bound:
         o.scale = (k, k, k)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
@@ -147,6 +190,70 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
     span2 = max(zs) - min(zs)
     _P(f"restored mesh bbox z-span (x{extra:.4f}): {span2:.4f} "
        f"(grounded at z=0)")
+    # PROPORTIONS GATE: the body's x/z and y/z ratios must match the
+    # import truth (an anisotropic bake ships bobble-heads)
+    _P("gate: entering")
+    def _rss():
+        try:
+            with open("/proc/self/status") as f:
+                for ln in f:
+                    if ln.startswith("VmRSS"):
+                        return ln.split()[1] + "kB"
+        except Exception:
+            return "?"
+        return "?"
+
+    def _world_spans(o):
+        """Vertex-sampled world spans (the bound_box C path died
+        silently here twice — deterministic, no traceback; dodge it)."""
+        _P(f"  span: rss={_rss()}")
+        xs, ys, zs2 = [], [], []
+        vs = o.data.vertices
+        n = len(vs)
+        step = max(1, n // 200)
+        _P(f"  span: pre-loop rss={_rss()}")
+        for i in range(0, n, step):
+            w = o.matrix_world @ vs[i].co
+            xs.append(w.x); ys.append(w.y); zs2.append(w.z)
+        _P(f"  span: post-loop rss={_rss()}")
+        return (max(xs) - min(xs), max(ys) - min(ys),
+                max(zs2) - min(zs2))
+
+    for o in bound:
+        _P(f"gate: {o.name}")
+        xs_s, ys_s, zs_s = _world_spans(o)
+        xs = [0, xs_s]; ys = [0, ys_s]; zs2 = [0, zs_s]
+        # LOCAL data ratios vs the import's LOCAL base-data ratios
+        # (both pose-free), + the human-plausibility band on the world
+        # shape (T-pose arms x/z <= 1.4, depth y/z <= 0.55)
+        lxs, lys, lzs = [], [], []
+        for c in o.bound_box:
+            v = Vector(c)
+            lxs.append(v.x); lys.append(v.y); lzs.append(v.z)
+        lrz = max(lzs) - min(lzs)
+        lrx = (max(lxs) - min(lxs)) / max(lrz, 1e-6)
+        lry = (max(lys) - min(lys)) / max(lrz, 1e-6)
+        # (the local-ratio compare is UNSOUND by design: the bake
+        # re-orients the data frame — import y-up vs served z-up — so
+        # the served artifact is judged by the world band below, which
+        # is what the anisotropy catastrophe actually violates)
+        rz2 = max(zs2) - min(zs2)
+        rx_w = (max(xs) - min(xs)) / max(rz2, 1e-6)
+        ry_w = (max(ys) - min(ys)) / max(rz2, 1e-6)
+        # z band per-mesh: Body0 (the joints-viz mesh) is SHORTER than
+        # the surface mesh — the scene max is 2.051, Body0 1.80x
+        if rx_w > 1.4 or ry_w > 0.55 or not (1.5 < rz2 < 2.2):
+            raise SystemExit(
+                f"[recon] world shape implausible on {o.name}: "
+                f"x/z {rx_w:.3f} y/z {ry_w:.3f} z {rz2:.3f}")
+    # the unparent uniformity assert (the keep-transform law's teeth)
+    for o in bound:
+        s = o.matrix_world.to_scale()
+        if max(s) - min(s) > 0.01 * max(s):
+            raise SystemExit(f"[recon] non-uniform world scale on "
+                             f"{o.name}: {tuple(round(v,5) for v in s)}")
+    _P("proportions gate: PASS (world shape human-plausible, "
+       "unparent uniform)")
 
     # drop the staged GLB's imported actions BEFORE the re-skin (the
     # clip import below brings its own action, which we also drop —
@@ -267,28 +374,35 @@ def _reconstruct_scene(glb, pick, clip_fbx, extra=1.0):
         raise SystemExit(f"[recon] skeleton hips at {clip_hips.z:.3f} "
                          f"(outside the human band)")
 
-    # re-parent the meshes onto the fitted clip skeleton
+    # re-parent the meshes onto the fitted clip skeleton — ADD the
+    # armature modifier (the isolation cleared the dangling ones; the
+    # s26 G5 statue-class catch: retargeting a cleared modifier list
+    # ships REST-POSE statues — bind green, gates green, skin dead)
     for m in bound:
-        for md in m.modifiers:
-            if md.type == 'ARMATURE':
-                md.object = arm_clip
+        md = m.modifiers.new("ARMAT", 'ARMATURE')
+        md.object = arm_clip
         m.parent = arm_clip
     arm = arm_clip
     _P(f"re-skinned onto {arm_clip.name} (the clip's production frames)")
 
-    # THE MESH-COMPENSATION LAW (the s26 invisible-crowd find): the
-    # bind parents the rig meshes to the ARMATURE COPY (object scale
-    # 0.01 x k_fit live) — uncompensated, every skinned mesh renders
-    # at ~2cm (129 rigs bound, gates green, nothing visible). The
-    # template meshes carry the inverse scale; through the parenting
-    # the world lands 1:1. (Object.copy preserves per-object scale;
-    # the glTF export flattens world transforms.)
-    arm_w = _basis_scale(arm_clip)   # matrix_world already has it all
-    inv = 1.0 / arm_w
+    # THE BASIS-PAIRING LAW (the s26 final form): the skinning is
+    # coherent only when the mesh's LOCAL data lives in the ARMATURE's
+    # LOCAL frame. The mesh data stays upright meters (2.051, z-up);
+    # the mesh's object basis becomes arm_world^-1 @ mesh_world — the
+    # inverse of the fitted armature's full matrix (rot90X @ 0.0104
+    # included). Through the bind's copies (basis copied, parented to
+    # the per-agent armature) the world composes back exactly, and the
+    # modifier deforms in one coherent frame. (The scale-only pairing
+    # left the rot90 mismatch in: the skin exploded into floor shards.)
+    from mathutils import Matrix as _M
     for m in bound:
-        m.scale = (inv, inv, inv)
-    _P(f"mesh compensation: x{inv:.2f} against armature world scale "
-       f"{arm_w:.5f}")
+        m.parent = arm_clip
+        m.matrix_parent_inverse = _M.Identity(4)
+        m.matrix_basis = (arm_clip.matrix_world.inverted()
+                          @ m.matrix_world)
+    bpy.context.view_layer.update()
+    _P("basis pairing: mesh basis = arm_world^-1 @ mesh_world "
+       "(the local frames pair coherently)")
 
     # clear the imported frame-0 POSE (the walk clip ships posed; the
     # served template must carry the REST or the bind's rest reads skew)
@@ -354,6 +468,18 @@ def main():
     ap.add_argument("--pick", default="Zed.0001")
     args = ap.parse_args(argv)
 
+    import traceback
+    try:
+        _main_inner(args)
+    except BaseException as e:
+        import traceback as _tb
+        _P(f"EXCEPTION CAPTURED: {type(e).__name__}: {e}")
+        for ln in _tb.format_exc().splitlines():
+            _P(f"  TB {ln}")
+        raise
+
+
+def _main_inner(args):
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     # s26 FRAME-DRIFT LAW (measured): the FBX round trip rotated the
     # reconstruction's bone frames (the wrapper facing contest failed

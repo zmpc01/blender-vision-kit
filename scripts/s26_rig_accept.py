@@ -164,14 +164,21 @@ def main():
                 scene.frame_set(f)
                 dg.update()
                 ev = me.evaluated_get(dg)
-                return (me.matrix_world
-                        @ ev.data.vertices[0].co).copy()
+                return ev.data.vertices
 
-            v0 = _ev(f_mid)
-            v1 = _ev(f_mid + 12)
-            d = (v1 - v0).length
+            # MAX delta over 50 spread vertices (a single vertex can
+            # be weight-0-static — the s26 0.0000-on-a-live-crowd trap)
+            n = len(me.data.vertices)
+            idxs = list(range(0, n, max(1, n // 50)))[:50]
+            ev0 = _ev(f_mid)
+            v0 = {i: (me.matrix_world @ ev0[i].co).copy()
+                  for i in idxs}
+            ev1 = _ev(f_mid + 12)
+            d = max(((me.matrix_world @ ev1[i].co) - v0[i]).length
+                    for i in idxs)
             _G(5, "SKIN_ALIVE", d > 0.01,
-               f"vertex world delta over 12f = {d:.4f} m")
+               f"max vertex world delta over 12f (n={len(idxs)}) "
+               f"= {d:.4f} m")
         else:
             _G(5, "SKIN_ALIVE", False, "no mesh child on the rig")
     else:

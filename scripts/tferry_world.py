@@ -250,9 +250,22 @@ def build_world(scene):
 
     # --- night sky (L-TF4, ladder step 1: 0.04 measured DEAD — the
     # silhouette floor; sun BELOW the horizon for twilight blue) -------
-    from blender_kit import add_sky_world
+    # s26 CYCLES RE-TUNE (DESIGN_world_retune_s26 A7/D1-c; the eye-gate
+    # finding: the certified 0.12 renders FLAT GRAY under Cycles — the
+    # Nishita atmosphere stays luminous at sun -6 deg while EEVEE goes
+    # near-black). Engine-conditional: the certified EEVEE value is
+    # untouched; Cycles drops the sky so the sodium practicals own the
+    # night again.
+    #   BOTH-ENGINE DELTA (measured s26, tferry S6 cylinder repro):
+    #   EEVEE strength 0.12 -> near-black sky + sodium pools (certified
+    #   tferry_1 look); Cycles strength 0.12 -> flat ~#8a8a8a wash
+    #   (broken); Cycles strength 0.012 -> near-black + pools (the
+    #   tune below; converges toward the tferry_1 corpus).
+    from blender_kit import add_sky_world, normalize_engine_id
+    _cycles = normalize_engine_id(
+        scene.render.engine).startswith("CYCLES")
     add_sky_world(sun_elevation_deg=-6.0, sun_rotation_deg=200.0,
-                  strength=0.12)
+                  strength=0.012 if _cycles else 0.12)
 
     # --- the PRACTICALS (the f486 lesson: emissive materials glow but
     # do not LIGHT — every neon/lamp/window needs a real light object) --
