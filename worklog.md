@@ -4208,3 +4208,25 @@ Stage Summary:
 - ALL SIX FILMS humanoid + obstacle-aware + live in the review app. Kit laws landed: 24fps timebase (6ca45df), data-name, arrival-delta gate, frame_step OOM lever, stage-commit, exempt-row. Exports ~230MB GLB total.
 - The OPEN EYE GATE recorded honestly as HANDOFF queue 0: the 72 staged stills await the principal's certification (contact sheets were at /home/sync/s25_sheets/, wiped with the sandbox — regenerate from the committed packages).
 - The s25 worklog record itself was a casualty of the outage (this entry restored s26 from the receipts — the write that should have happened at close).
+
+---
+Task ID: s26-eye-gate
+Agent: main orchestrator (session-26)
+Task: THE OPEN EYE GATE (HANDOFF queue 0) — certify the 72 staged stills (6 films x 12) with the principal's native vision.
+
+Work Log:
+- Fresh sandbox (wiped again between sessions): full re-land from GitHub — 5 repos, Blender 5.2.2 (install.sh), Pillow + wheels (venv 1.7.0 = standalone HEAD bake engine; bundled 1.6.0 = vendored pin), submodule content from the local clone at pin b4bf76e (git submodule auth fails as the s22 law predicted), review app deps + db push + daemonized (200). VK blrun needed its own tools/blender (real-dir copy — the symlink ban honored) + tools/local-libs.
+- Restored the MISSING session-25 worklog record (the outage casualty) from the receipts; pushed both remotes (5862a57).
+- Sheets rebuilt from the COMMITTED packages (scripts/s26_eye_sheets.py -> /home/sync/s26_sheets/ — the /home/sync copies died with the sandbox; the app repo is the durable source). Vision channel ALIVE this session.
+- Sheet-by-sheet certification + full-res spot checks + tsquall_1-vs-2 comparisons + the S5 strip stack:
+  * tdawn_4 CERTIFIED (12/12: zone palettes, teal Runner against flow, amber Master at the gate, the vault dive, dawn light intact).
+  * tform_3 CERTIFIED (12/12: golden hour intact — sun above horizon survives the engine swap; formations + officers read).
+  * tferry_2 FAIL: the certified night look (amber sodium pools, glowing boards, near-black sky) renders FLAT GRAY.
+  * tgreen_2 FAIL: the certified AgX-noon sun + hard shadows render FLAT OVERCAST (no sun).
+  * tfog_2 FAIL SEVERE: the blue-hour fog VOLUME SCATTER blows out to blank white under the bright Cycles sky — 5+ frames unreadable.
+  * tsquall_2 MARGINAL: storm-dark base right, articulation right (S5 scatter beat verified on strips — motion, not ragdoll), but the certified bright-storm-sky + wet-ground sheen dimmed; joins the re-tune wave.
+- ROOT CAUSE (measured live, repro'd): the s25 CYCLES ENGINE LAW (skinned crowds OOM EEVEE) silently invalidated the EEVEE-era per-film WORLD TUNES (s14-s19): Nishita sky luminance at/below horizon differs drastically by engine; tfog's volume scatter compounds it. Repro: tferry S6 cylinder-mode — EEVEE = the certified night, Cycles = flat gray (world build identical; the engine is the variable).
+
+Stage Summary:
+- EYE GATE VERDICT: 2/6 certified (tdawn_4, tform_3); 4 films (tferry_2, tgreen_2, tfog_2, tsquall_2) need the CYCLES WORLD RE-TUNE WAVE: kit-level engine-aware world law + per-film re-tune (eye + image_metrics) + re-render + re-stage + re-commit.
+- The re-tune wave's critical path runs through the RIG TEMPLATE: RH-3d-assets is unreachable this session (the beulahkemp PAT died with the wiped sandbox; release volumes checked — no rig; the vendored walk clip carries the 65-bone mixamorig armature but NO skin). Plan: reconstruct x_bot.fbx from a staged scene.glb rig assembly (bone names intact; meshes renamable; POLY_BAND gate as the fidelity check).
