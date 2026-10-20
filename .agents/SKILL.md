@@ -335,6 +335,52 @@ gait_modifiers.
   is REPO-BY-REPO.
 
 
+## SESSION 26 LAWS (the eye-gate verdict + the rig reconstruction — condensed; full: worklog s26 + HANDOFF s26 block)
+
+- **THE ENGINE-SWAP LOOK LAW**: a render-engine swap INVALIDATES every
+  pinned look tune — a look verdict carries its engine id; swapping
+  the engine re-opens the tune (the s25 Cycles swap silently broke 4
+  of 6 films; the eye gate caught what the gates could not).
+- **THE ARMATURE APPLY SILENT-RESET**: transform_apply on an ARMATURE
+  resets the object scale WITHOUT baking the data — all armature
+  transforms go through edit-bone surgery (a probe-proven law).
+- **THE OBJECT-LEVEL FIT LAW**: baking an imported armature's object
+  matrix (rot+scale) into data TWISTS every bone frame (roll does not
+  follow a data rotation) — fit imported rigs at OBJECT level only.
+- **THE CHANNEL-COHERENCE LAW**: an imported clip skeleton's rest-
+  scales + cm channels + data are ONE coherent system — data-space
+  rescale lands the action translations 100x; the object matrix is
+  the only safe scale knob.
+- **THE BASIS-PAIRING LAW**: skinned meshes ride coherent skinning
+  only when mesh basis = arm_world^-1 @ mesh_world (the rot90X cm
+  import convention included) — scale-only pairings leave the
+  rotation mismatch and explode the skin.
+- **THE DANGLING-MODIFIER STATUE CLASS**: clearing an armature
+  modifier at isolation and then "retargeting" it ships REST-POSE
+  statues — bind green, gates green, skin dead; the multi-vertex
+  evaluated-mesh probe (G5) is the catcher.
+- **THE ALIASING GATE LAW**: sparse gate sampling lies about
+  oscillating signals (5 samples read hips bob 0.018; the TRUE
+  excursion 0.045 across 37 frames) — sample dense enough to bound
+  the extremes before believing a FAIL.
+- **THE WOLD-SPACE-CORRECTION LAW**: a world-space correction stored
+  as an object LOCATION gets rotated by downstream parent chains —
+  corrections bake into the DATA (and a round-trip assert on the
+  re-appended artifact must confirm the world effect BEFORE saving).
+- **THE SYSTEMEXIT SWALLOW**: Blender swallows SystemExit messages —
+  a "silent crash" with no traceback may be your OWN gate firing;
+  wrap main in a traceback-to-stdout dump while iterating.
+- **THE STALE-ARTIFACT LAW**: every intermediate render made with a
+  since-replaced artifact is STALE — re-render after the artifact
+  lands, never certify mid-ladder frames.
+- **THE RIG-SERVING FALLBACK LAW**: load-bearing assets serve through
+  env-wins/repo-fallback (the clips' pattern generalized): the rig
+  lives at vendor/rh_rig/ (a lossless .blend, committed + sha'd);
+  RH_ASSETS wins when the checkout exists.
+- **THE EYE-GATE SHEET PIPELINE**: scripts/s26_eye_sheets.py rebuilds
+  the per-film sheets from the COMMITTED packages (the /home/sync
+  copies die with the sandbox — the app repo is the durable source).
+
 ## SESSION 25 LAWS (the humanoid rollout + collision/nav round — condensed; full: kb/s25_humanoid_rollout.md)
 
 - **THE 24FPS TIMEBASE LAW**: the FBX imports (rig/walk/idle/UAL)
