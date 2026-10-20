@@ -4183,3 +4183,28 @@ Work Log:
 Stage Summary:
 - The kit is now FULLY in sync with mainline's asset/animation/crowd-nav surfaces AND carries the vision lane the ecosystem lacked (no crowd-nav visualization existed anywhere — confirmed by recon). The A/B blind-evaluation lane is native-vision. The dog-food blockers are dead. The three lighter-coverage surfaces are hardened with probes.
 - Open queues -> HANDOFF (user review round on 7 films; the vendored-guide upstream defects; the blind-leak note; P2-7 multi-slot; D9 catalog sheet deferred; upstream nits list).
+
+---
+Task ID: session-25
+Agent: main orchestrator (vision-kit lane)
+Task: the humanoid rollout to the five older films + the collision/nav round (the D6 pattern), through design audits, census, per-film implementation, exports, staging — plus the wrap with the open eye gate (the orchestrator vision outage).
+
+Work Log:
+- Fresh sandbox re-land (the sandbox wiped twice mid-session; full re-bootstrap drilled): 5 repos cloned, Blender 5.2.2 LTS via install.sh, Pillow + crowd wheels into the bundled python, RH clips re-fetched (then committed INTO vision-kit 60caaeb for durability), review app deps + db push + daemonized.
+- STALE-CONTEXT CATCH: the recap's s22 knowledge was stale (s42 vendor rounds upstream); HANDOFF's top block was s34-era — the worklog tail + HANDOFF s24 block were the truth. The film lane lives in blender-vision-kit (own HANDOFF/PLAN/worklog/kb).
+- DESIGN DOC (docs/DESIGN_humanoid_s25.md): the humanoid seam is kit-level (humanoid_crowd.bind_crowd); five films opt in per film. Design-audit sub-agent returned GO-WITH-CHANGES, two P0s folded: (REV-1) the fields steering seam is ALREADY LIVE at the vendored pin (grep had truncated; tfog's DANGER-field probe proves it) — no pin bump; (REV-2) the film bakes run the STANDALONE crowd-kit clone (HEAD), not the vendored pin — the bake engine is the HEAD wheel (ce485ead coherent).
+- CENSUS (two parallel sub-agents): per-film statics/heroes/ingest order full maps; one landmine caught — tdawn hardcoded /home/z/work (the sibling-resolve patch landed in all five bake scripts, the _resolve family bootstrap law).
+- KIT DOG-FOOD PORT (D1): agent-kit s42's crowd_obstacles merged over VK's preserving VK's sanctioned --blend/--json-out deltas; obstacle battery 10/0; scripts.crowd re-export 24→30 names with both gates green.
+- humanoid_crowd amendments: local RB_FALLS_V3 exclusion + the 129-count assert (P1-1); the faller gate exemption (P2); the kit-level strip_dot_override helper (P1-2, data-level structural finder — the DATA-NAME law); motion_gates exempt-by-anchor-name.
+- PER-FILM WAVES: tdawn (broken bootstrap fixed, count assert, 10 obstacle rows, humanoid layer, bake GREEN fb50b6b9 129 agents — 3.6s native); tferry+tgreen via sub-agent (plinth r0.55 empirical envelope held), tsquall+tfog by orchestrator (16 EXACT blocked rects via the scene2 replace, walkable-bounds-clipped; tfog 2 bins, 19-row table). THE ARRIVAL-DELTA GATE: tsquall baseline-vs-new probe identical 84/38 — zero jam from the 16 rects.
+- tform chain reproduced BYTE-EXACT (payload 9024057c) from a wiped sandbox — deterministic from commit.
+- EXPORT ROUND: the canonical exporter's TPREVIZ_SCRIPTS dead-path fixed (sibling fallback all five); FBX clips fetched to vendor/rh_clips + committed; bind probes 129 rigs green; THE 24FPS TIMEBASE LAW found by gate17: FBX imports silently flip scene fps 24→30 (the 1.25x fast-film class; live tform_2 had it latent, tform_3 carries _fps_guard at all 5 import sites); the anchor-gate off-by-1-frame law (plan_frames' LAST entry); the data-name law (per-group copies rename BOTH object and data); the tsquall exempt-row printer fix; tsquall OOM mitigation via export_frame_step=2 (the 12Hz lever, 40.6MB GLB 136 skins green); tfog export green (38MB).
+- STAGING: six packages staged + app-repo commit bab6098 in the SAME micro-step (the STAGE-COMMIT law — tform_2's loss class honored): tdawn_4/tferry_2/tgreen_2/tsquall_2/tfog_2/tform_3 (129/129/129/135/126/102 rigs, 72 stills, 96 filmstrips each).
+- BROWSER SMOKE: audit ok, canvas live, the viewer status line reads 24fps (the timebase law verified live in-app).
+- The tdawn principal eye pass LANDED (mid-session vision was up): humanoid figures mid-stride certified by eye — then the orchestrator's vision channel went DOWN for the session remainder (Read returned no images; Bash/Edit/Task also failed with context-deadline-exceeded transit losses; dispatches ran but results died in transit — receipts verified post-hoc). Work continued via sub-agents per the outage protocol; every wave pushed.
+- Docs+backups: SKILL s25 laws + kb/s25_humanoid_rollout.md + HANDOFF/PLAN updates pushed both remotes (one GitLab archive gap re-pushed).
+
+Stage Summary:
+- ALL SIX FILMS humanoid + obstacle-aware + live in the review app. Kit laws landed: 24fps timebase (6ca45df), data-name, arrival-delta gate, frame_step OOM lever, stage-commit, exempt-row. Exports ~230MB GLB total.
+- The OPEN EYE GATE recorded honestly as HANDOFF queue 0: the 72 staged stills await the principal's certification (contact sheets were at /home/sync/s25_sheets/, wiped with the sandbox — regenerate from the committed packages).
+- The s25 worklog record itself was a casualty of the outage (this entry restored s26 from the receipts — the write that should have happened at close).
