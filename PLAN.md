@@ -146,6 +146,46 @@ critique rounds — audit 5-a incorporated in DRAFT-2).
 - [x] FULL BATTERY 42/42 at close; GitHub pushed each wave; GitLab
       archive + /home/sync bundles in the wrap
 
+## Session-26 receipts (the eye gate + the rig reconstruction — 2026-10-20)
+
+- THE EYE GATE CLOSED (the s25 queue 0): 72 stills certified sheet-by-
+  sheet (scripts/s26_eye_sheets.py rebuilds sheets from the COMMITTED
+  packages). VERDICT: tdawn_4 + tform_3 CERTIFIED; tferry_2 / tgreen_2 /
+  tfog_2 / tsquall_2 FAIL the look — the s25 Cycles engine swap
+  invalidated the EEVEE-era world tunes (the tferry S6 repro: EEVEE =
+  the certified night, Cycles = flat gray, the world identical; tfog's
+  volume scatter blows to white).
+- DESIGN_world_retune_s26 through the audit round (GO-WITH-CHANGES, 1
+  P0 + 6 P1 + 6 P2 + 7 P3 folded REV-2): the engine-swap look law, the
+  film-look tune surface (NOT the EEVEE-hardcoded preview lanes), the
+  per-film knob map (tfog's sky lives in the SCENE module), the A12
+  corpus (each film's certified EEVEE-era stills), the A9 bake-pin
+  tripwire, the lowercase taxonomy for the new tune constants.
+- THE RIG RECONSTRUCTION (the unblock): RH-3d-assets unreachable (the
+  beulahkemp PAT lost with the sandbox); x_bot RECONSTRUCTED from
+  tform_3's staged scene.glb — the meshes (weights intact) re-skinned
+  onto the vendored clip's own skeleton; served as a lossless .blend
+  via the crowd_family env-wins/repo-fallback law; acceptance G1-G7
+  (scripts/s26_rig_accept.py committed — humanoid_crowd's first test
+  coverage); the tdawn S1 aerial eye-proof (dense articulated crowd at
+  scale). The measured-law ladder: the armature apply silent-reset,
+  the FBX round-trip frame twist, the GLB heuristic inversion, the
+  channel coherence, the basis pairing, the dangling-modifier statues,
+  the 11-sample gate aliasing fix.
+- THE TFERRY CYCLES TUNE (the worked example, mid-flight): the sky
+  engine-conditional (0.12 EEVEE certified / 0.012 Cycles, the
+  BOTH-ENGINE delta pinned in-module) + the practicals x3.5; the S1
+  aerial eye-verified night. The 12-still re-render + re-export +
+  re-stage WAIT on the one open rig bug (the feet-align placement —
+  the precise debug map in HANDOFF s26).
+- THE A9 RECEIPTS: the s26 bake pins (tdawn 5ccf6565 / tferry
+  60a1a64f) supersede s25's (the upstream engine drift b3f8f46->HEAD);
+  gates re-green; a documented sanctioned delta.
+- Next: the align fix -> the 4-film re-render wave (tferry/tgreen/
+  tfog/tsquall, the knob map + the A12 corpus) -> the re-ship path
+  (stage-commit + browser smoke + the eye re-gate) -> NIGHT-MARKET
+  (the first film born under the corrected Cycles night laws).
+
 ## Session-25 receipts (the humanoid rollout + the collision/nav round — 2026-10-19)
 
 - THE D6-PATTERN ROLLOUT: five films gain RH x_bot rigged crowd
