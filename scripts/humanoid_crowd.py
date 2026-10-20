@@ -97,11 +97,32 @@ def _P(*a):
     print("HUMANCROWD", *a)
 
 
+def _resolve_rig():
+    """s26 rig-serving law (DESIGN_world_retune_s26 A2 — the clips'
+    env-wins/repo-fallback pattern): the ORIGINAL x_bot.fbx (when the
+    RH_ASSETS checkout exists) wins; else the COMMITTED reconstructed
+    .blend (vendor/rh_rig/) serves — a fresh sandbox without the RH
+    checkout still binds. Returns (path, provenance)."""
+    orig = f"{RH_ASSETS}/assets/director/dummy-rigs/x_bot.fbx"
+    if os.path.isfile(orig):
+        return orig, "original-fbx"
+    here = os.path.dirname(os.path.abspath(__file__))
+    rec = os.path.join(here, "..", "vendor", "rh_rig",
+                       "x_bot_reconstructed.blend")
+    if os.path.isfile(rec):
+        return os.path.abspath(rec), "reconstructed-blend"
+    _fail(f"no x_bot rig: neither {orig} nor the vendored "
+          f"{rec} (the s26 reconstruction is committed; do not "
+          f"delete vendor/rh_rig)")
+
+
 def crowd_family(name):
     if name == "rh_xbot":
-        return {
+        rig, prov = _resolve_rig()
+        fam = {
             "name": name,
-            "rig": f"{RH_ASSETS}/assets/director/dummy-rigs/x_bot.fbx",
+            "rig": rig,
+            "rig_provenance": prov,
             "walk": f"{RH_ANIMS}/assets/fbx/{WALK_CLIP}",
             "idle": f"{RH_ANIMS}/assets/fbx/{IDLE_CLIP}",
             "prefix": "mixamorig:",
@@ -109,6 +130,8 @@ def crowd_family(name):
             "rig_height": RIG_HEIGHT["rh_xbot"],
             "mesh_names": XBOT_MESHES,
         }
+        _P(f"family rh_xbot: rig={os.path.basename(rig)} ({prov})")
+        return fam
     _fail(f"unknown family {name!r} (have: rh_xbot; ual principals go "
           f"through bind_principals)")
 
@@ -119,15 +142,38 @@ def prepare_template(fam, ratio=0.14):
     land in POLY_BAND. The ratio SELF-CALIBRATES arithmetically
     (ratio_next = ratio x band_mid/achieved, deterministic) with a
     FRESH IMPORT per attempt — compounding a second DECIMATE on an
-    already-decimated mesh collapses it (636-vert law, measured)."""
+    already-decimated mesh collapses it (636-vert law, measured).
+    s26 PRE-DECIMATED PATH (DESIGN_world_retune_s26 A1): if the RAW
+    import is already in-band (the reconstructed rig serves the
+    post-decimate bind copies), decimate is SKIPPED and the report
+    records pre_decimated=True + the measured band; sub-band still
+    hard-fails (collapse risk, unchanged)."""
     combined = None
+    pre_decimated = False
     for _step in range(4):
         before = set(bpy.data.objects)
-        bpy.ops.import_scene.fbx(filepath=fam["rig"])
+        if fam["rig"].endswith(".blend"):
+            # s26: the LOSSLESS template path (DESIGN_world_retune_s26
+            # D2) — the reconstructed rig serves as .blend because the
+            # FBX round trip rotated bone frames (the wrapper facing
+            # contest failed; zero-bob rigs). Append is deterministic
+            # and frame-exact.
+            with bpy.data.libraries.load(fam["rig"], link=False) as (data_from, data_to):
+                data_to.objects = list(data_from.objects)
+            for ob in data_to.objects:
+                if ob is not None:
+                    bpy.context.scene.collection.objects.link(ob)
+        else:
+            bpy.ops.import_scene.fbx(filepath=fam["rig"])
         arm = [o for o in bpy.data.objects if o.type == 'ARMATURE'
                and o not in before][-1]
         meshes = [o for o in bpy.data.objects if o.type == 'MESH'
                   and o not in before]
+        raw_combined = sum(len(m.data.vertices) for m in meshes)
+        if POLY_BAND[0] <= raw_combined <= POLY_BAND[1]:
+            combined = raw_combined
+            pre_decimated = True
+            break
         if tuple(sorted(m.name for m in meshes)) != tuple(sorted(fam["mesh_names"])):
             _fail(f"x_bot mesh census drifted: {[m.name for m in meshes]}")
         for m in meshes:
@@ -150,10 +196,11 @@ def prepare_template(fam, ratio=0.14):
     else:
         _fail(f"decimate did not converge in 4 attempts "
               f"(last {combined} @ ratio {ratio:.3f})")
-    _P(f"template ready: combined {combined} verts @ ratio {ratio:.3f} "
+    _P(f"template ready: combined {combined} verts "
+       f"({'PRE-DECIMATED raw' if pre_decimated else f'@ ratio {ratio:.3f}'}) "
        f"({[len(m.data.vertices) for m in meshes]})")
     return {"arm": arm, "meshes": meshes, "combined_verts": combined,
-            "ratio": ratio}
+            "ratio": ratio, "pre_decimated": pre_decimated}
 
 
 def _wrap_action(base_act, new_name, phase, cyc, f0, f1):
@@ -737,9 +784,14 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None, exempt=()):
         if hips is None:
             _fail("gate rig lacks mixamorig:Hips")
         zs, lz, rz = [], [], []
-        five = [f0, f0 + (f1 - f0) // 4, f_mid, f0 + 3 * (f1 - f0) // 4,
-                f1 - 1]
-        for f in five:
+        # s26 ALIASING LAW (measured): 5 samples across a 37-frame
+        # 2-bob-per-cycle walk read hips bob at 0.018 while the TRUE
+        # excursion is 0.045 (probe: 37 frames, all phases 0.045-0.046)
+        # — the 5-grid misses both extremes. 11 samples bound the
+        # extreme within ~1.9 frames; the band stays 0.02 (no relief —
+        # the measurement was wrong, not the rig).
+        frames_s = [f0 + (f1 - f0) * j // 10 for j in range(11)]
+        for f in frames_s:
             sc.frame_set(f)
             bpy.context.view_layer.update()
             zs.append((arm.matrix_world @ hips.matrix).translation.z)
