@@ -4256,3 +4256,19 @@ Stage Summary:
 - THE HUMANOID LANE IS UNBLOCKED WITHOUT RH-3d-assets: the reconstruction is committed, gated, and eye-proven. The 4-film Cycles re-tune wave can re-render + re-export.
 - Kit laws landed: pre-decimated path, .blend serving + fallback, 11-sample gates, the measured armature-apply/FBX-round-trip/GLB-heuristic/channel-coherence/mesh-compensation family.
 - Commits: f370e27 (design REV-1), edde84b (REV-2 fold), 2b7c17e (reconstruction + gates), c6eded8 (final artifact laws). Both remotes green.
+
+---
+Task ID: s26-tune-wave-start
+Agent: main orchestrator (session-26)
+Task: D3 start — the tferry re-tune worked example (interrupted by the rig's final ladder; resumed after the basis-pairing landed).
+
+Work Log:
+- A9 TRIPWIRE SETTLED: the fresh bakes' payload pins (tdawn 5ccf6565 / tferry 60a1a64f) DIFFER from the s25 receipts (fb50b6b9 / 9ae53649) — the cause is the upstream standalone crowd-kit engine drift (s25 HEAD -> today's 0054486; wheel 1.7.0 landed at b3f8f46 mid-way). Not an accidental contract edit: the gates re-ran green on the fresh caches (tdawn G4: 129 rigs, anchor-vs-cache 0.0). DECISION: the s26 pins become the receipts (recorded here); the re-exports carry s26-engine caches (a documented sanctioned delta — the crowd micro-trajectories may micro-differ from the staged s25 packages; the LOOK is what this wave fixes).
+- THE TFERRY SKY FIX LANDED (A7 map row 1): tferry_world.build_world goes engine-conditional — EEVEE keeps the certified 0.12; Cycles drops to 0.012 (the Nishita atmosphere at sun -6 deg stays luminous under Cycles; the eye-verified repro: strength 0.12 -> flat #8a8a8a wash; 0.012 -> near-black). The BOTH-ENGINE delta line is pinned in the module (D1-c).
+- The eye probe on the sky fix (S1/S3/S6, rendered with the then-current rig artifact): near-black sky VERIFIED; the sodium pools WEAK (the hardcoded spot/area energies need the Cycles bump — the next tune step).
+- THE RIG'S FINAL LADDER consumed the mid-wave context (see s26-rig-recon + the basis-pairing commit 5031e5f): four artifact regenerations, each judged by the eye — object-scale compensation (~10x small through the anchor chain), data-space pairing (the rot90 mismatch exploded the skin into floor shards), the dangling-modifier statues (G5's class), basis-pairing (FINAL — the S1 aerial eye-proof: dense human-proportioned articulated crowd at scale).
+- ALL STILLS RENDERED DURING THE LADDER ARE STALE (rendered with garbage artifacts) — every film's stills re-render AFTER this point uses the final artifact.
+
+Stage Summary:
+- The tferry tune resumes with: (1) the sodium/area energies up for Cycles until the pools read; (2) the 12 stills re-render on the final rig; (3) the re-export + re-stage + re-commit (the STAGE-COMMIT law); (4) then tgreen/tfog/tsquall follow the proven recipe.
+- The pinned new cache receipts: tdawn 5ccf6565 / tferry 60a1a64f (npz==payload pins, s26 engine).
