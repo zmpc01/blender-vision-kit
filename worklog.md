@@ -4230,3 +4230,29 @@ Work Log:
 Stage Summary:
 - EYE GATE VERDICT: 2/6 certified (tdawn_4, tform_3); 4 films (tferry_2, tgreen_2, tfog_2, tsquall_2) need the CYCLES WORLD RE-TUNE WAVE: kit-level engine-aware world law + per-film re-tune (eye + image_metrics) + re-render + re-stage + re-commit.
 - The re-tune wave's critical path runs through the RIG TEMPLATE: RH-3d-assets is unreachable this session (the beulahkemp PAT died with the wiped sandbox; release volumes checked — no rig; the vendored walk clip carries the 65-bone mixamorig armature but NO skin). Plan: reconstruct x_bot.fbx from a staged scene.glb rig assembly (bone names intact; meshes renamable; POLY_BAND gate as the fidelity check).
+
+---
+Task ID: s26-rig-recon
+Agent: main orchestrator (session-26)
+Task: D2 — the x_bot rig reconstruction (the re-tune wave's unblock) through the design-audit fold + acceptance + the eye proof.
+
+Work Log:
+- Design audit round 1 (fresh sub-agent): GO-WITH-CHANGES — 1 P0 (prepare_template decimates BEFORE the band check: the already-decimated staged meshes would collapse UNDER band deterministically — D2 dead-locked as written) + 6 P1 (the vendored-rig durability, the film-look tune surface vs the EEVEE-hardcoded preview lanes, the stills-skip purge, the statue/bone-frame acceptance gaps, the fail-open both-engine contract, ...) + 6 P2 + 7 P3. ALL folded into REV-2 with [A#] tags.
+- THE P0 FOLD: prepare_template's pre-decimated path (raw import in-band -> skip decimate, report pre_decimated + the measured band).
+- The reconstruction loop (measured laws, each caught by a gate or the eye):
+  1. the FBX round trip shrank geometry ~34x regardless of apply_scale_options -> the measured self-correcting export loop converged (0.0604 -> 1.77 -> 2.051);
+  2. the GLB bone-heuristic inverted the skeleton convention (median 172.6-deg direction flips, garbage tails: Hips tail z=11) -> the RE-SKIN onto the vendored clip's own skeleton (weights transfer 1:1 by bone name; the T-pose makes the fit near-exact);
+  3. transform_apply on ARMATURES silently RESETS object scale WITHOUT baking data (probe: scale 0.5 -> apply -> world stays 0.5, scale reads 1.0) -> all armature transforms via edit-bone surgery;
+  4. baking the clip's Rot(90X)@Scale(0.01) object matrix twisted EVERY bone frame (roll does not follow a 90-deg data rotation; the facing contest read fwd z=-0.888) -> THE OBJECT-LEVEL FIT LAW (never bake the matrix);
+  5. scaling the clip DATA breaks the action-channel coherence (rest-scales + cm channels authored as ONE system; the walk bob read 3.4m) -> the object matrix is the ONLY safe scale knob;
+  6. the bind parents rig meshes to the ARMATURE COPY (live 0.0104 scale) -> 129 rigs bound, gates green, NOTHING rendered (~2cm) -> THE MESH-COMPENSATION LAW (template meshes carry x96.38; the world lands 1:1 through the parenting; the glTF export flattens);
+  7. the 5-sample gate aliasing: the TRUE walk bob is 0.045 (37-frame probe, all phases) while 5 samples read 0.018 -> motion_gates densified to 11 samples (no band relief — the measurement was wrong, not the rig).
+- The extractor (scripts/s26_rig_reconstruct.py, committed): meshes-only from the staged GLB (the rec armature was a weights-carrier we never need), mesh-applies (mesh-safe), the body grounded at the world origin, the clip skeleton fitted at OBJECT level (span + feet align + hips band asserts), the imported frame-0 pose cleared, the .blend artifact (LOSSLESS append serving — no FBX in the serving path).
+- The serving law (crowd_family): env RH_ASSETS wins -> the committed vendor/rh_rig/x_bot_reconstructed.blend fallback -> fail loudly. The fresh sandbox is self-sufficient.
+- ACCEPTANCE (scripts/s26_rig_accept.py, committed; the battery row follows): G1 POLY_BAND 2796 pre-decimated / G2 RIG_HEIGHT 2.051 / G3 bone census 65 subset / G4 FULL tdawn bind 129 rigs + motion gates green (bob 0.035-0.039, anchor-vs-cache 0.0) / G5 SKIN_ALIVE 0.35m evaluated-vertex delta (the rest-mesh read was the 0.0000 trap) / G6 trajectory diff vs the clip 3.8% / G7 no-tint. ALL GREEN.
+- THE EYE PROOF: the tdawn S1 aerial with the reconstruction — dense articulated humanoids at correct scale vs the pylons/benches; S4/S5 confirmed the principals riding; the S5 camera-buried-in-crowd frame is the new bulk, not a scale error (the S1 wide settles it).
+
+Stage Summary:
+- THE HUMANOID LANE IS UNBLOCKED WITHOUT RH-3d-assets: the reconstruction is committed, gated, and eye-proven. The 4-film Cycles re-tune wave can re-render + re-export.
+- Kit laws landed: pre-decimated path, .blend serving + fallback, 11-sample gates, the measured armature-apply/FBX-round-trip/GLB-heuristic/channel-coherence/mesh-compensation family.
+- Commits: f370e27 (design REV-1), edde84b (REV-2 fold), 2b7c17e (reconstruction + gates), c6eded8 (final artifact laws). Both remotes green.
