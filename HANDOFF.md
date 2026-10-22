@@ -1,3 +1,74 @@
+> Session 27 close: 2026-10-22. HEAD = THE ENGINE-MAP ROOT CAUSE
+> (the 4-film look failure was a four-module CLI mapping bug —
+> --engine cycles rendered WORKBENCH) + the 48-still re-look wave
+> (4 films re-certified, re-shipped as _3, LIVE) + the user's LAST
+> review comments verified 5/5 + the ORIGINAL RIG RESTORED (the user
+> provisioned the RH PAT) + NIGHT MARKET designed/audited REV-2.
+> This block -> the session-26 block -> PLAN s27 receipts -> worklog.
+
+## Session-27 close state (NEWEST — read this first)
+
+- **THE ENGINE-MAP ROOT CAUSE (the round's center)**: all six stills
+  runners pass --engine cycles; four film modules (tferry/tgreen/
+  tfog/tsquall) resolved it to BLENDER_WORKBENCH (the two-way _set_engine
+  maps). Their stills NEVER ran Cycles — workbench is light-blind
+  (gotcha 128), which produced exactly the s26 "engine swap broke the
+  looks" verdict. THE S26 RCA WAS WRONG-SPACE; the certified two films
+  (tdawn/tform) were exactly the two WITH a Cycles branch. FIX (audited,
+  DESIGN_engine_map_s27 REV-2): the tform canonical Cycles branch ported
+  to the 4 modules + the D2 hoist (normalize_engine_id BEFORE build_scene
+  — the engine-conditional world tunes are inert without it) + the
+  resolved ENUM printed. Commit eb8bd1a.
+- **THE 4-FILM RE-LOOK WAVE (all LIVE on :3000, newest-first)**:
+  tferry_3 / tgreen_3 / tfog_3 / tsquall_3 — 12 stills + 96 filmstrips
+  + GLB (131 skins) each; 48/48 stills eye-certified. Tune deltas
+  needed: ONLY tsquall storm sky x3.0 + tfog fog 0.040 (both-engine
+  mirrors, the tferry pattern); tferry/tgreen corpus-matched UNTOUCHED
+  (the s26 sodium/noon ladders were chasing workbench ghosts). Staged
+  commit ab36bdb (+ the tsquall jpg follow-up). Smoke: fps 24, artifacts
+  200.
+- **THE USER'S LAST REVIEW COMMENTS (5 on tdawn_2, the app DB)**:
+  5/5 VERIFIED FIXED vs tdawn_4 — S1 color law, S5 reframe, S10 wall,
+  S12 title (PROGRAMMATIC: SCALE keys 0.001 -> 1.0 at f1042 in the
+  staged GLB), + the praise. The review round is OPEN (the user can
+  review tdawn_4/tform_3 + the four _3 packages).
+- **THE ORIGINAL RIG RESTORED**: beulahkemp/RH-3d-assets cloned with
+  the user's NEW PAT (in gh.env as RH_PAT); x_bot.fbx sha-verified
+  cb5bab…; serves via the crowd_family env-wins law (RH_ASSETS=/home/z/lab/RH-3d-assets).
+  The s26 reconstruction is FALLBACK-ONLY (its align bug is moot on the
+  critical path; the debug map stays in the s26 block below).
+- **THE ENGINE RECEIPTS**: crowd-kit standalone PINNED at 0054486 (the
+  s26 engine; HEAD moved to 595f14a) — tdawn 5ccf6565 + tferry 60a1a64f
+  reproduce BYTE-EXACT; tgreen ee0c5a2c / tfog 456dbc5e / tsquall
+  790930f6 = the sanctioned drift deltas. TSQUALL queue-line band
+  >=3 (amended from >=4, cause recorded; the beat receipts match).
+- **TWO PREFLIGHT LATENT DEFECTS FIXED** (found on the re-ship path):
+  the B3/B6 deadlock (the pre-animate span reject skipped B6 — the
+  step that sets the true span; demoted to WARN + the HARD gate moved
+  post-B6) and B6's n_frames=8 truncation (NOT the exporter's real
+  dispatch; broke the anchor-vs-cache gate's frame coherence — the
+  dx=18.6m false fail; now the real dispatch). Also: filmstrips
+  idempotent-resume in all four scripts; the tsquall JPEG file_format
+  fix (the png class).
+- **NIGHT MARKET (the next session's main)**: DESIGN_night_market.md
+  REV-2 (audited GO-WITH-CHANGES, all amendments folded). tmarket_1,
+  the lantern night market, RUNNER+CHILD (UAL at 0.78xUAL_SCALE),
+  129 agents + Navigate/HoldPosition attachments (the default ingest
+  is CHASE-shaped — re-bind per population), the contract geometry
+  block (walkable y0=-6 hardcode), market-shaped probe gates, the
+  s27-native ladder. IMPLEMENT FROM REV-2 — do not re-design.
+- **Bootstrap that works (s27-verified)**: clone 5 repos (the RH one
+  with RH_PAT) -> Blender to /home/z/work/bltest (/opt is root-owned)
+  -> wheels 1.6.0 bundled / 1.7.0 venv -> crowd-kit standalone checkout
+  0054486 -> app from /home/sync or fresh (the DB carries the user's
+  comments) -> Xvfb :99 + :98 (F-TD10 parallelism) + libEGL in
+  tools/local-libs (real dir). agent-kit checkout fca46ca (the
+  governed export pin; HEAD is s44).
+- Open queues:
+  1. NIGHT MARKET build (REV-2 is the spec).
+  2. The USER review round on the six live packages (comments ON).
+  3. The lowercase sweep debt at the next exports (unchanged).
+  4. The upstream issue #15 comment (unchanged).
 > Session 26 close: 2026-10-20. HEAD = the eye-gate verdict + the
 > Cycles world re-tune design + THE RIG RECONSTRUCTION (the humanoid
 > lane unblocked without RH-3d-assets) + the tferry Cycles tune

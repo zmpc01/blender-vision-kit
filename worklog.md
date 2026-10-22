@@ -4293,3 +4293,47 @@ Stage Summary:
   5. ALSO BROKEN and waiting on the align: the basis-pairing step reads arm_clip.matrix_world AFTER the align — recompute AFTER the align lands (the pairing must use the FINAL matrix).
 - The stale-stills law: every still rendered before the align closes is stale; the re-render wave (12 stills x 4 films) follows the align close.
 - Commits this session: 5862a57 (s25 worklog restore), c38f04d (eye gate verdict), f370e27+edde84b (design REV-1/2), 2b7c17e+28013a4 (rig + gates), c6eded8+5031e5f (final rig laws), 005d715 (tune wave). All pushed BOTH remotes.
+---
+Task ID: s27-bootstrap-and-comments
+Agent: main orchestrator (session-27)
+Task: re-bootstrap; verify the user's LAST review comments (5 on tdawn_2); restore the original rig; engine decision.
+
+Work Log:
+- Sandbox wiped again; /home/sync SURVIVED (repos + the review app + the comments DB). Full re-bootstrap from GitHub (GIT IS THE DISK): 4 repos + Blender 5.2.2 (the /opt root-owned law: extract to /home/z/work/bltest; 383MB ~8min foreground), wheels 1.6.0/1.7.0, venv ensurepip, Xvfb :99 + libEGL real-dir.
+- THE USER PROVISIONED THE RH PAT: beulahkemp/RH-3d-assets CLONED — x_bot.fbx sha-VERIFIED (cb5bab…) at assets/director/dummy-rigs/. The ORIGINAL rig serves via the crowd_family env-wins law (RH_ASSETS) — the s26 reconstruction retires to FALLBACK-ONLY (the align bug is moot on the critical path).
+- crowd-kit standalone PINNED at 0054486 (the s26 engine; HEAD had moved to 595f14a r257) — THE TDAWN BAKE PIN REPRODUCED BYTE-EXACT (5ccf6565) and tferry's too (60a1a64f). The A9 tripwire satisfied without new pins.
+- Review app live on :3000; git ff to bab6098; all six s25 packages + the user's 14 comments present.
+- THE USER'S LAST REVIEW COMMENTS: 5 on tdawn_2 (the DB, 10-13) — s14 fixed all four findings in tdawn_3 with RCAs; this session verified they SURVIVED the s25 humanoid rebuild: S1 color discipline (the 4-shot sheet: neutral clay register + teal/rust callouts ONLY), S5 reframe (clean articulated mannequins), S10 gate-wall, S12 title PROGRAMMATIC PROOF (TD.TitleCard SCALE keys 0.001 at f120/f401/f910 → 1.0 at f1042-f1080 in the staged scene.glb), S12 f1080 praise. 5/5 VERIFIED FIXED — the review round is OPEN.
+- EEVEE OOM RE-MEASURED TWICE (129-rig build >3.5GB → SIGKILL, even with the dev server stopped): the s25 law stands. ENGINE DECISION: Cycles @ 24 samples 640×360 (60s/still incl. build).
+
+Stage Summary:
+- Bootstrap complete; the user-comment gate GREEN; the original rig live; the engine receipts pinned.
+
+---
+Task ID: s27-engine-map-root-cause
+Agent: main orchestrator (session-27)
+Task: the 4-film look failure's ROOT CAUSE + the re-render wave.
+
+Work Log:
+- THE ENGINE-MAP SWEEP: all six stills runners default ENGINE=cycles; tdawn+tform had real CYCLES _set_engine branches; TFERRY/TGREEN/TFOG/TSQUALL mapped --engine cycles → BLENDER_WORKBENCH (the two-way if/else predating the humanoid Cycles law). Their "Cycles stills" NEVER RAN CYCLES — workbench ignores world+lights entirely (gotcha 128), which is exactly the five surfaces the s26 eye gate failed. THE S26 RCA WAS WRONG-SPACE: the certified two films were exactly the two modules WITH a Cycles branch.
+- THE THREE-WAY TFERRY A/B (certified tferry_1 EEVEE night vs staged tferry_2 gray vs s27 probe gray) + the probe log (no Cycles fingerprint) + the code = the airtight chain. DESIGN_engine_map_s27 REV-1 → the audit (GO-WITH-CHANGES, 5 amendments: exposure tail engine-unconditional, case-normalize, the OOM knob order, the ladder scripts pin EEVEE → ladder via the film lane, reuse normalize_engine_id) → REV-2 → IMPLEMENTED: the tform canonical Cycles branch ported to the 4 modules + the D2 hoist (normalize_engine_id BEFORE build_scene so the engine-conditional world tunes see the true engine) + --still 0 falsy aligned + the resolved ENUM printed.
+- REAL-CYCLES PROBES: tferry night + pools CORPUS-MATCHED (the s26 sodium ladder obviated); tgreen noon + hard shadows CORPUS-MATCHED (no tune). TWO REAL DELTAS: tsquall storm sky (dark charcoal at the EEVEE strength) → sky ×3.0 both-engine mirror (corpus-matched); tfog volume thinner under Cycles → fog_density_for_engine 0.028×1.45=0.040 (the certified veil direction).
+- 48-STILL WAVE (12 × 4 films, the per-shot OOM law): ALL FOUR SHEETS EYE-CERTIFIED (tferry night+pools+neon+title; tgreen noon+shadows+callouts; tfog blue-hour veil; tsquall storm sky+wet sheen+backlit beat).
+- THE RE-SHIP PATH: preflight (TWO LATENT DEFECTS FIXED: the B3/B6 deadlock — the pre-animate span reject skipped B6, the very step that sets the true span; B6's n_frames=8 truncation broke the anchor-vs-cache gate's frame coherence on films whose animate honors n_frames — the dx=18.6m false fail; both fixed to the exporter-true semantics) → exports (agent-kit PINNED at fca46ca per the governed shared_manifest sha; HEAD had moved to s44) → filmstrips (idempotent-resume patched into all four scripts; the tsquall JPEG file_format fix — its divergent loop never set it, Blender rendered .png) → STAGE+COMMIT same micro-step (ab36bdb + the tsquall jpg follow-up) → live on :3000 (newest-first) → smoke: fps 24 all four, GLB/stills/filmstrips 200.
+- Fresh-cache receipts (the s26 engine): tgreen ee0c5a2c / tfog 456dbc5e / tsquall 790930f6 — the sanctioned engine-drift deltas (tdawn/tferry reproduce s26 byte-exact). TSQUALL QUEUE-LINE BAND AMENDED >=4→>=3 with the recorded cause (the s25 band was s25-engine-measured; the beat holds: releases 1+1 @ tick 232 == the s25 receipt; arrivals 81/44 was 84/38).
+
+Stage Summary:
+- THE ROUND'S CENTER: a two-week "engine regression" was a four-module CLI mapping bug. The certified looks are RESTORED under real Cycles with only two small both-engine deltas. Four packages re-shipped and live for the user's review.
+
+---
+Task ID: s27-night-market-design
+Agent: main orchestrator (session-27)
+Task: the night-market film design (the diversity queue's uncovered regime).
+
+Work Log:
+- DESIGN_night_market.md REV-1 (D-NM1..5 + R1-R4): tmarket_1, 1080 frames @24fps, lantern night market, RUNNER (teal) + CHILD (amber) principals, Cycles-native world with the both-engine mirrors, 129 agents + the browse-and-linger beats, the stall-rect obstacles + the queue beat, the 12-shot family shape, the s27-native certification ladder.
+- The audit round (fresh-context, mandate to attack): GO-WITH-CHANGES — 6 P1s (the chase-shaped default ingest needs the Navigate/HoldPosition attachment re-bind + market-shaped probe gates; the D2 hoist without which the sky mirror is inert; the Cycles emissive-is-light budget + the x3.5 practicals mirror; the walkable y0=-6 hardcode vs the S-row rects; the CHILD as a UAL principal at 0.78×UAL_SCALE — outside the crowd gates entirely; the export template gaps) + P2s (both-engine sky probes at -8 first; steam via fog_density_for_engine wisp-scale; the linger via attachments not the tform K1 stack; the export-contract checklist; vendor pops pinned; R1 measure-first).
+- REV-2 FOLDED + PUSHED. The next session implements from a vetted design.
+
+Stage Summary:
+- The night market is designed, audited, and REV-2-pinned. The build order, the contract geometry, the behavior attachments, and the certification ladder are all specified from the kit's measured laws.
