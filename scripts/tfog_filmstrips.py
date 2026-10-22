@@ -50,9 +50,11 @@ def main():
             scene.camera = ctx["cams"][cam_name]["ob"]
             for k in range(8):
                 f = f0 + round(k * (f1 - f0) / 7)
+                _out = os.path.join(strips, f"{sid}_{k:02d}.jpg")
+                if os.path.isfile(_out) and os.path.getsize(_out) > 0:
+                    continue  # s27 idempotent resume (the chunked-wave law)
                 scene.frame_set(f)
-                scene.render.filepath = os.path.join(
-                    strips, f"{sid}_{k:02d}.jpg")
+                scene.render.filepath = _out
                 bpy.ops.render.render(write_still=True)
                 n += 1
             print(f"[filmstrips] {sid} done")
