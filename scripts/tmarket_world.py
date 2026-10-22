@@ -31,7 +31,7 @@ import bpy
 from tdawn_actors import make_material
 
 STALL_X = (-6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0)
-DRESS_X = (-15.0, -13.0, -11.0, 11.0, 13.0)
+DRESS_X = (-15.0, -13.0, 11.0)   # mirrors tmarket_contract._DRESS_X
 ROW_Y = (2.6, -2.6)
 FOOD_X = 20.0
 CANOPY_Z = 2.35            # the tarp canopy height
@@ -194,6 +194,14 @@ def build_world(scene):
         sob.location = (FOOD_X - 0.4, sy, 2.55)
         scene.collection.objects.link(sob)
         parts["lights"].append(sob)
+
+    # --- the noodle serving window (DRESS-ONLY: the contract keeps the
+    # rails OUT of the barricade table -- the s28 bisect measured the
+    # reachability swing; the SIM's admission portal resolves from its
+    # point/width alone. The meshes sell the window.) ------------------
+    for rx in (-2.81, -1.19):
+        _box(f"TM.NoodleRail_{rx:+.2f}", 0.20, 0.16, 1.05,
+             (rx, 1.58, 1.05 / 2 + 0.55), mats["wood"])
 
     # --- the west plaza (the arrival edge) ------------------------------
     # a low facade wall + the two planters (the contract's barricades)

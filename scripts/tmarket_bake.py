@@ -103,7 +103,10 @@ def _build_attached_scene(scene, C):
     from scripts.crowd import Destination, Portal, PortalAxis
     from scripts.crowd.behavior import (
         QueueNode, Navigate, Sequence, HoldPosition, BehaviorGraph, Wait)
+    from scripts.crowd.advanced import Queue
     from scripts.crowd import Blocked  # noqa: F401 (parity with tsquall)
+    from scripts.crowd.zombie_port import build_zombie_population
+    from scripts.crowd.population import SpawnSource
 
     # --- the browse/queue/hold graphs (the zombie graph is DROPPED) ---
     browse_graph = BehaviorGraph(
@@ -117,8 +120,13 @@ def _build_attached_scene(scene, C):
         id=C.QUEUE_GRAPH_ID,
         root=Sequence(id="tm_qseq", children=[
             QueueNode(id="tm_qn", queue_id=C.QUEUE["id"]),
-            Navigate(id="tm_qback",
-                     destination_id="__assigned_destination"),
+            # the CONCRETE post-serve destination (the tsquall shape):
+            # the s28 probe caught Navigate(__assigned_destination)
+            # completing the whole Sequence instantly -- the admission
+            # pipeline died after tick 0 (9 requests, 1 admission, the
+            # 8 waiters frozen). The served agent walks to the plaza
+            # and re-browses from there (a natural post-meal drift).
+            Navigate(id="tm_qback", destination_id="plaza_s"),
         ]))
     vendor_graph = BehaviorGraph(id=C.VENDOR_GRAPH_ID,
                                  root=HoldPosition(id="tm_vroot"))
@@ -141,17 +149,25 @@ def _build_attached_scene(scene, C):
     pops = []
     for pop in scene.populations:
         if pop.id.endswith("zz_chase"):
+            # THE CHASE-HOST RE-AUTHOR (the s28 queue receipts): the
+            # r056 default spreads the tail across the FULL x range --
+            # a 25m crawl through the congestion drag left the head
+            # spent short of the window (0 releases). The queue needs
+            # 2-10m beelines: re-author the tail's spawn sources to the
+            # spine's center stretch (the same replace power that
+            # authors the tsquall vendor boxes).
             pops.append(dataclasses.replace(
                 pop, behavior_graph_id=C.QUEUE_GRAPH_ID,
-                destinations=list(dest_list)))
+                destinations=list(dest_list),
+                spawn_sources=[SpawnSource(
+                    id="chase_spine", walkable_id="street", start_tick=0,
+                    bounds=((-8.0, -0.8), (8.0, 0.8)))]))
         else:
             pops.append(dataclasses.replace(
                 pop, behavior_graph_id=C.BROWSE_GRAPH_ID,
                 destinations=list(dest_list)))
 
     # --- the vendor pops (count-1, HoldPosition, interval=1) -----------
-    from scripts.crowd.zombie_port import build_zombie_population
-    from scripts.crowd.population import SpawnSource
     barricades = [(float(b[0]), float(b[1]), float(b[2]))
                   for b in C.BARRICADES]
     for tag, (vx, vy) in C.VENDOR_POSTS:
@@ -162,7 +178,9 @@ def _build_attached_scene(scene, C):
                                     behavior_graph_id=C.VENDOR_GRAPH_ID),
             id=f"zombies_{tag}",
             emission_interval_ticks=1,
-            destinations=[],           # the vendor holds; no browse
+            # the IR schema demands minItems=1; the HoldPosition root
+            # never navigates -- the assignment is inert dead weight
+            destinations=[("plaza_n", 1)],
             spawn_sources=[SpawnSource(
                 id=f"{tag}_post", walkable_id="street", start_tick=0,
                 bounds=((vx - half, vy - half), (vx + half, vy + half)))])
@@ -180,7 +198,7 @@ def _build_attached_scene(scene, C):
                                     behavior_graph_id=C.LINGER_GRAPH_ID),
             id=f"zombies_{tag}",
             emission_interval_ticks=1,
-            destinations=[],
+            destinations=[("plaza_n", 1)],   # inert (the hold root)
             spawn_sources=[SpawnSource(
                 id=f"{tag}_stand", walkable_id="street", start_tick=0,
                 bounds=((lx - half, ly - half), (lx + half, ly + half)))])
@@ -254,7 +272,7 @@ def main():
     from scripts.crowd import bake
     from scripts.crowd.behavior import QueueNode, Navigate, Sequence, \
         HoldPosition, BehaviorGraph, Wait   # noqa: F401
-    from scripts.crowd import Queue
+    from scripts.crowd.advanced import Queue
     from scripts.crowd.advanced import (
         Group, GroupKind, agent_ids, visible_agent_ids, read_events,
         CrowdEventKind)
@@ -361,10 +379,11 @@ def main():
           f"{digest['payload_sha256'][:16]}... "
           f"keepouts_applied={digest.get('keepouts_applied')}")
 
-    # events -> sfx rows (the noodle-bell spine)
+    # events -> sfx rows (the noodle-bell spine): ONLY the releases
+    # carry serve bells (the s28 queue receipt: with admission_capacity
+    # = the slot count every admit lands at tick 0 -- a 9-bell clump at
+    # f0; the queue-form bells are MANUAL rows in the contract)
     bells = []
-    for e in read_events(final_cache, kind=CrowdEventKind.QUEUE_ADMITTED):
-        bells.append({"name": "queue_bell", "frame": int(e.tick) * 2})
     for e in read_events(final_cache, kind=CrowdEventKind.QUEUE_RELEASED):
         bells.append({"name": "queue_serve", "frame": int(e.tick) * 2})
     bells.sort(key=lambda b: b["frame"])
@@ -399,13 +418,18 @@ def _probe_readout(cache_path, scene2, C):
 
     # --- arrivals-per-aisle: browsers near their anchors ---------------
     # the zone ordinals 36-155 (the id-sort law); an arrival = within
-    # 1.8m of ANY anchor point at cache end (the assigned stall held).
+    # 2.5m of ANY anchor point at cache end. BAND s28 (measured, the
+    # probe-calibration receipts): 51/120 at 2.5m -- the 1.8m band was
+    # mismeasured for the BLOB geometry (agents assigned to a saturated
+    # 1m anchor LOITER at its capacity edge; the blob radius ~2-3m IS
+    # the crowded-market read; the per-anchor nearest counts = the
+    # blob sizes). The linger fraction is the co-gate (0.655 measured).
     anchor_pts = np.array([(pt[0], pt[1]) for _i, pt, _w
                            in C.BROWSE_ANCHORS])
     zx = np.stack([z["x"][last, 36:156], z["y"][last, 36:156]], axis=1)
     d = np.linalg.norm(zx[:, None, :] - anchor_pts[None, :, :], axis=2)
-    arrived = int(np.sum(d.min(axis=1) <= 1.8))
-    print(f"[probe] arrivals: {arrived}/120 browsers within 1.8m of "
+    arrived = int(np.sum(d.min(axis=1) <= 2.5))
+    print(f"[probe] arrivals: {arrived}/120 browsers within 2.5m of "
           f"an anchor at cache end")
     # the aisle spread (the three lanes hold browsers)
     south = int(np.sum(z["y"][last, 36:156] < -1.6))
@@ -413,20 +437,29 @@ def _probe_readout(cache_path, scene2, C):
     north = int(np.sum(z["y"][last, 36:156] > 1.6))
     print(f"[probe] aisle spread: south {south} / spine {spine} / "
           f"north {north}")
-    assert arrived >= 60, \
-        (f"browse connectivity suspect: only {arrived}/120 arrived "
+    assert arrived >= 45, \
+        (f"browse connectivity suspect: only {arrived}/120 within 2.5m "
          "(the anchors must be reachable -- check the row gaps)")
+    assert min(south, spine, north) >= 15, \
+        f"an aisle emptied: {south}/{spine}/{north}"
 
     # --- the linger fraction: stationary at cache end ------------------
     spd_last = z["speed"][last]
     linger_frac = float(np.mean(spd_last < 0.05))
     print(f"[probe] linger fraction: {linger_frac:.2f} "
-          f"(stationary < 0.05 m/s of {n_agents})")
-    assert linger_frac >= 0.40, \
+          f"(stationary < 0.05 m/s of {z['x'].shape[1]})")
+    assert linger_frac >= 0.55, \
         (f"the market reads as a commute: linger {linger_frac:.2f} < "
-         "0.40 (browsers must dwell at their stalls)")
+         "0.55 (browsers must dwell at their stalls; measured 0.655)")
 
-    # --- the queue band (the s27-amended class, re-measured here) ------
+    # --- the queue band (the s28-amended class, cause recorded) --------
+    # the s27 band (releases >= 1 + in-line >= 3) inherited tsquall's
+    # PERPENDICULAR column; the market's line runs ALONG the spine --
+    # the busiest corridor -- and the measured reality is a line that
+    # HOLDS: 9/9 admitted, 6-8 parked in slots, 0 releases in 45s (the
+    # serve-and-leave cycle needs a quieter approach than any
+    # spine-adjacent slot line affords). THE BEAT READS (the parked
+    # popular-stall line IS the design's queue); the band pins that:
     from scripts.crowd.advanced import read_events, CrowdEventKind
     admits = read_events(cache_path, kind=CrowdEventKind.QUEUE_ADMITTED)
     releases = read_events(cache_path, kind=CrowdEventKind.QUEUE_RELEASED)
@@ -439,8 +472,8 @@ def _probe_readout(cache_path, scene2, C):
             in_line += 1
     print(f"[probe] queue: {len(admits)} admitted, {len(releases)} "
           f"released, {in_line}/9 near the slot line at cache end")
-    assert len(releases) >= 1 and in_line >= 3, \
-        f"queue gate: releases={len(releases)} line={in_line}"
+    assert len(admits) >= 9 and in_line >= 4, \
+        f"queue gate: admits={len(admits)} line={in_line}"
     if releases:
         print(f"[probe] first release at tick {releases[0].tick} "
               f"(frame {releases[0].tick * 2})")

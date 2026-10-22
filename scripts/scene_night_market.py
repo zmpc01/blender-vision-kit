@@ -480,10 +480,13 @@ def _humanoid_layer(ctx):
     """
     import humanoid_crowd as HC
     fam = HC.crowd_family("rh_xbot")
+    # THE ORDINAL LAW (id-sort): ling_* (0-29), vend_* (30-35),
+    # zone0/1/2 (36-155 -- zone0 = THE SPINE, the chase host; the
+    # s28 zone-order receipt), zz_chase (156-164).
     groups = [("linger", 30, (0.24, 0.22, 0.20)),     # warm grey clay
               ("vendors", 6, (0.45, 0.30, 0.14)),     # tarp ochre
-              ("zone0_south", 40, (0.28, 0.26, 0.24)),
-              ("zone1_spine", 40, (0.30, 0.28, 0.26)),
+              ("zone0_spine", 40, (0.30, 0.28, 0.26)),
+              ("zone1_south", 40, (0.28, 0.26, 0.24)),
               ("zone2_north", 40, (0.26, 0.25, 0.27)),
               ("queue", 9, (0.18, 0.20, 0.24))]       # the queue dark
     agent_group = []

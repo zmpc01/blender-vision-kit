@@ -69,10 +69,17 @@ TOTAL_FRAMES = 1080
 # Spawn bands DODGE the barricade rows by construction (the sampler
 # ignores walls -- 4-f P1-2): row counters live in |y| 1.65..3.55, the
 # zone bands sit in the south walk / spine / north walk.
+# ZONE ORDER IS THE CHASE-HOST LAW (the s28 probe receipt): the bridge
+# spawns the 9-deep chase tail in zones[0]'s strips -- the SPINE is
+# zone0 so the noodle queue forms IN-SPINE (2-10m beelines to the
+# window) instead of cross-row detours through the mid-gaps the
+# congestion drag could not close in 45s (5/9 zero displacement). The
+# envelope cap owner = populations[0] = the spine plan (all zones
+# share it -- the cap is unaffected by the reorder).
 SPAWN_ZONES_V5 = (
-    (-5.6, -3.9, 40, 0.0, 0.35),   # zone0: the south walk (the chase
-                                   #   tail's host -- the r056 law)
-    (-0.9, 0.9, 40, 0.0, 0.35),    # zone1: the spine (the runner's lane)
+    (-0.9, 0.9, 40, 0.0, 0.35),    # zone0: the spine (the runner's
+                                   #   lane AND the chase host)
+    (-5.6, -3.9, 40, 0.0, 0.35),   # zone1: the south walk
     (3.9, 5.6, 40, 0.0, 0.35),     # zone2: the north walk
 )
 CROWD_X_RANGE = (-26.0, 26.0)
@@ -82,20 +89,27 @@ CROWD_SEED = 5150
 
 # the per-zone speed plan (mu, sigma) -- the DRIVER applies it per
 # PARSED ZONE ID and asserts the envelope: cap = zone0 mu+3sigma =
-# 1.11; the queue 0.85 fits; the market STROLLS (the linger law --
-# no commute speeds).
+# 1.40; the queue 1.26 fits. The s28 probe measured the CONGESTION
+# DRAG class: the realized mean speed decays as the aisles pack (the
+# linger read) -- the plan starts higher so arrivals survive the drag.
 SPEED_PLAN = {
-    "zone0": (0.75, 0.12),
-    "zone1": (0.75, 0.12),
-    "zone2": (0.75, 0.12),
-    "chase": (0.55, 0.10),   # the queue walks calmly
+    "zone0": (0.95, 0.15),
+    "zone1": (0.95, 0.15),
+    "zone2": (0.95, 0.15),
+    "chase": (1.10, 0.10),   # the queue agents must CUT through the
+                             # spine drag (the s28 probe: 0.90 realized
+                             # 0.1-0.37 in the browser blobs -- spent
+                             # on arrival; 1.10 = the envelope cap)
 }
 
 # --- set pieces the SIM must know (belt consumes BARRICADES) ----------
 # (x, y, r) squares. All >= 2m apart (pitch 2.0 > 2r -- the overlap
 # law), none inside a zone spawn band (verified in the driver asserts).
 _MARKET_X = (-6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0)       # 7 lit stalls/row
-_DRESS_X = (-15.0, -13.0, -11.0, 11.0, 13.0)             # unlit carts/row
+_DRESS_X = (-15.0, -13.0, 11.0)                          # unlit carts/row
+# (the s28 probe: -11.0 and +13.0 carts LEFT the tables -- two extra
+# row crossings (6.1m west / 3.1m+open east) relieve the browser
+# circulation; the world module's DRESS_X mirrors this table)
 BARRICADES = (
     # the lit stall rows (y = +-2.6, r 0.95 -> band |y| 1.65..3.55)
     *[(x, 2.6, 0.95) for x in _MARKET_X],
@@ -106,6 +120,11 @@ BARRICADES = (
     # the food-court counters (the east end; the y=0 slot between them
     # is the entrance to the vendor row -- zone1's band stays clear)
     (20.0, 2.6, 0.95), (20.0, -2.6, 0.95),
+    # NOTE: the noodle serving-window RAILS are DRESS-ONLY (the world
+    # module renders them; they are NOT walls here). The s28 bisect
+    # proved the admission portal resolves from its point/width alone;
+    # rails-as-walls poke into the spine's inflated corridor and flip
+    # 9 reachability pairs red (the measured bisect swing).
     # the planter pairs (the D-NM3 obstacle rows): the food-court
     # apron pair + the west plaza pair (r 0.5, clear of every band)
     (15.5, 3.0, 0.5), (15.5, -3.0, 0.5),
@@ -133,49 +152,78 @@ CAM_KEEPOUT_R = 1.64
 # --- the browse anchors (the DRIVER appends these Destinations; the
 # zone populations get the weighted list -- the native per-agent
 # choose_weighted assignment pulls browsers to their own stall) -------
-# weights: mild EAST bias (the runner's west thread reads against the
-# drift); the noodle stall is the magnet (the queue's stall).
+# weights: MILD east bias, FLAT overall (the s28 probe measurement:
+# the 3.0 noodle magnet drew ~14% of 120 browsers onto one 1m anchor
+# and congested it to zero-nearest under the queue traffic; the queue
+# ITSELF is the noodle's magnet -- 9 queue agents read popularity).
 def _stall_w(x):
-    return round(1.0 + 0.06 * (x + 6.0), 3)
+    return round(1.0 + 0.04 * (x + 6.0), 3)
 
 BROWSE_ANCHORS = (
-    # row S fronts (the spine side of the south counters)
-    *[("stall_s%+d" % x, (x, -1.15), _stall_w(x)) for x in _MARKET_X],
+    # row S fronts (the spine side of the south counters; y=-1.0 keeps
+    # the capacity box CLEAR of the counter band |y|>=1.65 -- the s28
+    # nav law: a capacity region overlapping a blocked square poisons
+    # the whole concourse compile, the portal check included)
+    *[("stall_s%+d" % x, (x, -1.0), _stall_w(x)) for x in _MARKET_X],
     # row N fronts (the queue stretch x 0..6 is the noodle queue's
     # slots -- those fronts stay anchor-free)
-    *[("stall_n%+d" % x, (x, 1.15), _stall_w(x))
+    *[("stall_n%+d" % x, (x, 1.0), _stall_w(x))
       for x in (-6.0, -4.0, -2.0, 6.0)],
     # the food court (the east magnet)
-    ("food_n", (18.3, 2.6), 2.2),
-    ("food_s", (18.3, -2.6), 2.2),
+    ("food_n", (18.0, 2.6), 1.5),
+    ("food_s", (18.0, -2.6), 1.5),
     # the west plaza (the arrival edge; LOW weight)
     ("plaza_n", (-18.0, 2.0), 0.4),
     ("plaza_s", (-18.0, -2.0), 0.4),
 )
-NOODLE_STALL = ("noodle", (-2.0, 1.15), 3.0)   # merged into BROWSE_ANCHORS
-BROWSE_ANCHORS = BROWSE_ANCHORS + (NOODLE_STALL,)
+NOODLE_STALL = None   # REMOVED from BROWSE_ANCHORS (the s28 probe: the
+# noodle front is the QUEUE'S territory -- browsers parked AT the
+# anchor drag the queue agents to a spent arrival; the queue itself
+# is the popularity read)
+if NOODLE_STALL is not None:
+    BROWSE_ANCHORS = BROWSE_ANCHORS + (NOODLE_STALL,)
 
 # anchor capacity half-extents (the audit P1: capacities sized to the
-# aisle widths -- the spine is 3.3m clear, the walks 2.35m)
-ANCHOR_CAP_HALF = 1.0
+# aisle widths -- and the s28 NAV LAW: the capacity box must NOT
+# overlap any blocked square or the concourse compile fails --
+# measured by the s28_nav_bisect variants, all-green at 0.5)
+ANCHOR_CAP_HALF = 0.5
 
 # --- the market sim-side attachments (the driver consumes) ------------
 PORTAL = {
     "id": "noodle_gate",
-    "center": (-2.0, 1.65),
-    "width_m": 1.2,
-    "axis": "EAST_WEST",       # the queue admits along the row front
+    "center": (-2.0, 1.58),
+    "width_m": 1.24,
+    # the s28 nav law (measured, the bisect variants): the portal
+    # point sits IN the serving gap BETWEEN the rail squares (the
+    # rails' constant-x edges are the wall run the EAST_WEST crossing
+    # walks); ON the counter face itself the north side has no
+    # walkable tiles and portals_named() stays EMPTY.
+    "axis": "EAST_WEST",
 }
 QUEUE = {
     "id": "noodle_q",
     "portal_id": "noodle_gate",
-    "admission_capacity": 1,
-    # slots[0] is the HEAD at the counter front (y=1.25, the counter
-    # band starts 1.65 -- the agent body clears it by 0.06); the line
-    # runs EAST along the front, 6 slots (the 4-6 queue design; 9
-    # chase agents cycle through as releases free the head -- the
-    # unslotted HOLD until a slot frees, the transient spill class).
-    "slots": tuple((x, 1.25) for x in (-0.6, 0.7, 2.0, 3.3, 4.6, 5.9)),
+    # admission_capacity = the SLOT COUNT (the s28 probe: cap=1 admitted
+    # exactly ONE agent ever -- 9 requested, the QueueNode decisive
+    # every tick, the fill armed every tick, yet the waiting set never
+    # drained past the first pop; the per-tick cap is the only lever
+    # between the requesters and the slots -- the tsquall cap=1 worked
+    # on ITS portal geometry, this one does not; 9 = the whole tail
+    # admits in the first fill and the line reads immediately)
+    "admission_capacity": 9,
+    # slots[0] is the HEAD at the serving window; the line runs EAST
+    # along the front. y=0.75 (the s28 probe receipt: at 0.95 the head
+    # stalled 0.41m short of the release disc -- the counter's inflated
+    # moat (y >= 1.31) pressed it to 1.20 and the 0.34m release radius
+    # never closed; 0.75 sits mid-spine, clean of every moat). NINE
+    # slots = the tsquall identity (the whole tail assigns and walks).
+    # the line runs EAST from x=-0.7 (the s28 probe receipt: the west
+    # stretch at the serving gap is contested by the north-row anchor
+    # blobs -- the head stalled at 0.67m; the EAST slots parked clean
+    # at 0.28m offsets -- the whole line shifted one pitch east)
+    "slots": tuple((x, 0.75) for x in
+                   (-0.7, 0.6, 1.9, 3.2, 4.5, 5.8, 7.1, 8.4, 9.7)),
 }
 QUEUE_GRAPH_ID = "market_qseq"     # Sequence(QueueNode, Navigate)
 VENDOR_GRAPH_ID = "vendor_hold"    # root=HoldPosition()
@@ -229,9 +277,15 @@ BEATS = (
 SFX_EVENTS = (
     {"name": "market_bed_start", "frame": 1},
     {"name": "crowd_murmur", "frame": 85},
+    {"name": "queue_bell", "frame": 265},
     {"name": "sizzle_start", "frame": 349},
     {"name": "runner_enter", "frame": 439},
+    {"name": "queue_murmur", "frame": 470},
     {"name": "child_lost_sting", "frame": 619},
     {"name": "reunion_sting", "frame": 799},
     {"name": "title_sting", "frame": 979},
 )
+# (the queue-form bells are MANUAL rows -- the s28 receipt: with
+# admission_capacity = the slot count every kit admit lands at tick 0,
+# a 9-bell clump at f0; the driver appends only RELEASE-sourced
+# serve bells, of which this film's holding line yields none)
