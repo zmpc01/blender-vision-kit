@@ -335,6 +335,50 @@ gait_modifiers.
   is REPO-BY-REPO.
 
 
+
+## SESSION 27 LAWS (the engine-map round — condensed; full: worklog s27 + HANDOFF s27 block)
+
+- **THE ENGINE-MAP LAW**: a film module's _set_engine MUST carry an
+  explicit CYCLES branch — a two-way eevee/workbench map silently
+  renders workbench stills for --engine cycles, and WORKBENCH IS
+  LIGHT-BLIND (gotcha 128): the "look regression" it produces is
+  indistinguishable from an engine-swap tune loss. Four of six films
+  shipped light-blind stills for two sessions; the certified two were
+  exactly the two WITH a branch. AUDIT THE MAP whenever a film fails
+  a LOOK gate with "everything flat".
+- **THE ENGINE-CONDITIONAL TUNE IS INERT WITHOUT THE D2 HOIST**: a
+  build-time `scene.render.engine` read sees the FACTORY default
+  unless main() sets the engine BEFORE build_world
+  (normalize_engine_id, the 3-line hoist). The tferry sky mirror
+  never fired until s27.
+- **THE BOTH-ENGINE MIRRORS (measured, s27)**: tferry/tgreen
+  corpus-matched UNTOUCHED under real Cycles (the s26 ladders were
+  chasing workbench ghosts); tsquall storm sky x3.0; tfog volume
+  0.028 EEVEE / 0.040 CYCLES via fog_density_for_engine (Cycles
+  single-scatter reads THINNER — the Cycles value is the HIGHER one).
+  Copy the tferry_world mirror pattern; never a bare constant swap.
+- **THE PREFLIGHT ORDER LAW**: span/animation-dependent gates run
+  POST-animate (the exporter's real order); a pre-animate REJECT that
+  skips the animate-dry check DEADLOCKS the preflight. And the
+  animate-dry check must use the exporter's REAL dispatch
+  (n_frames=None) — a truncation breaks the humanoid anchor-vs-cache
+  gate's frame coherence (the dx=18.6m false-fail class).
+- **THE GOVERNED EXPORT PIN**: the kit-export wrapper sha-pins
+  agent-kit's blender_kit against shared_manifest.json — a moved
+  agent-kit HEAD refuses the export. The s27 export vintage is
+  fca46ca; ASSERT the pin in the export script.
+- **THE FILMSTRIPS RESUME + FORMAT LAW**: 96-strip runs span tool-call
+  windows — skip existing non-empty files (idempotent resume); pin
+  image_settings.file_format="JPEG" or Blender replaces the .jpg ext
+  with .png (the tsquall class).
+- **THE BAND-AMEND RECEIPT LAW (re-proven)**: an engine move can land
+  a calibrated gate one step off (tsquall in-line 4->3 at the pinned
+  engine); amend the band WITH the recorded cause + the fresh receipts,
+  never silently.
+- **THE OOM KNOB ORDER** (the audit's correction): memory_limit >
+  cast reduction > resolution > samples/bounces — bounces are TIME
+  levers, not memory levers.
+
 ## SESSION 26 LAWS (the eye-gate verdict + the rig reconstruction — condensed; full: worklog s26 + HANDOFF s26 block)
 
 - **THE ENGINE-SWAP LOOK LAW**: a render-engine swap INVALIDATES every

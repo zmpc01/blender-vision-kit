@@ -236,6 +236,28 @@ critique rounds — audit 5-a incorporated in DRAFT-2).
   CAMS_V3/SYNOPSIS lowercase sweep debt on the four older films'
   next exports.
 
+## Session-27 receipts (THE ENGINE-MAP ROOT CAUSE + the re-look wave — 2026-10-22)
+
+- THE ROOT CAUSE: the 4-film look failure was a four-module CLI
+  mapping bug (--engine cycles -> BLENDER_WORKBENCH); the s26 "Cycles
+  re-tune" RCA was wrong-space. Fixed (audited REV-2, eb8bd1a) +
+  the 48-still wave re-certified 4/4 films (tferry_3/tgreen_3/tfog_3/
+  tsquall_3 LIVE, staged ab36bdb). Only two both-engine tune deltas
+  were real (tsquall sky x3.0, tfog fog 0.040); tferry/tgreen
+  corpus-matched untouched.
+- The user's LAST review comments verified 5/5 vs tdawn_4 (the review
+  round is OPEN — six packages await the user).
+- THE ORIGINAL RIG RESTORED (the user provisioned the RH PAT); the
+  reconstruction is fallback-only. Engine pinned 0054486; the export
+  pin agent-kit @fca46ca.
+- The preflight B3/B6 deadlock + the n_frames=8 dispatch fixed (the
+  exporter-true semantics); filmstrips idempotent-resume; the tsquall
+  JPEG convention.
+- NIGHT MARKET: DESIGN_night_market.md REV-2 (audited) — the next
+  session implements tmarket_1 from it.
+- [ ] the USER review round on the six live packages (the lane points here)
+- [ ] tmarket_1 build per REV-2 (design → implement → certify → stage)
+
 ### M5 — Perception tuning campaign (CURRENT, session 4, 2026-09-30)
 Owner IS the vision agent; tuning targets what WE actually perceive best.
 Sub-agent vision reality (re-confirmed empirically, sessions 2+3): this
