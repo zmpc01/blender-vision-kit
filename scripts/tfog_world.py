@@ -66,6 +66,13 @@ TFOG_FOG_DENSITY = 0.028   # Volume Scatter density in fog_box
                            # (session-19 stills gate: 0.05 swallowed the S5
                            # blast wide at 15 m — the beat died in haze;
                            # 0.028 keeps the pools + reads the crowd)
+                           # s27 BOTH-ENGINE DELTA (the tferry pattern;
+                           # corpus A/B in worklog s27): Cycles renders
+                           # the volume thinner than the EEVEE corpus —
+                           # the Cycles lane serves 0.040 (see
+                           # fog_density_for_engine below; the 0.05
+                           # swallow guard: the S5 blast window is
+                           # re-checked by eye on the Cycles probe).
 TFOG_LAMP_STRENGTH = 0.0   # sodium point lights, W-scale multiplier
 # The lamp W-scale multiplier (s19-B15e, named out of the worklog):
 # fog multiplies emission, so the ladder authors lamp strengths at
@@ -190,7 +197,20 @@ def _build_materials():
     return m
 
 
-def _fog_material():
+def fog_density_for_engine(scene=None):
+    """s27 BOTH-ENGINE DELTA (the tferry_world pattern): the certified
+    fog look (EEVEE, 0.028) renders THINNER under Cycles (path-traced
+    single-scatter vs the rasterized veil) — the Cycles lane serves
+    0.040. The S5 blast-window swallow guard (0.05-class) is re-checked
+    by eye on the Cycles probe before the stills wave."""
+    from blender_kit import normalize_engine_id
+    eng = normalize_engine_id(
+        (scene.render.engine if scene is not None
+         else bpy.context.scene.render.engine))
+    return TFOG_FOG_DENSITY * (1.45 if eng.startswith("CYCLES") else 1.0)
+
+
+def _fog_material(scene=None):
     """fog_box: pure Volume Scatter (density = the ladder constant).
 
     s19-B7: the density is re-applied on the CACHED path too (the
@@ -213,7 +233,7 @@ def _fog_material():
         sc = nt.nodes.new("ShaderNodeVolumeScatter")
         sc.inputs["Color"].default_value = (0.70, 0.75, 0.85, 1.0)
         nt.links.new(sc.outputs["Volume"], out.inputs["Volume"])
-    sc.inputs["Density"].default_value = TFOG_FOG_DENSITY
+    sc.inputs["Density"].default_value = fog_density_for_engine(scene)
     return mat
 
 
@@ -375,7 +395,7 @@ def build_world(scene):
         export["windows"] += export[f"{tag}_cars"][1::2]
 
     # --- the ONE fog volume (the 192 m box is KILLED) --------------------
-    _box("fog_box", 64.0, 10.0, 6.0, (0.0, 0.0, 3.0), _fog_material())
+    _box("fog_box", 64.0, 10.0, 6.0, (0.0, 0.0, 3.0), _fog_material(scene))
 
     # --- far N/S silhouette planes (dark matte, grounded) ----------------
     for tag, by in (("n", 45.0), ("s", -45.0)):

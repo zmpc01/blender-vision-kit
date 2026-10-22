@@ -431,10 +431,18 @@ def build_world(scene):
     sun_ob.rotation_euler = (-to_sun).to_track_quat('-Z', 'Y').to_euler()
 
     # --- the storm sky (kit helper; strength is the ladder constant) ---
-    from blender_kit import add_sky_world
+    # s27 BOTH-ENGINE DELTA (the tferry_world pattern; corpus A/B
+    # receipt in worklog s27): the certified bright-storm-sky (EEVEE
+    # 0.35) reads dark charcoal under Cycles at the same strength —
+    # Cycles x3.0 restores the certified near-white storm sky through
+    # the shelter openings. EEVEE untouched (byte-repro revs).
+    from blender_kit import add_sky_world, normalize_engine_id
+    _cyc = normalize_engine_id(
+        scene.render.engine).startswith("CYCLES")
+    _sky = TSQ_SKY_STRENGTH * (3.0 if _cyc else 1.0)
     add_sky_world(sun_elevation_deg=TSQ_SUN_ELEV_DEG,
                   sun_rotation_deg=TSQ_SUN_AZ_DEG,
-                  strength=TSQ_SKY_STRENGTH)
+                  strength=_sky)
     if scene.world and scene.world.use_nodes:
         for n in scene.world.node_tree.nodes:
             if n.type == 'TEX_SKY' and hasattr(n, 'sun_disc'):
