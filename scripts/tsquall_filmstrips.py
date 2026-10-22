@@ -35,6 +35,7 @@ def main():
     scene.display.shading.light = "FLAT"
     scene.display.shading.color_type = "MATERIAL"
     scene.view_settings.view_transform = "Standard"
+    scene.render.image_settings.file_format = "JPEG"  # s27: the sibling jpg convention (Blender replaces the ext per file_format)
     scene.render.resolution_x = args.w
     scene.render.resolution_y = args.h
     strips = os.path.join(args.pkg, "filmstrips")
