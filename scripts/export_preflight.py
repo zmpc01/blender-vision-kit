@@ -1267,14 +1267,24 @@ def b_sfx_emitter(mod, rep: Report, ctx, scene, shots) -> None:
 
 
 def b6_animate_dry(mod, rep: Report, ctx) -> None:
-    """Opt-in: run animate with the exporter's real dispatch and a small
-    n_frames. DEFAULT OFF — crowd modules need bakes and would false-fail;
-    S1's bind check already proves the signature dispatches."""
+    """Opt-in: run animate with the exporter's REAL dispatch.
+    DEFAULT OFF — crowd modules need bakes and would false-fail;
+    S1's bind check already proves the signature dispatches.
+
+    s27 fix (the tfog false-fail): this used to truncate with
+    n_frames=8 — but the exporter's real dispatch is n_frames=None
+    (S1's own docstring, exporter:1035-1048), and the truncation broke
+    the humanoid anchor-vs-cache gate's frame coherence: films whose
+    animate() honors n_frames (tfog) set frame_end=8, the gate's
+    frame_end clamp then sampled the anchor at f8 while the cache
+    readout stayed at the last tick (f1080) — the dx=18.6m false
+    fail. The gate compares like-for-like frames only under the real
+    dispatch; the cost is the full crowd keying (~40-60s, opt-in)."""
     sig = inspect.signature(mod.animate)
     if _animate_is_bare_branch(sig):
         mod.animate(ctx)  # exporter's bare branch (module decides timeline)
     else:
-        mod.animate(ctx, start_frame=1, n_frames=8)  # sentinel + small run
+        mod.animate(ctx, start_frame=1, n_frames=None)  # the REAL dispatch
 
 
 def materialize_table_iterators(mod, rep: Report) -> None:
