@@ -172,8 +172,10 @@ QUEUE = {
     "admission_capacity": 1,
     # slots[0] is the HEAD at the counter front (y=1.25, the counter
     # band starts 1.65 -- the agent body clears it by 0.06); the line
-    # runs EAST along the front, 5 slots (the 4-6 queue design).
-    "slots": tuple((x, 1.25) for x in (-0.6, 0.7, 2.0, 3.3, 4.6)),
+    # runs EAST along the front, 6 slots (the 4-6 queue design; 9
+    # chase agents cycle through as releases free the head -- the
+    # unslotted HOLD until a slot frees, the transient spill class).
+    "slots": tuple((x, 1.25) for x in (-0.6, 0.7, 2.0, 3.3, 4.6, 5.9)),
 }
 QUEUE_GRAPH_ID = "market_qseq"     # Sequence(QueueNode, Navigate)
 VENDOR_GRAPH_ID = "vendor_hold"    # root=HoldPosition()
