@@ -61,9 +61,11 @@ def main():
             span = f1 - f0 + 1
             for k in range(n):
                 f = f0 + round(k * (span - 1) / (n - 1))
+                _out = os.path.join(out_dir, f"{sid}_{k:02d}.jpg")
+                if os.path.isfile(_out) and os.path.getsize(_out) > 0:
+                    continue  # s27 idempotent resume (the chunked-wave law)
                 scene.frame_set(f)
-                scene.render.filepath = os.path.join(
-                    out_dir, f"{sid}_{k:02d}.jpg")
+                scene.render.filepath = _out
                 bpy.ops.render.render(write_still=True)
                 count += 1
             print(f"[strips] {sid}: {n} frames")
