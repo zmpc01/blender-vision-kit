@@ -754,12 +754,32 @@ def _script_args():
 
 
 def _set_engine(scene, engine, samples):
+    # s27 engine-map law (DESIGN_engine_map_s27 D1/D2, audited REV-2):
+    # the old two-way map sent --engine cycles to WORKBENCH — the
+    # stills lane silently rendered light-blind workbench frames.
+    # Cycles branch = the tform canonical (bounded bounces, CPU,
+    # denoise); the wet sheen lives in the puddle materials (glossy
+    # GI reproduces it — SSR is eevee-only). The exposure tail stays
+    # ENGINE-UNCONDITIONAL.
+    engine = (engine or "").lower()
+    if engine.startswith("cycles"):
+        scene.render.engine = 'CYCLES'
+        scene.cycles.samples = int(samples)
+        scene.cycles.use_denoising = True
+        scene.cycles.device = 'CPU'
+        scene.cycles.max_bounces = 4
+        scene.cycles.transmission_bounces = 2
+        scene.cycles.volume_bounces = 1
+        print(f"[tsquall] engine={scene.render.engine} samples={samples} "
+              "denoise on CPU (s27 engine-map law)")
+        return
     name = "BLENDER_EEVEE" if engine.startswith("eevee") else \
         "BLENDER_WORKBENCH"
     scene.render.engine = name
-    scene.eevee.use_raytracing = True   # the 5.2 SSR knob (wet ground)
-    if hasattr(scene.eevee, "taa_render_samples"):
-        scene.eevee.taa_render_samples = samples
+    if engine.startswith("eevee"):
+        scene.eevee.use_raytracing = True   # the 5.2 SSR knob (wet ground)
+        if hasattr(scene.eevee, "taa_render_samples"):
+            scene.eevee.taa_render_samples = samples
     scene.view_settings.exposure = ts_exposure
 
 
@@ -776,11 +796,16 @@ def main():
     args = p.parse_args(_script_args())
 
     scene = bpy.context.scene
+    # s27 D2 hoist (enabler): the planned engine-conditional storm-sky
+    # tune reads scene.render.engine at BUILD time — set it here so
+    # build_world sees the true engine.
+    from blender_kit import normalize_engine_id
+    scene.render.engine = normalize_engine_id(args.engine)
     ctx = build_scene()
     animate(ctx, with_crowd=not args.skip_crowd)
     out = args.output
     os.makedirs(out, exist_ok=True)
-    if args.still:
+    if args.still is not None:
         scene.frame_set(args.still)
         _set_engine(scene, args.engine, args.samples)
         scene.render.resolution_x = args.w

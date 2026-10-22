@@ -617,13 +617,19 @@ def main():
     args = p.parse_args(_script_args())
 
     scene = bpy.context.scene
+    # s27 D2 hoist: the engine-conditional world tune (sky 0.012/0.12,
+    # practicals x3.5) reads scene.render.engine at BUILD time — set
+    # it here so build_world sees the true engine (the render-time
+    # _set_engine re-applies idempotently).
+    from blender_kit import normalize_engine_id
+    scene.render.engine = normalize_engine_id(args.engine)
     ctx = build_scene()
     animate(ctx, with_crowd=not args.skip_crowd)
     # the caller owns the dir (the tdawn law; the stills scripts pass
     # --output <stillwork-dir> directly)
     out = args.output
     os.makedirs(out, exist_ok=True)
-    if args.still:
+    if args.still is not None:
         scene.frame_set(args.still)
         _set_engine(scene, args.engine, args.samples)
         scene.render.resolution_x = args.w
@@ -637,12 +643,31 @@ def main():
 
 
 def _set_engine(scene, engine, samples):
+    # s27 engine-map law (DESIGN_engine_map_s27 D1/D2, audited REV-2):
+    # the old two-way map sent --engine cycles to WORKBENCH — the
+    # stills lane silently rendered light-blind workbench frames (the
+    # 4-film look failure's root cause). Cycles branch = the tform
+    # canonical (bounded bounces, CPU, denoise). The exposure tail
+    # stays ENGINE-UNCONDITIONAL (the certified look rides it).
+    engine = (engine or "").lower()
+    if engine.startswith("cycles"):
+        scene.render.engine = 'CYCLES'
+        scene.cycles.samples = int(samples)
+        scene.cycles.use_denoising = True
+        scene.cycles.device = 'CPU'
+        scene.cycles.max_bounces = 4
+        scene.cycles.transmission_bounces = 2
+        scene.cycles.volume_bounces = 1
+        print(f"[tferry] engine={scene.render.engine} samples={samples} "
+              "denoise on CPU (s27 engine-map law)")
+        return
     name = "BLENDER_EEVEE" if engine.startswith("eevee") else \
         "BLENDER_WORKBENCH"
     scene.render.engine = name
-    scene.eevee.use_raytracing = True   # L-TF3: the 5.2 SSR knob
-    if hasattr(scene.eevee, "taa_render_samples"):
-        scene.eevee.taa_render_samples = samples
+    if engine.startswith("eevee"):
+        scene.eevee.use_raytracing = True   # L-TF3: the 5.2 SSR knob
+        if hasattr(scene.eevee, "taa_render_samples"):
+            scene.eevee.taa_render_samples = samples
     scene.view_settings.exposure = 0.3  # L-TF4 fixed at +0.3
 
 
