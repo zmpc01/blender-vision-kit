@@ -1071,14 +1071,40 @@ def b3_markers(mod, rep: Report, scene, shots,
                 rep.reject(msg)
     if shots:
         if shots[0][1] != scene.frame_start or shots[-1][2] != scene.frame_end:
-            rep.reject(
-                f"B3 span: the shot table spans f{shots[0][1]}–"
-                f"f{shots[-1][2]} but the scene spans f{scene.frame_start}–"
-                f"{scene.frame_end} — exporter gate 3 rejects this "
-                "(exporter:1332-1334). Fix: set frame_start/frame_end to "
-                "the shot span (or vice versa). Span comes from the SCENE, "
-                "never a module constant.")
+            # s27 ORDER FIX (the B3/B6 deadlock): the exporter's real
+            # gate 3 (exporter:1332-1334) reads the span AFTER its own
+            # mod.animate() — films set frame_end in animate (the
+            # tferry pattern), so the pre-animate scene span (Blender's
+            # 250 default) is NOT what the exporter sees. A pre-animate
+            # REJECT here deadlocked the preflight (the false reject
+            # skipped B6 — the very step that sets the true span).
+            # Demoted to WARN pre-animate; the HARD span gate runs
+            # post-B6 (b6_post_span_gate) when --animate-dry is on.
+            rep.warn(
+                f"B3 span (pre-animate): the shot table spans "
+                f"f{shots[0][1]}–f{shots[-1][2]} but the scene spans "
+                f"f{scene.frame_start}–{scene.frame_end} — the exporter "
+                "reads the span POST-animate, so this is only a defect "
+                "if animate() does not set it. Run --animate-dry for the "
+                "post-animate hard gate (B6-span).")
     return all_marks
+
+
+def b6_post_span_gate(rep: Report, shots, scene) -> None:
+    """s27: the HARD span gate, run POST-B6 (post-animate) — the
+    exporter-true order (its gate 3 reads the span after mod.animate).
+    A mismatch here is the REAL span defect the old pre-animate check
+    was guessing at."""
+    if not shots:
+        return
+    if shots[0][1] != scene.frame_start or shots[-1][2] != scene.frame_end:
+        rep.reject(
+            f"B6-span: POST-animate the shot table spans "
+            f"f{shots[0][1]}–f{shots[-1][2]} but the scene spans "
+            f"f{scene.frame_start}–{scene.frame_end} — the exporter's "
+            "gate 3 (exporter:1332-1334) reads exactly this span and "
+            "will reject. Fix: set frame_start/frame_end to the shot "
+            "span in build_scene or animate.")
 
 
 def b4_hidden_sweep(mod, rep: Report, scene, shots, all_marks) -> None:
@@ -1539,7 +1565,8 @@ def main() -> int:
         else:
             try:
                 b6_animate_dry(mod, rep, ctx)
-                checks["B6"] = "ok"
+                b6_post_span_gate(rep, shots, scene)
+                checks["B6"] = _st(rep, len(rep.rejects))
             except Exception:
                 rep.reject(
                     "B6 animate-dry: mod.animate(ctx, start_frame=1, "
