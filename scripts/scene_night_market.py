@@ -361,14 +361,23 @@ def _title(scene):
     return ob
 
 
+def _kf_loc3(ob, frame, loc):
+    """The FULL-location key (the crane's z MUST land -- the _kf
+    helper preserves z by design for the ground-locked principals; the
+    s28 eye gate caught the crane stuck at its build z behind the
+    shopfront)."""
+    ob.location = loc
+    ob.keyframe_insert(data_path="location", frame=frame)
+
+
 def _kf_crane(ctx):
     """The S11 pull-back crane (the tsquall pattern: the keyed camera
     rise; the s28 eye gate caught the UNKEYED crane sitting behind the
     south shopfront -- black frame)."""
     ob = ctx["cams"]["CAM_S11"]["ob"]
-    _kf(ob, 889, loc=(2.0, -11.0, 5.2))
-    _kf(ob, 978, loc=(2.0, -13.5, 9.0))
-    _kf(ob, 1080, loc=(2.0, -13.5, 9.0))
+    _kf_loc3(ob, 889, (2.0, -11.0, 5.2))
+    _kf_loc3(ob, 978, (2.0, -13.5, 9.0))
+    _kf_loc3(ob, 1080, (2.0, -13.5, 9.0))
     _bezier(ob)
 
 
