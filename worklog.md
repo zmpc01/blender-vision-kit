@@ -4355,3 +4355,93 @@ Work Log:
 
 Stage Summary:
 - All 5 user issues root-caused with file:line evidence. The dominant killers: (a) the GLB duplicate-bone-name collision (zero-walk + torn-rig), (b) the hero substring-fallback + missing facing correction (gun pose + backwards), (c) the tform pin-seam (teleports), (d) the keepout clamp's position-only correction (slides). Fix design next: bind-layer (unique bones, slot pins, exact clips, facing, retiming, motion gates) + exporter dup-name refusal + tform pin re-derivation + bridge clamp-yaw.
+
+---
+Task ID: fix-wave-1-films
+Agent: implementation subagent (general-purpose, the fix-wave-1 films lane)
+Task: wire the tdawn D2 pattern (face_tangent hero re-facing + clip=None AUTO
+hero clips) into the OTHER six films (tferry/tgreen/tsquall/tfog/tform/tmarket).
+
+Work Log:
+- Read the d1ce5e4 worked example (tdawn _kf_heroes face_tangent + _humanoid_layer
+  clip=None) and the fix-wave-1-rca entry; audited all six films' hero keying
+  functions + bind_principals calls; 11 keyed heroes total, all with location
+  paths (none skipped).
+- WIRED face_tangent (the tdawn pattern, mover 0.45 / watcher 0.55):
+  tferry  scene_last_ferry.py:318-331  (Latecomer 0.45 mover, Deckhand 0.55
+        watcher) + :318-322 the Latecomer rotation-channel SEED (he was keyed
+        loc-only; his yaw froze at the spawn pi — face_tangent has no fcurve to
+        rewrite without a seed key at his first path frame)
+  tgreen  scene_green_light.py:382-388  (Runner 0.45, Statue 0.55 watcher)
+  tsquall scene_squall.py:578-583       (Bystander 0.55 — the film's one hero,
+        a watcher: turns + crouch hold sit still, only the step-in re-faces)
+  tfog    tfog_scene.py:497-502 (LatePassenger 0.45) + :520-525 (Stationmaster
+        0.45 — the patrol is a mover too; only the blast-window hold keeps its
+        authored watch yaw)
+  tform   tform_scene.py:521-525 (StandardBearer 0.45) + :537-541 (Captain
+        0.55 watcher — all holds, a pure authored resample)
+  tmarket scene_night_market.py:415-420 (Runner 0.45) + :445-450 (Child 0.45 —
+        the scurry east moves; the lost look-arounds + reunion hold sit still)
+- HERO CLIPS: clip=None (AUTO: path-speed matched + retimed + cycles) for
+  tferry Deckhand+Latecomer (:560-562), tgreen Runner (:559-561), tfog
+  LatePassenger+Stationmaster (:918-919), tform StandardBearer+Captain
+  (:659-661). KEPT EXPLICIT by design: tgreen Statue Idle_Loop (the 1-frame
+  flinch pop reads 7.2 m/s -> AUTO would Sprint a posed statue on a plinth),
+  tsquall Bystander Idle_Loop (the 1-frame step-in pop reads 9.6 m/s -> the
+  standing witness would Sprint), tmarket Runner Jog_Fwd_Loop + Child Walk_Loop
+  (the D-NM1 pins: "~4 m/s jog" thread + the 0.78-scale scurry walk; AUTO's
+  mixed-segment means would cross into Sprint/Jog). The cycles+slot+per-hero
+  copy fixes apply inside bind_principals for explicit clips too.
+- OVER-SPEED HERO SEGMENTS (reported for re-authoring, NOT retimed here — the
+  live census numbers at 24 fps):
+  tferry  scene_last_ferry.py:313-315   Latecomer f348->444 4.50 m/s
+  tgreen  scene_green_light.py:356-357  Statue flinch f354->355 7.20 m/s
+                                      (1-frame 0.3 m pop; the design beat is a
+                                      flinch — needs a multi-frame authoring)
+          scene_green_light.py:366-378  Runner f529->560 3.10, f790->800 6.92
+                                      m/s (the thread onto the apron)
+  tsquall scene_squall.py:570-572       Bystander f(ff+97)->(ff+98) 9.60 m/s
+                                      (1-frame 0.4 m step-in pop; ff=372
+                                      default -> f469->470)
+  tfog    tfog_scene.py:482-486         LatePassenger f340->400 7.80, f400->470
+                                      5.49, f470->505 5.14 m/s (the RCA's
+                                      "7.8 m/s passenger" — the sprint window)
+  tform   tform_scene.py:513-517        StandardBearer f940->973 3.25, f973->990
+                                      13.39, f990->1008 10.43 m/s (the RCA's
+                                      "13.4 m/s standard-bearer" — the S10
+                                      cross; 36 m in 68 frames is superhuman)
+  tmarket scene_night_market.py:399-411 Runner f430->500 3.44, f500->560 4.01,
+                                      f560->620 4.01, f620->690 4.12 m/s —
+                                      NOTE the design comment pins "~4 m/s jog"
+                                      as intent (deliberate, but above the 3
+                                      m/s report line)
+  Stationmaster (1.64 mean), Captain (0 moving), Deckhand (0.46), tmarket Child
+  (1.93): clean.
+- **P0 KIT FINDING (for the orchestrator; NOT fixed here — outside this lane's
+  6-file scope): humanoid_crowd.face_tangent writes DEGREES into the
+  rotation_euler fcurve, which is RADIANS.** Probe-proven live on Blender
+  5.2.2 (/home/z/probe_w1/probe_face_tangent.py): a due-south mover's correct
+  yaw is -pi (-3.1416); face_tangent writes -180.0 (the degree value) into the
+  radian channel -> the rendered hero faces ~126deg instead of 180deg (a
+  mod-2pi-of-degrees artifact, i.e. a semi-random per-direction error). BOTH
+  write sites: humanoid_crowd.py:814 (key pass) and :861 (12-frame grid pass)
+  — `z = _m.degrees(_m.atan2(vy, vx)) - 90.0` should be
+  `z = _m.atan2(vy, vx) - _m.pi / 2`. tdawn (d1ce5e4) ships the same bug (its
+  verification checked crowd facing + hero clips, not the post-fix hero yaw
+  values). The 11 call sites wired here are unit-agnostic (min_mps only), so
+  the one kit fix corrects all 7 films with no further film-side edits.
+- VERIFY: ast.parse all six files OK; live Blender dry-runs — tferry + tgreen
+  full --skip-crowd builds (face_tangent ran: Latecomer 1 key + 69 grid,
+  Deckhand 0 + 91, tgreen Runner 7 + 91, Statue 1 + 91); isolation probe
+  exercising the four cache-gated films' _kf_* functions (tsquall 1 + 91,
+  tfog LP 2 + 91 / SM 4 + 91, tform SB 3 + 91 / Captain 0 + 73, tmarket
+  Runner 7 + 91 / Child 3 + 91); speed census probe (the numbers above).
+
+Stage Summary:
+- The tdawn D2 pattern is wired into all six remaining films: 11 heroes
+  face_tangent'd (mover/watcher classified), 7 hero clips on AUTO, 4 kept
+  explicit by design (documented at each call site). Two kit-side follow-ups
+  for the orchestrator: (1) the face_tangent degrees-vs-radians unit bug
+  (P0, 2-line fix in humanoid_crowd.py:814/:861), (2) the over-speed hero
+  path re-authoring list above (tfog passenger, tform bearer, tmarket runner
+  thread, tgreen apron thread + the two 1-frame pops).

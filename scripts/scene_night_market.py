@@ -412,6 +412,12 @@ def _runner_keys(ctx):
     for f, loc, rz in path:
         _kf(ob, f, loc=loc, rot_z=rz)
     _bezier(ob)
+    # fix-wave-1 D2: re-derive facing from the path tangents (the
+    # tdawn pattern) -- the runner is the mover (the delivery + the
+    # west thread); the staging/hand-off holds sit still, so their
+    # authored yaws stay
+    import humanoid_crowd as _HC
+    _HC.face_tangent(ob, min_mps=0.45)
 
 
 def _child_keys(ctx):
@@ -436,6 +442,12 @@ def _child_keys(ctx):
     for f, loc, rz in path:
         _kf(ob, f, loc=loc, rot_z=rz)
     _bezier(ob)
+    # fix-wave-1 D2: re-derive facing from the path tangents (the
+    # tdawn pattern) -- the child moves on the scurry east; the lost
+    # look-around beats and the reunion hold sit still, so their
+    # authored yaws stay
+    import humanoid_crowd as _HC
+    _HC.face_tangent(ob, min_mps=0.45)
 
 
 def build_scene():
@@ -545,6 +557,12 @@ def _humanoid_layer(ctx):
     # the TWO UAL principals (the D-NM1 cast): the Runner at the
     # family scale + the Child at 0.78 (the object-level rider law --
     # the scale rides matrix_parent_inverse, never keyed)
+    # fix-wave-1 D2: BOTH clips stay EXPLICIT by design (the D-NM1
+    # pins): the runner's thread is authored as a ~4 m/s jog (AUTO's
+    # mean over the mixed staging+thread segments would cross into
+    # Sprint), and the Child's scurry is a Walk at 0.78 scale (the
+    # design doc's named exception). The cycles+slot+copy fixes
+    # apply inside bind_principals either way
     pr = HC.bind_principals(ctx, {
         "Runner": ("Jog_Fwd_Loop", tm_runner_scale, None),
         "Child": ("Walk_Loop", tm_child_scale, None)})

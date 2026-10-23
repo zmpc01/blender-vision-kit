@@ -494,6 +494,12 @@ def _kf_late_passenger(ctx):
     lp.location = (12.0, -2.45, -0.35)
     lp.keyframe_insert(data_path="location", frame=1080)
     _bezier(lp)
+    # fix-wave-1 D2: re-derive facing from the path tangents (the
+    # tdawn pattern) -- the LatePassenger is the film's mover (the
+    # sprint E + the walk to the bench); the brace/sit holds sit
+    # still, so their authored yaws stay
+    import humanoid_crowd as _HC
+    _HC.face_tangent(lp, min_mps=0.45)
 
 
 def _kf_stationmaster(ctx):
@@ -511,6 +517,12 @@ def _kf_stationmaster(ctx):
     _kf(sm, 912, loc=(26.0, 0.9), rot_z=math.radians(-90.0))
     _kf(sm, 1080, loc=(14.0, 0.9), rot_z=math.radians(-90.0))
     _bezier(sm)
+    # fix-wave-1 D2: re-derive facing from the path tangents (the
+    # tdawn pattern) -- the patrol is a mover too (the aisle walks E
+    # then the drift W); only the blast-window hold sits still and
+    # keeps its authored watch yaw
+    import humanoid_crowd as _HC
+    _HC.face_tangent(sm, min_mps=0.45)
 
 
 def _kf_board(ctx):
@@ -899,9 +911,13 @@ def _humanoid_layer(ctx):
     # the UAL principals: LatePassenger (0.62,0.40,0.14) + Stationmaster
     # (0.16,0.19,0.24) — the identity tones from _heroes (:328-331)
     UAL_SCALE = 1.75 / 1.589
+    # fix-wave-1 D2: clip=None -> AUTO (path-speed matched +
+    # retimed) -- the LatePassenger sprinted the platform on a
+    # standing idle before (the moonwalk class); the Stationmaster
+    # patrols, so AUTO reads his aisle walks as a walk cadence
     pr = HC.bind_principals(ctx, {
-        "LatePassenger": ("Idle_Loop", UAL_SCALE, None),
-        "Stationmaster": ("Idle_Loop", UAL_SCALE, None)})
+        "LatePassenger": (None, UAL_SCALE, None),
+        "Stationmaster": (None, UAL_SCALE, None)})
     ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
         "LatePassenger": (0.62, 0.40, 0.14),
         "Stationmaster": (0.16, 0.19, 0.24)})

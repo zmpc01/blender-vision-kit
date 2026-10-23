@@ -379,6 +379,13 @@ def _kf_heroes(ctx):
     for f, loc, rz in run:
         _kf(rn, f, loc=loc, rot_z=rz)
     _bezier(rn)
+    # fix-wave-1 D2: re-derive facing from the path tangents (the
+    # tdawn pattern) -- the Runner is the mover (the gamble run + the
+    # thread to the apron); the Statue a watcher (the flinch/pose
+    # beats sit still, so their authored yaws stay)
+    import humanoid_crowd as _HC
+    _HC.face_tangent(rn, min_mps=0.45)
+    _HC.face_tangent(st, min_mps=0.55)
 
 
 def _title_card(scene):
@@ -543,9 +550,15 @@ def _humanoid_layer(ctx):
     # the UAL principals: Statue (gold) + Runner (crimson) -- the
     # identity colors from _heroes (:204-205), the branch-a law
     UAL_SCALE = 1.75 / 1.589
+    # fix-wave-1 D2: the Runner goes AUTO (path-speed matched -- he
+    # glided on a standing idle before, the moonwalk class). The
+    # Statue KEEPS Idle_Loop by design: his one moving key is the
+    # 1-frame flinch pop (0.3 m @ f354->355 = 7.2 m/s) which would
+    # drive the AUTO selector to Sprint -- a posed statue on a
+    # plinth must not sprint in place
     pr = HC.bind_principals(ctx, {
         "Statue": ("Idle_Loop", UAL_SCALE, None),
-        "Runner": ("Idle_Loop", UAL_SCALE, None)})
+        "Runner": (None, UAL_SCALE, None)})
     ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
         "Statue": (0.72, 0.55, 0.22),
         "Runner": (0.62, 0.07, 0.10)})

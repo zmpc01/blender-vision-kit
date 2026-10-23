@@ -315,7 +315,20 @@ def _kf_heroes(ctx):
            (880, (0.20, -1.1)), (900, (0.05, -2.2)), (1080, (0.05, -2.2))]
     for f, loc in run:
         _kf(lc, f, loc=loc)
+    # fix-wave-1 D2: the Latecomer never carried a rotation channel
+    # (his yaw froze at the spawn pi for the whole film) -- seed the
+    # authored spawn yaw once so face_tangent has the fcurve to rewrite
+    lc.rotation_euler = (0.0, 0.0, math.pi)
+    lc.keyframe_insert(data_path="rotation_euler", index=2, frame=265)
     _bezier(lc)
+    # fix-wave-1 D2: re-derive facing from the path tangents (the
+    # tdawn pattern) -- the Latecomer is the mover (full tangent on
+    # his pier run); the Deckhand the watcher (only his 0.45 m/s
+    # step-aside moves, and it sits under the 0.55 gate so his
+    # authored holds stay)
+    import humanoid_crowd as _HC
+    _HC.face_tangent(lc, min_mps=0.45)
+    _HC.face_tangent(dh, min_mps=0.55)
 
 
 def _em_keys(mat, keys):
@@ -541,9 +554,12 @@ def _humanoid_layer(ctx):
     # the UAL principals: Deckhand (amber) + Latecomer (crimson) -- the
     # identity colors from _heroes (:156-157), the branch-a law
     UAL_SCALE = 1.75 / 1.589
+    # fix-wave-1 D2: clip=None -> AUTO (path-speed matched; the
+    # Latecomer sprinted the pier on a standing idle before -- the
+    # moonwalk class; the Deckhand's step-aside reads as a slow walk)
     pr = HC.bind_principals(ctx, {
-        "Deckhand": ("Idle_Loop", UAL_SCALE, None),
-        "Latecomer": ("Idle_Loop", UAL_SCALE, None)})
+        "Deckhand": (None, UAL_SCALE, None),
+        "Latecomer": (None, UAL_SCALE, None)})
     ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
         "Deckhand": (0.85, 0.42, 0.05),
         "Latecomer": (0.62, 0.07, 0.10)})

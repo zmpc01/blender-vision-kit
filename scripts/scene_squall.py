@@ -575,6 +575,12 @@ def _kf_bystander(ctx):
     bs.location = (10.6, -0.6, -0.35)
     bs.keyframe_insert(data_path="location", frame=1080)
     _bezier(bs)
+    # fix-wave-1 D2: re-derive facing from the path tangents (the
+    # tdawn pattern) -- the witness is a watcher: his turns and the
+    # crouch hold sit still, so their authored yaws stay; only the
+    # fast step-in segment re-faces
+    import humanoid_crowd as _HC
+    _HC.face_tangent(bs, min_mps=0.55)
 
 
 def _kf_crane(ctx):
@@ -685,6 +691,11 @@ def _humanoid_layer(ctx):
     ctx["humanoid"] = rep
     # the UAL principal: the Bystander (the film's one hero, 0.62,0.42,0.16)
     UAL_SCALE = 1.75 / 1.589
+    # fix-wave-1 D2: the Bystander KEEPS Idle_Loop by design: the
+    # witness stands, turns and crouches -- his one moving key is the
+    # 1-frame step-in pop (0.4 m @ f(ff+97)->(ff+98) = 9.6 m/s)
+    # which would drive the AUTO selector to Sprint (a standing
+    # witness must not sprint in place)
     pr = HC.bind_principals(ctx, {
         "Bystander": ("Idle_Loop", UAL_SCALE, None)})
     ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {

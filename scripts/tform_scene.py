@@ -518,6 +518,11 @@ def _kf_standard_bearer(ctx):
     _kf(sb, 1020, loc=(-4.0, -12.5), rot_z=math.radians(180.0))
     _kf(sb, 1080, loc=(-4.0, -12.5), rot_z=math.radians(180.0))
     _bezier(sb)
+    # fix-wave-1 D2: re-derive facing from the path tangents (the
+    # tdawn pattern) -- the bearer is the mover (the S10 cross); the
+    # plant hold at the dais sits still and keeps its authored yaw
+    import humanoid_crowd as _HC
+    _HC.face_tangent(sb, min_mps=0.45)
 
 
 def _kf_captain(ctx):
@@ -529,6 +534,11 @@ def _kf_captain(ctx):
     _kf(cp, 838, loc=(12.6, 2.6), rot_z=math.radians(250.0))
     _kf(cp, 860, loc=(12.6, 2.6), rot_z=math.radians(0.0))
     _bezier(cp)
+    # fix-wave-1 D2: re-derive facing from the path tangents (the
+    # tdawn pattern) -- the Captain is a watcher (posted by the
+    # dais; his keys are all holds, so the authored turn yaws stay)
+    import humanoid_crowd as _HC
+    _HC.face_tangent(cp, min_mps=0.55)
 
 
 def _kf_pennants(ctx):
@@ -641,9 +651,14 @@ def _humanoid_layer(ctx):
     UAL_SCALE = 1.75 / 1.589
     HERO_RGB = {"StandardBearer": (0.55, 0.42, 0.12),   # ceremonial gold
                 "Captain": (0.12, 0.12, 0.14)}          # the dark officer
+    # fix-wave-1 D2: clip=None -> AUTO (path-speed matched) -- the
+    # bearer crossed on a standing idle before (the moonwalk class;
+    # the over-speed cross is flagged for re-authoring, AUTO follows
+    # whatever speed the re-authored path lands at); the Captain has
+    # no moving segments, so AUTO resolves him to Idle_Loop
     pr = HC.bind_principals(ctx, {
-        "StandardBearer": ("Idle_Loop", UAL_SCALE, None),
-        "Captain": ("Idle_Loop", UAL_SCALE, None)})
+        "StandardBearer": (None, UAL_SCALE, None),
+        "Captain": (None, UAL_SCALE, None)})
     # the identity colors ride the UAL actor (the CA.Body materials on
     # the hidden commuters remain the exporter's CAST color surface);
     # the vendored loader is loaded BY PATH — the clone-seam law (the
