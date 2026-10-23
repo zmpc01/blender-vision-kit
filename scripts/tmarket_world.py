@@ -64,7 +64,7 @@ def _build_materials():
     m = {}
     # the damp cobble (the tsquall wet-sheen class: DARK base +
     # roughness 0.12 -- Cycles glossy GI reflects the lanterns)
-    m["cobble"] = make_material("TM.Cobble", (0.030, 0.028, 0.026), 0.12)
+    m["cobble"] = make_material("TM.Cobble", (0.042, 0.038, 0.033), 0.12)
     m["cobble_dry"] = make_material("TM.CobbleDry", (0.034, 0.031, 0.028),
                                     0.55)
     # the stall set: wood counters, tarp canopies, poles
@@ -124,17 +124,24 @@ def build_world(scene):
     parts["ground"] = ground
 
     # --- the stall rows (the contract's barricade squares ARE these) ---
+    from blender_kit import normalize_engine_id
+    _cyc0 = normalize_engine_id(
+        scene.render.engine).startswith("CYCLES")
+    _lw0 = 3.5 if _cyc0 else 1.0   # the BOTH-ENGINE mirror (the receipt;
+                                   # the lanterns ride it like the sodium)
     lantern_i = 0
     for sy in ROW_Y:
         tarp = mats["tarp_n"] if sy > 0 else mats["tarp_s"]
         for x in STALL_X:
             _box(f"TM.Counter_{x:+.0f}_{sy:+.1f}", 1.9, 0.8, COUNTER_H,
                  (x, sy, COUNTER_H / 2), mats["wood"])
-            # the canopy: a tarp plane on 4 poles (the stall silhouette)
-            _box(f"TM.Canopy_{x:+.0f}_{sy:+.1f}", 2.1, 1.3, 0.06,
+            # the canopy: a tarp plane on 4 poles (the stall silhouette;
+            # SMALLER than the light spread so the pools peek from the
+            # aerial -- the s28 eye-ladder receipt)
+            _box(f"TM.Canopy_{x:+.0f}_{sy:+.1f}", 1.5, 0.9, 0.06,
                  (x, sy, CANOPY_Z), tarp)
-            for px in (x - 0.95, x + 0.95):
-                for py in (sy - 0.55, sy + 0.55):
+            for px in (x - 0.65, x + 0.65):
+                for py in (sy - 0.35, sy + 0.35):
                     _cyl(f"TM.Pole_{px:+.1f}_{py:+.1f}", 0.035, CANOPY_Z,
                          (px, py, CANOPY_Z / 2), mats["pole"], verts=8)
             # the LANTERN (the lit 7 per row): a small emissive sphere
@@ -145,7 +152,8 @@ def build_world(scene):
                  (x + 0.55, sy + 0.28, lz), mats["lantern"], verts=10)
             ld = bpy.data.lights.new(
                 f"TM.LanternLight_{lantern_i:02d}", type='POINT')
-            ld.energy = 45.0          # the R1 measure-first start
+            ld.energy = 90.0 * _lw0     # the s28 eye-ladder rung 2 (45
+                                        # read dim from the aerial)
             ld.color = (1.0, 0.70, 0.42)
             ld.shadow_soft_size = 0.12
             lob = bpy.data.objects.new(

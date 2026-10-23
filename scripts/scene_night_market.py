@@ -44,8 +44,9 @@ if _previz_scripts not in sys.path:
 
 FPS = 24
 total_frames = 1080
-tm_exposure = 0.0            # the lantern night owns the frame; the
-                             # sky -8deg residue is the contrast floor
+tm_exposure = 0.5            # the s28 eye-ladder rung 2: the lantern
+                             # night owns the frame; the sky residue is
+                             # the contrast floor
 
 _here = os.path.dirname(os.path.abspath(__file__))
 
@@ -259,12 +260,16 @@ def _crowd_anchors(scene):
         if n >= 156:
             break
     chase = []
-    for i in range(9):
-        # the RB slots (the loader's indices 2/5/8) park outboard east
+    for i in range(12):
+        # the loader's chase census: TWELVE chase objects with the RB
+        # slots at indices 2/5/8 (the loader law; tsquall parked them
+        # outboard) -- the 9 queue agents + the 3 RB carriers.
         if i in (2, 5, 8):
-            x, y = (24.5 + (i // 3) * 2.0), -4.5
+            x, y = (24.5 + (i // 3) * 2.0), -4.5   # outboard east
         else:
-            x, y = (4.6 + i * 1.3), 1.25   # the noodle queue stretch
+            j = i - (1 if i > 2 else 0) - (1 if i > 5 else 0) \
+                - (1 if i > 8 else 0)
+            x, y = (4.6 + j * 1.3), 0.75           # the queue stretch
         ob = new_anchored_obj(f"Zed.ChaseP{i + 1:02d}", lib, (x, y, 0.0))
         chase.append(ob)
     return {"zombies": {"crowd": crowd, "chase": chase}}
