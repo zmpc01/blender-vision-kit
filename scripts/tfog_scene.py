@@ -474,17 +474,25 @@ def _board_row_materials(ctx):
 def _kf_late_passenger(ctx):
     """The sprint lane (docs section 3, the S5 row: 'keyed late
     passenger sprints against it, misses'): waits at the W end facing
-    the N track; sprints E along the N edge inside the blast window;
-    braces at the edge through S7; crosses to the W bench during
-    boarding and SITS -- alone at the title. The sit is the capsule
-    vocabulary's origin sink (the film-4 bystander idiom)."""
+    the N track through the establish; when the board flips EXPRESS
+    APPROACHING (f192, board program flip 2) he sets off -- the run E
+    along the N edge builds through the approach and peaks inside the
+    blast window, arriving spent at the E edge exactly as the express
+    clears (f528, the blast end); braces at the edge through S7;
+    crosses to the W bench during boarding and SITS -- alone at the
+    title. The sit is the capsule vocabulary's origin sink (the
+    film-4 bystander idiom). fix-wave-1 retime: the old f340->505
+    window read 7.8/5.5/5.1 m/s (43 m in 6.9 s -- superhuman); the
+    same waypoints over f192->528 hold every segment at ~3.1 m/s
+    (14 s of hard running -- the limit of believable for a desperate
+    late passenger)."""
     lp = ctx["heroes"]["LatePassenger"]
     _kf(lp, 1, loc=(-21.0, 1.6), rot_z=math.radians(180.0))
-    _kf(lp, 340, loc=(-21.0, 1.6), rot_z=math.radians(180.0))
-    _kf(lp, 400, loc=(-2.0, -2.8))                 # the sprint, E
+    _kf(lp, 192, loc=(-21.0, 1.6), rot_z=math.radians(180.0))  # the board flips
+    _kf(lp, 344, loc=(-2.0, -2.8))                 # the run, E
     _kf(lp, 470, loc=(14.0, -2.9))
-    _kf(lp, 505, loc=(21.5, -3.0))                 # the edge, spent
-    _kf(lp, 528, loc=(21.5, -3.0), rot_z=0.0)      # turns to the slab
+    _kf(lp, 528, loc=(21.5, -3.0))                 # the edge, spent
+    _kf(lp, 552, loc=(21.5, -3.0), rot_z=0.0)      # turns to the slab
     _kf(lp, 612, loc=(21.5, -3.0), rot_z=0.0)      # S7: at the edge
     _kf(lp, 672, loc=(21.5, -3.0), rot_z=0.0)
     _kf(lp, 800, loc=(13.5, -2.6))                 # the walk to bench4

@@ -79,8 +79,8 @@ SHOTS_V1 = [
                       "clasp (the beat window f794-838)"),
     ("S8",  841, 936, "break-off: the ring becomes the gap-column"),
     ("S9",  937, 972, "the streaming column funnels through the gap"),
-    ("S10", 973, 1008, "the standard bearer crosses the foreground "
-                       "(keyed)"),
+    ("S10", 973, 1008, "the standard bearer's final approach: the "
+                       "banner carried to the dais (keyed)"),
     ("S11", 1009, 1044, "title: the bearer PLANTS the banner (f1009) "
                         "-- THE DRILL over the banner + dais"),
     ("S12", 1045, 1080, "final aerial: the mark, the long shadows, "
@@ -121,9 +121,14 @@ CAMS_V1 = [
     # S9: inside the barracks strip N looking S back at the stream
     ("CAM_S9",  (0.0, 26.0, 2.6), (0.0, 26.0, 2.6), 40,
      (0.0, 12.0, 0.6), False, 0.0),
-    # S10: the standard bearer crosses the foreground (low, W side)
+    # S10: the bearer's final approach to the dais (fix-wave-1 re-aim:
+    # the believable 1.8 m/s retime puts him at x -6.4..-4, y -11.3..-12.5
+    # through the shot -- the old NE aim at (-9,-6) framed a cross that
+    # only existed at 13.4 m/s; this aim rides his approach line, the
+    # dais beyond. re-run the tform_camprobe S10 sheet on the next eye
+    # pass -- the round-1 cert predates the retime)
     ("CAM_S10", (-16.0, -14.0, 1.6), (-16.0, -14.0, 1.6), 45,
-     (-9.0, -6.0, 1.1), False, 0.0),
+     (-5.0, -10.5, 1.1), False, 0.0),
     # S11: the PLANTED banner + the dais (the bearer plants at f1009
     # and holds -- round-1: the banner had EXITED frame by the title)
     ("CAM_S11", (17.5, 4.0, 1.8), (17.5, 4.0, 1.8), 40,
@@ -505,16 +510,27 @@ def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
 # ======================================================================
 
 def _kf_standard_bearer(ctx):
-    """The banner cross + the PLANT: waits W, crosses the foreground
-    during S10 (973-1008), PLANTS the banner at f1009 (the title
-    beat) and holds through the end -- the S11 title frames the
-    planted banner against the dais."""
+    """The banner march + the PLANT: waits W through the ceremony
+    (the ring holds into S7), then carries the banner across the SW
+    foreground at attention-march pace -- f720->f1008, 21.8 m over
+    12.0 s = 1.82 m/s (fix-wave-1 retime: the old 940->1008 cross
+    peaked at 13.4 m/s -- superhuman; the same waypoints now span
+    the officers' beat + the break-off + S10, intermediate keys at
+    f778/f841/f904/f956 hold every segment in the 1.8-1.9 band, the
+    dispersal column's 1.55 m/s class). PLANTS the banner at f1009
+    (the title beat) and holds through the end -- the S11 title
+    frames the planted banner against the dais. S10 (973-1008) is
+    now the final approach: the last ~2.6 m to the dais, which is
+    all a 1.8 m/s march can cover inside a 36-frame shot (CAM_S10
+    re-aimed onto the approach line, see CAMS_V1)."""
     sb = ctx["heroes"]["StandardBearer"]
     _kf(sb, 1, loc=(-24.0, -10.0), rot_z=math.radians(90.0))
-    _kf(sb, 940, loc=(-24.0, -10.0), rot_z=math.radians(90.0))
-    _kf(sb, 973, loc=(-20.0, -12.0), rot_z=math.radians(70.0))
-    _kf(sb, 990, loc=(-11.0, -9.0), rot_z=math.radians(90.0))
-    _kf(sb, 1008, loc=(-4.0, -12.5), rot_z=math.radians(110.0))
+    _kf(sb, 720, loc=(-24.0, -10.0), rot_z=math.radians(90.0))  # the wait ends
+    _kf(sb, 778, loc=(-20.0, -12.0), rot_z=math.radians(70.0))
+    _kf(sb, 841, loc=(-15.5, -10.5), rot_z=math.radians(90.0))  # the break-off
+    _kf(sb, 904, loc=(-11.0, -9.0), rot_z=math.radians(90.0))
+    _kf(sb, 956, loc=(-7.5, -10.75), rot_z=math.radians(110.0))
+    _kf(sb, 1008, loc=(-4.0, -12.5), rot_z=math.radians(110.0))  # at the dais
     _kf(sb, 1020, loc=(-4.0, -12.5), rot_z=math.radians(180.0))
     _kf(sb, 1080, loc=(-4.0, -12.5), rot_z=math.radians(180.0))
     _bezier(sb)
@@ -652,10 +668,10 @@ def _humanoid_layer(ctx):
     HERO_RGB = {"StandardBearer": (0.55, 0.42, 0.12),   # ceremonial gold
                 "Captain": (0.12, 0.12, 0.14)}          # the dark officer
     # fix-wave-1 D2: clip=None -> AUTO (path-speed matched) -- the
-    # bearer crossed on a standing idle before (the moonwalk class;
-    # the over-speed cross is flagged for re-authoring, AUTO follows
-    # whatever speed the re-authored path lands at); the Captain has
-    # no moving segments, so AUTO resolves him to Idle_Loop
+    # bearer crossed on a standing idle before (the moonwalk class);
+    # the fix-wave-1 retime landed the cross at 1.8 m/s, so AUTO
+    # resolves him a march/walk cadence; the Captain has no moving
+    # segments, so AUTO resolves him to Idle_Loop
     pr = HC.bind_principals(ctx, {
         "StandardBearer": (None, UAL_SCALE, None),
         "Captain": (None, UAL_SCALE, None)})

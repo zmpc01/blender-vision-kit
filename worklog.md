@@ -4445,3 +4445,124 @@ Stage Summary:
   (P0, 2-line fix in humanoid_crowd.py:814/:861), (2) the over-speed hero
   path re-authoring list above (tfog passenger, tform bearer, tmarket runner
   thread, tgreen apron thread + the two 1-frame pops).
+
+---
+Task ID: fix-wave-1-overspeed
+Agent: implementation subagent (general-purpose, the fix-wave-1 over-speed
+hero retime lane)
+Task: retime every over-speed AUTHORED hero path to believable humanoid
+speeds (<= 2.6 m/s sustained; <= 3.2 m/s brief action beats), per the
+films lane's live census list. tmarket's ~4 m/s jog is DESIGN (D-NM1)
+and untouched.
+
+Work Log:
+- Read the RCA + films-lane entries, the five offenders' path tables,
+  and each film's design doc sections that pin the story beats
+  (DESIGN_drill.md section 3, DESIGN_express.md section 3/9,
+  DESIGN_last_ferry.md section 1/5, DESIGN_green_light.md section 3,
+  DESIGN_squall.md section 3). Grepped every file for frame references
+  to the touched segments (sfx/board/emission/camera keys) before
+  moving any key.
+- tform StandardBearer (scripts/tform_scene.py:_kf_standard_bearer):
+  the S10 cross was 21.8 m of path in 68 frames = 7.7 m/s mean
+  (segments 3.25/13.39/10.43). RETIMED by moving the START of the
+  exit earlier per the brief: the W wait now ends f720 (was f940),
+  same waypoints (-24,-10)->(-20,-12)->(-11,-9)->(-4,-12.5) with TWO
+  inserted intermediate keys (-15.5,-10.5)@f841 (the break-off beat)
+  and (-7.5,-10.75)@f956; the arrival at the dais (-4,-12.5)@f1008
+  + the f1009 PLANT + the f1020/f1080 holds are UNTOUCHED. New
+  segment speeds 1.85/1.81/1.81/1.81/1.81 m/s (mean 1.82 -- the
+  brief's 1.5-2.0 march band, the dispersal column's 1.55 m/s class).
+- tform FRAME-PINNED DEPENDENCY FOUND + HANDLED: the plant is pinned
+  at f1009 (banner emission keys f1008->1009, S11 span 1009-1044,
+  CAM_S11) and the film ends at 1080 -- at <= 2.0 m/s a 21.8 m cross
+  MUST start ~f720, which leaves the bearer at x -6.4..-4 through the
+  S10 window. Bearing analysis vs CAM_S10 (loc (-16,-14), 45mm,
+  half-FOV 21.8 deg): the old NE aim (-9,-6) only framed the bearer
+  because he swept the frame at 13.4 m/s; at 1.8 m/s he sits ~10-15
+  deg RIGHT of that axis = fully out of frame. CAM_S10 aim re-aimed
+  (-9.0,-6.0,1.1) -> (-5.0,-10.5,1.1) (rides the approach line, the
+  dais beyond), S10 shot text updated to "the final approach", and
+  the round-1 camprobe cert note flagged: re-run the tform_camprobe
+  S10 sheet on the next eye pass. No keepout rows exist for tform
+  (tform_contract.CAM_KEEPOUTS == () -- the scaffold), so no row
+  edits. S1-S7 framing is unchanged (he was static at (-24,-10)
+  through f940 before; he is static there through f720 now, and
+  CAM_S7/CAM_S8 face away from his path). During S9 he reads as a
+  small gold figure crossing the deep background of the funnel shot
+  (37 m from CAM_S9, in-frame at 13.7 deg off-axis) -- dispersal
+  context, not a collision.
+- tfog LatePassenger (scripts/tfog_scene.py:_kf_late_passenger): the
+  sprint was 43 m in 165 frames = 6.25 m/s mean (7.80/5.49/5.14).
+  Retime: run start moved to f192 -- the board flip EXPRESS
+  APPROACHING (board program flip 2, the ladder [1,192,528,792,1009])
+  is his starting gun -- and the arrival moved to f528 (the blast
+  window end: the express clears the platform E end at exactly f528,
+  so he now arrives spent AS the tail passes him). Keys 340/400/470/
+  505+turn@528 -> 192/344/470/528+turn@552 (the f470 waypoint key
+  kept verbatim; the turn keeps its ~1 s span, 24f). New speeds
+  3.08/3.05/3.10 m/s -- <= 3.2 as the brief sanctions for the
+  sprint; 14 s of hard running, in-character for the desperate late
+  passenger. The brace/sit tail untouched (672->800 walk 1.50, sit
+  at 830). No frame-pinned deps on the passenger keys (headlight/
+  window-arc/aspect/board/express-slide keys all independent and
+  untouched); the S5 blast crane now frames him mid-run (he passes
+  the aim line x=8 ~f413 instead of before the window).
+- tgreen (scripts/scene_green_light.py:_kf_heroes): [1] Statue flinch
+  pop f354->355 (0.3 m in 1 frame = 7.20 m/s) -> the flinch key
+  moved to f361: 0.3 m over 6 frames = 1.2 m/s, motion starts at the
+  f355 freeze beat and lands f361 (a reaction that trails the beat
+  reads MORE natural). [2] Runner apron thread f790->800 6.92 m/s ->
+  keys 776/811: the hesitate-hold end (f750) and the reach (f816)
+  are pinned (S9's aim = the hold pose; the statue's final face
+  f816+), so the same 3 waypoints redistributed over f750->816:
+  1.97/1.98/1.87 m/s (the brief's 1.6-2.4 jog band). Left as-is and
+  documented: the f529->560 gamble dash 3.10 m/s (1.3 s) and the
+  f700->721 decel 2.78 m/s (0.9 s) -- both under the 3.2 brief-beat
+  cap, both outside the brief's offender list.
+- tsquall Bystander (scripts/scene_squall.py:_kf_bystander): the
+  step-in pop f(ff+97)->(ff+98) (0.4 m in 1 frame = 9.60 m/s) -> the
+  watch hold now ends ff+90, so the XY step (0.4 m) AND the crouch
+  origin-sink (0.35 m z, previously also a 1-frame drop) span
+  ff+90->ff+98 = 8 frames = 1.20/1.05 m/s. The crouch still LANDS at
+  ff+98 (the ~4.2 s beat; the keys still DERIVE from
+  cast.fall_tick_frame -- the 4-i P1-4 re-bake law is preserved).
+- tferry Latecomer (scripts/scene_last_ferry.py:_kf_heroes): the
+  rail-line cut f348->444 4.50 m/s -> end moved to f500: 18 m over
+  152f = 2.84 m/s (<= 3.0). He now arrives mid-S6, verified
+  off-camera (CAM_S6 frames the throat; the Latecomer at the E rail
+  is >46 deg off its axis for the whole span), and sits on the rail
+  hold for S7's tracker + S8's pairing shot exactly as before. The
+  S4 entry run (2.31) + the S5 head-on read are unchanged (he still
+  fills the S5 frame coming down the east rail toward the lens).
+  The pier-head/gate/choke/ramp keys untouched.
+- Stale fix-wave-1 D2 comments refreshed at the four call sites that
+  cited the old pop speeds as their rationale (tgreen Statue
+  Idle_Loop, tsquall Bystander Idle_Loop, tform AUTO note) -- clips
+  unchanged, only the cited numbers/story updated.
+- VERIFY: ast.parse all five files OK. Arithmetic probe
+  (/home/z/probe_w1_overspeed/probe_overspeed.py, throwaway -- NOT in
+  the repo): ast-extracts the edited key tables and computes
+  key-to-key XY speeds at 24 fps (the census metric) -- every edited
+  segment within its cap. Live Blender 5.2.2 dry-runs: tgreen +
+  tferry full --skip-crowd builds OK (face_tangent receipts match the
+  films lane's baseline: tgreen Runner 7+91 / Statue 1+91, tferry
+  Latecomer 1+69 / Deckhand 0+91); isolation probe
+  (/home/z/probe_w1_overspeed/probe_kf_iso.py) exercising the three
+  cache-gated films' _kf_* functions on real fcurves (tfog LP 2+91 /
+  SM 4+91, tform SB 5+91 / Captain 0+73, tsquall Bystander 1+91) --
+  ALL LIVE-FCURVE SEGMENTS WITHIN CAPS, exit 0.
+- NOT touched: tmarket Runner/Child (the D-NM1 "~4 m/s jog" pin is
+  design intent); all crowd-side speed surfaces (the pin-seam and
+  keepout-clamp teleports are other lanes).
+
+Stage Summary:
+- All five over-speed hero paths retimed in the key tables: tform
+  bearer 13.4 -> 1.8 m/s (with the forced CAM_S10 re-aim documented),
+  tfog passenger 7.8 -> 3.1 m/s (board-flip start, blast-end arrival),
+  tgreen apron thread 6.9 -> ~1.9 m/s + flinch pop 7.2 -> 1.2 m/s,
+  tsquall step-in pop 9.6 -> 1.2 m/s, tferry rail cut 4.5 -> 2.8 m/s.
+  Story beats, plant/brace/sit pins, and sfx/camera frame references
+  preserved (one camera AIM adjusted with the cert re-run flagged).
+  Every hero now moves at believable humanoid speeds; the
+  "instant teleporting" class is closed for authored paths.

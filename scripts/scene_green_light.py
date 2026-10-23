@@ -345,16 +345,20 @@ def _glyph_keys(ctx):
 
 
 def _kf_heroes(ctx):
-    """The authored paths (F7). Statue: the plinth (0,0.25); flinch at
-    the freeze beat (f355), performance pose f470, beckon NE f760,
-    final pose facing the runner f816+. Runner: E-curb hold f1-529,
-    the gamble, the hesitate HOLD (4.6,2.6) f721-750 (S9's aim), the
-    thread through the frozen field, the reach f816, hold to end."""
+    """The authored paths (F7). Statue: the plinth (0,0.25); flinch
+    at the freeze beat (f355 -- the pop now SPANS f355->361, 0.3 m
+    over 6 frames = 1.2 m/s; fix-wave-1: the old 1-frame pop read
+    7.2 m/s), performance pose f470, beckon NE f760, final pose
+    facing the runner f816+. Runner: E-curb hold f1-529, the gamble,
+    the hesitate HOLD (4.6,2.6) f721-750 (S9's aim), the thread
+    through the frozen field (retime fix-wave-1: the apron hop now
+    spans f750->816 at ~1.9 m/s -- the old f790->800 key read
+    6.9 m/s), the reach f816, hold to end."""
     st = ctx["heroes"]["Statue"]
     rn = ctx["heroes"]["Runner"]
     _kf(st, 1, loc=(0.0, 0.25), rot_z=0.0)
     _kf(st, 354, loc=(0.0, 0.25), rot_z=0.0)
-    _kf(st, 355, loc=(0.0, 0.55), rot_z=0.15)     # the flinch (still)
+    _kf(st, 361, loc=(0.0, 0.55), rot_z=0.15)     # the flinch (6f span)
     _kf(st, 400, loc=(0.0, 0.30), rot_z=0.0)
     _kf(st, 470, loc=(0.0, 0.25), rot_z=0.5)      # performance pose
     _kf(st, 759, loc=(0.0, 0.25), rot_z=0.5)
@@ -371,8 +375,8 @@ def _kf_heroes(ctx):
         (700, (7.0, 2.2), math.pi / 2 + 0.2),
         (721, (4.6, 2.6), math.pi / 2 + 0.4),   # the hesitate HOLD
         (750, (4.6, 2.6), math.pi / 2 + 0.4),
-        (790, (2.5, 3.0), math.pi / 2 - 0.2),   # the thread, N flank
-        (800, (0.9, 0.6), math.pi / 2 - 0.3),   # onto the apron
+        (776, (2.5, 3.0), math.pi / 2 - 0.2),   # the thread, N flank
+        (811, (0.9, 0.6), math.pi / 2 - 0.3),   # onto the apron
         (816, (0.6, 0.35), 0.35),               # the reach
         (1080, (0.6, 0.35), 0.35),
     ]
@@ -552,10 +556,10 @@ def _humanoid_layer(ctx):
     UAL_SCALE = 1.75 / 1.589
     # fix-wave-1 D2: the Runner goes AUTO (path-speed matched -- he
     # glided on a standing idle before, the moonwalk class). The
-    # Statue KEEPS Idle_Loop by design: his one moving key is the
-    # 1-frame flinch pop (0.3 m @ f354->355 = 7.2 m/s) which would
-    # drive the AUTO selector to Sprint -- a posed statue on a
-    # plinth must not sprint in place
+    # Statue KEEPS Idle_Loop by design: his one move is the flinch
+    # lean (now spanned f355->361 at 1.2 m/s -- fix-wave-1 killed
+    # the old 1-frame 7.2 m/s pop) -- a posed statue on a plinth
+    # must not pick up a gait cycle
     pr = HC.bind_principals(ctx, {
         "Statue": ("Idle_Loop", UAL_SCALE, None),
         "Runner": (None, UAL_SCALE, None)})

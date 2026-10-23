@@ -561,14 +561,17 @@ def _kf_bystander(ctx):
     ~4.2s later, holds. The turn/crouch frames DERIVE from the cast's
     fall_tick_frame (the 4-i P1-4: literals desync on a re-bake).
     The crouch is a LOCATION key (the witness steps toward the rim)
-    plus a lean -- the capsule vocabulary has no knees."""
+    plus a lean -- the capsule vocabulary has no knees. fix-wave-1:
+    the step-in + origin-sink now SPAN ff+90 -> ff+98 (0.4 m XY +
+    0.35 m Z over 8 frames ~ 1.2 m/s -- the old 1-frame pop read
+    9.6 m/s); the crouch still LANDS at ff+98 (the 4.2 s beat)."""
     cast = ctx.get("cast") or {}
     ff = int(cast.get("fall_tick_frame", 372))   # the fall frame
     bs = ctx["heroes"]["Bystander"]
     _kf(bs, 1, loc=(10.6, -1.2), rot_z=math.radians(125))
     _kf(bs, ff - 1, loc=(10.6, -1.2), rot_z=math.radians(125))
     _kf(bs, ff + 13, loc=(10.6, -1.0), rot_z=math.radians(95))  # turns
-    _kf(bs, ff + 97, loc=(10.6, -1.0), rot_z=math.radians(95))
+    _kf(bs, ff + 90, loc=(10.6, -1.0), rot_z=math.radians(95))  # watch hold
     _kf(bs, ff + 98, loc=(10.6, -0.6), rot_z=math.radians(80))  # steps in
     bs.location = (10.6, -0.6, -0.35)    # the crouch: the origin sinks
     bs.keyframe_insert(data_path="location", frame=ff + 98)
@@ -692,10 +695,10 @@ def _humanoid_layer(ctx):
     # the UAL principal: the Bystander (the film's one hero, 0.62,0.42,0.16)
     UAL_SCALE = 1.75 / 1.589
     # fix-wave-1 D2: the Bystander KEEPS Idle_Loop by design: the
-    # witness stands, turns and crouches -- his one moving key is the
-    # 1-frame step-in pop (0.4 m @ f(ff+97)->(ff+98) = 9.6 m/s)
-    # which would drive the AUTO selector to Sprint (a standing
-    # witness must not sprint in place)
+    # witness stands, turns and crouches -- his one move is the
+    # step-in lean (now spanned ff+90->ff+98 at 1.2 m/s -- fix-wave-1
+    # killed the old 1-frame 9.6 m/s pop); a standing witness must
+    # not pick up a gait cycle
     pr = HC.bind_principals(ctx, {
         "Bystander": ("Idle_Loop", UAL_SCALE, None)})
     ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {

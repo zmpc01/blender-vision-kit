@@ -299,9 +299,13 @@ def _kf(obj, f, loc=None, rot_z=None):
 def _kf_heroes(ctx):
     """The authored paths. Deckhand: holds (0.30,0.70) facing the
     crowd; steps aside for the Latecomer at S9-S10. Latecomer: pier
-    head (4.9,34) f265 -> the east rail line (4.8,8) f444 -> holds
+    head (4.9,34) f265 -> the east rail line (4.8,8) f500 -> holds
     (idle sway) -> the maintenance gate f721-760 -> the choke approach
-    -> through the throat -> the ferry ramp by f900."""
+    -> through the throat -> the ferry ramp by f900. fix-wave-1: the
+    rail-line cut f348->444 read 4.5 m/s (18 m in 4 s); the same 18 m
+    over f348->500 reads 2.8 m/s -- he now arrives mid-S6 (off-camera:
+    CAM_S6 frames the throat) and is on the rail hold for S7's
+    tracker."""
     dh = ctx["heroes"]["Deckhand"]
     lc = ctx["heroes"]["Latecomer"]
     _kf(dh, 1, loc=(0.30, 0.70))
@@ -310,7 +314,7 @@ def _kf_heroes(ctx):
     _kf(dh, 1080, loc=(-0.45, 0.85), rot_z=0.5)
     for ob in (dh, lc):
         _bezier(ob)
-    run = [(265, (4.90, 34.0)), (348, (4.85, 26.0)), (444, (4.80, 8.0)),
+    run = [(265, (4.90, 34.0)), (348, (4.85, 26.0)), (500, (4.80, 8.0)),
            (700, (4.80, 8.0)), (760, (3.40, 6.2)), (816, (0.60, 1.4)),
            (880, (0.20, -1.1)), (900, (0.05, -2.2)), (1080, (0.05, -2.2))]
     for f, loc in run:
