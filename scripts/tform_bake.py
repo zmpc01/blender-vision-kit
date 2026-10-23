@@ -542,9 +542,18 @@ def _authored_trajectories(C, drill_ids, pos120):
         disp_of[a] = b
 
     def disp_path(k, col_idx, t):
-        return C.dispersal_sample(ring[k], gap_cols[col_idx], t - t_s0)
+        # fix-wave-1 D5b: the dispersal MUST march from the agent's
+        # HELD ring slot (ring[circle_slot[k]] — the hold window's pin)
+        # — the raw ring[k] index-space mixup teleported every agent
+        # whose circle repair moved it (24 boundary snaps at t=420/421,
+        # |v| to 95 m/s, caught by the composed verifier).
+        return C.dispersal_sample(ring[circle_slot[k]],
+                                  gap_cols[col_idx], t - t_s0)
 
-    disp_slot, _ = repair([disp_of[k] for k in range(24)], disp_path,
+    # the column seriation keys are RING indices — map through the
+    # agent's circle slot (the same index-space law as disp_path)
+    disp_slot, _ = repair([disp_of[circle_slot[k]] for k in range(24)],
+                          disp_path,
                           list(range(t_s0, t_s1 + 1)), floor=0.7)
 
     # --- assemble the full trajectories -------------------------------
