@@ -57,6 +57,20 @@ WALK_CLIP = "2899.fbx"      # Male standard walk (38f)
 IDLE_CLIP = "2781.fbx"      # Center of gravity shift standby (500f -> trim 64)
 IDLE_TRIM = 64
 STATIONARY_MPS = 0.05       # the K1 clip-channel threshold
+# fix-wave-1 D3-REV2: the top speed class needs a RUN clip (the walk
+# clip cannot be retimed past ~2x without looking wrong); 2850 =
+# "Run forward" from the RH WALK_RUN_MOVE category.
+JOG_CLIP = "2850.fbx"
+# speed-class edges (mean m/s from the cache): <=0.9 stroll / <=1.6
+# walk / <=2.4 brisk / rest run. The per-class retime law (D3-REV2):
+#   key-time scale s = clamp((24/30) * v_nat / v_class, 0.55, 1.9)
+# (24/30 = the clip timebase correction; v_nat measured from the
+# clip's own hips travel per cycle, the s43 law — RH clips are NOT
+# in-place).
+CLASS_EDGES = (0.9, 1.6, 2.4)
+NOMINAL_WALK_MPS = 1.4      # in-place-fallback cadence assumption
+RETIME_CLAMP = (0.55, 1.9)
+WALK_SPAN_MIN_M = 0.02      # the bind-time motion gate (D3-REV2)
 
 # The chase RB placeholder slots (s25: local — was an escape-previz
 # import; the audit's P1-1). loader.py renames chase[2]/[5]/[8] to
@@ -125,6 +139,7 @@ def crowd_family(name):
             "rig_provenance": prov,
             "walk": f"{RH_ANIMS}/assets/fbx/{WALK_CLIP}",
             "idle": f"{RH_ANIMS}/assets/fbx/{IDLE_CLIP}",
+            "jog": f"{RH_ANIMS}/assets/fbx/{JOG_CLIP}",
             "prefix": "mixamorig:",
             "probe_bone": "mixamorig:LeftFoot",
             "rig_height": RIG_HEIGHT["rh_xbot"],
@@ -240,6 +255,84 @@ def _iter_fcurves(action):
     return list(blender_kit.iter_fcurves(action))
 
 
+def _retime_action(act, scale, f0):
+    """D3-REV2: scale key times around f0 by `scale` in place (the
+    handles ride the same per-key delta as _wrap_action — the proven
+    approximation in this module)."""
+    for fc in _iter_fcurves(act):
+        for kp in fc.keyframe_points:
+            t = f0 + (kp.co.x - f0) * scale
+            dx = t - kp.co.x
+            kp.co.x = t
+            kp.handle_left.x += dx
+            kp.handle_right.x += dx
+        fc.keyframe_points.sort()
+        fc.update()
+
+
+def _clip_travel_m(act):
+    """s43 law: measure the hips HORIZONTAL travel over one loop
+    (RH clips are NOT in-place). Returns (travel_m, f0, f1)."""
+    loc = {}
+    for fc in _iter_fcurves(act):
+        dp = fc.data_path
+        if not dp.endswith("location") or '"' not in dp:
+            continue
+        bone = dp.split('"')[1]
+        if "hips" not in bone.lower():
+            continue
+        kps = sorted(kp.co.x for kp in fc.keyframe_points)
+        if not kps:
+            continue
+        loc.setdefault(fc.array_index, (kps[0], kps[-1],
+                       fc.keyframe_points[0].co.y, fc.keyframe_points[-1].co.y))
+    if 0 not in loc or 1 not in loc:
+        return 0.0, 0, 0
+    f0 = min(loc[0][0], loc[1][0])
+    f1 = max(loc[0][1], loc[1][1])
+    travel = ((loc[0][3] - loc[0][2]) ** 2 +
+              (loc[1][3] - loc[1][2]) ** 2) ** 0.5
+    return abs(travel), int(f0), int(f1)
+
+
+def _pin_slot(ad, act):
+    """kb rigged-characters law #7: EVERY action assignment pins the
+    slot. The unpinned class shipped 12/129 near-frozen walks (the
+    stale/legacy slot survives on copies)."""
+    ad.action = act
+    slots = getattr(act, "slots", None)
+    if slots:
+        ad.action_slot = slots[0]
+
+
+def _span_gate(arm, act, f0, cyc, i):
+    """D3-REV2 bind-time motion gate: the bound walk action must MOVE
+    (hips world-z span >= WALK_SPAN_MIN_M over its class cycle, 11
+    samples — the s26 aliasing law bounds the extreme within ~2f).
+    The unpinned-slot class shipped 12/129 near-frozen walks."""
+    sc = bpy.context.scene
+    hips = None
+    for pb in arm.pose.bones:
+        if pb.name.lower().endswith("mixamorig:hips"):
+            hips = pb
+            break
+    if hips is None:
+        _fail(f"span gate: agent {i} has no *mixamorig:hips bone "
+              f"(census bug — the rename prefix broke the lookup?)")
+    zs = []
+    for j in range(11):
+        f = f0 + cyc * j // 10
+        sc.frame_set(f)
+        bpy.context.view_layer.update()
+        zs.append((arm.matrix_world @ hips.matrix).translation.z)
+    sc.frame_set(1)
+    span = max(zs) - min(zs)
+    if span < WALK_SPAN_MIN_M:
+        _fail(f"span gate: agent {i} walk action {act.name} hips span "
+              f"{span:.4f} m < {WALK_SPAN_MIN_M} (frozen-walk class — "
+              f"the bind or the retime is broken; refusing)")
+
+
 def _trim_action(act, keep_frames):
     """Trim an action to its first `keep_frames` (index-DESC removals —
     RNA array refs go stale after each removal)."""
@@ -347,7 +440,90 @@ def bind_crowd(ctx, fam, group_tint=None):
         _fail(f"idle bones not on rig ({len(missing_i)}): "
               f"{sorted(missing_i)[:6]}")
 
+    # ---- fix-wave-1 D3-REV2: speed-class retimed bases ----------------
+    # v_nat from the clip's own hips travel (s43: RH clips are NOT
+    # in-place). Top class uses the RUN clip when it serves.
     speeds = _cache_speeds(ctx, n)
+    # D3-REV2b: CLASS speeds are the MOVING mean (ticks > 0.3 m/s) —
+    # the all-ticks mean collapses pre-spawn zero ticks and put every
+    # walker in class 0 at the floor (measured: 122/122 in class 0).
+    class_speeds = _moving_speeds(ctx, n, speeds)
+    travel_w, tf0, tf1 = _clip_travel_m(walk_act)
+    if travel_w > 0.15:
+        v_nat = travel_w / (cyc / 30.0)
+    else:
+        v_nat = NOMINAL_WALK_MPS
+        _P(f"retiming: walk clip reads in-place (travel {travel_w:.3f}m) "
+            f"-> nominal cadence {NOMINAL_WALK_MPS} m/s")
+    jog_act = None
+    jog_cyc = None
+    v_nat_top = v_nat
+    if os.path.isfile(fam.get("jog", "")):
+        with _fps_guard():
+            before = set(bpy.data.actions)
+            before_ob = set(bpy.data.objects)
+            bpy.ops.import_scene.fbx(filepath=fam["jog"])
+            jog_act = [a for a in bpy.data.actions if a not in before][0]
+            for ob in [o for o in bpy.data.objects if o not in before_ob]:
+                bpy.data.objects.remove(ob, do_unlink=True)
+        travel_j, jf0, jf1 = _clip_travel_m(jog_act)
+        jog_cyc = jf1 - jf0
+        jog_names = {fc.data_path.split('"')[1]
+                     for fc in _iter_fcurves(jog_act)
+                     if '"' in fc.data_path}
+        if jog_names - rig_names:
+            _P("retiming: jog clip bones not on rig — top class falls "
+                "back to the retimed walk")
+            bpy.data.actions.remove(jog_act)
+            jog_act = None
+            jog_cyc = None
+        elif travel_j > 0.15:
+            v_nat_top = travel_j / (jog_cyc / 30.0)
+        else:
+            v_nat_top = 3.0   # a run clip's nominal cadence
+    else:
+        _P("retiming: no jog clip served — the top class retimes the "
+            "walk (residual slide accepted, see DESIGN_fix_wave1 D3)")
+
+    # per-class retimed bases: class i uses walk for i < top, the jog
+    # for the top class. v_class = the members' mean speed.
+    def _class_of(v):
+        for ci, edge in enumerate(CLASS_EDGES):
+            if v <= edge:
+                return ci
+        return len(CLASS_EDGES)
+    n_classes = len(CLASS_EDGES) + 1
+    class_members = [[] for _ in range(n_classes)]
+    for i in range(n):
+        if speeds is not None and speeds[i] > STATIONARY_MPS:
+            class_members[_class_of(class_speeds[i])].append(i)
+    class_bases = []   # per class: (act, f0, cyc) or None
+    for ci in range(n_classes):
+        mem = class_members[ci]
+        if not mem:
+            class_bases.append(None)
+            continue
+        v_class = max(0.35, float(sum(class_speeds[i] for i in mem))
+                      / len(mem))
+        use_jog = (ci == n_classes - 1) and jog_act is not None
+        src = jog_act if use_jog else walk_act
+        src_cyc = jog_cyc if use_jog else cyc
+        src_nat = v_nat_top if use_jog else v_nat
+        s = (24.0 / 30.0) * src_nat / v_class
+        s = max(RETIME_CLAMP[0], min(RETIME_CLAMP[1], s))
+        base = src.copy()
+        base.name = f"{'jog' if use_jog else 'walk'}_c{ci}"
+        src_f0 = jf0 if use_jog else f0
+        _retime_action(base, s, src_f0)
+        class_bases.append((base, src_f0, int(round(src_cyc * s)), s,
+                            v_class, use_jog))
+        _P(f"retiming: class {ci} n={len(mem)} v_class={v_class:.2f} "
+            f"{'jog' if use_jog else 'walk'} s={s:.3f} "
+            f"cycle={int(round(src_cyc * s))}f")
+    for ci, cb in enumerate(class_bases):
+        if class_members[ci] and cb is None:
+            _fail(f"class {ci} has {len(class_members[ci])} members but "
+                  f"no base (retime failed)")
     group_mats = _make_group_materials(group_tint)
     agent_group = (group_tint or {}).get("agent_group")
     # the PER-GROUP MESH DATA law: the glTF exporter resolves materials
@@ -400,6 +576,18 @@ def bind_crowd(ctx, fam, group_tint=None):
 
     reps = []
     n_walk = n_idle = 0
+    import collections as _collections
+    bone_name_census = _collections.Counter()
+    # fix-wave-1 D1-REV2: per-agent UNIQUE armature data + mesh data +
+    # bone/vgroup renames + per-agent actions with pinned slots. The
+    # staged GLB carried 129 nodes named mixamorig:Hips -> three.js
+    # binds every walk action to the FIRST rig (128 statues + 1 rig
+    # torn by 129 stacked actions). Object.copy() SHARES data — the
+    # rename would cascade across every agent; vertex groups do NOT
+    # follow bone renames (the unskin trap). LAW per agent: fresh
+    # armature data, fresh mesh data, rename BOTH bones and vgroups
+    # with the SAME prefix, bind the action and pin its slot BEFORE
+    # the rename (the s20 remap fires for the bound action only).
     for i, anchor in enumerate(anchors):
         # the anchor stays a MESH (D6-2); its data -> the degenerate
         # carrier (the baked gait shape keys die with the old data —
@@ -408,6 +596,10 @@ def bind_crowd(ctx, fam, group_tint=None):
         anchor.data = deg_data
         # per-agent rig: LINK the copy before wrap (review r1 P0-1/T4)
         arm_i = tmpl["arm"].copy()
+        # D1-REV2: the data copy is the LAW — Object.copy() shares the
+        # armature data and a rename on one agent would rename every
+        # agent (compounding prefixes, cross-corrupted remaps)
+        arm_i.data = tmpl["arm"].data.copy()
         arm_i.name = f"{anchor.name}.Rig"
         bpy.context.scene.collection.objects.link(arm_i)
         wrapper = wrapper_rig.wrap(arm_i, f"{anchor.name}.Hum",
@@ -420,59 +612,119 @@ def bind_crowd(ctx, fam, group_tint=None):
         # retarget every agent renders as a rigid rest-pose statue)
         gi = agent_group[i] if agent_group is not None else 0
         srcs = group_meshes[gi] if group_meshes else tmpl["meshes"]
+        agent_meshes = []
         for j, tm in enumerate(srcs):
             me = tm.copy()
             me.name = f"{anchor.name}.Body{j}"
-            if not group_meshes:
-                # s25 data-name law (no-tint films only): the body DATA
-                # follows the object name so the data-level finder
-                # resolves too. Tinted films SKIP this — the per-agent
-                # copy SHARES the group's data and the rename would
-                # clobber the Hum.Group{gi}.Body{j} data name (measured:
-                # 0 bodies in the 6-c strip census)
-                me.data.name = me.name
+            # D1-REV2: per-agent MESH DATA copies — the vgroup renames
+            # below must not write through to the shared group data
+            # (materials ride the copy; RAM receipt printed below)
+            me.data = me.data.copy()
+            me.data.name = me.name
             me.parent = wrapper["armature"]
             bpy.context.scene.collection.objects.link(me)
             for md in me.modifiers:
                 if md.type == 'ARMATURE':
                     md.object = wrapper["armature"]
-        # the action: walk (per-agent wrapped phase) or shared idle;
-        # the SHARED idle also gets CYCLES (review r1 P2-13 — Blender-
-        # side strips must loop too, not just the web viewer)
-        if speeds is not None and speeds[i] > STATIONARY_MPS:
-            a2 = _wrap_action(walk_act, f"walk_{i:03d}", phases[i], cyc, f0, f1)
+            agent_meshes.append(me)
+        # the action: per-class retimed walk/jog (per-agent wrapped
+        # phase) or per-agent idle copy. NO shared actions — the
+        # renames below would remap a shared action for every sharer.
+        arm_i_ad = arm_i.animation_data_create()
+        is_walk = speeds is not None and speeds[i] > STATIONARY_MPS
+        if is_walk:
+            ci = _class_of(class_speeds[i])
+            base, bf0, bcyc = class_bases[ci][0], class_bases[ci][1], \
+                class_bases[ci][2]
+            a2 = _wrap_action(base, f"walk_{i:03d}", phases[i], bcyc,
+                              bf0, bf0 + bcyc)
             n_walk += 1
         else:
-            a2 = idle_act
+            a2 = idle_act.copy()
+            a2.name = f"idle_{i:03d}"
             n_idle += 1
-        wrapper["armature"].animation_data_create()
-        wrapper["armature"].animation_data.action = a2
+        _pin_slot(arm_i_ad, a2)
+        # D1-REV2: the rename — bind FIRST (above), then rename the
+        # bones (auto-remaps THIS agent's bound action; the class bases
+        # are unbound and untouched) + mirror on the vgroups (skinning
+        # resolves vgroup NAME -> bone NAME at deform time)
+        prefix = f"z{i:04d}:"
+        vg_map = {}
+        for b in list(arm_i.data.bones):
+            vg_map[b.name] = prefix + b.name
+            b.name = prefix + b.name
+            bone_name_census[b.name] += 1
+        for me in agent_meshes:
+            # Blender 5.2 law: vertex_groups moved from Mesh to OBJECT
+            # (probed live: mesh.vertex_groups == AttributeError)
+            for vg in me.vertex_groups:
+                if vg.name in vg_map:
+                    vg.name = vg_map[vg.name]
         # wrap-band gate on the per-agent actions (frame_range reads the
         # keyed span only — CYCLES does not extend it, review r1 T1)
-        if a2 is not idle_act:
+        if is_walk:
+            bf0, bcyc = class_bases[ci][1], class_bases[ci][2]
             lo, hi = a2.frame_range
-            if lo < f0 - 1e-4 or hi >= f0 + cyc + 1e-4:
+            if lo < bf0 - 1e-4 or hi >= bf0 + bcyc + 1e-4:
                 _fail(f"wrap-band violated on agent {i}: "
-                      f"{lo:.2f}..{hi:.2f} not inside [{f0},{f0 + cyc})")
-        reps.append({"anchor": anchor, "ordinal": i, **wrapper})
-    # quaternion modes census (the s18 law) on the shared rig data —
-    # BEFORE the template removal (the object ref dies with the removal)
-    bad = [pb.name for pb in tmpl["arm"].pose.bones
-           if pb.rotation_mode != 'QUATERNION']
+                      f"{lo:.2f}..{hi:.2f} not inside "
+                      f"[{bf0},{bf0 + bcyc})")
+        # D3-REV2: the bind-time motion gate — every WALK-classified
+        # rig's action must move (hips span >= WALK_SPAN_MIN_M over
+        # its own class cycle). Kills the near-frozen-walk class.
+        if is_walk:
+            _span_gate(arm_i, a2, class_bases[ci][1],
+                       class_bases[ci][2], i)
+        reps.append({"anchor": anchor, "ordinal": i, "cycle":
+                     (class_bases[ci][1], class_bases[ci][1] +
+                      class_bases[ci][2]) if is_walk else (1, 1 + IDLE_TRIM),
+                     "class": ci if is_walk else -1, **wrapper})
+    # D1-REV2: the uniqueness census — fail-closed. No duplicated bone
+    # name may leave this function (the GLB consumer binds by name).
+    dupes = {nm: c for nm, c in bone_name_census.items() if c > 1}
+    if dupes:
+        _fail(f"bone-name census: {len(dupes)} DUPLICATES after the "
+              f"per-agent renames (first: {sorted(dupes)[:4]}) — the "
+              f"GLB name-binding class is back")
+    # quaternion modes census (the s18 law) per agent — the data swap
+    # rebuilds poses, so the census reads the INSTANCES
+    bad_modes = 0
+    for rep in reps:
+        for pb in rep["armature"].pose.bones:
+            if pb.rotation_mode != 'QUATERNION':
+                bad_modes += 1
     # remove the TEMPLATE objects (review r1 P1-8: a full-height rest-
     # pose x_bot at the world origin in every render AND the GLB)
     bpy.data.objects.remove(tmpl["arm"], do_unlink=True)
     for tm in tmpl["meshes"]:
         bpy.data.objects.remove(tm, do_unlink=True)
-    if bad:
-        _P(f"WARN quaternion modes: {len(bad)} bones non-QUATERNION "
-           f"(first: {bad[:3]}) — the s18 law says the loader RECORDS "
+    if bad_modes:
+        _P(f"WARN quaternion modes: {bad_modes} pose-bones "
+           f"non-QUATERNION — the s18 law says the loader RECORDS "
            f"and warns, fixing is per-rig")
     _P(f"bound {n} rigs: {n_walk} walk / {n_idle} idle; "
-       f"combined {tmpl['combined_verts']} verts/agent")
+       f"combined {tmpl['combined_verts']} verts/agent; "
+       f"D1-REV2 receipt: {n} armature-data + {n * len(tmpl['meshes'])} "
+       f"mesh-data copies, {bone_name_census and len(bone_name_census)} "
+       f"unique bone names, 0 duplicates")
+    _P(f"retiming report: v_nat walk={v_nat:.2f} "
+       f"top={v_nat_top:.2f} m/s; classes: " +
+       "; ".join(f"c{ci}(n={len(class_members[ci])},"
+                 f"v={class_bases[ci][4]:.2f},"
+                 f"{'jog' if class_bases[ci][5] else 'walk'},"
+                 f"s={class_bases[ci][3]:.2f})"
+                 for ci in range(n_classes) if class_bases[ci]))
     return {"n": n, "n_walk": n_walk, "n_idle": n_idle,
             "verts": tmpl["combined_verts"], "reps": reps,
-            "walk_cycle": (f0, f1)}
+            "walk_cycle": (f0, f1),
+            "classes": {ci: {"n": len(class_members[ci]),
+                             "v_class": class_bases[ci][4],
+                             "scale": class_bases[ci][3],
+                             "is_jog": class_bases[ci][5],
+                             "cycle": (class_bases[ci][1],
+                                       class_bases[ci][1] +
+                                       class_bases[ci][2])}
+                        for ci in range(n_classes) if class_bases[ci]}}
 
 
 def _cache_phases(ctx, n):
@@ -510,6 +762,176 @@ def _cache_speeds(ctx, n):
     _P(f"WARN speeds: no tick speed channel — EVERY agent binds the "
        f"shared idle (motion would be silently absent)")
     return None
+
+
+def face_tangent(obj, min_mps=0.5, keep_last=True):
+    """fix-wave-1 D2: re-derive rotation_euler.z from the LOCATION
+    path tangent at every key whose outgoing segment moves >= min_mps
+    (the bake2 law: z = atan2(dy,dx) - 90deg for +Y-forward rigs).
+    Standing/watch segments keep the AUTHORED yaw (a watcher faces
+    their subject, not a near-zero tangent). Hand-authored hero yaws
+    drifted up to ~150deg from their own path tangents (measured:
+    Master 147deg, Runner 82-152deg)."""
+    import math as _m
+    ad = obj.animation_data
+    if ad is None or ad.action is None:
+        _fail(f"face_tangent: {obj.name} has no keyed action")
+    locs, rots = {}, {}
+    for fc in _iter_fcurves(ad.action):
+        if fc.data_path == "location":
+            for kp in fc.keyframe_points:
+                locs.setdefault(int(round(kp.co.x)), {})[fc.array_index] = kp.co.y
+        elif fc.data_path == "rotation_euler" and fc.array_index == 2:
+            for kp in fc.keyframe_points:
+                rots[int(round(kp.co.x))] = kp.co.y
+    fs = sorted(locs)
+    if len(fs) < 2:
+        return 0
+    changed = 0
+    fps = bpy.context.scene.render.fps or 24
+    for i, f in enumerate(fs):
+        if i + 1 >= len(fs):
+            if not keep_last:
+                continue
+            # the last key faces the incoming tangent
+            if i == 0:
+                continue
+            f0, f1 = fs[i - 1], fs[i]
+            p0, p1 = locs[f0], locs[f1]
+        else:
+            f0, f1 = fs[i], fs[i + 1]
+            p0, p1 = locs[f0], locs[f1]
+        if len(p0) < 2 or len(p1) < 2:
+            continue
+        dt = (f1 - f0) / fps
+        if dt <= 0:
+            continue
+        vx = (p1.get(0, 0.0) - p0.get(0, 0.0)) / dt
+        vy = (p1.get(1, 0.0) - p0.get(1, 0.0)) / dt
+        sp = _m.hypot(vx, vy)
+        if sp < min_mps:
+            continue
+        z = _m.degrees(_m.atan2(vy, vx)) - 90.0
+        # write through the fcurve key (same frame)
+        for fc in _iter_fcurves(ad.action):
+            if fc.data_path == "rotation_euler" and fc.array_index == 2:
+                for kp in fc.keyframe_points:
+                    if abs(kp.co.x - f) < 0.5:
+                        kp.co.y = z
+                        changed += 1
+                        break
+    # ---- the refine pass: 12-frame tangent grid ------------------
+    # Key-level tangents still drift mid-segment: within segment
+    # [a,b] the rotation interpolates from tangent(a->b) toward
+    # tangent(b->c), crossing the CURRENT segment's constant tangent
+    # with up to half the adjacent-segment direction change (measured
+    # 31-84 deg on the Runner's weave). A 12-frame tangent grid keys
+    # the LOCAL tangent everywhere the hero actually moves.
+    import math as _m2
+    loc_fcs = [fc for fc in _iter_fcurves(ad.action)
+               if fc.data_path == "location"]
+    rf = next((fc for fc in _iter_fcurves(ad.action)
+               if fc.data_path == "rotation_euler"
+               and fc.array_index == 2), None)
+    xf = next((fc for fc in loc_fcs if fc.array_index == 0), None)
+    yf = next((fc for fc in loc_fcs if fc.array_index == 1), None)
+    if rf is None or xf is None or yf is None:
+        return changed
+    fps = bpy.context.scene.render.fps or 24
+    f_first, f_last = fs[0], fs[-1]
+    STEP = 12
+    grid = list(range(f_first, f_last + 1, STEP))
+    if grid and grid[-1] != f_last:
+        grid.append(f_last)
+    authored = {f: float(rf.evaluate(f)) for f in grid}
+    # RNA staleness law (the _trim_action class): index-DESC removals
+    for _i in reversed(range(len(rf.keyframe_points))):
+        rf.keyframe_points.remove(rf.keyframe_points[_i])
+    n_grid = 0
+    for f in grid:
+        f0b = max(f_first, f - 3)
+        f1b = min(f_last, f + 3)
+        if f1b <= f0b:
+            f1b = f0b + 1
+        x0, x1 = xf.evaluate(f0b), xf.evaluate(f1b)
+        y0, y1 = yf.evaluate(f0b), yf.evaluate(f1b)
+        dt = max(1e-6, (f1b - f0b) / fps)
+        vx, vy = (x1 - x0) / dt, (y1 - y0) / dt
+        if _m2.hypot(vx, vy) >= min_mps:
+            z = _m2.degrees(_m2.atan2(vy, vx)) - 90.0
+        else:
+            z = authored[f]
+        kp = rf.keyframe_points.insert(float(f), float(z))
+        kp.interpolation = 'LINEAR'
+        n_grid += 1
+    rf.keyframe_points.sort()
+    rf.update()
+    if changed or n_grid:
+        for fc in _iter_fcurves(ad.action):
+            if fc.data_path == "rotation_euler" and fc.array_index == 2:
+                fc.update()
+        _P(f"face_tangent: {obj.name} re-faced {changed} keys + "
+           f"{n_grid} grid keys (min {min_mps} m/s)")
+    return changed
+
+
+def _moving_speeds(ctx, n, fallback):
+    """D3-REV2b: per-agent mean speed over MOVING ticks only
+    (>0.3 m/s) — the cadence the clip must match. Falls back to the
+    all-ticks mean when an agent never crosses the floor."""
+    import numpy as np
+    soa = ctx.get("crowd_soa")
+    ticks = getattr(soa, "ticks", None)
+    if ticks is None or "speed" not in ticks:
+        return fallback
+    sp = np.asarray(ticks["speed"])
+    if sp.ndim != 2 or sp.shape[1] < n:
+        return fallback
+    out = []
+    for i in range(n):
+        col = sp[:, i]
+        mv = col[col > 0.3]
+        out.append(float(mv.mean()) if mv.size >= 24 else
+                   float(fallback[i]))
+    return out
+
+
+def _hero_path_speed(hero):
+    """The hero root's MOVING mean speed from its location keys
+    (segments >= 0.45 m/s) — the auto-clip selector's input.
+    Returns (v, moving)."""
+    import math as _m
+    if hero is None or hero.animation_data is None \
+            or hero.animation_data.action is None:
+        return 0.0, False
+    locs = {}
+    for fc in _iter_fcurves(hero.animation_data.action):
+        if fc.data_path == "location":
+            for kp in fc.keyframe_points:
+                locs.setdefault(int(round(kp.co.x)), {})[fc.array_index] = \
+                    kp.co.y
+    fs = sorted(locs)
+    if len(fs) < 2:
+        return 0.0, False
+    fps = bpy.context.scene.render.fps or 24
+    segs = []
+    for i in range(len(fs) - 1):
+        f0, f1 = fs[i], fs[i + 1]
+        p0, p1 = locs[f0], locs[f1]
+        if len(p0) < 2 or len(p1) < 2:
+            continue
+        dt = (f1 - f0) / fps
+        if dt <= 0:
+            continue
+        v = _m.hypot((p1.get(0, 0.0) - p0.get(0, 0.0)) / dt,
+                     (p1.get(1, 0.0) - p0.get(1, 0.0)) / dt)
+        if v >= 0.45:
+            segs.append(v)
+    if not segs:
+        return 0.0, False
+    # distance-weighted mean (long segments weigh more is wrong for
+    # speed; plain mean of moving segments is the honest cadence)
+    return float(sum(segs) / len(segs)), True
 
 
 def ride_principals(ctx, pr, hero_rgb, roughness=0.5):
@@ -700,16 +1122,70 @@ def bind_principals(ctx, name_clip_pairs):
             _P(f"feet-origin lift {name}: floor {floor:+.4f} -> 0 "
                f"(wrapper z now {rep['root'].location.z:+.4f})")
         acts = rep.get("actions", {})
-        act = acts.get(clip) or next(
-            (a for k, a in acts.items() if clip.lower() in k.lower()), None)
+        # fix-wave-1 D2: EXACT match only — the substring fallback hit
+        # Pistol_Idle_Loop for the films requesting Idle_Loop and every
+        # hero shipped the gun-point pose. A miss is LOUD.
+        # clip=None -> AUTO: measure the hero root's keyed path speed,
+        # pick Idle/Walk/Jog and retime the copy to the path (a Runner
+        # gliding on a standing idle is the moonwalk class).
+        retime_s = None
+        if clip is None:
+            hero = (ctx.get("heroes") or ctx.get("humans") or {}).get(name)
+            v_path, moving = _hero_path_speed(hero)
+            if not moving:
+                clip = "Idle_Loop"
+            elif v_path < 1.1:
+                clip = "Walk_Loop"
+            elif v_path < 2.6:
+                clip = "Jog_Fwd_Loop"
+            else:
+                clip = "Sprint_Loop"
+            nominal = {"Walk_Loop": 1.4, "Jog_Fwd_Loop": 3.0,
+                       "Sprint_Loop": 5.0}.get(clip)
+            if moving and nominal:
+                retime_s = max(0.6, min(1.7, nominal / max(0.4, v_path)))
+            _P(f"auto hero clip {name}: {clip} (v_path {v_path:.2f} m/s, "
+               f"retime {retime_s and round(retime_s, 3)})")
+        act = acts.get(clip)
         if act is None:
             _fail(f"UAL clip {clip!r} not in pool "
-                  f"({sorted(acts)[:8]})")
-        arm.animation_data_create()
-        arm.animation_data.action = act
+                  f"({sorted(acts)}) — the substring fallback is "
+                  f"REMOVED (the Pistol_Idle_Loop class); add the clip "
+                  f"to BEAT_ACTIONS or request an existing name")
+        # ALWAYS a per-hero copy + CYCLES REPEAT — the pool actions
+        # are ~22-frame one-shots: without looping the hero animates
+        # for under a second then freezes for the rest of the film
+        # (the "heroes do nothing" amplifier, measured: zspan 0.0 past
+        # f38 on the retimed Jog).
+        if retime_s is not None and retime_s != 1.0:
+            act = act.copy()
+            act.name = f"{clip}.rt{name}"
+            f0r = int(act.frame_range[0])
+            _retime_action(act, retime_s, f0r)
+        else:
+            act = act.copy()
+            act.name = f"{clip}.{name}"
+        _cycles_action(act)
+        ad = arm.animation_data_create()
+        _pin_slot(ad, act)
+        # D1-REV2: per-hero unique bone names (prefix h<name>:) + the
+        # vgroup mirror — the same GLB name-binding law as the crowd.
+        # Bind FIRST (above), rename SECOND (the s20 remap law).
+        prefix = f"h{name.lower()}:"
+        vg_map = {}
+        for b in list(arm.data.bones):
+            vg_map[b.name] = prefix + b.name
+            b.name = prefix + b.name
+        mesh = rep.get("mesh")
+        if mesh is not None and mesh.type == 'MESH':
+            # 5.2 law: object-level accessor
+            for vg in mesh.vertex_groups:
+                if vg.name in vg_map:
+                    vg.name = vg_map[vg.name]
         out[name] = rep
         _P(f"UAL principal {name}: clip {clip} "
-           f"(facing {rep.get('facing_sign', '?')}, floor {floor:+.4f})")
+           f"(facing {rep.get('facing_sign', '?')}, floor {floor:+.4f}, "
+           f"bones prefixed {prefix!r})")
     return out
 
 
@@ -780,7 +1256,12 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None, exempt=()):
         arm = rep["armature"]
         act = arm.animation_data.action
         is_walk = act.name.startswith("walk_")
+        # D1-REV2: bones are per-agent prefixed (z0007:mixamorig:Hips)
         hips = arm.pose.bones.get("mixamorig:Hips")
+        if hips is None:
+            hips = next((b for b in arm.pose.bones
+                         if b.name.lower().endswith("mixamorig:hips")),
+                        None)
         if hips is None:
             _fail("gate rig lacks mixamorig:Hips")
         zs, lz, rz = [], [], []
@@ -790,13 +1271,21 @@ def motion_gates(ctx, reps, sample=6, walk_cycle=None, exempt=()):
         # — the 5-grid misses both extremes. 11 samples bound the
         # extreme within ~1.9 frames; the band stays 0.02 (no relief —
         # the measurement was wrong, not the rig).
-        frames_s = [f0 + (f1 - f0) * j // 10 for j in range(11)]
+        # D3-REV2: sample the rep's OWN class cycle when it carries
+        # one (per-class retimed cycles differ from the film default)
+        cf0, cf1 = rep.get("cycle", (f0, f1))
+        frames_s = [cf0 + (cf1 - cf0) * j // 10 for j in range(11)]
         for f in frames_s:
             sc.frame_set(f)
             bpy.context.view_layer.update()
             zs.append((arm.matrix_world @ hips.matrix).translation.z)
             for side, acc in (("Left", lz), ("Right", rz)):
                 pb = arm.pose.bones.get(f"mixamorig:{side}Foot")
+                if pb is None:
+                    pb = next((b for b in arm.pose.bones
+                               if b.name.lower().endswith(
+                                   f"mixamorig:{side}foot".lower())),
+                              None)
                 if pb:
                     acc.append((arm.matrix_world @ pb.matrix).translation.z)
         bob = max(zs) - min(zs)

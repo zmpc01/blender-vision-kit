@@ -434,6 +434,13 @@ def _kf_heroes(ctx):
         master.keyframe_insert(data_path="location", index=2, frame=f)
     _linear(runner)
     _linear(master)
+    # fix-wave-1 D2: re-derive facing from the path tangents — the
+    # hand-authored yaws drifted up to ~150deg from their own tangents
+    # (the Runner is a mover: full tangent; the Master a watcher: only
+    # his walking segments re-face, the gate-watching holds stay)
+    import humanoid_crowd as _HC
+    _HC.face_tangent(runner, min_mps=0.45)
+    _HC.face_tangent(master, min_mps=0.55)
     # linear interpolation OFF for the idle sway (smooth sine reads
     # better than a linear zigzag at 12-frame spacing)
     _smooth(master)
@@ -631,9 +638,11 @@ def _humanoid_layer(ctx):
     # the UAL principals: Master (amber) + Runner (teal) — the identity
     # colors from tdawn_actors (:58-61), the branch-a law
     UAL_SCALE = 1.75 / 1.589
+    # fix-wave-1 D2: clip=None -> AUTO (path-speed matched; the Runner
+    # glided on a standing idle before — the moonwalk class)
     pr = HC.bind_principals(ctx, {
-        "Master": ("Idle_Loop", UAL_SCALE, None),
-        "Runner": ("Idle_Loop", UAL_SCALE, None)})
+        "Master": (None, UAL_SCALE, None),
+        "Runner": (None, UAL_SCALE, None)})
     ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
         "Master": (0.85, 0.42, 0.05),
         "Runner": (0.02, 0.45, 0.50)})

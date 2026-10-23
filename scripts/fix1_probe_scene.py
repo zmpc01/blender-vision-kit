@@ -139,11 +139,16 @@ def probe_animation():
                      else repr(_s))) if _s else None
         except Exception:
             slot = None
-        # hips-equivalent: root bone (no parent)
+        # hips-equivalent: hips/pelvis bone first (the no-parent root
+        # may be an undriven stub — the probe read frozen rigs whose
+        # actions cycled fine)
         zmin, zmax = None, None
-        root_bones = [b for b in ob.pose.bones if not b.parent]
-        if root_bones and act:
-            bone = root_bones[0]
+        bone = next((b for b in ob.pose.bones
+                     if "hips" in b.name.lower()
+                     or "pelvis" in b.name.lower()), None)
+        if bone is None:
+            bone = next((b for b in ob.pose.bones if not b.parent), None)
+        if bone is not None and act:
             for f in (1, 120, 240, 360, 480, 600, 720, 840, 960, 1080):
                 scene.frame_set(f)
                 bpy.context.view_layer.update()
@@ -152,28 +157,12 @@ def probe_animation():
                 zmin = z if zmin is None else min(zmin, z)
                 zmax = z if zmax is None else max(zmax, z)
             scene.frame_set(1)
-        # visible facing: armature world +Y vs anchor velocity
-        vis_err = None
-        if anchor is not None:
-            akeys = _loc_keys(anchor)
-            fs = sorted(akeys)
-            if len(fs) > 4:
-                f = fs[len(fs) // 2]
-                i = fs.index(f)
-                if i + 1 < len(fs):
-                    p0, p1 = akeys[fs[i]], akeys[fs[i + 1]]
-                    dt = (fs[i + 1] - fs[i]) / 24.0
-                    vx, vy = (p1[0] - p0[0]) / dt, (p1[1] - p0[1]) / dt
-                    if math.hypot(vx, vy) > 0.35:
-                        scene.frame_set(f)
-                        bpy.context.view_layer.update()
-                        fwy = (ob.matrix_world.to_3x3() @ mathutils.Vector((0, 1, 0)))
-                        vis_err = round(abs(_wrap180(
-                            math.degrees(math.atan2(fwy.y, fwy.x)) -
-                            math.degrees(math.atan2(vy, vx)))))
+        vis_err = None  # measured rep-based in main() (the invariant
+        # probe: armature frame x the rep's facing_sign — foot/toe
+        # conventions differ per rig family and misread ~150deg)
         rows.append((nm, act.name if act else None, slot,
                      None if zmax is None else round(zmax - zmin, 4),
-                     len(root_bones), vis_err, anchor.name if anchor else None))
+                     vis_err, anchor.name if anchor else None))
     return rows
 
 
@@ -205,6 +194,86 @@ def main():
               details[:12])
     else:
         print("no keyed movers found")
+
+    print("\n===== VISIBLE FACING (rep-based: arm x facing_sign vs vel) =====")
+    import mathutils
+    hum = ctx.get("humanoid") or {}
+    princ = ctx.get("humanoid_principals") or {}
+    verrs = []
+    for rep in (hum.get("reps") or []):
+        arm, sign = rep["armature"], rep.get("facing_sign", 1)
+        anchor = rep.get("anchor")
+        if anchor is None:
+            continue
+        akeys = _loc_keys(anchor)
+        fs = sorted(akeys)
+        if len(fs) < 5:
+            continue
+        f = fs[len(fs) // 2]
+        k = fs.index(f)
+        if k + 1 >= len(fs):
+            continue
+        p0, p1 = akeys[fs[k]], akeys[fs[k + 1]]
+        dt = (fs[k + 1] - fs[k]) / 24.0
+        vx, vy = (p1[0] - p0[0]) / dt, (p1[1] - p0[1]) / dt
+        if math.hypot(vx, vy) < 0.35:
+            continue
+        bpy.context.scene.frame_set(f)
+        bpy.context.view_layer.update()
+        fw = (arm.matrix_world.to_3x3() @
+              mathutils.Vector((0.0, 1.0, 0.0)))
+        err = abs(_wrap180(
+            math.degrees(math.atan2(fw.y, fw.x)) -
+            math.degrees(math.atan2(vy, vx))))
+        verrs.append((round(err), rep["armature"].name, anchor.name))
+    # heroes: find the hero armatures by name (Driver.Rig*) and
+    # derive the facing sign from the MPI flip (Rz(pi) inside
+    # matrix_parent_inverse = sign -1)
+    heroes = ctx.get("heroes") or ctx.get("humans") or {}
+    hero_arms = [ob for ob in bpy.data.objects
+                 if ob.type == "ARMATURE" and ob.name.startswith("Driver.Rig")]
+    import mathutils as _mu
+    for arm in hero_arms:
+        # walk up to the keyed hero object
+        p = arm
+        hero = None
+        for _ in range(5):
+            p = p.parent
+            if p is None:
+                break
+            if p.animation_data and p.animation_data.action:
+                hero = p
+                break
+        if hero is None:
+            continue
+        # matrix_world ALREADY includes the MPI flip — the plain +Y
+        # read is the visual forward (the sign multiply was a
+        # double-flip artifact)
+        akeys = _loc_keys(hero)
+        fs = sorted(akeys)
+        if len(fs) < 3:
+            continue
+        # sample several moving segments
+        for k in range(len(fs) - 1):
+            p0, p1 = akeys[fs[k]], akeys[fs[k + 1]]
+            dt = (fs[k + 1] - fs[k]) / 24.0
+            vx, vy = (p1[0] - p0[0]) / dt, (p1[1] - p0[1]) / dt
+            if math.hypot(vx, vy) < 0.45:
+                continue
+            bpy.context.scene.frame_set(fs[k])
+            bpy.context.view_layer.update()
+            fw = (arm.matrix_world.to_3x3() @
+                  _mu.Vector((0.0, 1.0, 0.0)))
+            err = abs(_wrap180(
+                math.degrees(math.atan2(fw.y, fw.x)) -
+                math.degrees(math.atan2(vy, vx))))
+            verrs.append((round(err), f"{arm.name}(hero)", hero.name))
+    if verrs:
+        vals = sorted(v for v, _, _ in verrs)
+        n = len(vals)
+        print(f"n={n}  p10={vals[n//10]}  p50={vals[n//2]}  "
+              f"p90={vals[9*n//10]} deg")
+        print("worst:", sorted(verrs, reverse=True)[:10])
 
     print("\n===== ANIMATION (rigs: action/slot/hips-z-span) =====")
     rows = probe_animation()

@@ -108,6 +108,7 @@ SEATED_PELVIS = 0.5415   # Sitting_Enter FINAL frame, above feet-origin
 
 # beat-map actions the bake needs (recorded per actor at import)
 BEAT_ACTIONS = (
+    "Idle_Loop",
     "Sprint_Loop", "Jog_Fwd_Loop", "Walk_Loop",
     "Sitting_Enter", "Sitting_Exit", "Sitting_Idle_Loop",
     "Sitting_Talking_Loop", "Driving_Loop",
@@ -125,10 +126,25 @@ def _upd():
 
 def _facing_sign(arm):
     """Bind facing probe (REV3 item 6: probe per import, never
-    hard-code). Foot-bone tail local +Y world direction = toes."""
+    hard-code). Foot-bone tail local +Y world direction = toes.
+
+    fix-wave-1 D2-REV2: reads REST (data-bone matrix_local), never
+    the POSED matrix — the import's live action used to pose the
+    foot mid-clip and flip the ±Y contest silently (the A2b class,
+    wrapper_rig's law; measured: heroes shipped 147-152° backwards
+    from a posed-probe sign)."""
     foot = next(b for b in arm.pose.bones if "foot" in b.name.lower())
-    m = arm.matrix_world @ foot.matrix
+    m = arm.matrix_world @ arm.data.bones[foot.name].matrix_local
     fwd = (m.to_3x3() @ Vector((0, 1, 0))).normalized()
+    # The foot bone's local +Y aims down-toes on the UAL rest rig
+    # (measured fwd ~ (0, -0.86, -0.51)) — the Z component is foot
+    # ANATOMY, not facing. Contest on the HORIZONTAL projection.
+    if abs(fwd.y) < 0.25 or abs(fwd.y) < abs(fwd.x) * 1.5:
+        raise RuntimeError(
+            f"_facing_sign: UAL foot rest-forward {tuple(fwd)} is "
+            f"not Y-dominant in the horizontal projection — a rig we "
+            f"do not understand; refusing rather than guessing the "
+            f"flip")
     return 1 if fwd.y >= 0 else -1
 
 

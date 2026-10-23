@@ -622,10 +622,19 @@ def build_layer_stack(C, receipt):
     t_s0, t_s1 = C.DISPERSAL_WINDOW
 
     def samples(k, ticks):
+        # fix-wave-1 D5-REV2: "operation": "absolute" is THE fix — the
+        # payload samples are ABSOLUTE yard coordinates; without the
+        # key _build_edit defaults to ADDITIVE and the native composes
+        # base+traj, snapping every window seam by the base magnitude
+        # (measured: 392 events >4 m/s, max 55.8, ALL at boundaries).
         return [{"tick": int(t),
                  "translation": [round(float(traj[k][t][0]), 4),
                                  round(float(traj[k][t][1]), 4), 0.0]}
                 for t in ticks]
+
+    def transform_payload(k, t0_, t1_):
+        return {"operation": "absolute",
+                "samples": samples(k, range(t0_, t1_ + 1))}
 
     def pin(k, t):
         p = traj[k][t]
@@ -641,11 +650,11 @@ def build_layer_stack(C, receipt):
         ov.append(LayoutOverride(
             name=f"tform_w2_dress_{k}", target_agent_ids=t,
             tick_range=(t_d0, t_d1), override_type=OverrideType.TRANSFORM,
-            payload={"samples": samples(k, range(t_d0, t_d1 + 1))}))
+            payload=transform_payload(k, t_d0, t_d1)))
         ov.append(LayoutOverride(
             name=f"tform_w3_wheel_{k}", target_agent_ids=t,
             tick_range=(t_w0, t_w1), override_type=OverrideType.TRANSFORM,
-            payload={"samples": samples(k, range(t_w0, t_w1 + 1))}))
+            payload=transform_payload(k, t_w0, t_w1)))
         ov.append(LayoutOverride(
             name=f"tform_w4_halt_{k}", target_agent_ids=t,
             tick_range=(t_h0, t_h1), override_type=OverrideType.PIN,
@@ -653,7 +662,7 @@ def build_layer_stack(C, receipt):
         ov.append(LayoutOverride(
             name=f"tform_w5_circle_{k}", target_agent_ids=t,
             tick_range=(t_c0, t_c1), override_type=OverrideType.TRANSFORM,
-            payload={"samples": samples(k, range(t_c0, t_c1 + 1))}))
+            payload=transform_payload(k, t_c0, t_c1)))
         ov.append(LayoutOverride(
             name=f"tform_w6_hold_{k}", target_agent_ids=t,
             tick_range=(t_g0, t_g1), override_type=OverrideType.PIN,
@@ -661,7 +670,7 @@ def build_layer_stack(C, receipt):
         ov.append(LayoutOverride(
             name=f"tform_w7_disp_{k}", target_agent_ids=t,
             tick_range=(t_s0, t_s1), override_type=OverrideType.TRANSFORM,
-            payload={"samples": samples(k, range(t_s0, t_s1 + 1))}))
+            payload=transform_payload(k, t_s0, t_s1)))
     names = [o.name for o in ov]
     assert len(names) == len(set(names)) == C.N_LAYERS, (
         f"layer stack: {len(names)} rows, {len(set(names))} unique, "
@@ -868,6 +877,77 @@ def stage_interaction(C, out, t0):
     print(f"[tform_bake] interaction stage PASS ({time.time() - t0:.1f}s)")
 
 
+def _verify_composition(C, receipt, npz_path):
+    """D5-REV2: continuity + formation-shape asserts on the COMPOSED
+    npz. Ordinal->column mapping via the cache's agent_ids order."""
+    bridge = _bootstrap()
+    from scripts.crowd.advanced import agent_ids
+    cache_path = receipt["cache_path"]
+    all_ids = list(agent_ids(cache_path))
+    drill_ids = receipt["drill_ids"]
+    cols = [all_ids.index(a) for a in drill_ids]
+    pos120 = np.array([receipt["dress_pin"][str(a)] for a in drill_ids])
+    traj = _authored_trajectories(C, drill_ids, pos120)
+    z = np.load(str(npz_path))
+    x, y = z["x"], z["y"]
+
+    t_w0, t_w1 = C.WHEEL["window"]
+    t_s0, t_s1 = C.DISPERSAL_WINDOW
+    windows = [(120, 131, "w1_pin"), (132, 168, "w2_dress"),
+               (t_w0, t_w1, "w3_wheel"), (252, 299, "w4_halt"),
+               (300, 360, "w5_circle"), (361, 420, "w6_hold"),
+               (t_s0, t_s1, "w7_disp")]
+    # (a) continuity across EVERY boundary (including base<->layer)
+    bounds = sorted({0, 120, 132, 168, t_w0, t_w1 + 1, 252, 300,
+                     360, 361, 420, t_s0, t_s1 + 1,
+                     int(z["x"].shape[0]) - 1})
+    MAX_STEP = 0.6   # one tick of brisk walk (0.5 m/s x 1/12 s x margin)
+    bad = 0
+    for t in bounds:
+        if t <= 0 or t >= x.shape[0]:
+            continue
+        for k, col in enumerate(cols):
+            d = float(np.hypot(x[t, col] - x[t - 1, col],
+                               y[t, col] - y[t - 1, col]))
+            if d > MAX_STEP:
+                bad += 1
+                if bad <= 5:
+                    print(f"[tform_bake] CONTINUITY FAIL t={t} "
+                          f"agent={drill_ids[k]} d={d:.3f}m")
+    assert bad == 0, (
+        f"composed continuity: {bad} boundary snaps > {MAX_STEP} m "
+        f"(the D5 teleport class is BACK — check the operation flag)")
+    # (b) formation shape inside the TRANSFORM windows
+    shape_bad = 0
+    for (wa, wb, wname) in windows:
+        if wname in ("w1_pin", "w4_halt", "w6_hold"):
+            # PIN windows: the authored point (traj holds constant)
+            t_pin = {120: 120, 252: t_w1, 361: 360}[wa]
+            for k, col in enumerate(cols):
+                for t in range(wa, wb + 1):
+                    dx = abs(float(x[t, col]) - float(traj[k][t_pin][0]))
+                    dy = abs(float(y[t, col]) - float(traj[k][t_pin][1]))
+                    if dx > 5e-3 or dy > 5e-3:
+                        shape_bad += 1
+                        break
+        else:
+            for k, col in enumerate(cols):
+                for t in range(wa, wb + 1):
+                    dx = abs(float(x[t, col]) - float(traj[k][t][0]))
+                    dy = abs(float(y[t, col]) - float(traj[k][t][1]))
+                    if dx > 5e-3 or dy > 5e-3:
+                        shape_bad += 1
+                        if shape_bad <= 5:
+                            print(f"[tform_bake] SHAPE FAIL {wname} t={t} "
+                                  f"agent={drill_ids[k]} d=({dx:.4f},{dy:.4f})")
+                        break
+    assert shape_bad == 0, (
+        f"formation shape: {shape_bad} agent-windows diverge from the "
+        f"authored trajectory > 5mm (the composition is wrong)")
+    print(f"[tform_bake] composed verify OK: 0 boundary snaps, "
+          f"{len(windows)} windows shape-exact, {len(cols)} drill agents")
+
+
 def stage_finish(C, out, t0):
     """Composed npz with clip_source="channel" (the DIRECT bridge call
     -- never the CLI, the design's RQ10) + the mapping probe + the
@@ -890,6 +970,15 @@ def stage_finish(C, out, t0):
         f"receipt clip_source {digest.get('clip_source')} != " \
         f"{C.CLIP_SOURCE} (the RQ10 law)"
     print(f"[tform_bake] clip_source receipt: {digest['clip_source']}")
+
+    # --- fix-wave-1 D5-REV2: the composed-cache verification ---------
+    # (a) CONTINUITY: no window boundary may snap (one tick of walk
+    #     speed is the bound);
+    # (b) FORMATION SHAPE: inside every window the composed position
+    #     equals the AUTHORED trajectory (the R6 rehearsal validated
+    #     traj only — the composition was never checked, which is how
+    #     additive-vs-absolute shipped).
+    _verify_composition(C, receipt, out / "cache_v6.npz")
 
     # --- the mapping probe ---------------------------------------------
     z = np.load(str(out / "cache_v6.npz"))

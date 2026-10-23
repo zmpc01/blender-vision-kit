@@ -234,13 +234,18 @@ def detect_family(arm):
     names = [b.name for b in arm.data.bones]
     for fam, spec in FAMILIES.items():
         pre = spec["prefix"]
-        hits = sum(1 for n in names if n.startswith(pre) and n != pre)
+        # fix-wave-1 D1-REV2: crowd/hero bones carry per-agent prefixes
+        # (z0007:mixamorig:Hips / hmaster:DEF-head) — accept both the
+        # bare prefix and the prefixed (":<prefix>" inside the name)
+        hits = sum(1 for n in names
+                   if (n.startswith(pre) or (":" + pre) in n) and n != pre)
         if fam == "mixamo65" and hits >= 60:
             return fam
         if fam == "rigify53" and hits >= 50:
             return fam
         if fam == "quaternius42" and hits >= len(spec["bones"]) - 6 \
-                and not any(n.startswith(("mixamorig:", "DEF-")) for n in names):
+                and not any(("mixamorig:" in n) or ("DEF-" in n)
+                            for n in names):
             return fam
     raise RetargetRefused(
         f"cannot detect the rig family of {arm.name!r} "
