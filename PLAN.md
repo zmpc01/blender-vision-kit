@@ -20,6 +20,25 @@
       keyframes for the 3 hero frames (EEVEE/AgX consistency tradeoff
       documented in the design)
 
+## s28 receipts (2026-10-23 — TMARKET_1 SHIPPED)
+
+- [x] NIGHT MARKET (the seventh film) built end-to-end from the
+      REV-2 spec: contract -> world -> scene -> bake -> probe gates
+      (8 measured sim laws) -> look -> eye ladder (3 rungs) ->
+      2 eye-gate rounds -> 12/12 certified -> preflight PASS ->
+      governed export -> 96 strips -> STAGED LIVE (tmarket_1).
+- [x] The user's review-comment classes re-verified on the live
+      packages + the new film born free from all 23 classes (the
+      title SCALE keys proven in the staged GLB).
+- [x] The 8 sim laws + the eye-ladder laws banked (SKILL s28 +
+      HANDOFF s28).
+- [x] The governed-copy law tightened (syncs are COMMITS; --delete
+      forbidden against superset dirs).
+- [ ] The USER review round on SEVEN packages (tmarket_1 + the six).
+- [ ] The tmarket_1 rev-2 polish (only on the user's comments).
+- [ ] The lowercase sweep debt at the next exports (unchanged).
+- [ ] The upstream issue #15 comment (unchanged).
+
 ## Mission
 
 Carve out a kit optimized for VISION-CAPABLE LLM agents: native image
