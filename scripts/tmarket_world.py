@@ -81,7 +81,7 @@ def _build_materials():
     # the string bulbs (the emissive-is-light budget members)
     m["bulb"] = make_material(
         "TM.Bulb", (0.020, 0.012, 0.005), 0.4,
-        emission_color=(1.0, 0.72, 0.36), emission_strength=0.85)
+        emission_color=(1.0, 0.72, 0.36), emission_strength=2.5)
     # the sodium floods (the tferry hue)
     m["sodium"] = make_material(
         "TM.Sodium", (0.010, 0.008, 0.005), 0.4,

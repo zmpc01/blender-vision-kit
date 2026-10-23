@@ -44,7 +44,7 @@ if _previz_scripts not in sys.path:
 
 FPS = 24
 total_frames = 1080
-tm_exposure = 0.5            # the s28 eye-ladder rung 2: the lantern
+tm_exposure = 0.85           # the s28 eye-ladder rung 3: the lantern
                              # night owns the frame; the sky residue is
                              # the contrast floor
 
