@@ -95,7 +95,9 @@ def _build_materials():
     m["shop"] = make_material("TM.Shop", (0.036, 0.032, 0.030), 0.75)
     m["shop_win"] = make_material(
         "TM.ShopWin", (0.018, 0.014, 0.010), 0.3,
-        emission_color=(1.0, 0.60, 0.26), emission_strength=0.55)
+        # the s28 eye gate: the south walk read BLACK at the child beat
+        # -- the shopfront windows are the walk's ambient (0.55 -> 1.8)
+        emission_color=(1.0, 0.60, 0.26), emission_strength=1.8)
     m["planter"] = make_material("TM.Planter", (0.028, 0.036, 0.024), 0.8)
     m["leaf"] = make_material("TM.Leaf", (0.020, 0.038, 0.018), 0.7)
     return m
@@ -272,7 +274,7 @@ def build_world(scene):
     _cycles2 = normalize_engine_id(
         scene.render.engine).startswith("CYCLES")
     add_sky_world(sun_elevation_deg=-8.0, sun_rotation_deg=205.0,
-                  strength=0.010 if _cycles2 else 0.10)
+                  strength=0.016 if _cycles2 else 0.10)
     print(f"[tmarket_world] sky: Nishita -8deg strength "
           f"{0.010 if _cycles2 else 0.10} (cycles={_cycles2})")
 

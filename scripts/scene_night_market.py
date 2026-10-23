@@ -71,10 +71,11 @@ CAMS_V3 = [
     # as two warm boards; motion starts calm -- the edit grammar)
     ("CAM_S1",  (16.0, -17.0, 17.0), (16.0, -17.0, 17.0), 28,
      (-2.0, 0.5, 0.0), False, 0.0),
-    # S2: the lantern BOARD (a canopy-level lens above agent height,
-    # row-free -- the S6i law; the bulb strings + canopies bokeh)
-    ("CAM_S2",  (5.0, 4.9, 2.6), (5.0, 4.9, 2.6), 40,
-     (-3.0, 2.5, 2.1), False, 0.0),
+    # S2: the lantern BOARD (inside the north aisle looking WEST along
+    # the canopy line -- the s28 eye gate: the outside-north vantage
+    # read the stall BACKS; the board is the along-aisle bokeh)
+    ("CAM_S2",  (9.0, 4.4, 2.0), (9.0, 4.4, 2.0), 40,
+     (-6.0, 2.3, 1.8), False, 0.0),
     # S3: the spine counter-flow (west-looking-east, lens level)
     ("CAM_S3",  (-12.0, 0.0, 1.7), (-12.0, 0.0, 1.7), 32,
      (8.0, 0.2, 1.1), False, 0.0),
@@ -101,12 +102,15 @@ CAMS_V3 = [
     # S9: the child close (low, the lost beat holds)
     ("CAM_S9",  (11.3, -3.1, 1.25), (11.3, -3.1, 1.25), 42,
      (9.9, -4.55, 0.75), False, 0.0),
-    # S10: the reunion (the child arrives at the counter; the vendor
-    # behind, the sodium + steam)
-    ("CAM_S10", (15.5, 3.0, 1.9), (15.5, 3.0, 1.9), 34,
-     (20.2, -1.5, 0.8), False, 0.0),
-    # S11: the pull-back crane (south edge, rising; the whole street)
-    ("CAM_S11", (2.0, -11.0, 2.0), (2.0, -13.5, 7.5), 30,
+    # S10: the reunion (low from the south walk looking NE -- the s28
+    # eye gate: the old SE vantage buried the child in the apron blob;
+    # this isolates the child + the counter + the vendor behind)
+    ("CAM_S10", (17.2, -4.9, 1.45), (17.2, -4.9, 1.45), 38,
+     (20.1, -1.4, 0.9), False, 0.0),
+    # S11: the pull-back crane (the s28 eye gate: the old loc0 sat
+    # BEHIND the 3.4m south shopfront -- black frame; start ABOVE it
+    # and rise; keyed in _kf_crane)
+    ("CAM_S11", (2.0, -11.0, 5.2), (2.0, -13.5, 9.0), 30,
      (0.0, 0.0, 1.0), False, 0.0),
     # S12: the title push (west along the spine to the igniting
     # gantry sign)
@@ -357,6 +361,17 @@ def _title(scene):
     return ob
 
 
+def _kf_crane(ctx):
+    """The S11 pull-back crane (the tsquall pattern: the keyed camera
+    rise; the s28 eye gate caught the UNKEYED crane sitting behind the
+    south shopfront -- black frame)."""
+    ob = ctx["cams"]["CAM_S11"]["ob"]
+    _kf(ob, 889, loc=(2.0, -11.0, 5.2))
+    _kf(ob, 978, loc=(2.0, -13.5, 9.0))
+    _kf(ob, 1080, loc=(2.0, -13.5, 9.0))
+    _bezier(ob)
+
+
 def _runner_keys(ctx):
     """The runner's keyed path (the teal callout): the delivery beat
     at the food court, the east staging, then the WEST thread through
@@ -432,6 +447,7 @@ def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
     scene.frame_end = total_frames
     _runner_keys(ctx)
     _child_keys(ctx)
+    _kf_crane(ctx)
     crowd_cache = _crowd_cache_path()
     if crowd_cache and with_crowd is not False:
         _crowd_kit_branch(ctx, crowd_cache)

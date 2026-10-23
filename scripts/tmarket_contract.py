@@ -138,13 +138,18 @@ BARRICADES = (
 # rr = r + agent_radius = 1.64 (the family law). Any reframe moves its
 # row WITH the lens (the F-TD13 coupling law).
 CAM_KEEPOUTS_V3 = (
+    ("CAM_S2", 9.0, 4.4, 85, 168),        # the lantern-board lens
+                                          # (the reframe: z=2.0 < 2.09
+                                          # -> a ground lens row)
     ("CAM_S3", -12.0, 0.0, 169, 258),     # the spine counter-flow lens
     ("CAM_S4", 8.0, -2.8, 259, 348),      # the queue-forming lens
     ("CAM_S6", 14.0, 0.9, 439, 528),      # the runner-entry lens
     ("CAM_S7", 6.0, -2.0, 529, 618),      # the squeeze lens
     ("CAM_S8", 14.5, -1.0, 619, 708),     # the child-lost wide lens
     ("CAM_S9", 11.3, -3.1, 709, 798),     # the child close lens
-    ("CAM_S10", 15.5, 3.0, 799, 888),     # the reunion lens
+    ("CAM_S10", 17.2, -4.9, 799, 888),    # the reunion lens (the
+                                          # reframe moved it to the
+                                          # south walk)
     ("CAM_S12", -4.5, 0.5, 979, 1080),    # the title push lens
 )
 CAM_KEEPOUT_R = 1.64
