@@ -54,7 +54,15 @@
   npm install hits EMFILE on the sync disk — install on the local
   disk) -> Xvfb :99+:98 + libEGL). RH_ASSETS=/home/z/lab/RH-3d-assets
   (the env-wins law; the original x_bot.fbx sha cb5bab...).
+- **THE GITLAB REMOTE IS DOWN (s28 finding)**: the PAT returns 401 on
+  every API call (NOT the probabilistic WAF — the token is expired or
+  revoked). 10x retries per repo all failed. GitHub carries ALL the
+  work (every micro-step pushed). **The user must provision a fresh
+  GitLab PAT for the dual-remote redundancy to resume**; the remote
+  URLs stay configured (the gitlab remote per repo).
 - Open queues:
+  0. The USER: a fresh GitLab PAT (the redundancy law is degraded
+     until then — GitHub is the single durable remote).
   1. The USER review round on SEVEN packages (tmarket_1 + the six).
   2. The lowercase sweep debt at the next exports (unchanged).
   3. The upstream issue #15 comment (unchanged).
