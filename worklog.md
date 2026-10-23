@@ -4337,3 +4337,21 @@ Work Log:
 
 Stage Summary:
 - The night market is designed, audited, and REV-2-pinned. The build order, the contract geometry, the behavior attachments, and the certification ladder are all specified from the kit's measured laws.
+
+---
+Task ID: fix-wave-1-rca
+Agent: main orchestrator (the non-vision track, user-directed return for universal troubleshooting)
+Task: root-cause the user's 5 universal film issues (zero walk anim / wrong facing / flicker-teleport / cinematography / hero gun pose) across all t-film test projects.
+
+Work Log:
+- Bootstrap per the s28 recipe: 5 repos fresh at /home/z/work (previz s28-close HEAD 258a776, agent-kit s44 30bdcf0, crowd-kit r270 0befeba, kit-common, vision-kit s28 9d9038a) + previz-review (the app, at tmarket_1-staged HEAD 23c709e) + Blender 5.2.2 to /home/z/work/bltest + venv wheel 1.9.4 + bundled-python wheel + Pillow + Xvfb :99/:98 + RH clones at /home/z/lab.
+- Parallel absorption subagents (3): the bridge/loader map, the agent-kit s43/s44 locomotion truth (REV-3: RH clips NOT in-place, root-motion strip/derive law, navigation.py walk_path battery-green), the crowd-kit r270 API card (r260-r270 governance-only; heading/phase semantics frozen since r109-r155-r250 and gate-pinned).
+- REPRODUCE: tdawn re-baked fresh (129 agents, pin 5ccf6565), S7 still re-rendered humanoid mode; four-probe evidence chain (f66aa4f):
+  [1] CACHE HEALTHY: yaw-vs-motion p50 6.5deg / 0 wrap-spins / 10 keepout teleports — the sim+bridge output is coherent; bugs are DOWNSTREAM.
+  [2] SCENE: crowd anchors p50 8deg facing (turn-lag tail only); wrapper rigs +Y-forward within 1-10deg; heroes 147/152deg BACKWARDS (UAL facing -1 recorded, never corrected); 19/129 rigs frozen or near-frozen (7 'Layer0.001' weight-shift idles + 12 low-span walks); heroes bound Pistol_Idle_Loop (requested Idle_Loop: pool omits it, substring fallback hits Pistol first) = the gun-pose class PROVEN.
+  [3] GLB (the app's actual playback): 129 DUPLICATE 'mixamorig:Hips' node names -> three.js PropertyBinding binds ALL 129 walk actions to the FIRST rig: 128 frozen statues + 1 rig torn by 129 stacked actions (= the user's 'skins being torn / man being hung'). THE ZERO-WALK KILLER. Blender-side stills/strips never catch it (per-armature binding works in Blender); only the app's name-based mixer breaks.
+  [4] TELEPORT CENSUS: tform_1/3 catastrophic (24/102 agents, 392/196 events >4m/s, max 55.8 m/s = PIN layers measured on the probe bake then applied to the groups bake); tferry/tfog/tdawn minor (keepout clamp: positions clamped, yaw NOT re-derived, 2 agents ~12 events); tsquall clean; tmarket 10 agents/32 events.
+- Hero authored-path speed audit: tfog passenger 7.8 m/s, tform standard-bearer 13.4 m/s (the 'unbelievable speed' anchors).
+
+Stage Summary:
+- All 5 user issues root-caused with file:line evidence. The dominant killers: (a) the GLB duplicate-bone-name collision (zero-walk + torn-rig), (b) the hero substring-fallback + missing facing correction (gun pose + backwards), (c) the tform pin-seam (teleports), (d) the keepout clamp's position-only correction (slides). Fix design next: bind-layer (unique bones, slot pins, exact clips, facing, retiming, motion gates) + exporter dup-name refusal + tform pin re-derivation + bridge clamp-yaw.
