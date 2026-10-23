@@ -137,10 +137,10 @@ CROWD_TIER_PINS = []
 
 # the callout colors (the user's color law: the population stays the
 # NEUTRAL CLAY register; color = callouts ONLY)
-RUNNER_TEAL = (0.10, 0.52, 0.50)
-CHILD_AMBER = (0.85, 0.55, 0.14)
-RUNNER_SCALE = 1.75 / 1.589        # the family UAL principal scale
-CHILD_SCALE = RUNNER_SCALE * 0.78  # the D-NM1 audit P1 (no gate drama)
+tm_runner_teal = (0.10, 0.52, 0.50)
+tm_child_amber = (0.85, 0.55, 0.14)
+tm_runner_scale = 1.75 / 1.589        # the family UAL principal scale
+tm_child_scale = tm_runner_scale * 0.78  # the D-NM1 audit P1 (no gate drama)
 
 CAST = {
     "Runner": {"root": "Runner.Root",
@@ -222,8 +222,8 @@ def _heroes(scene):
     lib.location = (60.0, 0.0, -2.5)
     lib.hide_render = True
     for name, loc, rgb in (
-            ("Runner", (23.5, -0.4, 0.0), RUNNER_TEAL),
-            ("Child", (10.0, -4.6, 0.0), CHILD_AMBER)):
+            ("Runner", (23.5, -0.4, 0.0), tm_runner_teal),
+            ("Child", (10.0, -4.6, 0.0), tm_child_amber)):
         ob = bpy.data.objects.new(f"{name}.Root", lib.data)
         ob.location = loc
         scene.collection.objects.link(ob)
@@ -537,10 +537,10 @@ def _humanoid_layer(ctx):
     # family scale + the Child at 0.78 (the object-level rider law --
     # the scale rides matrix_parent_inverse, never keyed)
     pr = HC.bind_principals(ctx, {
-        "Runner": ("Jog_Fwd_Loop", RUNNER_SCALE, None),
-        "Child": ("Walk_Loop", CHILD_SCALE, None)})
+        "Runner": ("Jog_Fwd_Loop", tm_runner_scale, None),
+        "Child": ("Walk_Loop", tm_child_scale, None)})
     ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
-        "Runner": RUNNER_TEAL, "Child": CHILD_AMBER})
+        "Runner": tm_runner_teal, "Child": tm_child_amber})
 
 
 def _crowd_palette(ctx):
