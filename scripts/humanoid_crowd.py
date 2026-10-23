@@ -811,7 +811,7 @@ def face_tangent(obj, min_mps=0.5, keep_last=True):
         sp = _m.hypot(vx, vy)
         if sp < min_mps:
             continue
-        z = _m.degrees(_m.atan2(vy, vx)) - 90.0
+        z = _m.atan2(vy, vx) - _m.pi / 2.0
         # write through the fcurve key (same frame)
         for fc in _iter_fcurves(ad.action):
             if fc.data_path == "rotation_euler" and fc.array_index == 2:
@@ -858,7 +858,7 @@ def face_tangent(obj, min_mps=0.5, keep_last=True):
         dt = max(1e-6, (f1b - f0b) / fps)
         vx, vy = (x1 - x0) / dt, (y1 - y0) / dt
         if _m2.hypot(vx, vy) >= min_mps:
-            z = _m2.degrees(_m2.atan2(vy, vx)) - 90.0
+            z = _m2.atan2(vy, vx) - _m2.pi / 2.0
         else:
             z = authored[f]
         kp = rf.keyframe_points.insert(float(f), float(z))
