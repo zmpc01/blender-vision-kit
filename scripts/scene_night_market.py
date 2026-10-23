@@ -381,6 +381,13 @@ def _kf_crane(ctx):
     _kf_loc3(ob, 978, (2.0, -13.5, 9.0))
     _kf_loc3(ob, 1080, (2.0, -13.5, 9.0))
     _bezier(ob)
+    # the S12 push (the exporter's translation-track gate: a CAMS_V3
+    # row with loc0 != loc1 needs a keyed track -- the s28 export
+    # gate-14 catch)
+    ob12 = ctx["cams"]["CAM_S12"]["ob"]
+    _kf_loc3(ob12, 979, (-4.5, 0.5, 1.7))
+    _kf_loc3(ob12, 1080, (-9.5, 0.3, 2.1))
+    _bezier(ob12)
 
 
 def _runner_keys(ctx):
