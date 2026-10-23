@@ -11,12 +11,17 @@ export DISPLAY=:99
 export RH_ASSETS=/home/z/lab/RH-3d-assets
 export CROWD_CACHE_DIR=/tmp/crowdcache_$FILM
 export KIT_EXPORTER=/home/z/work/blender-agent-kit/scripts/export_previz_package.py
+# the governed export pin (the s27 record): agent-kit must be at fca46ca
+( cd /home/z/work/blender-agent-kit && [ "$(git rev-parse HEAD)" = "fca46cadd8915f0ba9b91c7892cc26d5f97ea63c" ] ) || {
+  echo "GOVERNED PIN FAIL: agent-kit HEAD is not fca46ca (the s25 export_frame_step=2 record)"; exit 3;
+}
 # per-film humanoid env (the s25 contract)
 case $FILM in
   tferry) export TFERRY_HUMANOID=1 ;;
   tgreen) export TGREEN_HUMANOID=1 ;;
   tfog)   export TFOG_HUMANOID=1 ;;
   tsquall) export TSQUALL_HUMANOID=1 ;;
+  tmarket) export TMARKET_HUMANOID=1 ;;
   *) echo "unknown film $FILM"; exit 2 ;;
 esac
 # 1. jpg stills (the exporter contract: shot_<ID>.jpg)

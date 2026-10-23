@@ -231,8 +231,10 @@ def _heroes(scene):
         ob.data.materials.clear()
         ob.data.materials.append(make_material(
             f"CA.Body.{name}", rgb, rough=0.5))
-        ob.hide_render = True          # the carrier law (the UAL
-                                       # wrapper renders, not this)
+        # the carrier law: ride_principals DEGENERATES the mesh (the
+        # GLB node survives for the declared refs); hide_render would
+        # EXCLUDE the node (the session-23 law -- the s28 preflight
+        # B4 catch) so the flag stays OFF here
         out[name] = ob
     return out
 
