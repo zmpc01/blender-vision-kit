@@ -4566,3 +4566,115 @@ Stage Summary:
   preserved (one camera AIM adjusted with the cert re-run flagged).
   Every hero now moves at believable humanoid speeds; the
   "instant teleporting" class is closed for authored paths.
+
+---
+Task ID: fix-wave-1-rebake
+Agent: operations subagent (general-purpose, the 7-film cache re-bake wave)
+Task: re-bake ALL SEVEN films' crowd caches under the fixed pipeline
+(crowd-kit 1746d0e: D6 clamp-coherent yaw/speed + layer_boundaries meta;
+VK d1ce5e4..31e2cf7 bind-layer + films + overspeed), verify each with
+fix1_probe_npz.py, record the new payload pins.
+
+Work Log:
+- Engine state verified BEFORE the wave: the standalone crowd-kit clone
+  sits at 1746d0e (the D6 bridge; previz_bridge.py:1473 writes
+  layer_boundaries into the meta JSON) -- the bake engine is the fixed
+  one. Fresh-dir law honored per film (rm -rf before every wave; the
+  drivers also self-enforce). No code edits needed: all seven drivers
+  booted clean from argparse inspection alone (tdawn/tferry/tgreen
+  single-shot --out; tsquall/tfog/tmarket staged probe->groups->finish;
+  tform staged probe->layers->interaction->finish, finish carrying the
+  D5 verifier).
+
+THE PER-FILM TABLE (pin = payload_sha256[:16] from the driver log;
+yaw p50 = probe [A]; teleports = probe [C] |v|>2*max_speed with the
+RCA-class >4 m/s census in parens; layer_boundaries from the npz meta):
+
+| film    | payload pin         | yaw p50 | [C] teleports            | layer_boundaries      | keepouts |
+|---------|---------------------|---------|--------------------------|-----------------------|----------|
+| tdawn   | 7966fba9914870a8    | 6.4 deg | 10 (14 >4m/s, 7 agents)  | [] (unlayered)        | 9        |
+| tferry  | c2d7cd7146a328dd    | 8.0 deg | 21 (26 >4, 11 agents)    | []                    | 5        |
+| tgreen  | ee0c5a2c8957a4da    | 7.1 deg | 0 (0)                    | []                    | 4        |
+| tsquall | 17fd3458cab4295c    | 7.2 deg | 0 (2 >4, 1 = ragdoll seam) | [185, 540]          | 5        |
+| tfog    | c9e1528b00986287    | 1.7 deg | 9 (6 >4, 3 agents)       | []                    | 4        |
+| tform   | a899b2a481b2db7c -- VOID, NOT A RECEIPT (verifier FAIL below) | 0.1 deg | 91 (24 >4, 24 agents) | 32 ticks PRESENT | 0 (empty scaffold by design) |
+| tmarket | 298534f83828ac58    | 6.9 deg | 65 (45 >4, 26 agents)   | []                    | 9        |
+
+- EXPECTATION MET on the pin rotation: tdawn moved off 5ccf6565 ->
+  7966fba9914870a8 (the D6 touched-mask re-derivation rewrites clamped
+  rows; 9 keepout rows actually clamped), tferry likewise off 60a1a64f.
+  Every applied cache carries "clamped": true + counted keepout rows.
+- layer_boundaries LOCATION NOTE (exporter-gate wiring): the bridge
+  serializes it INSIDE the single meta JSON array (z["meta"]), not as a
+  top-level npz key. Verified PRESENT for both layered films (tsquall
+  [185,540]; tform 32 ticks); unlayered films carry [] (the gate law
+  stays OFF for them, per _layer_boundary_ticks' docstring).
+- Residual [C] teleports on the passing films are the KNOWN keepout
+  position-clamp snap (single-tick |v| spikes at window entry, ticks
+  41/83 = frames 83/167): D6 makes the clamped rows' YAW coherent
+  (tfog p50 1.7 deg, tdawn 6.4) but the clamp displacement itself still
+  clears 2*max_speed on low-cap films (tmarket cap 1.40 -> 2.8 m/s
+  threshold: 65 ticks / 30 agents, count UP from the RCA's 32/10 census
+  though same class; tgreen/tsquall at zero [C]).
+
+TFORM VERIFIER VERDICT: FAILED -- tform work STOPPED per mandate
+(asserts NOT weakened, zero code touched). Stages probe/layers/
+interaction all PASS (probe pin c8be30ba; 168 layers with conflicts==[]
+at 14 boundaries + the stride sweep; 46 interaction edits). finish
+composed 420 ticks [120,539] from 214 kit layers (K1 re-derived 26
+layered agents), then _verify_composition asserted. FULL FAILURE
+VERBATIM (also saved /tmp/tform_finish.log):
+
+[tform_bake] events: 16987 (the drill is a formation film -- the sfx spine is authored)
+[previz_bridge] F-TS1: composed 420 ticks [120,539] from 214 kit layer(s)
+[previz_bridge] K1: re-derived speed/yaw/phase for 26 layered agent(s) over ticks [120,539] (46 authored rows exempt)
+/home/z/work/blender-vision-kit/scripts/tform_bake.py:962: UserWarning: to_previz_cache: clip_source='channel' collapsed every visible sample to Shamble_A while the speed channel reaches the sprint band — the kit's jog_threshold_mps exceeds the sim's speed range. Use clip_source='speed' (the default, v6's own law) for the band-faithful mix.
+  digest = bridge.to_previz_cache(
+[tform_bake] clip_source receipt: channel
+[tform_bake] CONTINUITY FAIL t=421 agent=14344382436326872536 d=3.061m
+[tform_bake] CONTINUITY FAIL t=421 agent=12044276760598969571 d=1.044m
+[tform_bake] CONTINUITY FAIL t=421 agent=3234525866321745013 d=7.932m
+[tform_bake] CONTINUITY FAIL t=421 agent=13309974818951950660 d=3.061m
+[tform_bake] CONTINUITY FAIL t=421 agent=5298147310939951299 d=6.347m
+Traceback (most recent call last):
+  File "/home/z/work/blender-vision-kit/scripts/tform_bake.py", line 1119, in <module>
+    main()
+  File "/home/z/work/blender-vision-kit/scripts/tform_bake.py", line 1111, in main
+    stage_finish(C, out, t0)
+  File "/home/z/work/blender-vision-kit/scripts/tform_bake.py", line 981, in stage_finish
+    _verify_composition(C, receipt, out / "cache_v6.npz")
+  File "/home/z/work/blender-vision-kit/scripts/tform_bake.py", line 917, in _verify_composition
+    assert bad == 0, (
+           ^^^^^^^^
+AssertionError: composed continuity: 24 boundary snaps > 0.6 m (the D5 teleport class is BACK — check the operation flag)
+
+- Failure read-out (evidence only, from the UNVERIFIED npz finish wrote
+  before asserting): ALL 24 >4 m/s events sit at the t=420/421 seam
+  (probe sample |v| up to 95.2 m/s), 24/102 agents. The expected drop
+  to ~0-8 did NOT materialize -- the D5 verifier correctly REFUSED the
+  composition (its own message points at the operation flag: the
+  additive-vs-absolute seam). /tmp/crowdcache_tform/cache_v6.npz (pin
+  a899b2a481b2db7c) must NOT be shipped or pinned; the tform cache
+  from this wave is VOID pending the composition seam fix (the layers-
+  stage operation flag, films lane) + a finish re-run.
+- Wall time: drivers ~138 s total (tdawn 4.3 / tferry 4.0 / tgreen 4.0 /
+  tsquall 45.6 / tfog 15.5 / tform 21.3 incl. the failed finish /
+  tmarket 43.5) + ~10 s of npz probes.
+
+Stage Summary:
+- SIX of seven films re-baked clean under the fixed bridge with new
+  payload pins recorded (tdawn 7966fba9914870a8, tferry c2d7cd7146a328dd,
+  tgreen ee0c5a2c8957a4da, tsquall 17fd3458cab4295c, tfog c9e1528b00986287,
+  tmarket 298534f83828ac58); tdawn's pin rotated off 5ccf6565 exactly as
+  the D6 clamped-rows prediction required; every applied cache carries
+  clamped=True + counted keepout rows; layer_boundaries meta verified
+  present for both layered films (inside the meta JSON).
+- TFORM FAILED ITS OWN D5 VERIFIER (24 boundary snaps > 0.6 m at the
+  t=421 seam, the operation-flag class) -- work stopped per mandate,
+  asserts intact, failure captured verbatim; tform's cache and pin from
+  this wave are VOID until the composition seam is fixed and finish
+  re-run.
+- Residual [C] teleports on the passing films are the known keepout
+  position-clamp snaps (worst: tmarket 65 ticks / 30 agents at the
+  2.8 m/s threshold), yaw-coherent since D6 -- the exporter's
+  layer_boundaries gate + the clamp audit trail is the containment.
