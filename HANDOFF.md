@@ -1,3 +1,65 @@
+> Session 28 close: 2026-10-23. HEAD = TMARKET_1 SHIPPED (the seventh
+> film — the lantern night market, built end-to-end from the REV-2
+> spec: 4 modules authored, the probe gates green on 8 measured sim
+> laws, 12/12 stills eye-certified, the preflight PASS, the governed
+> export, STAGED LIVE as the app's newest package) + the user's
+> review-comment classes re-verified + the 23-class glitch audit ALL
+> GREEN. This block -> the session-27 block -> PLAN s28 receipts.
+
+## Session-28 close state (NEWEST — read this first)
+
+- **TMARKET_1 IS LIVE** (the review app's newest-first): 12 shots /
+  12 cams / 2 UAL principals (Runner teal Jog_Fwd_Loop at 1.0x,
+  Child amber Walk_Loop at 0.78xUAL_SCALE) / 165 kit agents /
+  96 JPEG strips / fps 24 / the 15-artifact manifest. Smoke green.
+- **THE S28 SIM RECEIPTS (8 measured laws — the next film's
+  survival kit)**: [1] a destination capacity box overlapping a
+  blocked square poisons the WHOLE concourse compile (the portal
+  check included) — anchors clear of every block; [2] a queue portal
+  resolves from its point/width ALONE (ON a wall face the one-sided
+  tiles leave portals_named empty; rails-as-walls FLIP reachability
+  pairs — dress-only); [3] admission_capacity = 1 admits exactly ONE
+  agent ever — cap = the slot count; [4] the chase tail spawns in
+  zones[0]'s strips (order the zones so the queue's host is zone0 +
+  re-author its spawn box); [5] the congestion drag (the realized
+  mean speed decays as the aisles pack — start the plan high); [6]
+  the slot line rides mid-corridor (the moats + the anchor blobs
+  contest the edges); [7] the release cycle does NOT close under
+  market congestion (the line HOLDS — amend the band with cause);
+  [8] with cap = slot-count every admit lands at t0 — manual sfx
+  rows for the queue-form bells.
+- **THE EYE-LADDER LAWS**: the lanterns ride the BOTH-ENGINE mirror
+  (_lw0 = 3.5) like the sodiums; the aerial needs exposure 0.85 +
+  smaller canopies (the pools peek); _kf PRESERVES z (the crane
+  needed _kf_loc3); EVERY moving lens gets keys (the S12 export
+  translation-track gate); the carriers must NOT carry hide_render
+  (the B4 catch — ride_principals degenerates them; the session-23
+  law); the export process needs the FULL env (CROWD_CACHE_DIR /
+  RH_ASSETS / TMARKET_HUMANOID).
+- **THE GOVERNED-COPY LAW tightened**: the previz blender_kit copy
+  drifted from agent-kit@fca46ca (the s27 sync was UNCOMMITTED and
+  died with the sandbox) — synced AND COMMITTED (fa26caf->), and the
+  rsync --delete killed prop_carry.py (the previz-side submodule) —
+  restored. THE LAW: governed-copy syncs are COMMITS, never working
+  tree states; --delete is forbidden against superset dirs.
+- **THE REVIEW-COMMENT CLASSES (the user's ask)**: re-verified
+  against the live packages (the s28 spot sheet) + the NEW film was
+  born free from all 23 classes (the checklist in worklog s28-close;
+  the title SCALE keys proven in the staged GLB — 0.001 -> flicker
+  -> 1.0 at its beat).
+- **Bootstrap that works (s28-verified, ~35 min)**: the s27 recipe
+  UNCHANGED (5 repos -> Blender to /home/z/work/bltest -> wheels
+  1.6.0 bundled / 1.7.0 venv -> crowd-kit @0054486 -> agent-kit
+  @fca46ca -> the app from GitHub HEAD (the sync copy is stale;
+  npm install hits EMFILE on the sync disk — install on the local
+  disk) -> Xvfb :99+:98 + libEGL). RH_ASSETS=/home/z/lab/RH-3d-assets
+  (the env-wins law; the original x_bot.fbx sha cb5bab...).
+- Open queues:
+  1. The USER review round on SEVEN packages (tmarket_1 + the six).
+  2. The lowercase sweep debt at the next exports (unchanged).
+  3. The upstream issue #15 comment (unchanged).
+  4. Optional polish: tmarket_1 rev-2 reframes if the user asks.
+
 > Session 27 close: 2026-10-22. HEAD = THE ENGINE-MAP ROOT CAUSE
 > (the 4-film look failure was a four-module CLI mapping bug —
 > --engine cycles rendered WORKBENCH) + the 48-still re-look wave
