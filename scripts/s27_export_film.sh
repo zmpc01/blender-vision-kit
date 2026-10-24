@@ -11,9 +11,13 @@ export DISPLAY=:99
 export RH_ASSETS=/home/z/lab/RH-3d-assets
 export CROWD_CACHE_DIR=/tmp/crowdcache_$FILM
 export KIT_EXPORTER=/home/z/work/blender-agent-kit/scripts/export_previz_package.py
-# the governed export pin (the s27 record): agent-kit must be at fca46ca
-( cd /home/z/work/blender-agent-kit && [ "$(git rev-parse HEAD)" = "fca46cadd8915f0ba9b91c7892cc26d5f97ea63c" ] ) || {
-  echo "GOVERNED PIN FAIL: agent-kit HEAD is not fca46ca (the s25 export_frame_step=2 record)"; exit 3;
+# the governed export pin (the fix-wave-1 record): agent-kit must be at
+# 4bece16 — the s27 fca46ca record SUPERSEDED by the wave's exporter
+# commits: 71018c2 (frame_step=1, the tier-B B1 law) + 4bece16 (gate 25
+# duplicate-bone-name refusal + gate 17 layer-boundary wiring — both
+# born FOR this wave's exports)
+( cd /home/z/work/blender-agent-kit && [ "$(git rev-parse HEAD)" = "4bece164295416c33cd0e059422c62350cc32469" ] ) || {
+  echo "GOVERNED PIN FAIL: agent-kit HEAD is not 4bece16 (the fix-wave-1 exporter record)"; exit 3;
 }
 # per-film humanoid env (the s25 contract)
 case $FILM in
@@ -22,6 +26,8 @@ case $FILM in
   tfog)   export TFOG_HUMANOID=1 ;;
   tsquall) export TSQUALL_HUMANOID=1 ;;
   tmarket) export TMARKET_HUMANOID=1 ;;
+  tdawn)  export TDAWN_HUMANOID=1 ;;
+  tform)  export TFORM_HUMANOID=1 ;;
   *) echo "unknown film $FILM"; exit 2 ;;
 esac
 # 1. jpg stills (the exporter contract: shot_<ID>.jpg)
