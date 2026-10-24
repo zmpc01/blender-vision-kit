@@ -56,13 +56,16 @@ SPAWN_ZONES_V5 = [
 # + S12's dolly (the r=1.65 circle at the dolly midpoint covers both
 # poses; the S12 row is NEW -- the title-shot lens was never kept out).
 CAM_KEEPOUTS_V3 = [
-    ("CAM_S2", 3.2, 20.0, 85, 168),
-    ("CAM_S4", -2.5, 29.5, 265, 348),
-    ("CAM_S5", 0.5, 20.8, 349, 444),
+    # fix-wave-2 eyepass: the keepout rows moved WITH the re-framed
+    # lenses (the F-TD13 coupling law). S10's row is xy-identical (only
+    # z lifted); S11 has no row (the crane, like S1/S3).
+    ("CAM_S2", 3.2, 15.5, 85, 168),
+    ("CAM_S4", -6.5, 27.0, 265, 348),
+    ("CAM_S5", 10.5, 11.5, 349, 444),
     ("CAM_S6", -5.2, 7.0, 445, 528),
-    ("CAM_S7", -9.2, 9.8, 529, 624),
+    ("CAM_S7", -5.5, 7.2, 529, 624),
     ("CAM_S8", -4.5, 4.0, 625, 720),
-    ("CAM_S9", 1.6, 7.0, 721, 816),
+    ("CAM_S9", 3.4, 4.2, 721, 816),
     ("CAM_S10", -8.5, -3.2, 817, 912),
     ("CAM_S12", 7.7, 16.75, 1009, 1080),
 ]

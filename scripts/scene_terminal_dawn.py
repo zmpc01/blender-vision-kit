@@ -81,12 +81,18 @@ SHOTS_V3 = [
 CAMS_V3 = [
     ("CAM_S1",  (7.5, -6.0, 7.6), (6.0, -4.2, 7.0), 24,
      (0.0, 12.0, 1.2), False, 0.0),
-    ("CAM_S2",  (3.2, 20.0, 3.0), (3.2, 20.0, 3.0), 38,
-     (-0.3, 30.8, 5.4), False, 0.012),
+    # fix-wave-2 eyepass (S2 re-frame: the 38mm close-up had no
+    # environmental context and no crowd — pull back + widen so the
+    # board sits in the upper frame over the concourse's early flow)
+    ("CAM_S2",  (3.2, 15.5, 2.6), (3.2, 15.5, 2.6), 28,
+     (-0.3, 29.0, 5.0), False, 0.012),
     ("CAM_S3",  (0.0, -5.5, 8.4), (0.0, -4.8, 8.0), 28,
      (0.0, 15.0, 1.3), False, 0.0),
-    ("CAM_S4",  (-2.5, 29.5, 2.6), (-2.5, 29.5, 2.6), 34,
-     (1.5, 20.0, 1.0), False, 0.02),
+    # fix-wave-2 eyepass (S4 re-frame: the north vantage put a
+    # colonnade pillar across the Runner's far-end entry — a 3/4 from
+    # the NW keeps him unobstructed mid-frame with the flow context)
+    ("CAM_S4",  (-6.5, 27.0, 3.2), (-6.5, 27.0, 3.2), 34,
+     (1.0, 19.5, 1.1), False, 0.02),
     # session-14 reframe v2 (user comment on tdawn_2 S5: "the model
     # looks very strange" — v1's west vantage fought the x=-7 colonnade
     # line AND missed the Runner (he walks y 15.1→8.9 while S5 spans
@@ -94,16 +100,27 @@ CAMS_V3 = [
     # NORTH vantage straight down the stream axis (x≈0.3, no column
     # crossing), the far-glow gate as backdrop, the crowd streaming
     # away below, the teal Runner mid-frame at his f396 (0.91, 11.3).
-    ("CAM_S5",  (0.5, 20.8, 2.9), (0.5, 20.8, 2.9), 30,
-     (0.2, 10.0, 1.0), False, 0.025),
+    # fix-wave-2 eyepass (S5 re-frame: the v2 north vantage read as a
+    # centered frontal — the intent is LATERAL. The east-side vantage
+    # (x=10.5, inside the hall, 1.5m off the east wall) looks due
+    # west ACROSS the stream: the Runner mid-frame crossing laterally,
+    # the west colonnade + far glow as depth behind him)
+    ("CAM_S5",  (10.5, 11.5, 2.2), (10.5, 11.5, 2.2), 40,
+     (0.5, 11.5, 1.1), False, 0.025),
     ("CAM_S6",  (-5.2, 7.0, 2.6), (-5.2, 7.0, 2.6), 45,
      (0.0, 1.2, 1.35), False, 0.018),
-    ("CAM_S7",  (-9.2, 9.8, 2.6), (-9.2, 9.8, 2.6), 35,
-     (0.0, 5.2, 1.15), False, 0.034),
+    # fix-wave-2 eyepass (S7 re-frame: the west vantage lost the
+    # stumble in the crowd — closer + tighter on the Runner's dip at
+    # his f580 position, the low tracker angle kept)
+    ("CAM_S7",  (-5.5, 7.2, 1.9), (-5.5, 7.2, 1.9), 50,
+     (-0.4, 4.9, 1.0), False, 0.034),
     ("CAM_S8",  (-4.5, 4.0, 2.5), (-4.5, 4.0, 2.5), 32,
      (0.7, 1.1, 1.2), False, 0.012),
-    ("CAM_S9",  (1.6, 7.0, 3.0), (1.6, 7.0, 3.0), 35,
-     (0.2, 0.6, 1.3), False, 0.022),
+    # fix-wave-2 eyepass (S9 re-frame: too low/wide, the dive read
+    # flat — a 3/4 from behind-right, tighter, the vault throat
+    # beyond the arc peak)
+    ("CAM_S9",  (3.4, 4.2, 2.6), (3.4, 4.2, 2.6), 45,
+     (0.35, -0.2, 1.05), False, 0.022),
     # session-14 reframe (user comment on tdawn_2 S10: "spatial
     # separation unclear — lack of even a wall"; the probe named the
     # center ray ON TD.GateTunnelL — the frame was centered on the
@@ -111,10 +128,17 @@ CAMS_V3 = [
     # screen). New: a shallower 3/4 from the SW so the gate WALL PLANE
     # reads with the SEALED doors + the hot seal-edge slit in frame;
     # tdawn_world's new pilasters + exit sign give the wall scale.
-    ("CAM_S10", (-8.5, -3.2, 2.7), (-8.5, -3.2, 2.7), 26,
+    # fix-wave-2 eyepass (S10: raise the vantage — the SW 3/4 read
+    # cluttered by foreground geometry; looking DOWN over it centers
+    # the sealed doors + the seal-edge slit)
+    ("CAM_S10", (-8.5, -3.2, 4.2), (-8.5, -3.2, 4.2), 26,
      (0.8, 0.6, 1.5), False, 0.0),
-    ("CAM_S11", (2.0, 10.0, 2.2), (6.0, 2.0, 9.0), 30,
-     (0.0, 8.0, 2.0), False, 0.0),
+    # fix-wave-2 eyepass (S11 re-aim: the crane looked north OVER the
+    # held crowd filling the foreground — the intent is the EMPTY
+    # hall. Aim deeper north + end higher so the held crowd reads
+    # small at the gate and the emptied concourse carries the frame)
+    ("CAM_S11", (2.0, 10.0, 2.2), (6.5, 3.0, 9.5), 30,
+     (0.0, 12.0, 1.8), False, 0.0),
     ("CAM_S12", (8.0, 18.0, 3.4), (7.4, 15.5, 3.1), 35,
      (0.0, 9.0, 2.2), False, 0.0),
 ]
