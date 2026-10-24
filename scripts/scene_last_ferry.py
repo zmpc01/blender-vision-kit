@@ -66,8 +66,8 @@ CAMS_V3 = [
     # S2: the BOARDING sign was on the kiosk's SOUTH face (dead side --
     # the blank north slab filled the frame); sign flipped north (the
     # arriving crowd's side) + camera north looking south at it
-    ("CAM_S2",  (0.9, 5.6, 2.2), (0.9, 5.6, 2.2), 40,
-     (3.05, 2.86, 2.3), False, 0.0),
+    ("CAM_S2",  (0.2, 8.5, 2.6), (0.2, 8.5, 2.6), 28,
+     (3.05, 2.86, 2.1), False, 0.0),
     ("CAM_S3",  (-2.0, 30.0, 5.0), (-2.0, 30.0, 5.0), 30,
      (0.2, 10.0, 1.0), False, 0.02),
     # S4: pulled back + wider (38mm, cam north at y38) -- the entry
@@ -83,8 +83,8 @@ CAMS_V3 = [
      (4.8, 17.0, 1.0), False, 0.025),
     # S6: the camera stood INSIDE the queue aiming at the EMPTY throat;
     # pulled west+north so the Deckhand AND the pile read together
-    ("CAM_S6",  (-5.2, 7.0, 2.6), (-5.2, 7.0, 2.6), 40,
-     (0.0, 2.5, 1.2), False, 0.018),
+    ("CAM_S6",  (-3.4, 6.2, 2.2), (-3.4, 6.2, 2.2), 45,
+     (0.5, 2.2, 1.15), False, 0.018),
     # S7: the OUTBOARD SE cam -- the Latecomer's hold reads against the
     # streaming crowd (the inboard NW view buried him among bollards)
     ("CAM_S7",  (6.6, 5.2, 1.9), (6.6, 5.2, 1.9), 35,
@@ -92,15 +92,15 @@ CAMS_V3 = [
     # S8: the pairing shot -- Deckhand (0.3,0.7) + Latecomer (4.8,8)
     # BOTH read from the raised outboard SE (the west deck edge view
     # buries the Deckhand behind the pile: eye round 3)
-    ("CAM_S8",  (7.2, 10.5, 2.8), (7.2, 10.5, 2.8), 35,
-     (2.0, 2.8, 0.8), False, 0.012),
+    ("CAM_S8",  (7.8, 12.0, 3.6), (7.8, 12.0, 3.6), 32,
+     (2.4, 3.4, 1.0), False, 0.012),
     # S9: the OUTBOARD cam ON THE GATE (the prior aim drifted north of
     # the subject and the EEVEE night drowned it -- nothing read): the
     # gate + the Latecomer's crossing centered, the Deckhand beyond
-    ("CAM_S9",  (9.0, 5.0, 3.0), (9.0, 5.0, 3.0), 35,
-     (5.0, 8.2, 1.0), False, 0.0),
-    ("CAM_S10", (-2.0, 3.4, 2.6), (-2.0, 3.4, 2.6), 26,
-     (0.4, -0.6, 1.4), False, 0.0),
+    ("CAM_S9",  (10.5, 4.2, 3.4), (10.5, 4.2, 3.4), 30,
+     (4.6, 8.0, 1.1), False, 0.0),
+    ("CAM_S10", (4.6, 2.2, 2.6), (4.6, 2.2, 2.6), 32,
+     (0.3, -0.4, 1.2), False, 0.0),
     # the CRANE (S11/S12): loc AND aim keyed -- over the outboard
     # margin/water (REV-2 F8); rises 3.2 -> 11.6 while drifting south
     ("CAM_S11", (-8.6, 18.0, 3.2), (-9.2, 10.0, 11.0), 30,
