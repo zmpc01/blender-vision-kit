@@ -895,6 +895,30 @@ def face_tangent(obj, min_mps=0.5, keep_last=True):
         return 0
     changed = 0
     fps = bpy.context.scene.render.fps or 24
+    # fix-wave-2 AUDIT P0 (agent-dadff87f): the AUTHORED grid samples
+    # must be read from the PRISTINE fcurve BEFORE pass 1 writes any
+    # tangent key. The old order sampled rf.evaluate AFTER pass 1 —
+    # when an authored watch key and an adjacent mover key sat on
+    # opposite branches (|dz| > pi), the pre-removal curve already
+    # interpolated the LONG way and every standing grid frame in that
+    # span sampled mid-sweep garbage: a standing hero rotated up to
+    # ~320 deg in place. Hoisted here, the watch segments keep the
+    # TRUE authored yaw (the function's own contract).
+    import math as _m2
+    loc_fcs = [fc for fc in _iter_fcurves(ad.action)
+               if fc.data_path == "location"]
+    rf = next((fc for fc in _iter_fcurves(ad.action)
+               if fc.data_path == "rotation_euler"
+               and fc.array_index == 2), None)
+    xf = next((fc for fc in loc_fcs if fc.array_index == 0), None)
+    yf = next((fc for fc in loc_fcs if fc.array_index == 1), None)
+    f_first, f_last = fs[0], fs[-1]
+    STEP = 12
+    grid = list(range(f_first, f_last + 1, STEP))
+    if grid and grid[-1] != f_last:
+        grid.append(f_last)
+    authored = ({f: float(rf.evaluate(f)) for f in grid}
+                if rf is not None else {})
     for i, f in enumerate(fs):
         if i + 1 >= len(fs):
             if not keep_last:
@@ -933,23 +957,26 @@ def face_tangent(obj, min_mps=0.5, keep_last=True):
     # with up to half the adjacent-segment direction change (measured
     # 31-84 deg on the Runner's weave). A 12-frame tangent grid keys
     # the LOCAL tangent everywhere the hero actually moves.
-    import math as _m2
-    loc_fcs = [fc for fc in _iter_fcurves(ad.action)
-               if fc.data_path == "location"]
-    rf = next((fc for fc in _iter_fcurves(ad.action)
-               if fc.data_path == "rotation_euler"
-               and fc.array_index == 2), None)
-    xf = next((fc for fc in loc_fcs if fc.array_index == 0), None)
-    yf = next((fc for fc in loc_fcs if fc.array_index == 1), None)
     if rf is None or xf is None or yf is None:
+        # fix-wave-2 AUDIT P2: the degenerate path still carries pass
+        # 1's RAW tangent keys — unwrap them in place so the seam
+        # class cannot survive this early return either.
+        if rf is not None:
+            rf.update()
+            kps = sorted(rf.keyframe_points, key=lambda k: k.co.x)
+            prev = None
+            for kp in kps:
+                z = kp.co.y
+                if prev is not None:
+                    while z - prev > _m2.pi:
+                        z -= 2.0 * _m2.pi
+                    while z - prev < -_m2.pi:
+                        z += 2.0 * _m2.pi
+                kp.co.y = z
+                prev = z
+            rf.update()
         return changed
     fps = bpy.context.scene.render.fps or 24
-    f_first, f_last = fs[0], fs[-1]
-    STEP = 12
-    grid = list(range(f_first, f_last + 1, STEP))
-    if grid and grid[-1] != f_last:
-        grid.append(f_last)
-    authored = {f: float(rf.evaluate(f)) for f in grid}
     # RNA staleness law (the _trim_action class): index-DESC removals
     for _i in reversed(range(len(rf.keyframe_points))):
         rf.keyframe_points.remove(rf.keyframe_points[_i])
