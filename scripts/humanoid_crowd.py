@@ -848,6 +848,18 @@ def face_tangent(obj, min_mps=0.5, keep_last=True):
     for _i in reversed(range(len(rf.keyframe_points))):
         rf.keyframe_points.remove(rf.keyframe_points[_i])
     n_grid = 0
+    # fix-wave-2 (user issue #3, the hero spin class): UNWRAP the grid
+    # series as it is inserted. Each z comes fresh from atan2 (in
+    # [-3pi/2, pi/2] after the -pi/2 forward correction); a heading
+    # crossing the +-pi seam (west-ish turns) makes adjacent grid keys
+    # differ by ~2pi, and the componentwise-LINEAR euler fcurve sweeps
+    # the FULL 360 the long way through 0 -- the visible hero spin-
+    # flicker. Unwrapping keeps every key congruent mod 2pi (Rz
+    # periodicity -- rendered rotations unchanged) while the fcurve
+    # interpolates the SHORT arc, including watch<->move transitions
+    # (the authored watch yaw and the mover tangent land on the same
+    # continuous branch).
+    prev_z = None
     for f in grid:
         f0b = max(f_first, f - 3)
         f1b = min(f_last, f + 3)
@@ -861,6 +873,12 @@ def face_tangent(obj, min_mps=0.5, keep_last=True):
             z = _m2.atan2(vy, vx) - _m2.pi / 2.0
         else:
             z = authored[f]
+        if prev_z is not None:
+            while z - prev_z > _m2.pi:
+                z -= 2.0 * _m2.pi
+            while z - prev_z < -_m2.pi:
+                z += 2.0 * _m2.pi
+        prev_z = z
         kp = rf.keyframe_points.insert(float(f), float(z))
         kp.interpolation = 'LINEAR'
         n_grid += 1
