@@ -398,6 +398,28 @@ def bind_crowd(ctx, fam, group_tint=None):
             _fail(f"anchor {a.name} is {a.type} — the D6-2 law requires "
                   f"MESH anchors (the hidden-commuter carrier)")
 
+    # fix-wave-2 (user directive, the WHOLE-LAYER cylinder fallback):
+    # if the family's ASSETS are not servable (rig/clips missing on
+    # this machine), the humanoid layer degrades to CYLINDERS — every
+    # anchor keeps its commuter capsule, nothing degenerates, the film
+    # still ships. A missing-asset condition is the ONE systematic
+    # failure where cylinders-for-all is the honest read (the user's
+    # law: un-animated -> simplified cylinder; the rigged humanoid is
+    # the refined stage and REQUIRES its animation library). Any OTHER
+    # failure inside the bind (corrupt asset, gate refusal) still
+    # fails LOUD — those are bugs, not degradations.
+    _missing = [k for k in ("rig", "walk", "idle")
+                if not os.path.isfile(str(fam.get(k, "")))]
+    if _missing:
+        _P(f"CYLINDER FALLBACK (whole layer): family {fam['name']!r} "
+           f"assets missing on this machine: {_missing} — ALL {n} "
+           f"anchors keep their commuter capsules (simplified "
+           f"cylinders); the humanoid stage is skipped")
+        return {"n": n, "n_walk": 0, "n_idle": 0, "n_cylinder": n,
+                "cylinder_reasons": [f"assets missing: {_missing}"],
+                "verts": 0, "reps": [], "walk_cycle": (0, 0),
+                "classes": {}, "layer": "cylinders"}
+
     with _fps_guard():
         tmpl = prepare_template(fam)
     # the walk clip (import standalone: it brings its own armature —
@@ -573,9 +595,18 @@ def bind_crowd(ctx, fam, group_tint=None):
         bm.free()
         return me
     deg_data = _degenerate_data("Hum.carrier")
+    # fix-wave-2: the CYLINDER TEMPLATE — a private copy of the
+    # commuter capsule (mesh.copy() drops the per-agent shape keys;
+    # a clean static capsule with the exact original silhouette).
+    # Fallback agents render with THIS read (the user's simplified-
+    # cylinder directive), never as frozen humanoids.
+    cyl_tpl = anchors[0].data.copy()
+    cyl_tpl.name = "Hum.cylinder_tpl"
 
     reps = []
     n_walk = n_idle = 0
+    n_cyl = 0
+    cyl_reasons = []
     import collections as _collections
     bone_name_census = _collections.Counter()
     # fix-wave-1 D1-REV2: per-agent UNIQUE armature data + mesh data +
@@ -589,96 +620,123 @@ def bind_crowd(ctx, fam, group_tint=None):
     # with the SAME prefix, bind the action and pin its slot BEFORE
     # the rename (the s20 remap fires for the bound action only).
     for i, anchor in enumerate(anchors):
-        # the anchor stays a MESH (D6-2); its data -> the degenerate
-        # carrier (the baked gait shape keys die with the old data —
-        # the rigs carry the gait now; the transform keys are
-        # OBJECT-level and survive the swap)
-        anchor.data = deg_data
-        # per-agent rig: LINK the copy before wrap (review r1 P0-1/T4)
-        arm_i = tmpl["arm"].copy()
-        # D1-REV2: the data copy is the LAW — Object.copy() shares the
-        # armature data and a rename on one agent would rename every
-        # agent (compounding prefixes, cross-corrupted remaps)
-        arm_i.data = tmpl["arm"].data.copy()
-        arm_i.name = f"{anchor.name}.Rig"
-        bpy.context.scene.collection.objects.link(arm_i)
-        wrapper = wrapper_rig.wrap(arm_i, f"{anchor.name}.Hum",
-                                   scale=FILM_HEIGHT / fam["rig_height"],
-                                   facing_probe_bone=fam["probe_bone"])
-        wrapper["root"].parent = anchor
-        # skinned meshes: instance linked copies under THIS armature;
-        # RETARGET the Armature modifier (review r1 P0-3/T3: me.copy()
-        # keeps the modifier pointing at the TEMPLATE arm — without the
-        # retarget every agent renders as a rigid rest-pose statue)
-        gi = agent_group[i] if agent_group is not None else 0
-        srcs = group_meshes[gi] if group_meshes else tmpl["meshes"]
-        agent_meshes = []
-        for j, tm in enumerate(srcs):
-            me = tm.copy()
-            me.name = f"{anchor.name}.Body{j}"
-            # D1-REV2: per-agent MESH DATA copies — the vgroup renames
-            # below must not write through to the shared group data
-            # (materials ride the copy; RAM receipt printed below)
-            me.data = me.data.copy()
-            me.data.name = me.name
-            me.parent = wrapper["armature"]
-            bpy.context.scene.collection.objects.link(me)
-            for md in me.modifiers:
-                if md.type == 'ARMATURE':
-                    md.object = wrapper["armature"]
-            agent_meshes.append(me)
-        # the action: per-class retimed walk/jog (per-agent wrapped
-        # phase) or per-agent idle copy. NO shared actions — the
-        # renames below would remap a shared action for every sharer.
-        arm_i_ad = arm_i.animation_data_create()
-        is_walk = speeds is not None and speeds[i] > STATIONARY_MPS
-        if is_walk:
-            ci = _class_of(class_speeds[i])
-            base, bf0, bcyc = class_bases[ci][0], class_bases[ci][1], \
-                class_bases[ci][2]
-            a2 = _wrap_action(base, f"walk_{i:03d}", phases[i], bcyc,
-                              bf0, bf0 + bcyc)
-            n_walk += 1
-        else:
-            a2 = idle_act.copy()
-            a2.name = f"idle_{i:03d}"
-            n_idle += 1
-        _pin_slot(arm_i_ad, a2)
-        # D1-REV2: the rename — bind FIRST (above), then rename the
-        # bones (auto-remaps THIS agent's bound action; the class bases
-        # are unbound and untouched) + mirror on the vgroups (skinning
-        # resolves vgroup NAME -> bone NAME at deform time)
-        prefix = f"z{i:04d}:"
-        vg_map = {}
-        for b in list(arm_i.data.bones):
-            vg_map[b.name] = prefix + b.name
-            b.name = prefix + b.name
-            bone_name_census[b.name] += 1
-        for me in agent_meshes:
-            # Blender 5.2 law: vertex_groups moved from Mesh to OBJECT
-            # (probed live: mesh.vertex_groups == AttributeError)
-            for vg in me.vertex_groups:
-                if vg.name in vg_map:
-                    vg.name = vg_map[vg.name]
-        # wrap-band gate on the per-agent actions (frame_range reads the
-        # keyed span only — CYCLES does not extend it, review r1 T1)
-        if is_walk:
-            bf0, bcyc = class_bases[ci][1], class_bases[ci][2]
-            lo, hi = a2.frame_range
-            if lo < bf0 - 1e-4 or hi >= bf0 + bcyc + 1e-4:
-                _fail(f"wrap-band violated on agent {i}: "
-                      f"{lo:.2f}..{hi:.2f} not inside "
-                      f"[{bf0},{bf0 + bcyc})")
-        # D3-REV2: the bind-time motion gate — every WALK-classified
-        # rig's action must move (hips span >= WALK_SPAN_MIN_M over
-        # its own class cycle). Kills the near-frozen-walk class.
-        if is_walk:
-            _span_gate(arm_i, a2, class_bases[ci][1],
-                       class_bases[ci][2], i)
-        reps.append({"anchor": anchor, "ordinal": i, "cycle":
-                     (class_bases[ci][1], class_bases[ci][1] +
-                      class_bases[ci][2]) if is_walk else (1, 1 + IDLE_TRIM),
-                     "class": ci if is_walk else -1, **wrapper})
+        # fix-wave-2 (user directive, the CYLINDER-FALLBACK LAW): the
+        # anchor's capsule mesh is the agent's DEFAULT READ; it only
+        # degenerates (hands the visual to the rigged humanoid) AFTER
+        # that agent's rig is fully bound, action-pinned and motion-
+        # gated. Any per-agent failure -> the partial rig is purged,
+        # the capsule stays, the agent ships as a SIMPLIFIED CYLINDER
+        # — a frozen humanoid can never leave this loop. (The rigged
+        # humanoid is the REFINED read: it must be animated to exist.)
+        created = []          # every object made for this agent
+        try:
+            # per-agent rig: LINK the copy before wrap (review r1 P0-1/T4)
+            arm_i = tmpl["arm"].copy()
+            created.append(arm_i)
+            # D1-REV2: the data copy is the LAW — Object.copy() shares the
+            # armature data and a rename on one agent would rename every
+            # agent (compounding prefixes, cross-corrupted remaps)
+            arm_i.data = tmpl["arm"].data.copy()
+            arm_i.name = f"{anchor.name}.Rig"
+            bpy.context.scene.collection.objects.link(arm_i)
+            wrapper = wrapper_rig.wrap(arm_i, f"{anchor.name}.Hum",
+                                       scale=FILM_HEIGHT / fam["rig_height"],
+                                       facing_probe_bone=fam["probe_bone"])
+            if wrapper.get("root") is not None and wrapper["root"] not in created:
+                created.append(wrapper["root"])
+            wrapper["root"].parent = anchor
+            # skinned meshes: instance linked copies under THIS armature;
+            # RETARGET the Armature modifier (review r1 P0-3/T3: me.copy()
+            # keeps the modifier pointing at the TEMPLATE arm — without the
+            # retarget every agent renders as a rigid rest-pose statue)
+            gi = agent_group[i] if agent_group is not None else 0
+            srcs = group_meshes[gi] if group_meshes else tmpl["meshes"]
+            agent_meshes = []
+            for j, tm in enumerate(srcs):
+                me = tm.copy()
+                created.append(me)
+                me.name = f"{anchor.name}.Body{j}"
+                # D1-REV2: per-agent MESH DATA copies — the vgroup renames
+                # below must not write through to the shared group data
+                # (materials ride the copy; RAM receipt printed below)
+                me.data = me.data.copy()
+                me.data.name = me.name
+                me.parent = wrapper["armature"]
+                bpy.context.scene.collection.objects.link(me)
+                for md in me.modifiers:
+                    if md.type == 'ARMATURE':
+                        md.object = wrapper["armature"]
+                agent_meshes.append(me)
+            # the action: per-class retimed walk/jog (per-agent wrapped
+            # phase) or per-agent idle copy. NO shared actions — the
+            # renames below would remap a shared action for every sharer.
+            arm_i_ad = arm_i.animation_data_create()
+            is_walk = speeds is not None and speeds[i] > STATIONARY_MPS
+            if is_walk:
+                ci = _class_of(class_speeds[i])
+                base, bf0, bcyc = class_bases[ci][0], class_bases[ci][1], \
+                    class_bases[ci][2]
+                a2 = _wrap_action(base, f"walk_{i:03d}", phases[i], bcyc,
+                                  bf0, bf0 + bcyc)
+                n_walk += 1
+            else:
+                a2 = idle_act.copy()
+                a2.name = f"idle_{i:03d}"
+                n_idle += 1
+            _pin_slot(arm_i_ad, a2)
+            # D1-REV2: the rename — bind FIRST (above), then rename the
+            # bones (auto-remaps THIS agent's bound action; the class bases
+            # are unbound and untouched) + mirror on the vgroups (skinning
+            # resolves vgroup NAME -> bone NAME at deform time)
+            prefix = f"z{i:04d}:"
+            vg_map = {}
+            for b in list(arm_i.data.bones):
+                vg_map[b.name] = prefix + b.name
+                b.name = prefix + b.name
+                bone_name_census[b.name] += 1
+            for me in agent_meshes:
+                # Blender 5.2 law: vertex_groups moved from Mesh to OBJECT
+                # (probed live: mesh.vertex_groups == AttributeError)
+                for vg in me.vertex_groups:
+                    if vg.name in vg_map:
+                        vg.name = vg_map[vg.name]
+            # wrap-band gate on the per-agent actions (frame_range reads the
+            # keyed span only — CYCLES does not extend it, review r1 T1)
+            if is_walk:
+                bf0, bcyc = class_bases[ci][1], class_bases[ci][2]
+                lo, hi = a2.frame_range
+                if lo < bf0 - 1e-4 or hi >= bf0 + bcyc + 1e-4:
+                    _fail(f"wrap-band violated on agent {i}: "
+                          f"{lo:.2f}..{hi:.2f} not inside "
+                          f"[{bf0},{bf0 + bcyc})")
+            # D3-REV2: the bind-time motion gate — every WALK-classified
+            # rig's action must move (hips span >= WALK_SPAN_MIN_M over
+            # its own class cycle). Kills the near-frozen-walk class.
+            if is_walk:
+                _span_gate(arm_i, a2, class_bases[ci][1],
+                           class_bases[ci][2], i)
+            # COMMIT POINT — the rig is proven animated; the anchor's
+            # capsule now degenerates (the baked gait shape keys die
+            # with the old data — the rigs carry the gait now; the
+            # transform keys are OBJECT-level and survive the swap)
+            anchor.data = deg_data
+            reps.append({"anchor": anchor, "ordinal": i, "cycle":
+                         (class_bases[ci][1], class_bases[ci][1] +
+                          class_bases[ci][2]) if is_walk else (1, 1 + IDLE_TRIM),
+                         "class": ci if is_walk else -1, **wrapper})
+        except Exception as exc:                      # noqa: BLE001
+            # CYLINDER FALLBACK: purge the partial rig; the capsule
+            # anchor (never degenerated) renders as the simplified
+            # cylinder. Loud receipt; the count rides the report.
+            for ob in created:
+                try:
+                    bpy.data.objects.remove(ob, do_unlink=True)
+                except (ReferenceError, RuntimeError):
+                    pass
+            n_cyl += 1
+            cyl_reasons.append(f"{anchor.name}: {type(exc).__name__}: {exc}")
+            _P(f"CYLINDER FALLBACK agent {i} ({anchor.name}): "
+               f"{type(exc).__name__}: {exc}")
     # D1-REV2: the uniqueness census — fail-closed. No duplicated bone
     # name may leave this function (the GLB consumer binds by name).
     dupes = {nm: c for nm, c in bone_name_census.items() if c > 1}
@@ -714,7 +772,55 @@ def bind_crowd(ctx, fam, group_tint=None):
                  f"{'jog' if class_bases[ci][5] else 'walk'},"
                  f"s={class_bases[ci][3]:.2f})"
                  for ci in range(n_classes) if class_bases[ci]))
+    # fix-wave-2 (user directive, the FROZEN-RIG AUDIT — the law's
+    # enforcement surface): every surviving rep's armature must carry
+    # LIVE animation (animation_data + a slotted action with fcurves).
+    # A rep failing here is stripped to its cylinder capsule (the
+    # anchor was degenerated at the commit point — rebuild a simple
+    # cylinder mesh for it) — a frozen humanoid NEVER leaves this
+    # function, whatever failed after the commit point.
+    for rep in list(reps):
+        arm = rep["armature"]
+        ad = getattr(arm, "animation_data", None)
+        act = getattr(ad, "action", None) if ad else None
+        live = act is not None
+        if live:
+            try:
+                live = sum(1 for _ in _iter_fcurves(act)) > 0
+            except Exception:                              # noqa: BLE001
+                live = False
+        if live:
+            continue
+        n_cyl += 1
+        cyl_reasons.append(f"{rep['root'].name}: post-commit audit "
+                           f"(no live action)")
+        _P(f"CYLINDER FALLBACK (post-commit audit) {rep['root'].name}: "
+           f"armature carries no live action — stripping to cylinder")
+        # purge the rig subtree (root parents armature + meshes)
+        for ob in (rep["armature"], rep.get("root")):
+            if ob is None:
+                continue
+            for kid in list(ob.children_recursive):
+                try:
+                    bpy.data.objects.remove(kid, do_unlink=True)
+                except (ReferenceError, RuntimeError):
+                    pass
+            try:
+                bpy.data.objects.remove(ob, do_unlink=True)
+            except (ReferenceError, RuntimeError):
+                pass
+        # rebuild the capsule: the cylinder template's copy on the
+        # anchor (mesh.copy() -> no shape keys -> a static simplified
+        # cylinder, the original commuter silhouette)
+        rep["anchor"].data = cyl_tpl.copy()
+        rep["anchor"].data.name = f"{rep['anchor'].name}.Cyl"
+        reps.remove(rep)
+    if n_cyl:
+        _P(f"CYLINDER FALLBACK: {n_cyl}/{n} agents ship as simplified "
+           f"cylinders (reasons: {cyl_reasons[:4]}")
     return {"n": n, "n_walk": n_walk, "n_idle": n_idle,
+            "n_cylinder": n_cyl, "cylinder_reasons": cyl_reasons,
+            "layer": "humanoids",
             "verts": tmpl["combined_verts"], "reps": reps,
             "walk_cycle": (f0, f1),
             "classes": {ci: {"n": len(class_members[ci]),
