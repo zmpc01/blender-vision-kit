@@ -4678,3 +4678,57 @@ Stage Summary:
   position-clamp snaps (worst: tmarket 65 ticks / 30 agents at the
   2.8 m/s threshold), yaw-coherent since D6 -- the exporter's
   layer_boundaries gate + the clamp audit trail is the containment.
+
+---
+Task ID: fix-wave-2-bootstrap
+Agent: main orchestrator (the non-vision track, session 2 of the universal troubleshooting)
+Task: bootstrap the fresh sandbox + sync the vendored kits + absorb crowd-kit r284 (the user-directed continuation of fix-wave-1, which died mid-wave: 6/7 caches rebaked, tform VOID, no re-render/export/stage, no eye pass).
+
+Work Log:
+- Fresh sandbox: 7 repos cloned at /home/z/work (previz 53deb12, agent-kit 4bece16, crowd-kit bfe5c8a r284, kit-common 801592a, vision-kit c6a36cc, previz-review 23c709e, RH-3d-assets 0c25a63) + RH-canvas-animations clone at /home/z/lab (no fbx — the vendored vendor/rh_clips serves; the D3-REV2 in-place fallback with nominal cadence is the documented path) + Blender 5.2.2 to /home/z/work/bltest + venv wheel blender_crowd_native 1.9.4 + zstandard/crc32c + Pillow into the bundled python 3.13 + Xvfb :99/:98 + the app live on :3000 with the db mirror restored (tdawn_2 x5, v6_0 x6, v6_1 x3).
+- Sync: previz check_shared_sync 46/46 IN-SYNC; the vision-kit's vendored crowd-kit submodule pin bumped r151 (b4bf76e) -> r284 (commit 3d4315c; functional delta vs the D6 bridge 1746d0e = ZERO, comment re-anchors only); the export driver's governed pin bumped fca46ca -> 4bece16 + the missing tdawn/tform cases added (commit 7a9b92e).
+- tform rebake under D5b: probe pin c8be30ba, 168 layers, conflicts==[], composed verify OK (0 boundary snaps), payload 4261317a — the D5b commit's pin reproduced EXACTLY cross-sandbox. All 7 films re-baked; every pin reproduced (determinism law).
+- fix1_probe census (pre-D6b): tgreen/tsquall clean; tdawn 10 / tferry 21 / tfog 9 / tmarket 65 teleport ticks + 24-60 wrap-spin events per film.
+
+Stage Summary:
+- Environment fully live; the wave's engine state verified; tform's VOID cache resolved; the remaining work root-caused into three classes: [B] wrap-spins (the euler seam), keepout pops (window-open projection + rim-fighting), and the GLB D1 class (already fixed by the bind layer, unverified in export).
+
+---
+Task ID: fix-wave-2-unwrap (user issues #3 spin-flicker + #2 orientation read)
+Agent: main orchestrator
+Task: kill the euler-wrap spin class — adjacent yaw keys crossing +-pi interpolate the LONG way (a full 360-deg sweep in one 2-tick interval; 24-60 events/film, worst agents 4-5 spins).
+
+Work Log:
+- Root cause: bake2's tier2_agent_plan keyed the cache yaw VERBATIM (atan2 output, [-pi,pi]); the componentwise-LINEAR euler fcurve sweeps through 0 at the seam. face_tangent's 12-frame grid has the same class (fresh atan2 values per key).
+- FIX 1 (previz 19af9f3): tier2_agent_plan UNWRAPS the yaw series on the plan grid (off accumulates +-2pi while adjacent keys would differ > pi); every key stays congruent mod 2pi (rendered rotations UNCHANGED; the plan stays sim-true). Battery 307 -> 308 (the WRAP-SEAM pin: adjacent |dyaw| <= pi + congruence), payload_sha256 45ac606f INTACT.
+- FIX 2 (vision-kit e6b2be7): face_tangent's grid insertion unwraps the z series as it inserts (prev_z tracking) — including watch<->move transitions (the authored watch yaw and the mover tangent land on one continuous branch).
+- The ragdoll (E) composes onto the heading ADDITIVELY (heading0/1 params from the same continuous series) — unwrap-safe by construction.
+
+Stage Summary:
+- Both keyed-yaw surfaces now take the SHORT arc. The wrap-spin flicker class is closed at the root; pinned by the battery.
+
+---
+Task ID: fix-wave-2-cylinder-law (user directive on issue #1)
+Agent: main orchestrator
+Task: the CYLINDER-FALLBACK LAW — no agent may ever ship as a FROZEN humanoid; the simplified cylinder is the default read and the rigged humanoid exists only when actually animated.
+
+Work Log:
+- Implemented at three surfaces in humanoid_crowd.py (commit f10e45c): [1] per-agent — the anchor's commuter capsule only degenerates to the rig carrier AFTER the rig is bound, action-pinned, wrap-band- and span-gated (the COMMIT POINT moved post-gate); failures purge the partial rig and ship the capsule (loud receipt, n_cylinder + cylinder_reasons in the report). [2] post-commit audit — every rep's armature must carry a live slotted action with fcurves; failures are stripped to the CYLINDER TEMPLATE copy (a private capsule-mesh copy — mesh.copy() drops the per-agent shape keys; the exact original silhouette). [3] whole-layer pre-flight — unservable family assets (rig/walk/idle missing) degrade the entire layer to cylinders-for-all (report layer='cylinders'); every OTHER failure still fails LOUD.
+- LIVE VERIFIED on tdawn: 129 rigs bound, 0 fallbacks, 0 duplicate bones (8385 unique names), motion gates green (bob 0.043-0.048, cache_xy_err 0.0); heroes on Idle_Loop/Jog_Fwd_Loop (the D2 exact-match holding); the 3-frame VLM strip confirms limbs animate + positions advance believably (the 8-sample noise frame that read 'frozen' was a sampling artifact, disproven at 24 samples).
+
+Stage Summary:
+- A frozen humanoid is now structurally impossible from the bind layer; the fallback chain is loud and counted.
+
+---
+Task ID: fix-wave-2-d6b (user issue #3 keepout pops + rim-fighting)
+Agent: main orchestrator
+Task: kill the keepout clamp's visible displacement class — window-open deep projection (up to 1.86 m in one tick) and rim-fighting slides (up to 16.8 m/s) exactly where the cameras look.
+
+Work Log:
+- Root cause (measured on the tmarket cache): 44/65 pops within +-1 tick of a keepout window START (agents already inside when the window opens -> instant rim projection); agent 137 rim-fought for 12+ ticks at 3-17 m/s (its raw path aims through the disc; the moving raw point's rim projection slides).
+- FIX (crowd-kit 5092b04, rebased over the parallel track's r285): clamp_keepouts becomes a RATE-LIMITED EJECTION — a per-agent OFFSET tracks the rim projection of the RAW position, moving toward it by <= 0.20 m/tick (2.4 m/s — a believable sidestep preserving the walk timing), decaying back at the same rate once raw leaves the disc (SUBTRACT semantics — reaches zero, no stranded residual). Containment TARGET unchanged (rim, never beyond; degenerate +x). Repeated application CONVERGENT (an ejected agent is a fixed point).
+- Tests: r054 pins re-authored to the new law (85/85); the six PB-16..21 cites re-anchored (+48, clip_source pair +54) + PB-11 :681 (the r285 fold's off-by-3 caught at the rebase); refusal_arms 628/0; m2 27/27 + m98b 20/20 + m99 17/17 (m98 timing deferred — the render wave owns the CPUs).
+- Re-bake: all 6 keepout films re-baked (tform untouched — zero keepouts, provably inert; tgreen byte-IDENTICAL — its keepouts never clamp). New pins: tdawn 4aa6042c / tferry 949d0988 / tsquall 8e7cdb5c / tfog 6eafef48 / tmarket a46aab2b. Post-D6b census: tdawn 21->0, tferry 21->0, tgreen 0, tsquall 0, tmarket 65->16 (the residual = walk+budget composition, p50 0.24-0.30 m/tick ~ a brisk sidestep, documented), tfog 9->13 (same composition class — tfog's slow agents cross the conservative 2x-max_speed line at the fixed budget; accepted with cause).
+
+Stage Summary:
+- The keepout flicker class is closed at the bridge; the caches are FINAL for the render wave (pins recorded above).
