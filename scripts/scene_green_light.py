@@ -72,8 +72,8 @@ CAMS_V3 = [
     # S2: the glyph close-up from the CROSSING side (the plates face S
     # toward the street -- the N-side cam saw the head's blank back:
     # probe S2b lesson); the green MAN reads (S2c cert)
-    ("CAM_S2",  (-4.4, 1.2, 2.6), (-4.4, 1.2, 2.6), 55,
-     (-4.2, 3.35, 2.55), False, 0.0),
+    ("CAM_S2",  (-4.8, -0.8, 2.2), (-4.8, -0.8, 2.2), 40,
+     (-4.2, 3.35, 2.5), False, 0.0),
     ("CAM_S3",  (-2.0, 4.6, 1.7), (-2.0, 4.6, 1.7), 40,
      (-16.0, 0.0, 1.0), False, 0.015),
     # S4: high oblique SW over the crossing, looking W down the street
@@ -82,13 +82,13 @@ CAMS_V3 = [
     # S5: the nadir -- the freeze completing ON CAMERA (the signature)
     ("CAM_S5",  (0.0, 2.5, 16.0), (0.0, 2.5, 16.0), 40,
      (0.0, 0.5, 0.0), False, 0.0),
-    ("CAM_S6",  (0.0, -5.2, 1.6), (0.0, -5.2, 1.6), 35,
-     (0.4, 0.8, 1.0), False, 0.018),
+    ("CAM_S6",  (0.6, -3.6, 1.8), (0.6, -3.6, 1.8), 45,
+     (-4.2, 3.35, 2.5), False, 0.018),
     # S7: his journey reads AHEAD of him (the S7a probe had the crowd
     # behind-camera -- the story inverted); his back + the plaza + the
     # frozen field beyond
-    ("CAM_S7",  (24.0, 5.5, 2.2), (24.0, 5.5, 2.2), 40,
-     (10.0, 1.2, 0.9), False, 0.02),
+    ("CAM_S7",  (21.5, 3.2, 1.8), (21.5, 3.2, 1.8), 50,
+     (16.5, 0.8, 0.95), False, 0.02),
     ("CAM_S8",  (27.0, 6.0, 3.6), (27.0, 6.0, 3.6), 45,
      (18.0, 0.8, 1.0), False, 0.015),
     # S9: raised + pulled back over the field (the 65mm at-rim pose
@@ -98,7 +98,7 @@ CAMS_V3 = [
     ("CAM_S9",  (8.0, 6.0, 3.2), (8.0, 6.0, 3.2), 55,
      (4.0, 1.4, 1.0), False, 0.01),
     # S10: the NW head + blinking hand dominate, the still below
-    ("CAM_S10", (-1.5, -3.8, 1.9), (-1.5, -3.8, 1.9), 60,
+    ("CAM_S10", (-2.4, -1.6, 2.1), (-2.4, -1.6, 2.1), 85,
      (-4.2, 3.35, 2.55), False, 0.008),
     # the CRANE (S11/S12): loc keyed in _kf_crane -- S11 rises from the
     # S margin to the certified (−8,−5,9) pose; S12 settles gently
