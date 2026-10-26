@@ -386,12 +386,12 @@ gait_modifiers.
   mode falls back to baking on slotted actions even on scenes
   censused clean (mixed_scan2 covers every animation owner). At
   step=2 the bake fits; a no-bake lane is future work.
-- **THE ORPHAN PURGE**: the bind's carrier swaps + template
-  removals + clip-import leftovers + unused library actions sit in
-  RAM as 0-user datablocks until an explicit purge (Blender never
-  GCs them). The before-set capture + capsule-capture sweep at
-  bind_crowd's end frees ~200 blocks on the 165-agent film without
-  touching anything live (users-by-definition is the safety proof).
+- **THE ORPHAN PURGE**: carrier swaps, template removals, clip
+  leftovers + unused library actions sit in RAM as 0-user
+  datablocks until an explicit purge (Blender never GCs them). The
+  before-set + capsule-capture sweep at bind_crowd's end frees
+  ~200 blocks on the 165-agent film, touching nothing live
+  (users-by-definition is the safety proof).
 - **THE EYEPASS ADJUDICATION LAW** (verdicts FLIP on identical
   frames between rounds): F=GOOD + S=CLEAR -> PASS; S=MISSING or
   G=MAJOR -> ONE targeted diagnostic (never a blind re-frame);
