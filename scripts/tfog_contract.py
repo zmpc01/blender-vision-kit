@@ -162,7 +162,9 @@ CAM_KEEPOUTS = (
     ("CAM_S6", -9.0, -2.2, 528, 672),   # moved with the S6h lens (round-3 cert)
     ("CAM_S9", -3.0, -1.0, 792, 876),
     ("CAM_S10", 4.0, 2.2, 877, 948),    # at the EAST car's door (the queue's)
-    ("CAM_S11", -30.0, 3.5, 949, 1008), # inside the fog box, platform W end
+    # (S11 stays row-free: its z=2.6 lens is above the ground-lens
+    # class by the honesty law's own z<2.5 test — the F20 aerial law;
+    # the far-west platform is waiter-sparse at the pull-out window)
 )
 
 # --- the train key paths (the scene module keys; FRAMES) ---------------

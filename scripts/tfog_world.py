@@ -251,7 +251,36 @@ def _train(root, n_cars, body_mat, strip_mat, strip_side, tag):
                       CAR_LIFT + 0.35), strip_mat)
         strip.parent = root
         names += [car.name, strip.name]
+    # fix-wave-2 eyepass (tfog S10, THE DOORWAY): the intent 'through
+    # the door: warm interior vs cold platform' had NO carrier — the
+    # car side is a continuous wall (the VLM: 'reposition the camera
+    # OR OPEN THE DOOR'). The local's car_2 east end (root-relative
+    # x=24; absolute x~0 at the dwell, where the S9-cert queue
+    # presses) gets a REAL opening: a tall warm emissive panel on the
+    # platform face (the strips' own proud-panel construction — the
+    # car's dark body is the surround) — parented to the root so it
+    # rides the slide keys.
+    if tag == "local":
+        glow = _box("TF.LocalDoorGlow", 1.0, 0.06, 2.0,
+                    (24.0, strip_side * (CAR_W / 2 + 0.04),
+                     1.28), _door_glow_material())
+        glow.parent = root
+        names.append(glow.name)
     return names
+
+
+def _door_glow_material():
+    """The warm interior seen through the open door (the L-TF1 close-
+    up ceiling class: near emissive rows cap ~1.1-1.3; the door reads
+    at 1.15 warm amber)."""
+    import bpy
+    mat = bpy.data.materials.new("tfg_door_glow")
+    mat.use_nodes = True
+    bsdf = mat.node_tree.nodes["Principled BSDF"]
+    bsdf.inputs["Base Color"].default_value = (0.55, 0.36, 0.16, 1.0)
+    bsdf.inputs["Emission Color"].default_value = (0.9, 0.62, 0.30, 1.0)
+    bsdf.inputs["Emission Strength"].default_value = 1.15
+    return mat
 
 
 def build_world(scene):
