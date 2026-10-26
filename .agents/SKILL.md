@@ -383,11 +383,9 @@ gait_modifiers.
   read per-frame FX/aim — films SKIP those gates by the additive
   law). The env override lives agent-kit-side; default 1.
 - **THE BAKE-FALLBACK KNOWN ISSUE**: Blender 5.2's glTF ACTIONS
-  mode falls back to baking on slotted actions EVEN when the scene
-  is censused clean (zero mixed-interp, zero float-times, across
-  actions + material/world/light node trees + shape keys + node
-  groups — mixed_scan2 is the census tool). At step=2 the bake
-  fits; a true no-bake lane is future work.
+  mode falls back to baking on slotted actions even on scenes
+  censused clean (mixed_scan2 covers every animation owner). At
+  step=2 the bake fits; a no-bake lane is future work.
 - **THE ORPHAN PURGE**: the bind's carrier swaps + template
   removals + clip-import leftovers + unused library actions sit in
   RAM as 0-user datablocks until an explicit purge (Blender never
@@ -418,17 +416,15 @@ gait_modifiers.
   (the FONT->mesh title law for words; a proud emissive panel for
   openings; a path re-author for story beats) and VERIFY the story
   geometry before certifying a two-hero beat.
-- **THE SANDBOX REAPER**: detached processes (nohup/setsid) die at
-  Bash-call boundaries. THE pattern: resumable drivers (skip
-  existing outputs, APPEND status) + chained foreground relaunches
-  (timeout 580 per call). A Task-tool "context deadline exceeded"
-  is a RESULT-DELIVERY timeout — the subagent may still be alive
-  and working; check for signs of life (the lock-holder PID, the
-  output counts) before relaunching anything or you will fight
-  your own subagent over the display flock (the F-TD10 class).
-- **THE HONESTY-GATE COUPLING**: scene-level honesty asserts can
-  cross-check keepout tables against camera classifications (the
-  tfog z<2.5 ground-lens test) — an extra keepout row for an
-  above-threshold lens FAILS the film. When a render refuses at
-  the honesty gate after a camera edit, read the assert's own
-  classification test before touching the contract.
+- **THE SANDBOX REAPER**: detached processes die at Bash-call
+  boundaries. THE pattern: resumable drivers (skip existing,
+  APPEND status) + chained foreground relaunches. A Task-tool
+  "context deadline exceeded" is a RESULT-DELIVERY timeout — the
+  subagent may be alive; check signs of life (lock-holder PID,
+  output counts) before relaunching or you will fight your own
+  subagent over the display flock (F-TD10).
+- **THE HONESTY-GATE COUPLING**: honesty asserts cross-check
+  keepout tables against camera classifications (the tfog z<2.5
+  ground-lens test) — an EXTRA row for an above-threshold lens
+  fails the film. Read the assert's own test before touching the
+  contract.
