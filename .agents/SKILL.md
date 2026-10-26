@@ -384,3 +384,81 @@ gait_modifiers.
 - MARKET-SHAPED GATES: non-commute films re-author their probe gates
   from the measurement (arrivals / aisle spread / linger / queue).
 - Full detail: kb/s28_night_market_laws.md
+
+## FIX-WAVE-2 LAWS (the universal troubleshooting wave — memory, export, eyepass adjudication, operations)
+
+- **THE CAPACITY LAW (Blender RNA)**: removing keyframe_points does
+  NOT shrink the fcurve's reserved capacity, and Action.copy()
+  duplicates the CAPACITY, not the live count. A 500-frame clip
+  trimmed to 33.8K live keys still copies at 25.6 MB/pop (10x its
+  real weight); 47 idle agents burned 1.2 GB of reserved-but-dead
+  capacity — the OOM class. LAW: after any in-place trim that will
+  be COPIED per-agent, REBUILD the action fresh (_compact_action:
+  new action + scaffolded channelbag + explicit keyframe_points.add
+  + per-key co/handles/interpolation). Measure with HC_RSS_EVERY.
+- **THE INTEGER-FRAME LAW (glTF export)**: the exporter BAKES (per-
+  frame sampling) any animation whose key times are non-integer.
+  One shared action bakes cheap; N unique actions (the D1
+  name-binding fix) x the full-range bake = the OOM. LAW: wrap
+  shifts and retime deltas ROUND to whole frames (collision-free
+  when the modulo operands are integers and every scale stretches).
+  Sub-frame phase variety is invisible at 24 fps.
+- **THE FILM-LANE FRAME-STEP LAW**: PKG_FRAME_STEP=2 on film
+  packages (129-165 unique actions make step=1's bake the kill);
+  the s44 step=1 law belongs to the ESCAPE lane (its gates 18/19
+  read per-frame FX/aim — films SKIP those gates by the additive
+  law). The env override lives agent-kit-side; default 1.
+- **THE BAKE-FALLBACK KNOWN ISSUE**: Blender 5.2's glTF ACTIONS
+  mode falls back to baking on slotted actions EVEN when the scene
+  is censused clean (zero mixed-interp, zero float-times, across
+  actions + material/world/light node trees + shape keys + node
+  groups — mixed_scan2 is the census tool). At step=2 the bake
+  fits; a true no-bake lane is future work.
+- **THE ORPHAN PURGE**: the bind's carrier swaps + template
+  removals + clip-import leftovers + unused library actions sit in
+  RAM as 0-user datablocks until an explicit purge (Blender never
+  GCs them). The before-set capture + capsule-capture sweep at
+  bind_crowd's end frees ~200 blocks on the 165-agent film without
+  touching anything live (users-by-definition is the safety proof).
+- **THE EYEPASS ADJUDICATION LAW** (the VLM noise floor, measured:
+  verdicts FLIP on identical frames between rounds): F=GOOD +
+  S=CLEAR -> PASS whatever the verdict line says; S=MISSING or
+  G=MAJOR -> ONE targeted diagnostic with direct questions (never a
+  blind re-frame); "static mannequins"/" robotic spacing" on a
+  formation film IS the premise; a still cannot show waves/crane
+  movement/dive dynamism; identical verdict texts across shots =
+  template-matching. Expect 6-12 FIX flags per healthy film; the
+  real yield is 1-5.
+- **THE STILL-FRAME vs AIM CLASS**: an aim targeting a key the
+  still never renders (the dip at f535 vs the still at f580) reads
+  as "subject missing/obscured". Check the FRAMES table against the
+  authored key times BEFORE moving any camera. Same class: blink
+  fades (a 12f linear 1.0<->0.001 cycle is at 42% at f860 — render
+  the ON-PEAK), mid-assembly formations (render the DRESSED line,
+  not the march), dwell-vs-departure (render the pull-out).
+- **THE VOLUME-FACE CLASS**: a camera OUTSIDE a bounded volume
+  (fog box x +-32) sees the volume's FACE as a semi-transparent
+  ghost layer — read as GLITCH MAJOR by the eyepass. Keep cameras
+  inside the volume bounds (or re-shape the volume).
+- **THE CONTENT-ADD CLASS**: when an intent has NO geometric
+  carrier (a sign that is just bars, a door that is just a wall,
+  a reunion whose paths never co-locate), no camera fix can save
+  the frame. Author the carrier: the tdawn title law (extruded
+  FONT -> CONVERTED MESH, glTF-safe) for words; a proud emissive
+  panel for openings; a path re-author for story beats. VERIFY the
+  story geometry (do the principals ever co-locate?) before
+  certifying a two-hero beat.
+- **THE SANDBOX REAPER**: detached processes (nohup/setsid) die at
+  Bash-call boundaries. THE pattern: resumable drivers (skip
+  existing outputs, APPEND status) + chained foreground relaunches
+  (timeout 580 per call). A Task-tool "context deadline exceeded"
+  is a RESULT-DELIVERY timeout — the subagent may still be alive
+  and working; check for signs of life (the lock-holder PID, the
+  output counts) before relaunching anything or you will fight
+  your own subagent over the display flock (the F-TD10 class).
+- **THE HONESTY-GATE COUPLING**: scene-level honesty asserts can
+  cross-check keepout tables against camera classifications (the
+  tfog z<2.5 ground-lens test) — an extra keepout row for an
+  above-threshold lens FAILS the film. When a render refuses at
+  the honesty gate after a camera edit, read the assert's own
+  classification test before touching the contract.
