@@ -14,7 +14,7 @@ export RH_ANIMS=${RH_ANIMS:-/home/z/lab/RH-canvas-animations}
 OUT=${OUT:-output/tfog/stills}
 mkdir -p "$OUT"
 declare -A FRAMES=( [S1]=50 [S2]=140 [S3]=270 [S4]=320 [S5]=470 [S6]=570 \
-  [S7]=640 [S8]=740 [S9]=840 [S10]=910 [S11]=980 [S12]=1050 )
+  [S7]=640 [S8]=740 [S9]=840 [S10]=910 [S11]=1005 [S12]=1050 )
 # S5=470 (the certified verdict, commit 37c00b9: the nose enters the
 # visible band ~f430 — the 430 still predated the streak; the table
 # had drifted while the render used the manual override).

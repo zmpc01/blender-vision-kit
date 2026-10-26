@@ -150,9 +150,13 @@ CAMS_V1 = [
      (0.0, 0.1, 2.6), False, 0.0),   # S4b (round-1 cert: board + the waiting figures)
     # S5: THE KEYED CRANE (the blast cam): aerial oblique off the N
     # face, dollies E with the pass (loc0 -> loc1, both keyed)
-    ("CAM_S5",  (-14.0, -12.0, 9.0), (14.0, -12.0, 7.0), 35,
-     (8.0, -2.5, 0.8), False, 0.0),   # aim re-centered on the pressed crowd + the
-                                      # N track (the streak reads via the lit windows)
+    # S5: THE BLAST lateral (the keyed crane follows the streak).
+    # fix-wave-2 eyepass (S5: 'extremely distant, no focal, ghost
+    # assets' from 9 m up — lower + tighter on the pressed crowd
+    # line; y stays at the certified -12 (2 m off the express side —
+    # closer would near-plane-clip the 24 m/s pass), row-free S bed)
+    ("CAM_S5",  (-8.0, -12.0, 6.0), (8.0, -12.0, 5.0), 40,
+     (6.5, -2.0, 1.0), False, 0.0),
     # S6: the recoil wide at the CONTRACT keepout spot (row 528..672)
     ("CAM_S6",  (-9.0, -2.2, 2.2), (-9.0, -2.2, 2.2), 30,
      (3.0, 0.2, 0.7), False, 0.0),   # S6h (round-3 cert: the pressed mass + the board + depth)
@@ -170,14 +174,26 @@ CAMS_V1 = [
     # S10: through the door -- staged OFF-walkable (S bed, y=6.5 the
     # whole hold: ledger 4, the static descope; loc1 kept for the
     # camprobe wave's ONE-edit re-key)
-    ("CAM_S10", (-21.5, -2.0, 1.6), (-21.5, -2.0, 1.6), 35,
-     (-24.0, 4.6, 1.2), False, 0.0),   # round-4: the local's door faces the platform
-                                       # from the y+ face (the stop is x=-24) — the warm
-                                       # interior vs the cold platform
+    # fix-wave-2 eyepass (S10: the old vantage aimed 20 m WEST of the
+    # door — the root x=-24 is the train's WEST end; the 3 cars span
+    # x -24..+2 and the DOOR the queue presses is the EAST car's (the
+    # S9-cert queue at x~0-1, y6.5). The frame read 'a wall with a
+    # light strip' = the west car's window band. NEW vantage SE of the
+    # east door looking NW THROUGH it: the queue's tail foreground,
+    # the warm interior beyond)
+    ("CAM_S10", (4.0, 2.2, 1.7), (4.0, 2.2, 1.7), 45,
+     (0.2, 7.4, 1.3), False, 0.0),
     # S11: the pull-out rear from the S bed W; the tail recedes E
     # into the fog
-    ("CAM_S11", (-44.0, 5.0, 2.6), (-44.0, 5.0, 2.6), 35,
-     (-24.0, 7.0, 1.4), False, 0.0),   # S11k (round-4 cert: the local's rear + the receding platform)
+    # fix-wave-2 eyepass (S11: TWO bugs — [1] the camera at x=-44 sat
+    # OUTSIDE the fog box (x +-32): its west FACE rendered as the
+    # 'semi-transparent ghost layer' (GLITCH MAJOR). [2] the still at
+    # f980 caught the DWELL end, not the pull-out. NEW vantage inside
+    # the box on the platform's W end + the still frame moved to
+    # f1005 (the rear at x~-20 receding east, the fog swallowing the
+    # tail lights))
+    ("CAM_S11", (-30.0, 3.5, 2.6), (-30.0, 3.5, 2.6), 40,
+     (-14.0, 7.5, 1.4), False, 0.0),
     # S12: W of the platform (x=-38 outside the walkable): the axis,
     # the lit title board, the lone figure on the W bench
     ("CAM_S12", (20.0, -8.0, 2.2), (20.0, -8.0, 2.2), 30,

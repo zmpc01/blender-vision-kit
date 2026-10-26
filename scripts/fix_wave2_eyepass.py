@@ -23,8 +23,8 @@ SCENE_MODULES = {
     "tferry": ("scene_last_ferry.py", "SHOTS_V3"),
     "tgreen": ("scene_green_light.py", "SHOTS_V3"),
     "tsquall": ("scene_squall.py", "SHOTS_V3"),
-    "tfog": ("tfog_scene.py", "SHOTS_V3"),
-    "tform": ("tform_scene.py", "SHOTS_V3"),
+    "tfog": ("tfog_scene.py", "SHOTS_V1"),
+    "tform": ("tform_scene.py", "SHOTS_V1"),
     "tmarket": ("scene_night_market.py", "SHOTS_V3"),
 }
 

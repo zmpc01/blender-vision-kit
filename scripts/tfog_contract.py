@@ -155,10 +155,14 @@ CAM_KEEPOUTS = (
     # rows move with their lenses (F-TD13: row+cert as ONE edit —
     # session-19 camprobe round-1 re-staged S2/S9; S10 re-staged from
     # the N bed INTO the cleared (4.6,1.0) disk for the door framing).
+    # fix-wave-2 eyepass: S10 moved to the EAST door (the old row sat
+    # 20 m west of the actual door); S11 gains a row (the pull-out
+    # vantage moved INSIDE the fog box onto the platform's W end).
     ("CAM_S2", -22.0, 0.5, 0, 190),
     ("CAM_S6", -9.0, -2.2, 528, 672),   # moved with the S6h lens (round-3 cert)
     ("CAM_S9", -3.0, -1.0, 792, 876),
-    ("CAM_S10", -21.5, -2.0, 877, 948),   # at the local's door (the stop is x=-24)
+    ("CAM_S10", 4.0, 2.2, 877, 948),    # at the EAST car's door (the queue's)
+    ("CAM_S11", -30.0, 3.5, 949, 1008), # inside the fog box, platform W end
 )
 
 # --- the train key paths (the scene module keys; FRAMES) ---------------

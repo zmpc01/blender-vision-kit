@@ -24,8 +24,8 @@ export RH_ASSETS=${RH_ASSETS:-/home/z/lab/RH-3d-assets}
 export RH_ANIMS=${RH_ANIMS:-/home/z/lab/RH-canvas-animations}
 OUT=${OUT:-output/tform/stills}
 mkdir -p "$OUT"
-declare -A FRAMES=( [S1]=60 [S2]=144 [S3]=264 [S4]=410 [S5]=461 [S6]=560 \
-  [S7]=816 [S8]=890 [S9]=954 [S10]=1000 [S11]=1020 [S12]=1060 )
+declare -A FRAMES=( [S1]=60 [S2]=144 [S3]=326 [S4]=410 [S5]=461 [S6]=560 \
+  [S7]=816 [S8]=930 [S9]=954 [S10]=1000 [S11]=1020 [S12]=1060 )
 ONLY="${1:-}"
 for SID in S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12; do
   if [ -n "$ONLY" ] && [ "$ONLY" != "$SID" ]; then continue; fi
