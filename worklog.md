@@ -4732,3 +4732,19 @@ Work Log:
 
 Stage Summary:
 - The keepout flicker class is closed at the bridge; the caches are FINAL for the render wave (pins recorded above).
+
+---
+Task ID: fix-wave-2-resume (session 3 of the universal troubleshooting — the sandbox-died resume)
+Agent: main orchestrator (non-vision track)
+Task: the fix-wave-2 render/export/stage phase (the wave the prior session died holding: tmarket OOM at Cycles init mid-retry, all local state lost with the sandbox).
+
+Work Log:
+- SANDBOX RESTORE: 4+2 repos recloned (previz f3af499 / vision-kit 2cdd4ca / crowd-kit 46efbed / RH-3d-assets 0c25a63 + agent-kit + previz-review a1d5f09); Blender 5.2.2 re-downloaded (the detached-download death again — foreground resume); the venv wheel + bundled-python deps + /home/z/lab RH clones restored.
+- ALL 7 CACHE PINS REPRODUCED cross-sandbox (the determinism law): tdawn b1bda52846145caf / tferry 223ee693dd242b21 / tgreen 8cfdca6e1a7c8417 / tsquall 8e7cdb5c700eb2b2 / tfog 6eafef48 / tform 4261317a / tmarket a46aab2b470ddd95 (bake_wave_fix2.sh; the multi-stage films need their full stage chains).
+- THE OOM LAW KILLED (the tmarket class, commit 92b7b94): [1] THE CAPACITY LAW — keyframe_points removal does NOT shrink the fcurve's reserved RNA capacity and Action.copy() duplicates the CAPACITY (the 500-frame idle clip trimmed to 33.8K live keys still copied at 25.6 MB/pop vs the walk's 2.5; 47 idle agents = ~1.2 GB dead). _compact_action rebuilds the trimmed idle ONCE into a fresh action (5.2 channelbag new(data_path, index=, group_name=)) — measured: idle agents 50 -> 6.6 MB, full bind+principals 3.6GB+ -> 1756MB, tmarket S1 renders green. [2] the ORPHAN PURGE at bind_crowd's end (the before-set + capsule-capture sweep; 201 blocks freed on tmarket).
+- THE LOADER COUNT LAW (previz 7c74183): the universal pairing count len(crowd)+n_lane == n_agents (the f3af499 tail fix made the NAMES law-aware but the count check still read n-tail — the flat films tfog 117/126, tform 93/102 refused pre-rename). tfog/tform S1 render green through the loader.
+- THE SUBAGENT SURVIVAL FINDING: Task-tool "context deadline exceeded" errors were RESULT-DELIVERY timeouts — the subagents themselves kept working (the render wave progressed 03:02-04:32 unattended). My parallel driver launches fought theirs over the :99 flock (the F-TD10 LOCK-HELD fast-fail class, both directions). LAW: after a dispatch timeout, CHECK FOR SIGNS OF LIFE (lock holder PIDs + still counts) before relaunching anything.
+- EYEPASS ROUND 2 (tdawn/tferry/tgreen audited under the wave-2 renders; the stills are ~25s each — the 2min/still rate was the old contention): adjudicated 5/5/4 real fixes of 9/8/9 flagged (the rest: the proven mannequin-fidelity class + VLM template-verdicts on similar frames + still-frame dynamism limits). Commit 3253641: the tdawn S7/S11 + tgreen S10 STILL-FRAME bugs (the aim targeted a key the still never renders; the blink fade's 42% frame), the tferry S10 BARRIER-SIDE bug (the camera east of the throat barrier, half the frame its dark slab), the tgreen hand-aim z (2.34 not the head's 2.55). Keepouts moved with every lens; pins tdawn e140956b / tferry 884d0d27 / tgreen 8cfdca6e (inert-keepout class). 13 stale stills cleared — the wave's resume picks them up with the round-2 cameras.
+
+Stage Summary:
+- The two render blockers (OOM + flat-film loader) are dead at the root; the render wave is live under a surviving subagent (tsquall in flight at session mark); the round-2 camera law is committed for the three re-audited films; the app is installed + db pushed (the comment restore + dev-server boot deferred to the staging phase per the OOM law).
