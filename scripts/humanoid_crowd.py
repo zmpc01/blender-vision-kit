@@ -229,7 +229,18 @@ def _wrap_action(base_act, new_name, phase, cyc, f0, f1):
     """
     a2 = base_act.copy()
     a2.name = new_name
-    shift = (phase % 1.0) * cyc
+    # THE INTEGER-FRAME LAW (the export OOM root cause): the glTF
+    # exporter BAKES any animation whose key times are non-integer
+    # (the per-frame sampling path). The old fractional phase shift
+    # put every wrapped action on float frames — one shared action
+    # baked cheaply in the s28 era, but the D1 fix's 129 UNIQUE
+    # actions x the full bake = the 4GB kill at export. Snapping the
+    # shift to whole frames keeps every key integer (the modulo of
+    # integers by integer cyc is a permutation — collision-free) and
+    # the phase variety becomes per-frame steps (38 steps over a 38f
+    # cycle — plenty across 118 walkers; sub-frame phase is invisible
+    # at 24 fps).
+    shift = round((phase % 1.0) * cyc)
     for fc in _iter_fcurves(a2):
         for kp in fc.keyframe_points:
             t = f0 + ((kp.co.x - f0 - shift) % cyc)
@@ -258,10 +269,15 @@ def _iter_fcurves(action):
 def _retime_action(act, scale, f0):
     """D3-REV2: scale key times around f0 by `scale` in place (the
     handles ride the same per-key delta as _wrap_action — the proven
-    approximation in this module)."""
+    approximation in this module). THE INTEGER-FRAME LAW: the delta is
+    ROUNDED so every key stays on a whole frame (the glTF exporter's
+    bake trigger reads key times; float times force the per-frame
+    sampling bake — at 129 unique actions that is the export OOM).
+    Collision-free: every class scale STRETCHES (>= 1 — slower than
+    the native clip), so adjacent keys only move apart."""
     for fc in _iter_fcurves(act):
         for kp in fc.keyframe_points:
-            t = f0 + (kp.co.x - f0) * scale
+            t = f0 + round((kp.co.x - f0) * scale)
             dx = t - kp.co.x
             kp.co.x = t
             kp.handle_left.x += dx

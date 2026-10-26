@@ -16,8 +16,12 @@ export KIT_EXPORTER=/home/z/work/blender-agent-kit/scripts/export_previz_package
 # commits: 71018c2 (frame_step=1, the tier-B B1 law) + 4bece16 (gate 25
 # duplicate-bone-name refusal + gate 17 layer-boundary wiring — both
 # born FOR this wave's exports)
-( cd /home/z/work/blender-agent-kit && [ "$(git rev-parse HEAD)" = "4bece164295416c33cd0e059422c62350cc32469" ] ) || {
-  echo "GOVERNED PIN FAIL: agent-kit HEAD is not 4bece16 (the fix-wave-1 exporter record)"; exit 3;
+# the governed pin (fix-wave-2 advance): the film-lane frame-step law —
+# PKG_FRAME_STEP=2 on the package path (the 129-rig OOM; gates 18/19
+# skip on films by the additive law), default 1 for the escape lane
+export PKG_FRAME_STEP=2
+( cd /home/z/work/blender-agent-kit && [ "$(git rev-parse HEAD)" = "b4468f6afbf36ff3e7f54e20f7f71f5d9f16a4f4" ] ) || {
+  echo "GOVERNED PIN FAIL: agent-kit HEAD is not b4468f6 (the fix-wave-2 film-step record)"; exit 3;
 }
 # per-film humanoid env (the s25 contract)
 case $FILM in
