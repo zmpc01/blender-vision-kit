@@ -367,20 +367,16 @@ gait_modifiers.
 
 - **THE CAPACITY LAW (Blender RNA)**: removing keyframe_points does
   NOT shrink the fcurve's reserved capacity, and Action.copy()
-  duplicates the CAPACITY, not the live count. A 500-frame clip
-  trimmed to 33.8K live keys still copies at 25.6 MB/pop (10x its
-  real weight); 47 idle agents burned 1.2 GB of reserved-but-dead
-  capacity — the OOM class. LAW: after any in-place trim that will
-  be COPIED per-agent, REBUILD the action fresh (_compact_action:
-  new action + scaffolded channelbag + explicit keyframe_points.add
-  + per-key co/handles/interpolation). Measure with HC_RSS_EVERY.
-- **THE INTEGER-FRAME LAW (glTF export)**: the exporter BAKES (per-
-  frame sampling) any animation whose key times are non-integer.
-  One shared action bakes cheap; N unique actions (the D1
-  name-binding fix) x the full-range bake = the OOM. LAW: wrap
-  shifts and retime deltas ROUND to whole frames (collision-free
-  when the modulo operands are integers and every scale stretches).
-  Sub-frame phase variety is invisible at 24 fps.
+  duplicates the CAPACITY, not the live count. A 500f clip trimmed
+  to 33.8K keys still copied at 25.6 MB/pop (10x real weight; 47
+  idle agents = 1.2 GB dead). LAW: any in-place trim that will be
+  COPIED per-agent gets REBUILT fresh (_compact_action; measure
+  with HC_RSS_EVERY).
+- **THE INTEGER-FRAME LAW (glTF export)**: the exporter BAKES
+  (per-frame sampling) any animation with non-integer key times.
+  One shared action bakes cheap; N unique actions x the bake = the
+  OOM. LAW: wrap shifts + retime deltas ROUND to whole frames
+  (collision-free: integer modulo; stretching scales).
 - **THE FILM-LANE FRAME-STEP LAW**: PKG_FRAME_STEP=2 on film
   packages (129-165 unique actions make step=1's bake the kill);
   the s44 step=1 law belongs to the ESCAPE lane (its gates 18/19
@@ -398,14 +394,12 @@ gait_modifiers.
   GCs them). The before-set capture + capsule-capture sweep at
   bind_crowd's end frees ~200 blocks on the 165-agent film without
   touching anything live (users-by-definition is the safety proof).
-- **THE EYEPASS ADJUDICATION LAW** (the VLM noise floor, measured:
-  verdicts FLIP on identical frames between rounds): F=GOOD +
-  S=CLEAR -> PASS whatever the verdict line says; S=MISSING or
-  G=MAJOR -> ONE targeted diagnostic with direct questions (never a
-  blind re-frame); "static mannequins"/" robotic spacing" on a
-  formation film IS the premise; a still cannot show waves/crane
-  movement/dive dynamism; identical verdict texts across shots =
-  template-matching. Expect 6-12 FIX flags per healthy film; the
+- **THE EYEPASS ADJUDICATION LAW** (verdicts FLIP on identical
+  frames between rounds): F=GOOD + S=CLEAR -> PASS; S=MISSING or
+  G=MAJOR -> ONE targeted diagnostic (never a blind re-frame);
+  mannequin/robotic-spacing complaints on a formation film ARE the
+  premise; stills cannot show waves/cranes/dives; identical texts
+  across shots = template-matching. Healthy films flag 6-12; the
   real yield is 1-5.
 - **THE STILL-FRAME vs AIM CLASS**: an aim targeting a key the
   still never renders (the dip at f535 vs the still at f580) reads
@@ -418,14 +412,12 @@ gait_modifiers.
   (fog box x +-32) sees the volume's FACE as a semi-transparent
   ghost layer — read as GLITCH MAJOR by the eyepass. Keep cameras
   inside the volume bounds (or re-shape the volume).
-- **THE CONTENT-ADD CLASS**: when an intent has NO geometric
-  carrier (a sign that is just bars, a door that is just a wall,
-  a reunion whose paths never co-locate), no camera fix can save
-  the frame. Author the carrier: the tdawn title law (extruded
-  FONT -> CONVERTED MESH, glTF-safe) for words; a proud emissive
-  panel for openings; a path re-author for story beats. VERIFY the
-  story geometry (do the principals ever co-locate?) before
-  certifying a two-hero beat.
+- **THE CONTENT-ADD CLASS**: an intent with NO geometric carrier
+  (a sign of just bars, a door of just wall, a reunion whose paths
+  never co-locate) defeats every camera fix. Author the carrier
+  (the FONT->mesh title law for words; a proud emissive panel for
+  openings; a path re-author for story beats) and VERIFY the story
+  geometry before certifying a two-hero beat.
 - **THE SANDBOX REAPER**: detached processes (nohup/setsid) die at
   Bash-call boundaries. THE pattern: resumable drivers (skip
   existing outputs, APPEND status) + chained foreground relaunches
