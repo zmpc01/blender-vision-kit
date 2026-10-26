@@ -401,11 +401,10 @@ gait_modifiers.
   real yield is 1-5.
 - **THE STILL-FRAME vs AIM CLASS**: an aim targeting a key the
   still never renders (the dip at f535 vs the still at f580) reads
-  as "subject missing/obscured". Check the FRAMES table against the
-  authored key times BEFORE moving any camera. Same class: blink
-  fades (a 12f linear 1.0<->0.001 cycle is at 42% at f860 — render
-  the ON-PEAK), mid-assembly formations (render the DRESSED line,
-  not the march), dwell-vs-departure (render the pull-out).
+  as "subject missing". Check the FRAMES table against the authored
+  key times BEFORE moving any camera. Same class: blink fades
+  (render the ON-PEAK, not the 42% fade), mid-assembly formations
+  (render the DRESSED line), dwell-vs-departure (the pull-out).
 - **THE VOLUME-FACE CLASS**: a camera OUTSIDE a bounded volume
   sees the volume's FACE as a semi-transparent ghost layer (read
   as GLITCH MAJOR). Keep cameras inside the volume bounds.
