@@ -392,9 +392,17 @@ def _kf_crane(ctx):
 
 def _runner_keys(ctx):
     """The runner's keyed path (the teal callout): the delivery beat
-    at the food court, the east staging, then the WEST thread through
-    the spine (f439-720, ~4 m/s jog) -- against the eastward browse
-    drift (the D-NM1 logline)."""
+    at the food court, the east staging, the WEST thread through the
+    spine (f439-620, the entry + the queue squeeze -- against the
+    eastward browse drift, the D-NM1 logline) -- then fix-wave-2: the
+    RETURN EAST to the food court (f620-730, ~3 m/s jog) so the S10
+    REUNION actually lands: the old path parked him at the west exit
+    (-24.5, 1.0) from f730 while the Child scurried east to the
+    counter (20.1, -1.25) -- the two principals NEVER co-located and
+    'the reunion at the food court' had no geometric basis (the
+    eyepass: 'no teal figure in frame'). He now holds at (19.6, -2.0)
+    from f730; the Child arrives f870 at (19.8, -1.5) -- together at
+    the counter for S10's f860-888 window and the S11/S12 hold."""
     ob = ctx["heroes"]["Runner"]
     path = [
         (1,   (23.5, -0.4), -1.8),
@@ -403,19 +411,19 @@ def _runner_keys(ctx):
         (220, (23.5, -0.6), -1.6),    # back to the staging
         (430, (22.0, -0.3), -1.9),    # the thread start pose
         (500, (12.0, 0.35), -1.75),
-        (560, (2.0, -0.35), -1.85),   # the queue stretch (south side)
-        (620, (-8.0, 0.3), -1.7),
-        (690, (-20.0, -0.2), -1.6),
-        (730, (-24.5, 1.0), -0.9),    # the west exit/park
-        (1080, (-24.5, 1.0), -0.9),
+        (560, (2.0, -0.35), -1.85),   # the queue squeeze (south side)
+        (620, (8.0, -0.3), 1.5),      # the turn back east
+        (690, (17.0, -1.0), 1.2),     # the return through the spine
+        (730, (19.6, -2.0), 0.9),     # the food-court hold (the reunion)
+        (1080, (19.6, -2.0), 0.9),
     ]
     for f, loc, rz in path:
         _kf(ob, f, loc=loc, rot_z=rz)
     _bezier(ob)
     # fix-wave-1 D2: re-derive facing from the path tangents (the
     # tdawn pattern) -- the runner is the mover (the delivery + the
-    # west thread); the staging/hand-off holds sit still, so their
-    # authored yaws stay
+    # thread + the return); the staging/hand-off/reunion holds sit
+    # still, so their authored yaws stay
     import humanoid_crowd as _HC
     _HC.face_tangent(ob, min_mps=0.45)
 
