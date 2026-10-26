@@ -378,10 +378,10 @@ gait_modifiers.
   OOM. LAW: wrap shifts + retime deltas ROUND to whole frames
   (collision-free: integer modulo; stretching scales).
 - **THE FILM-LANE FRAME-STEP LAW**: PKG_FRAME_STEP=2 on film
-  packages (129-165 unique actions make step=1's bake the kill);
-  the s44 step=1 law belongs to the ESCAPE lane (its gates 18/19
-  read per-frame FX/aim — films SKIP those gates by the additive
-  law). The env override lives agent-kit-side; default 1.
+  packages (129-165 unique actions make step=1's bake the kill).
+  The s44 step=1 law belongs to the ESCAPE lane (gates 18/19 read
+  per-frame FX/aim; films SKIP them by the additive law). The env
+  override is agent-kit-side; default 1.
 - **THE BAKE-FALLBACK KNOWN ISSUE**: Blender 5.2's glTF ACTIONS
   mode falls back to baking on slotted actions even on scenes
   censused clean (mixed_scan2 covers every animation owner). At
