@@ -91,8 +91,12 @@ CAMS_V3 = [
     # S5: THE NADIR (the S5a probe cert: the amber faller isolated
     # mid-fall above the dark basin at f372, the prone hold at f430,
     # the crowd as muted texture -- the tgreen S5 law at storm scale)
-    ("CAM_S5",  (14.8, 7.0, 11.0), (14.8, 7.0, 11.0), 40,
-     (14.3, 9.8, 0.0), False, 0.0),
+    # fix-wave-2 eyepass (S5: the tgreen-nadir law copied to a SINGLE-
+    # faller subject reads 'no primary figure' from 11 m up — a 3/4 at
+    # 3.6 m puts the faller mid-frame at the basin, the crowd texture
+    # beyond; row-free at above-agent height, the F20 law)
+    ("CAM_S5",  (11.8, 7.4, 3.6), (11.8, 7.4, 3.6), 50,
+     (14.3, 9.7, 0.6), False, 0.0),
     # S6: the window close-up (the S6i probe cert: a queue walker at
     # the counter, the amber vendor left; the LINE itself lives in
     # S4's wide + S11d's axial crane -- the honest re-scope: the line
