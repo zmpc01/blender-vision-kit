@@ -74,7 +74,10 @@ CAMS_V3 = [
     # probe S2b lesson); the green MAN reads (S2c cert)
     ("CAM_S2",  (-4.8, -0.8, 2.2), (-4.8, -0.8, 2.2), 40,
      (-4.2, 3.35, 2.5), False, 0.0),
-    ("CAM_S3",  (-2.0, 4.6, 1.7), (-2.0, 4.6, 1.7), 40,
+    # fix-wave-2 eyepass round 2 (S3: the NW signal pole crossed the
+    # foreground — stepped east+north so the westward view down the
+    # shade/sun line reads clean; same 40mm read of the W knot)
+    ("CAM_S3",  (0.5, 5.4, 2.0), (0.5, 5.4, 2.0), 40,
      (-16.0, 0.0, 1.0), False, 0.015),
     # S4: high oblique SW over the crossing, looking W down the street
     ("CAM_S4",  (1.5, -2.0, 6.5), (1.5, -2.0, 6.5), 35,
@@ -82,8 +85,12 @@ CAMS_V3 = [
     # S5: the nadir -- the freeze completing ON CAMERA (the signature)
     ("CAM_S5",  (0.0, 2.5, 16.0), (0.0, 2.5, 16.0), 40,
      (0.0, 0.5, 0.0), False, 0.0),
-    ("CAM_S6",  (0.6, -3.6, 1.8), (0.6, -3.6, 1.8), 45,
-     (-4.2, 3.35, 2.5), False, 0.018),
+    # fix-wave-2 eyepass round 2 (S6: the hand read TINY and edge-placed
+    # — closer vantage + the aim lowered to the HAND glyph itself (z
+    # 2.34, not the head's 2.55 center) + 50mm: the blinking palm
+    # carries the upper frame over the frozen crossing)
+    ("CAM_S6",  (-1.5, -1.4, 2.05), (-1.5, -1.4, 2.05), 50,
+     (-4.2, 3.3, 2.38), False, 0.018),
     # S7: his journey reads AHEAD of him (the S7a probe had the crowd
     # behind-camera -- the story inverted); his back + the plaza + the
     # frozen field beyond
@@ -98,8 +105,13 @@ CAMS_V3 = [
     ("CAM_S9",  (8.0, 6.0, 3.2), (8.0, 6.0, 3.2), 55,
      (4.0, 1.4, 1.0), False, 0.01),
     # S10: the NW head + blinking hand dominate, the still below
+    # fix-wave-2 eyepass round 2 (S10: the still rendered f860 = 7/12
+    # through the blink's 12-frame fade (the hand at ~42% scale,
+    # invisible) AND the aim sat on the head's center — the frame now
+    # renders the blink's ON-PEAK (f854) with the aim on the hand
+    # glyph (z 2.34); the 85mm close-up stays)
     ("CAM_S10", (-2.4, -1.6, 2.1), (-2.4, -1.6, 2.1), 85,
-     (-4.2, 3.35, 2.55), False, 0.008),
+     (-4.2, 3.28, 2.4), False, 0.008),
     # the CRANE (S11/S12): loc keyed in _kf_crane -- S11 rises from the
     # S margin to the certified (−8,−5,9) pose; S12 settles gently
     ("CAM_S11", (-8.6, -14.0, 3.2), (-8.0, -5.0, 9.0), 30,

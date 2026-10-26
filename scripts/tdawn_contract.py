@@ -59,14 +59,16 @@ CAM_KEEPOUTS_V3 = [
     # fix-wave-2 eyepass: the keepout rows moved WITH the re-framed
     # lenses (the F-TD13 coupling law). S10's row is xy-identical (only
     # z lifted); S11 has no row (the crane, like S1/S3).
+    # fix-wave-2 eyepass round 2: S7/S9/S10 rows moved with the round-2
+    # re-frames (S6's camera xy is unchanged — only its aim/lens moved).
     ("CAM_S2", 3.2, 15.5, 85, 168),
     ("CAM_S4", -6.5, 27.0, 265, 348),
     ("CAM_S5", 10.5, 11.5, 349, 444),
     ("CAM_S6", -5.2, 7.0, 445, 528),
-    ("CAM_S7", -5.5, 7.2, 529, 624),
+    ("CAM_S7", -3.8, 6.6, 529, 624),
     ("CAM_S8", -4.5, 4.0, 625, 720),
-    ("CAM_S9", 3.4, 4.2, 721, 816),
-    ("CAM_S10", -8.5, -3.2, 817, 912),
+    ("CAM_S9", 2.8, 2.8, 721, 816),
+    ("CAM_S10", -5.8, 2.8, 817, 912),
     ("CAM_S12", 7.7, 16.75, 1009, 1080),
 ]
 

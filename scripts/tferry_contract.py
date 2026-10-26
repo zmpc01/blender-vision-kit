@@ -122,11 +122,14 @@ BARRICADES = [
 CAM_KEEPOUTS_V3 = [
     # fix-wave-2 eyepass: S2/S6/S10 moved WITH their re-framed lenses
     # (the F-TF13 coupling); S8/S9 stay zero-row (outboard x>=7.8).
-    ("CAM_S2", 0.2, 8.5, 85, 168),
+    # fix-wave-2 eyepass round 2: S2/S6/S10 rows moved again with the
+    # round-2 re-frames (S8 stays zero-row outboard at x6.8 past the
+    # east rail; S9 xy unchanged).
+    ("CAM_S2", 1.4, 7.2, 85, 168),
     ("CAM_S3", -2.0, 30.0, 169, 264),
     ("CAM_S4", 4.0, 38.0, 265, 348),
-    ("CAM_S6", -3.4, 6.2, 445, 528),
-    ("CAM_S10", 4.6, 2.2, 817, 912),
+    ("CAM_S6", -1.8, 7.8, 445, 528),
+    ("CAM_S10", 0.9, 4.8, 817, 912),
     # S5/S7/S8/S9: zero rows -- those lenses moved OUTBOARD (x 6.6..8.6,
     # past the east rail, crowd-free by construction: the crane law).
     # S11/S12: the crane flies the OUTBOARD margin/water (x -8.6..-9.2)

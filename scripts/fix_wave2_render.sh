@@ -12,7 +12,9 @@ export RH_ASSETS=/home/z/lab/RH-3d-assets
 export RH_ANIMS=/home/z/lab/RH-canvas-animations
 export ENGINE=cycles
 STATUS=/tmp/wave2_status.txt
-: > "$STATUS"
+touch "$STATUS"   # resume-safe: APPEND only (the sandbox reaper kills
+                  # the wave between orchestrator calls; relaunches
+                  # skip completed stills and continue)
 for FILM in tdawn tferry tgreen tsquall tfog tform tmarket; do
   echo "[$(date +%H:%M:%S)] FILM $FILM start" >> "$STATUS"
   bash scripts/${FILM}_stills.sh > /tmp/stills_${FILM}.log 2>&1
