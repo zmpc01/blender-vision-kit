@@ -1,3 +1,72 @@
+> Session fix-wave-2 close: 2026-10-26. HEAD = THE SEVEN FILMS
+> RE-SHIPPED (tdawn_5 / tferry_4 / tgreen_4 / tsquall_4 / tfog_4 /
+> tform_4 / tmarket_2 — the universal troubleshooting wave the user
+> scoped: every issue root-caused at its OWN layer, all export gates
+> green, the GLB bind verified, STAGED LIVE newest-first). This block
+> -> the session-28 block -> PLAN s28 receipts. The full fix-wave-2
+> record: worklog (fix-wave-2-bootstrap through fix-wave-2-renders-
+> exports-stage) + the commit chain 92b7b94..63e1ed8.
+
+## Session fix-wave-2 close state (NEWEST — read this first)
+
+- **THE USER'S FIVE ISSUES ARE CLOSED** (the wave's charter): [1]
+  zero animations -> the D1 unique-bone/unique-action bind + the
+  cylinder-fallback law + THE CAPACITY LAW (below) + the GLB proof
+  (0 duplicate joints, 40/40 walks animating, 0 untracked skins on
+  every package); [2] orientation -> the unwrap laws (crowd plan +
+  face_tangent grid + the authored-yaw pristine-read P0) + the
+  BOWL-span yaw hold; [3] flicker -> the euler wrap-seam killed at
+  the plan, D6b rate-limited keepout ejection at the bridge, the
+  integer-frame export law; [4] cinematography -> THREE eyepass
+  rounds under the final renders, every FIX adjudicated (the noise
+  floor: verdicts flip on identical frames; F=GOOD+S=CLEAR passes;
+  MISSING/MAJOR gets a targeted diagnostic, never a blind re-frame);
+  [5] the gun-pointing heroes -> the UAL clips everywhere, verified
+  in the exports.
+- **THE THREE NEW MEMORY/EXPORT LAWS** (this wave's deepest finds):
+  [1] THE CAPACITY LAW — removing keyframe_points does NOT shrink
+  the fcurve's reserved RNA capacity and Action.copy() duplicates
+  the CAPACITY (the 500f idle trimmed to 33.8K keys still copied at
+  25.6 MB/pop; 47 idle agents = 1.2 GB dead); _compact_action
+  rebuilds trimmed actions fresh (measured: idle agents 50 -> 6.6
+  MB, the 165-agent bind 3.6 GB+ -> 1756 MB). [2] THE INTEGER-FRAME
+  LAW — the glTF exporter BAKES non-integer key times; unique
+  actions x the per-frame bake = the export OOM (the wrap/retime
+  now round to whole frames, collision-free). [3] THE FILM-LANE
+  FRAME-STEP LAW — PKG_FRAME_STEP=2 for the film packages (agent-kit
+  b4468f6; gates 18/19 SKIP on films by the additive law — the s44
+  step=1 law is the ESCAPE lane's). KNOWN ISSUE: Blender 5.2's glTF
+  ACTIONS mode falls back to baking on slotted actions (fires on
+  scenes censused clean) — at step=2 the bake fits; the deeper
+  no-bake export is a future lane.
+- **THE CONTENT-ADD CLASS** (the eyepass found REAL missing story
+  carriers): tferry's BOARDING word (the bar composition had no
+  text — the tdawn title law: extruded FONT -> converted mesh),
+  tfog's DOORWAY (the local's side was a continuous wall — the
+  warm emissive panel on car_2's platform face), tmarket's REUNION
+  (a story-level defect: the Runner parked at the west exit while
+  the Child scurried east — the paths never co-located; the arc now
+  returns him to the food court, verified reading as an embrace).
+- **THE OPERATIONAL FINDINGS**: the sandbox reaper kills detached
+  processes at Bash-call boundaries (resumable drivers + chained
+  relaunches are THE pattern; ~2.4 min/still, tsquall 3-4); a Task
+  tool "context deadline exceeded" is a RESULT-DELIVERY timeout,
+  not agent death — CHECK FOR SIGNS OF LIFE (the lock holder PID +
+  the still counts) before relaunching anything or you will fight
+  your own subagent over the :99 flock (the F-TD10 class).
+- **THE PINS** (the reproducibility record): caches tdawn e140956b
+  / tferry a460f75d / tgreen 2b34e592 / tsquall 8e7cdb5c / tfog
+  336200f4 / tform 4261317a / tmarket a46aab2b; the export pin
+  agent-kit b4468f6 (advanced from 4bece16 with PKG_FRAME_STEP).
+- Open queues:
+  1. The USER review round on the SEVEN new packages (comments ON,
+     the db carries the full history).
+  2. The no-bake glTF export lane (the 5.2 ACTIONS-mode fallback).
+  3. The eyepass-noise question: consider a two-frame strip per
+     shot (the motion read would kill half the 'static mannequin'
+     false flags at audit time).
+  4. GitLab redundancy still DOWN (the s28 PAT finding — unchanged).
+
 > Session 28 close: 2026-10-23. HEAD = TMARKET_1 SHIPPED (the seventh
 > film — the lantern night market, built end-to-end from the REV-2
 > spec: 4 modules authored, the probe gates green on 8 measured sim
