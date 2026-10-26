@@ -344,6 +344,50 @@ def _trim_action(act, keep_frames):
             fc.keyframe_points.remove(fc.keyframe_points[i])
 
 
+def _compact_action(src, keep_frames=None):
+    """Rebuild `src`'s animation into a FRESH action carrying exactly
+    its live keys — optionally only the first `keep_frames`.
+
+    THE CAPACITY LAW (the tmarket OOM root cause, measured live):
+    removing keyframe_points in place does NOT shrink the fcurve's
+    reserved RNA capacity, and Action.copy() duplicates the CAPACITY,
+    not the live count. The 500-frame idle clip (260K keys) trimmed
+    to 64f / 33.8K live keys still copied at 25.6 MB/pop — 10x the
+    38-frame walk's 2.5 MB — so the 47 idle agents burned ~1.2 GB
+    of pure reserved-but-dead capacity at bind, the class that put
+    the 165-agent film over the 4 GB ceiling at Cycles init. A fresh
+    action + explicit keyframe_points.add(count) lands the capacity
+    at the TRUE key count; copies then cost their real weight.
+
+    Fidelity: per key — co + both bezier handles + interpolation;
+    per fcurve — data_path, array_index, extrapolation, group name.
+    The trim window matches _trim_action exactly (keep <= f0+keep)."""
+    f0 = src.frame_range[0]
+    fresh = bpy.data.actions.new((src.name or "act") + ".compact")
+    import blender_kit
+    # the RAW collection (the local _iter_fcurves list-wraps — .new()
+    # needs the live channelbag fcurves object blender_kit returns)
+    dst_fcurves = blender_kit.iter_fcurves(fresh)   # scaffolds 5.x slots
+    for fc in _iter_fcurves(src):
+        keep = [kp for kp in fc.keyframe_points
+                if keep_frames is None or kp.co.x <= f0 + keep_frames]
+        if not keep:
+            continue
+        grp = fc.group.name if getattr(fc, "group", None) else ""
+        # 5.2 channelbag signature: new(data_path, index=..., group_name=...)
+        nf = dst_fcurves.new(fc.data_path, index=fc.array_index,
+                             group_name=grp)
+        nf.extrapolation = fc.extrapolation
+        nf.keyframe_points.add(len(keep))
+        for kp, sk in zip(nf.keyframe_points, keep):
+            kp.co = sk.co.copy()
+            kp.handle_left = sk.handle_left.copy()
+            kp.handle_right = sk.handle_right.copy()
+            kp.interpolation = sk.interpolation
+        nf.update()
+    return fresh
+
+
 def bind_crowd(ctx, fam, group_tint=None):
     """Bind rig assemblies under the cache anchors.
 
@@ -397,6 +441,14 @@ def bind_crowd(ctx, fam, group_tint=None):
         if a.type != 'MESH':
             _fail(f"anchor {a.name} is {a.type} — the D6-2 law requires "
                   f"MESH anchors (the hidden-commuter carrier)")
+    # fix-wave-2 (the OOM law): capture the anchors' ORIGINAL capsule
+    # mesh data — the per-agent degenerate-carrier swaps below orphan
+    # every one of them (each carries the baked gait shape keys; on the
+    # 165-agent film that is the single biggest dead-weight block at
+    # Cycles init). Blender keeps 0-user datablocks in RAM until an
+    # explicit purge; the sweep at this function's end removes exactly
+    # those that ended the bind with no live user.
+    orig_capsule_data = set(a.data for a in anchors)
 
     # fix-wave-2 (user directive, the WHOLE-LAYER cylinder fallback):
     # if the family's ASSETS are not servable (rig/clips missing on
@@ -421,6 +473,15 @@ def bind_crowd(ctx, fam, group_tint=None):
                 "classes": {}, "layer": "cylinders"}
 
     with _fps_guard():
+        # fix-wave-2 (the OOM law): the before-set — every datablock the
+        # bind CREATES (the rig/clip FBX imports' skeletons + unused
+        # library actions, the group donors, the template data, the
+        # class bases, cyl_tpl) is swept at the end when it ends the
+        # bind with 0 users. Pre-existing datablocks are never touched
+        # by this sweep (the capsule originals have their own explicit
+        # capture above — they pre-date the bind but die at the swap).
+        _pre = {c: set(getattr(bpy.data, c))
+                for c in ("objects", "armatures", "meshes", "actions")}
         tmpl = prepare_template(fam)
     # the walk clip (import standalone: it brings its own armature —
     # strip it after stealing the action)
@@ -453,7 +514,14 @@ def bind_crowd(ctx, fam, group_tint=None):
         idle_act = [a for a in bpy.data.actions if a not in before][0]
         for ob in [o for o in bpy.data.objects if o not in before_ob]:
             bpy.data.objects.remove(ob, do_unlink=True)
-    _trim_action(idle_act, IDLE_TRIM)
+    # THE COMPACT IDLE (the capacity law): the 500-frame idle clip
+    # trimmed in place keeps its 260K-key reserved capacity and every
+    # per-agent copy pays it (25.6 MB/pop measured — the OOM class).
+    # Rebuild once into a fresh action at the true 33.8K-key count,
+    # then drop the fat original — the 47 idle copies land at ~3 MB.
+    fat_idle = idle_act
+    idle_act = _compact_action(fat_idle, IDLE_TRIM)
+    bpy.data.actions.remove(fat_idle)
     _cycles_action(idle_act)
     idle_names = {fc.data_path.split('"')[1] for fc in _iter_fcurves(idle_act)
                   if '"' in fc.data_path}
@@ -620,6 +688,13 @@ def bind_crowd(ctx, fam, group_tint=None):
     # with the SAME prefix, bind the action and pin its slot BEFORE
     # the rename (the s20 remap fires for the bound action only).
     for i, anchor in enumerate(anchors):
+        if os.environ.get("HC_RSS_EVERY") and i % int(os.environ["HC_RSS_EVERY"]) == 0:
+            try:
+                with open("/proc/self/status") as _st:
+                    _vm = [l.split()[1] for l in _st if l.startswith("VmRSS")][0]
+                _P(f"rss@agent{i}: {int(_vm)/1024:.0f}MB")
+            except Exception:                                  # noqa: BLE001
+                pass
         # fix-wave-2 (user directive, the CYLINDER-FALLBACK LAW): the
         # anchor's capsule mesh is the agent's DEFAULT READ; it only
         # degenerates (hands the visual to the rigged humanoid) AFTER
@@ -818,6 +893,43 @@ def bind_crowd(ctx, fam, group_tint=None):
     if n_cyl:
         _P(f"CYLINDER FALLBACK: {n_cyl}/{n} agents ship as simplified "
            f"cylinders (reasons: {cyl_reasons[:4]}")
+    # fix-wave-2: the ORPHAN PURGE (the tmarket OOM law). The bind
+    # orphans, per agent, the original capsule mesh data (the baked
+    # gait shape keys die with the carrier swap — the comment at the
+    # commit point always INTENDED this) plus, once per bind, the
+    # template armature/mesh data, the clip-import skeletons' data,
+    # the unused RH library actions, the retimed class bases and the
+    # cylinder template. Blender retains 0-user datablocks in RAM
+    # until an explicit purge: on the 165-agent film that is ~1 GB
+    # sitting dead exactly when Cycles allocates its render trees
+    # (the measured OOM kill at init). The sweep is fail-safe by
+    # construction — only datablocks the bind created (or the anchors'
+    # own swapped-out capsules) AND that carry zero live users are
+    # removed; everything the later passes read (the degenerate
+    # carriers, the slotted per-agent actions, the linked rigs) has
+    # users by definition.
+    _purged = 0
+    for d in list(orig_capsule_data):
+        if d.users == 0:
+            try:
+                bpy.data.meshes.remove(d)
+                _purged += 1
+            except (ReferenceError, RuntimeError):
+                pass
+    for _coll_name in ("objects", "armatures", "meshes", "actions"):
+        _coll = getattr(bpy.data, _coll_name)
+        _dead = [d for d in _coll
+                 if d not in _pre[_coll_name] and d.users == 0]
+        for d in _dead:
+            try:
+                _coll.remove(d)
+                _purged += 1
+            except (ReferenceError, RuntimeError):
+                pass
+    if _purged:
+        _P(f"orphan purge: {_purged} bind-created 0-user datablocks "
+           f"removed (the OOM law — the dead capsule/template/action "
+           f"weight frees before Cycles allocates)")
     return {"n": n, "n_walk": n_walk, "n_idle": n_idle,
             "n_cylinder": n_cyl, "cylinder_reasons": cyl_reasons,
             "layer": "humanoids",
