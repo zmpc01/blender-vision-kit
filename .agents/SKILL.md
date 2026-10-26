@@ -407,9 +407,8 @@ gait_modifiers.
   the ON-PEAK), mid-assembly formations (render the DRESSED line,
   not the march), dwell-vs-departure (render the pull-out).
 - **THE VOLUME-FACE CLASS**: a camera OUTSIDE a bounded volume
-  (fog box x +-32) sees the volume's FACE as a semi-transparent
-  ghost layer — read as GLITCH MAJOR by the eyepass. Keep cameras
-  inside the volume bounds (or re-shape the volume).
+  sees the volume's FACE as a semi-transparent ghost layer (read
+  as GLITCH MAJOR). Keep cameras inside the volume bounds.
 - **THE CONTENT-ADD CLASS**: an intent with NO geometric carrier
   (a sign of just bars, a door of just wall, a reunion whose paths
   never co-locate) defeats every camera fix. Author the carrier
