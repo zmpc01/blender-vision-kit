@@ -90,8 +90,12 @@ CAMS_V3 = [
     # eye-level vantage showed the pile as sparse 'background figures'.
     # Raised + on the queue axis: the pile's density reads as SHAPE
     # filling the south frame, the Deckhand holding beyond it)
-    ("CAM_S6",  (-1.8, 7.8, 4.2), (-1.8, 7.8, 4.2), 40,
-     (0.4, 1.8, 1.0), False, 0.018),
+    # fix-wave-2 eyepass round 3 (S6: the raised vantage swung the
+    # THROAT below the frame — 'empty background, no second person'.
+    # Aim lowered onto the throat itself + pulled west: the pile fills
+    # the upper frame, the Deckhand AT the aim, the ferry dark beyond)
+    ("CAM_S6",  (-2.6, 8.6, 3.8), (-2.6, 8.6, 3.8), 40,
+     (0.4, 1.0, 1.1), False, 0.018),
     # S7: the OUTBOARD SE cam -- the Latecomer's hold reads against the
     # streaming crowd (the inboard NW view buried him among bollards)
     ("CAM_S7",  (6.6, 5.2, 1.9), (6.6, 5.2, 1.9), 35,
@@ -102,27 +106,29 @@ CAMS_V3 = [
     # fix-wave-2 eyepass round 2 (S8: the Latecomer still read small
     # and undefined — closer to his rail hold + 36mm so he carries the
     # foreground-right, the Deckhand's hold mid-left)
-    ("CAM_S8",  (6.8, 9.8, 3.0), (6.8, 9.8, 3.0), 36,
-     (2.0, 3.6, 1.05), False, 0.012),
+    # fix-wave-2 eyepass round 3 (S8: TOO close — the Latecomer
+    # overflowed the frame edge ('heavily cropped foreground figure').
+    # Back to 4.1 m with both subjects inside: the Latecomer's hold
+    # foreground-right, the Deckhand's gap mid-left)
+    ("CAM_S8",  (7.6, 11.0, 3.4), (7.6, 11.0, 3.4), 36,
+     (1.8, 3.2, 1.05), False, 0.012),
     # S9: the OUTBOARD cam ON THE GATE (the prior aim drifted north of
     # the subject and the EEVEE night drowned it -- nothing read): the
     # gate + the Latecomer's crossing centered, the Deckhand beyond
-    # fix-wave-2 eyepass round 2 (S9: the rail line crossed the view
-    # obscuring the lower bodies + the crossing read distant. Higher
-    # (shoots OVER the rail) + 38mm + the aim on his f735 crossing
-    # point (4.1, 7.1), not his f700 hold)
-    ("CAM_S9",  (10.5, 4.2, 4.6), (10.5, 4.2, 4.6), 38,
-     (4.0, 7.2, 1.0), False, 0.0),
-    # fix-wave-2 eyepass round 2 (S10: the vantage stood EAST of the
-    # throat BARRIER looking over its top edge — half the frame was
-    # the barrier's dark slab and the heroes read as 'floating
-    # spheres' beyond it. NEW vantage: down the QUEUE AXIS from the
-    # north — the ray crosses the barrier line INSIDE the 2 m throat
-    # gap (x 0.28 at y0.7), the stepped-aside Deckhand frames the
-    # sealed gap, the Latecomer beyond on the ramp, the quieted queue
-    # as foreground depth)
-    ("CAM_S10", (0.9, 4.8, 2.4), (0.9, 4.8, 2.4), 40,
-     (0.25, 0.5, 1.1), False, 0.0),
+    # fix-wave-2 eyepass round 3 (S9: the raised vantage still caught
+    # a foreground barrier crossing the edge — pull east + aim the
+    # gate INSIDE the frame so the crossing reads as the entry, not an
+    # obstacle at the margin)
+    ("CAM_S9",  (11.2, 3.6, 4.8), (11.2, 3.6, 4.8), 38,
+     (3.8, 7.6, 1.0), False, 0.0),
+    # fix-wave-2 eyepass round 3 (S10: the queue-axis vantage read as
+    # a 'generic follow-shot' — the seal needs the throat in PROFILE.
+    # 3/4 from the WEST deck: the ray crosses the barrier line inside
+    # the throat gap (x 0.20 at y0.7), the stepped-aside Deckhand
+    # frames the sealed gap, the ferry ramp beyond, the quieting pier
+    # as the background)
+    ("CAM_S10", (-3.2, 4.2, 2.2), (-3.2, 4.2, 2.2), 45,
+     (0.3, 0.6, 1.2), False, 0.0),
     # the CRANE (S11/S12): loc AND aim keyed -- over the outboard
     # margin/water (REV-2 F8); rises 3.2 -> 11.6 while drifting south
     ("CAM_S11", (-8.6, 18.0, 3.2), (-9.2, 10.0, 11.0), 30,

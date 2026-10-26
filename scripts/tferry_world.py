@@ -190,6 +190,32 @@ def build_world(scene):
                      (3.1, 2.92, 2.52), mats["neon_mag"])
     sign_row2 = _box("TF.SignRow2", 1.2, 0.06, 0.22,
                      (3.1, 2.92, 2.14), mats["sign_flip"])
+    # fix-wave-2 eyepass round 3 (S2): the BOARDING word itself. The
+    # bar composition read as 'blank pink rectangles' at the closer
+    # vantage — the film's inciting beat needs the word. The tdawn
+    # title law (extruded FONT -> CONVERTED MESH, glTF-safe) lands it
+    # ON the flip row, riding the row's own sign_flip material (dark
+    # 0.06 pre-call, ignites 1.3 at f85 — the flip IS the light-up).
+    import bpy
+    crv = bpy.data.curves.new("TF.BoardingWord", type="FONT")
+    crv.body = "BOARDING"
+    crv.size = 0.155
+    crv.align_x = "CENTER"
+    crv.align_y = "CENTER"
+    crv.extrude = 0.015
+    word = bpy.data.objects.new("TF.BoardingWord", crv)
+    word.location = (3.1, 2.965, 2.14)
+    # face the arriving crowd (the camera's north side): rx=-90 maps
+    # the text normal (+Z) to +Y; rz aims it at the S2 camera
+    _cx, _cy = 1.4, 7.2
+    _nx, _ny = _cx - 3.1, _cy - 2.965
+    word.rotation_euler = (-math.pi / 2, 0.0, math.atan2(-_nx, _ny))
+    scene.collection.objects.link(word)
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = word
+    word.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    word.data.materials.append(mats["sign_flip"])
     parts["kiosk"] = kiosk
     parts["kiosk_board"] = (board, sign_row1, sign_row2)
 

@@ -128,8 +128,8 @@ CAM_KEEPOUTS_V3 = [
     ("CAM_S2", 1.4, 7.2, 85, 168),
     ("CAM_S3", -2.0, 30.0, 169, 264),
     ("CAM_S4", 4.0, 38.0, 265, 348),
-    ("CAM_S6", -1.8, 7.8, 445, 528),
-    ("CAM_S10", 0.9, 4.8, 817, 912),
+    ("CAM_S6", -2.6, 8.6, 445, 528),
+    ("CAM_S10", -3.2, 4.2, 817, 912),
     # S5/S7/S8/S9: zero rows -- those lenses moved OUTBOARD (x 6.6..8.6,
     # past the east rail, crowd-free by construction: the crane law).
     # S11/S12: the crane flies the OUTBOARD margin/water (x -8.6..-9.2)

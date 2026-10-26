@@ -55,9 +55,9 @@ SPAWN_ZONES_V5 = [
 CAM_KEEPOUTS_V3 = [
     # fix-wave-2 eyepass: rows moved with the re-framed lenses
     ("CAM_S2",  -4.8, -0.8,  85, 168),
-    ("CAM_S3",   0.5,  5.4, 169, 264),
-    ("CAM_S6",  -1.5, -1.4, 445, 528),
-    ("CAM_S10", -2.4, -1.6, 817, 912),
+    ("CAM_S3",  -8.0,  4.8, 169, 264),
+    ("CAM_S6",   1.2, -5.2, 445, 528),
+    ("CAM_S10", -2.8, -2.2, 817, 912),
     # S7/S9: the cams moved OUTBOARD (y 5.5/6.0 > walkable 5.0) --
     # rows dropped. Aerials row-free (the hole law): S1/S4/S5/S11/S12.
 ]
