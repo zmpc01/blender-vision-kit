@@ -403,8 +403,8 @@ gait_modifiers.
   G=MAJOR -> ONE targeted diagnostic (never a blind re-frame);
   mannequin/robotic-spacing complaints on a formation film ARE the
   premise; stills cannot show waves/cranes/dives; identical texts
-  across shots = template-matching. Healthy films flag 6-12; the
-  real yield is 1-5.
+  across shots = template-matching. Healthy films flag 6-12;
+  yield 1-5.
 - **THE STILL-FRAME vs AIM CLASS**: an aim targeting a key the
   still never renders (the dip at f535 vs the still at f580) reads
   as "subject missing". Check the FRAMES table against the authored
