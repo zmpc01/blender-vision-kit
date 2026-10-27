@@ -5,6 +5,46 @@
 > plan tracks the VARIANT's long-horizon work across sessions.
 > Companion: HANDOFF.md (immediate next-session scope only).
 
+## fix-wave-2 receipts (2026-10-26 — THE SEVEN FILMS RE-SHIPPED, the universal troubleshooting wave COMPLETE)
+
+- [x] THE USER'S FIVE ISSUES CLOSED end-to-end (the wave's charter,
+      issued 2026-10-24; two sandbox deaths rode through — the
+      determinism law re-proven on every re-bake):
+      [1] zero animations -> the D1 unique-bone/unique-action bind +
+      the cylinder-fallback law + THE CAPACITY LAW + the GLB proof
+      (0 duplicate joints / 0 untracked skins / 40-40 walks animating
+      on ALL SEVEN exports); [2] orientation -> the unwrap laws (crowd
+      plan + face_tangent grid + the authored-yaw pristine-read P0 +
+      the BOWL-span yaw hold); [3] flicker -> the euler wrap-seam +
+      D6b rate-limited keepout ejection + the integer-frame export
+      law; [4] cinematography -> THREE eyepass rounds under the final
+      renders, adjudicated per the noise-floor law; [5] the hero gun
+      poses -> UAL clips everywhere, export-verified.
+- [x] THE THREE DEEP LAWS (cross-session value): THE CAPACITY LAW
+      (keyframe removal never shrinks RNA capacity; Action.copy
+      duplicates the CAPACITY — 25.6 MB/pop for a trimmed 500f clip;
+      _compact_action is the rebuild), THE INTEGER-FRAME LAW (the
+      glTF exporter bakes non-integer key times; unique actions x
+      the bake = the OOM), THE FILM-LANE FRAME-STEP LAW (PKG_FRAME_
+      STEP=2 for films; the s44 step=1 is the escape lane's; the
+      agent-kit override at the governed pin b4468f6).
+- [x] THE CONTENT-ADD CLASS closed (real missing story carriers the
+      eyepass caught): tferry's BOARDING word (FONT->mesh, the tdawn
+      title law), tfog's DOORWAY (the warm emissive panel), tmarket's
+      REUNION (the story-level path re-author — the principals never
+      co-located).
+- [x] STAGED LIVE: tdawn_5 / tferry_4 / tgreen_4 / tsquall_4 /
+      tfog_4 / tform_4 / tmarket_2 (96 filmstrips each, comments ON,
+      the db history intact). All export gates green; the GLB bind
+      probe green on every package.
+- [ ] the USER review round on the SEVEN new packages
+- [ ] the no-bake glTF export lane (Blender 5.2's ACTIONS-mode
+      fallback bakes slotted actions even on clean scenes — the
+      known issue, documented in SKILL + HANDOFF)
+- [ ] the two-frame-strip eyepass upgrade (kill half the
+      'static mannequin' false flags at audit time)
+- [ ] GitLab redundancy still DOWN (the s28 PAT finding)
+
 ## Track TD: TERMINAL DAWN (session 12, DELIVERED — the review lane is open)
 
 - [x] tdawn_1 exported (schema 2.3, all gates green) + staged to
