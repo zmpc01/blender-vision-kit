@@ -416,9 +416,8 @@ gait_modifiers.
 - **THE CONTENT-ADD CLASS**: an intent with NO geometric carrier
   (a sign of just bars, a door of just wall, a reunion whose paths
   never co-locate) defeats every camera fix. Author the carrier
-  (the FONT->mesh title law for words; a proud emissive panel for
-  openings; a path re-author for story beats) and VERIFY the story
-  geometry before certifying a two-hero beat.
+  (FONT->mesh words; a proud emissive panel; a path re-author) and
+  VERIFY the story geometry before certifying a two-hero beat.
 - **THE SANDBOX REAPER**: detached processes die at Bash-call
   boundaries; THE pattern is resumable drivers + chained
   foreground relaunches. A Task "context deadline exceeded" is a
