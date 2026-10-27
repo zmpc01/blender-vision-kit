@@ -384,8 +384,15 @@ gait_modifiers.
   override is agent-kit-side; default 1.
 - **THE BAKE-FALLBACK KNOWN ISSUE**: Blender 5.2's glTF ACTIONS
   mode falls back to baking on slotted actions even on scenes
-  censused clean (mixed_scan2 covers every animation owner). At
-  step=2 the bake fits; a no-bake lane is future work.
+  censused clean. At step=2 the bake fits; a no-bake lane is
+  future work.
+- **THE STRANDED-COMMIT CLASS (the b4468f6 lesson)**: a pin-
+  checkout clone sits on a DETACHED HEAD — a commit there is never
+  pushed by `git push origin main` (it ships the stale branch ref;
+  nothing fails, -q hides nothing). LAW: after any commit in a
+  pin-checkout, `git branch -f main HEAD` before pushing, then
+  `git merge-base --is-ancestor <sha> origin/main`. Re-anchor any
+  driver asserting a stranded SHA.
 - **THE ORPHAN PURGE**: carrier swaps, template removals, clip
   leftovers + unused library actions sit in RAM as 0-user
   datablocks until an explicit purge (Blender never GCs them). The
@@ -415,12 +422,11 @@ gait_modifiers.
   openings; a path re-author for story beats) and VERIFY the story
   geometry before certifying a two-hero beat.
 - **THE SANDBOX REAPER**: detached processes die at Bash-call
-  boundaries. THE pattern: resumable drivers (skip existing,
-  APPEND status) + chained foreground relaunches. A Task-tool
-  "context deadline exceeded" is a RESULT-DELIVERY timeout — the
-  subagent may be alive; check signs of life (lock-holder PID,
-  output counts) before relaunching or you will fight your own
-  subagent over the display flock (F-TD10).
+  boundaries; THE pattern is resumable drivers + chained
+  foreground relaunches. A Task "context deadline exceeded" is a
+  RESULT-DELIVERY timeout — the subagent may be alive; check signs
+  of life (lock-holder PID, output counts) before relaunching or
+  you fight your own subagent over the flock (F-TD10).
 - **THE HONESTY-GATE COUPLING**: honesty asserts cross-check
   keepout tables against camera classifications (the tfog z<2.5
   ground-lens test) — an EXTRA row for an above-threshold lens

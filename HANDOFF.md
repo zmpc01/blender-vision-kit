@@ -34,7 +34,10 @@
   actions x the per-frame bake = the export OOM (the wrap/retime
   now round to whole frames, collision-free). [3] THE FILM-LANE
   FRAME-STEP LAW — PKG_FRAME_STEP=2 for the film packages (agent-kit
-  b4468f6; gates 18/19 SKIP on films by the additive law — the s44
+  b4468f6 RE-LANDED as 7754f78 (the original was stranded on a
+  detached HEAD — never reached origin/main; the re-land is the
+  same change on main, ancestry-verified); gates 18/19 SKIP on
+  films by the additive law — the s44
   step=1 law is the ESCAPE lane's). KNOWN ISSUE: Blender 5.2's glTF
   ACTIONS mode falls back to baking on slotted actions (fires on
   scenes censused clean) — at step=2 the bake fits; the deeper
@@ -57,7 +60,10 @@
 - **THE PINS** (the reproducibility record): caches tdawn e140956b
   / tferry a460f75d / tgreen 2b34e592 / tsquall 8e7cdb5c / tfog
   336200f4 / tform 4261317a / tmarket a46aab2b; the export pin
-  agent-kit b4468f6 (advanced from 4bece16 with PKG_FRAME_STEP).
+  agent-kit 7754f78 (advanced from 4bece16 with PKG_FRAME_STEP;
+  the re-land of the stranded b4468f6). NEVER commit pin-checkout
+  clones on detached HEADs — the push ships the stale branch ref
+  and the commit dies with the sandbox.
 - Open queues:
   1. The USER review round on the SEVEN new packages (comments ON,
      the db carries the full history).

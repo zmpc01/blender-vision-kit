@@ -27,7 +27,9 @@
       glTF exporter bakes non-integer key times; unique actions x
       the bake = the OOM), THE FILM-LANE FRAME-STEP LAW (PKG_FRAME_
       STEP=2 for films; the s44 step=1 is the escape lane's; the
-      agent-kit override at the governed pin b4468f6).
+      agent-kit override at the governed pin 7754f78 — the re-land
+      of the stranded b4468f6; see HANDOFF for the detached-HEAD
+      lesson).
 - [x] THE CONTENT-ADD CLASS closed (real missing story carriers the
       eyepass caught): tferry's BOARDING word (FONT->mesh, the tdawn
       title law), tfog's DOORWAY (the warm emissive panel), tmarket's
