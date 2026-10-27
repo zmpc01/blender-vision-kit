@@ -387,11 +387,10 @@ gait_modifiers.
   future work.
 - **THE STRANDED-COMMIT CLASS (the b4468f6 lesson)**: a pin-
   checkout clone sits on a DETACHED HEAD — a commit there is never
-  pushed by `git push origin main` (it ships the stale branch ref;
-  nothing fails, -q hides nothing). LAW: after any commit in a
-  pin-checkout, `git branch -f main HEAD` before pushing, then
-  `git merge-base --is-ancestor <sha> origin/main`. Re-anchor any
-  driver asserting a stranded SHA.
+  pushed by `git push origin main` (it ships the stale branch ref).
+  LAW: after any commit in a pin-checkout, `git branch -f main
+  HEAD` before pushing, then `git merge-base --is-ancestor <sha>
+  origin/main`. Re-anchor any driver asserting a stranded SHA.
 - **THE ORPHAN PURGE**: carrier swaps, template removals, clip
   leftovers + unused library actions sit in RAM as 0-user
   datablocks until an explicit purge. The before-set +
