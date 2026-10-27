@@ -426,6 +426,5 @@ gait_modifiers.
   you fight your own subagent over the flock (F-TD10).
 - **THE HONESTY-GATE COUPLING**: honesty asserts cross-check
   keepout tables against camera classifications (the tfog z<2.5
-  ground-lens test) — an EXTRA row for an above-threshold lens
-  fails the film. Read the assert's own test before touching the
-  contract.
+  test) — an EXTRA row for an above-threshold lens fails the
+  film. Read the assert's own test first.
