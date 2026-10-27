@@ -395,10 +395,9 @@ gait_modifiers.
   driver asserting a stranded SHA.
 - **THE ORPHAN PURGE**: carrier swaps, template removals, clip
   leftovers + unused library actions sit in RAM as 0-user
-  datablocks until an explicit purge (Blender never GCs them). The
-  before-set + capsule-capture sweep at bind_crowd's end frees
-  ~200 blocks on the 165-agent film, touching nothing live
-  (users-by-definition is the safety proof).
+  datablocks until an explicit purge. The before-set +
+  capsule-capture sweep at bind_crowd's end frees ~200 blocks on
+  the 165-agent film, touching nothing live.
 - **THE EYEPASS ADJUDICATION LAW** (verdicts FLIP on identical
   frames between rounds): F=GOOD + S=CLEAR -> PASS; S=MISSING or
   G=MAJOR -> ONE targeted diagnostic (never a blind re-frame);
