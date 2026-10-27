@@ -379,9 +379,8 @@ gait_modifiers.
   (collision-free: integer modulo; stretching scales).
 - **THE FILM-LANE FRAME-STEP LAW**: PKG_FRAME_STEP=2 on film
   packages (129-165 unique actions make step=1's bake the kill).
-  The s44 step=1 law belongs to the ESCAPE lane (gates 18/19 read
-  per-frame FX/aim; films SKIP them by the additive law). The env
-  override is agent-kit-side; default 1.
+  The s44 step=1 law is the ESCAPE lane's (gates 18/19 read
+  per-frame FX/aim; films SKIP them). Default 1.
 - **THE BAKE-FALLBACK KNOWN ISSUE**: Blender 5.2's glTF ACTIONS
   mode falls back to baking on slotted actions even on scenes
   censused clean. At step=2 the bake fits; a no-bake lane is
@@ -412,8 +411,8 @@ gait_modifiers.
   (render the ON-PEAK, not the 42% fade), mid-assembly formations
   (render the DRESSED line), dwell-vs-departure (the pull-out).
 - **THE VOLUME-FACE CLASS**: a camera OUTSIDE a bounded volume
-  sees the volume's FACE as a semi-transparent ghost layer (read
-  as GLITCH MAJOR). Keep cameras inside the volume bounds.
+  sees the volume's FACE as a ghost layer (read as GLITCH MAJOR).
+  Keep cameras inside the bounds.
 - **THE CONTENT-ADD CLASS**: an intent with NO geometric carrier
   (a sign of just bars, a door of just wall, a reunion whose paths
   never co-locate) defeats every camera fix. Author the carrier
