@@ -600,13 +600,19 @@ def _kf_board(ctx):
     wmat.name = "tfg_glyph_express"
     crv = bpy.data.curves.new("TFG.ExpressWord", type="FONT")
     crv.body = "EXPRESS"
-    crv.size = 0.20
+    # 0.42 (the audit round: 0.20 read ~10 px tall from the 11 m S4
+    # lens -- illegible; the board is 3 m wide, 0.42 keeps ~2.3 m of
+    # word inside it)
+    crv.size = 0.42
     crv.align_x = "CENTER"
     crv.align_y = "CENTER"
     crv.extrude = 0.012
     word = bpy.data.objects.new("TFG.ExpressWord", crv)
     word.location = (0.0, 0.105, 2.15)       # proud of row 1's S face
-    word.rotation_euler = (-math.pi / 2, 0.0, math.radians(36.0))
+    # THE UPRIGHT-TEXT LAW: rx=+90, rz=atan2(dx, -dy) toward the S4
+    # lens at (-6.5, 9.0) -- rx=-90 read upside-down (the tferry find)
+    word.rotation_euler = (math.pi / 2, 0.0,
+                           math.atan2(-6.5, -(9.0 - 0.105)))
     bpy.context.scene.collection.objects.link(word)
     bpy.ops.object.select_all(action="DESELECT")
     bpy.context.view_layer.objects.active = word

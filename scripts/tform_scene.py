@@ -301,7 +301,9 @@ def _banner_cloth_mesh(name):
     from tdawn_actors import make_material
     mesh = bpy.data.meshes.new(name)
     bm = bmesh.new()
-    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=0.9)
+    # 1.3 (the audit round: 0.9 gave an 1.8 m cloth -- the 0.115 title
+    # word read ~7 px from the S11 lens; 2.6 m of cloth carries 0.30)
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1.3)
     bm.to_mesh(mesh)
     bm.free()
     ob_mat = make_material("TF.BannerCloth", (0.42, 0.10, 0.08),
@@ -624,16 +626,18 @@ def _kf_banner_title(ctx):
     pole = cloth.parent
     crv = bpy.data.curves.new("TF.DrillWord", type="FONT")
     crv.body = "THE DRILL"
-    crv.size = 0.115
+    crv.size = 0.30
     crv.align_x = "CENTER"
     crv.align_y = "CENTER"
     crv.extrude = 0.012
     word = bpy.data.objects.new("TF.DrillWord", crv)
-    # on the cloth's -Y face (the cloth stands vertical facing local
-    # -Y; the S11 camera stands SW): rx=90 maps the text normal +Z ->
-    # -Y with the text upright (+Y -> +Z), no mirror
-    word.location = (0.0, -0.055, 2.30)
-    word.rotation_euler = (math.pi / 2, 0.0, 0.0)
+    # on the cloth's -Y face. THE UPRIGHT-TEXT LAW: rx=+90,
+    # rz=atan2(dx,-dy) toward the S11 lens at (3,-7) in the POLE's
+    # local frame (the pole's own yaw keys swivel the assembly; the
+    # local aim approximates the world SW at the plant: the plant key
+    # holds pole yaw 143 with bearer 180)
+    word.location = (0.0, -0.06, 2.30)
+    word.rotation_euler = (math.pi / 2, 0.0, math.radians(-53.0))
     bpy.context.scene.collection.objects.link(word)
     word.parent = pole
     bpy.ops.object.select_all(action="DESELECT")

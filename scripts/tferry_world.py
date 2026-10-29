@@ -212,11 +212,15 @@ def build_world(scene):
     crv.extrude = 0.015
     word = bpy.data.objects.new("TF.BoardingWord", crv)
     word.location = (3.1, 2.965, 2.14)
-    # face the arriving crowd (the camera's north side): rx=-90 maps
-    # the text normal (+Z) to +Y; rz aims it at the S2 camera
-    _cx, _cy = 1.4, 7.2
-    _nx, _ny = _cx - 3.1, _cy - 2.965
-    word.rotation_euler = (-math.pi / 2, 0.0, math.atan2(-_nx, _ny))
+    # THE UPRIGHT-TEXT LAW (the audit round's VLM caught an inverted
+    # BOARDING read as fragments 'DING'/'NIGH'): rx=-90 maps the
+    # normal +Z -> +Y (toward a north camera) but the text UP +Y -> -Z
+    # (upside-down). The correct form: rx=+90 with rz = atan2(dx, -dy)
+    # (normal -> toward the camera, UP -> +Z, reading -> screen-right;
+    # verified by the handedness walk)
+    _cx, _cy = 1.9, 5.6
+    _dx, _dy = _cx - 3.1, _cy - 2.965
+    word.rotation_euler = (math.pi / 2, 0.0, math.atan2(_dx, -_dy))
     scene.collection.objects.link(word)
     bpy.ops.object.select_all(action="DESELECT")
     bpy.context.view_layer.objects.active = word
