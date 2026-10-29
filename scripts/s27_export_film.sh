@@ -23,8 +23,8 @@ export KIT_EXPORTER=/home/z/work/blender-agent-kit/scripts/export_previz_package
 # HEAD (never reached origin/main); 7754f78 is the SAME change landed
 # on main — never commit pin-checkout clones on detached HEADs.
 export PKG_FRAME_STEP=2
-( cd /home/z/work/blender-agent-kit && [ "$(git rev-parse HEAD)" = "7754f78694b7cecfb56ed69934e919641e61a9a9" ] ) || {
-  echo "GOVERNED PIN FAIL: agent-kit HEAD is not 7754f78 (the fix-wave-2 film-step record, re-landed)"; exit 3;
+( cd /home/z/work/blender-agent-kit && [ "$(git rev-parse HEAD)" = "96ce728a4f559531463b4646607830ba5363cf59" ] ) || {
+  echo "GOVERNED PIN FAIL: agent-kit HEAD is not 96ce728 (the s46 advance: the bare-animate bind-split two-way merge, frame-step KEPT; action_ops vendored; tier-B B2 re-baselined at c51bb2a)"; exit 3;
 }
 # per-film humanoid env (the s25 contract)
 case $FILM in
