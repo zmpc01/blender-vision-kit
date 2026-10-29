@@ -1355,15 +1355,21 @@ def _cycles_action(act):
     return act
 
 
-def _nl_windows(ad, acts, windows, hero_name, base_act):
+def _nl_windows(arm, ad, acts, windows, hero_name, base_act):
     """Sequential NLA strips for a windowed clip plan (the
     bind_principals clip_windows surface). Each window (clip, f0, f1)
     is a strip on ONE track; adjacent strips overlap 6 frames with
     blend_in/out crossfades (the FROZEN-SOURCE law's short-blend
-    discipline: a long blend between cyclic gaits sweeps the source
-    through antipodes). The BASE action stays pinned on the slot as
-    the under-layer ONLY where the windows do not reach; strips are
-    REPLACE-type, so inside any window the strip owns the pose."""
+    discipline). THE CREATION LAW (measured live on tmarket): Blender
+    REFUSES strips.new at a frame that overlaps an existing strip on
+    the track -- create CLEAR of the previous tail, then slide
+    frame_start back to the true window start (the overlap is the
+    crossfade zone; only CREATION is strict). THE LOOP LAW: the strip
+    maps [frame_start, frame_end] onto [action_frame_start,
+    action_frame_end] LINEARLY -- extending frame_end alone would
+    STRETCH the gait (a 35x-slow statue glide); action_frame_end is
+    extended to match, and the CYCLIC fcurve modifiers (via
+    _cycles_action) fill the extension with clean loops."""
     track = ad.nla_tracks.new()
     track.name = "clip_windows"
     prev = None
@@ -1375,19 +1381,49 @@ def _nl_windows(ad, acts, windows, hero_name, base_act):
         else:
             act = base_act
             base_act.name = f"{clip}.{hero_name}.w{int(f0)}"
-        strip = track.strips.new(act.name, int(f0), act)
+        a0 = int(act.frame_range[0])
+        create_at = int(f0)
+        if prev is not None and create_at < int(prev.frame_end):
+            create_at = int(prev.frame_end)      # create clear, slide back
+        strip = track.strips.new(act.name, create_at, act)
         strip.frame_start = int(f0)
         strip.frame_end = int(f1)
+        strip.action_frame_start = float(a0)
+        strip.action_frame_end = float(a0 + (int(f1) - int(f0)))
         strip.blend_type = 'REPLACE'
         strip.extrapolation = 'HOLD'
         if prev is not None:
-            # the 6-frame crossfade INTO this strip (the overlap with
-            # the previous strip's tail)
             strip.blend_in = 6.0
             prev.blend_out = 6.0
         prev = strip
     _P(f"clip windows {hero_name}: " +
        ", ".join(f"{c}@{int(a)}-{int(b)}" for c, a, b in windows))
+    # THE ACTIONS-MODE LAW (measured live on tmarket: the child's
+    # bones exported ZERO channels -- the glTF ACTIONS mode
+    # enumerates SLOT actions and an NLA-only armature has none; the
+    # stills rendered fine and the export silently dropped the mix).
+    # Bake the NLA stack into ONE action (the canonical nla.bake,
+    # visual keying, step 2 = the PKG_FRAME_STEP law, integer frames
+    # by construction) and pin it; the NLA track is removed so the
+    # baked slot owns the pose alone.
+    try:
+        bpy.context.view_layer.objects.active = arm
+        bpy.ops.object.select_all(action="DESELECT")
+        arm.select_set(True)
+        bpy.ops.nla.bake(frame_start=1,
+                         frame_end=int(bpy.context.scene.frame_end),
+                         step=2, only_selected=False, visual_keying=True,
+                         clear_constraints=False, bake_types={"POSE"})
+        for tr in list(ad.nla_tracks):
+            if tr.name == "clip_windows":
+                ad.nla_tracks.remove(tr)
+        baked = ad.action
+        _P(f"clip windows {hero_name}: baked to "
+           f"'{baked.name if baked else None}' "
+           f"({sum(1 for _ in _iter_fcurves(baked)) if baked else 0} "
+           f"fcurves)")
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"_nl_windows bake failed for {hero_name}: {e}")
 
 
 def bind_principals(ctx, name_clip_pairs, clip_windows=None):
@@ -1494,7 +1530,7 @@ def bind_principals(ctx, name_clip_pairs, clip_windows=None):
         ad = arm.animation_data_create()
         windows = clip_windows.get(name)
         if windows:
-            _nl_windows(ad, acts, windows, name, act)
+            _nl_windows(arm, ad, acts, windows, name, act)
         else:
             _pin_slot(ad, act)
         # D1-REV2: per-hero unique bone names (prefix h<name>:) + the
