@@ -159,13 +159,11 @@ CAM_KEEPOUTS = (
     # 20 m west of the actual door); S11 gains a row (the pull-out
     # vantage moved INSIDE the fog box onto the platform's W end).
     ("CAM_S2", -22.0, 0.5, 0, 190),
-    # fix-wave-2 audit round: S3 moved INSIDE the fog box onto the
-    # platform's south edge (the volume-face law); S7 moved closer to
-    # the E-edge brace point -- both are ground lenses inside the
-    # walkable now and carry rows in their windows
-    ("CAM_S3", 4.0, -4.2, 191, 288),
+    # audit-round note: the re-aimed S3 (4,-4.2) + S7 (23.5,-6.5)
+    # lenses stand OUTSIDE the walkable (y -4..4) by the volume-face /
+    # subject laws -- the honesty gate's own walkable-ground-lens test
+    # refuses rows for them (agents cannot reach the discs)
     ("CAM_S6", -9.0, -2.2, 528, 672),   # moved with the S6h lens (round-3 cert)
-    ("CAM_S7", 23.5, -6.5, 609, 672),
     ("CAM_S9", -3.0, -1.0, 792, 876),
     ("CAM_S10", 4.0, 2.2, 877, 948),    # at the EAST car's door (the queue's)
     # (S11 stays row-free: its z=2.6 lens is above the ground-lens
