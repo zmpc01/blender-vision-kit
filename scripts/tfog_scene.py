@@ -140,10 +140,18 @@ CAMS_V1 = [
     # row window 0..190 covers the planted lens through f190)
     ("CAM_S2",  (-22.0, 0.5, 2.4), (-22.0, 0.5, 2.4), 30,
      (-15.0, -2.0, 0.5), False, 0.0),   # S2c (round-1 cert: the waiters IN frame under the canopy)
-    # S3: on the N track bed looking W down the track (outside the
-    # walkable: y=-14); the headlight cone grows toward the lens
-    ("CAM_S3",  (0.0, -14.0, 2.2), (0.0, -14.0, 2.2), 40,
-     (-28.0, -8.5, 1.5), False, 0.0),
+    # S3: fix-wave-2 audit round -- the old lens stood OUTSIDE the fog
+    # volume (y=-14 vs the fog box y -5..5) looking at a track bed the
+    # fog never covers, while the headlight sat 40 m WEST of the fog's
+    # west face through the whole S3 window (the cone entered the fog
+    # only at f~367, inside S5). THE VOLUME-FACE LAW (inverted): the
+    # lens now stands INSIDE the fog on the platform's south edge
+    # looking WSW down the platform -- the fog in frame, the benches
+    # + the W exit stairs as depth anchors, the distant headlight
+    # glow building through the fog (the energy ladder below now
+    # front-loads the build so the glow reads inside S3's window)
+    ("CAM_S3",  (4.0, -4.2, 2.0), (4.0, -4.2, 2.0), 40,
+     (-40.0, -6.5, 1.4), False, 0.0),
     # S4: the board's S face from the S track bed (outside the
     # walkable: y=10.5); the flip reads under the canopy edge
     ("CAM_S4",  (-6.5, 9.0, 2.2), (-6.5, 9.0, 2.2), 45,
@@ -162,8 +170,12 @@ CAMS_V1 = [
      (3.0, 0.2, 0.7), False, 0.0),   # S6h (round-3 cert: the pressed mass + the board + depth)
     # S7: the missed sprint, from the N bed E (outside the walkable);
     # the figure braced at the N edge, the tail lights gone E
-    ("CAM_S7",  (24.0, -10.0, 2.6), (24.0, -10.0, 2.6), 35,
-     (20.0, -3.4, 1.0), False, 0.0),   # S7b (round-1 cert: the braced figure isolated vs the pressed wall)
+    # S7: fix-wave-2 audit round (SUBJECT-LOST at 7.6 m -- the
+    # braced figure swam in the platform clutter): closer + tighter
+    # on the spent Late Passenger at his E-edge brace point, the
+    # empty N track + the fog beyond him
+    ("CAM_S7",  (23.5, -6.5, 1.9), (23.5, -6.5, 1.9), 50,
+     (21.5, -3.2, 1.1), False, 0.0),
     # S8: the local's arrival, elevated off the N side (z=6 aerial
     # class: row-free); the warm 3-car glides in on the S face
     ("CAM_S8",  (-2.0, -15.0, 4.0), (-2.0, -15.0, 4.0), 40,
@@ -575,6 +587,36 @@ def _kf_board(ctx):
     _em_keys(rm[4], [(1, dim), (1008, dim), (1009, title),
                      (1080, title)])
     ctx["board_flips"] = flips
+    # fix-wave-2 audit round: the EXPRESS word itself (the CONTENT-ADD
+    # class -- the intent names 'EXPRESS APPROACHING' and the board
+    # carried only bar rows; every sibling sign beat now carries its
+    # words). A converted FONT mesh on the board's S face over row 1,
+    # in its OWN glyph-material copy keyed to row 1's flip window
+    # (hot 192..528 -- the S4 read), the tferry word law's rx=-90
+    # S-facing form with the rz swung toward the S4 lens.
+    import bpy
+    glyph = ctx["parts"]["mats"]["glyph"]
+    wmat = glyph.copy()
+    wmat.name = "tfg_glyph_express"
+    crv = bpy.data.curves.new("TFG.ExpressWord", type="FONT")
+    crv.body = "EXPRESS"
+    crv.size = 0.20
+    crv.align_x = "CENTER"
+    crv.align_y = "CENTER"
+    crv.extrude = 0.012
+    word = bpy.data.objects.new("TFG.ExpressWord", crv)
+    word.location = (0.0, 0.105, 2.15)       # proud of row 1's S face
+    word.rotation_euler = (-math.pi / 2, 0.0, math.radians(36.0))
+    bpy.context.scene.collection.objects.link(word)
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = word
+    word.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    word.data.materials.clear()
+    word.data.materials.append(wmat)
+    _em_keys(wmat, [(1, 0.0), (191, 0.0), (192, board_hot),
+                    (527, board_hot), (528, 0.0), (1080, 0.0)])
+    ctx["parts"].setdefault("title", []).append(word)
 
 
 def _kf_trains(ctx):
@@ -631,8 +673,13 @@ def _kf_headlight(ctx):
     scene = bpy.context.scene
     scene.collection.objects.link(ob)
     ob.parent = exp
-    for f, e in ((1, 0.0), (240, 0.0), (260, 400.0), (300, 1400.0),
-                 (336, 2600.0), (470, 2600.0), (510, 800.0), (528, 0.0)):
+    # fix-wave-2 audit round: the ladder front-loads the build (the
+    # old 400->1400->2600 ramp left the cone at ~25% through S3's
+    # window -- the signature shot read coneless; 1800 by f285 puts a
+    # clear glow in the fog INSIDE S3, the blast peak 2600 unchanged)
+    for f, e in ((1, 0.0), (240, 0.0), (260, 400.0), (285, 1800.0),
+                 (310, 2200.0), (336, 2600.0), (470, 2600.0),
+                 (510, 800.0), (528, 0.0)):
         ld.energy = e
         ld.keyframe_insert(data_path="energy", frame=f)
     _bezier(ld)     # the keys live on the LIGHT DATA, not the object

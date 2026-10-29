@@ -147,7 +147,7 @@ CAM_KEEPOUTS_V3 = (
     ("CAM_S7", 6.0, -2.0, 529, 618),      # the squeeze lens
     ("CAM_S8", 14.5, -1.0, 619, 708),     # the child-lost wide lens
     ("CAM_S9", 11.3, -3.1, 709, 798),     # the child close lens
-    ("CAM_S10", 17.2, -4.9, 799, 888),    # the reunion lens (the
+    ("CAM_S10", 16.8, -5.6, 799, 888),    # the reunion lens (the
                                           # reframe moved it to the
                                           # south walk)
     ("CAM_S12", -4.5, 0.5, 979, 1080),    # the title push lens

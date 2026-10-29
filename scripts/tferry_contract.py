@@ -125,7 +125,7 @@ CAM_KEEPOUTS_V3 = [
     # fix-wave-2 eyepass round 2: S2/S6/S10 rows moved again with the
     # round-2 re-frames (S8 stays zero-row outboard at x6.8 past the
     # east rail; S9 xy unchanged).
-    ("CAM_S2", 1.4, 7.2, 85, 168),
+    ("CAM_S2", 1.9, 5.6, 85, 168),    # moved with the audit-round lens
     ("CAM_S3", -2.0, 30.0, 169, 264),
     ("CAM_S4", 4.0, 38.0, 265, 348),
     ("CAM_S6", -2.6, 8.6, 445, 528),

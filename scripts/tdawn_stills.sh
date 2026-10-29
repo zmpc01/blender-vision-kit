@@ -13,7 +13,7 @@ export RH_ANIMS=${RH_ANIMS:-/home/z/lab/RH-canvas-animations}
 OUT=output/tdawn/stills
 mkdir -p "$OUT"
 declare -A FRAMES=( [S1]=76 [S2]=126 [S3]=220 [S4]=300 [S5]=396 [S6]=470 \
-  [S7]=540 [S8]=660 [S9]=750 [S10]=860 [S11]=1002 [S12]=1044 )
+  [S7]=540 [S8]=660 [S9]=750 [S10]=860 [S11]=1008 [S12]=1044 )
 ONLY="${1:-}"
 for SID in S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12; do
   if [ -n "$ONLY" ] && [ "$ONLY" != "$SID" ]; then continue; fi

@@ -66,7 +66,12 @@ SHOTS_V3 = [
     ("S8",  625,  720, "the Master sees the Runner; holds the vault open"),
     ("S9",  721,  816, "the dive: the Runner through the sealing vault"),
     ("S10", 817,  912, "vault sealed; crowd held; the hall quiets"),
-    ("S11", 913,  1008, "pull-back: dawn light floods the empty hall"),
+    # audit-round honesty edit: the horde is HELD at the sealed vault
+    # -- the hall SETTLES (mean crowd speed 0.68 -> 0.14 m/s), it never
+    # empties (the vault seals the only exit; an empty hall would be
+    # the WRONG story). The still frame moved 1002 -> 1008 (the
+    # pull-back's very end = the most-settled moment in-window).
+    ("S11", 913,  1008, "pull-back: dawn floods the settling hall -- the surge spent, the horde held at the seal"),
     ("S12", 1009, 1080, "title frame: TERMINAL DAWN over the still hall"),
 ]
 

@@ -244,7 +244,14 @@ CLIP_SOURCE = "channel"
 # edit (the F-TD13 law). The count assert is contract-vs-cache agreement
 # (never a literal).
 CAM_KEEPOUT_R = 1.3
-CAM_KEEPOUTS = ()
+# fix-wave-2 audit round: the S10/S11 lenses moved onto the yard's
+# south lane (the bearer's dais approach) -- ground lenses INSIDE the
+# crowd's roam now carry rows (the F-TD13 law; the empty tuple predates
+# lenses that all stood outside traffic). Frames, not seconds.
+CAM_KEEPOUTS = (
+    ("CAM_S10", 1.5, -7.5, 973, 1008),
+    ("CAM_S11", 3.0, -7.0, 1009, 1044),
+)
 
 # --- the film spine (FRAMES) --------------------------------------------
 BEATS = (

@@ -188,7 +188,9 @@ def build_world(scene):
                  mats["kiosk"])
     sign_row1 = _box("TF.SignRow1", 1.2, 0.06, 0.22,
                      (3.1, 2.92, 2.52), mats["neon_mag"])
-    sign_row2 = _box("TF.SignRow2", 1.2, 0.06, 0.22,
+    # fix-wave-2 audit round: widened 1.2 -> 1.44 so the 0.30-size
+    # BOARDING word (1.49 m wide) rides INSIDE its glow strip
+    sign_row2 = _box("TF.SignRow2", 1.44, 0.06, 0.22,
                      (3.1, 2.92, 2.14), mats["sign_flip"])
     # fix-wave-2 eyepass round 3 (S2): the BOARDING word itself. The
     # bar composition read as 'blank pink rectangles' at the closer
@@ -199,7 +201,12 @@ def build_world(scene):
     import bpy
     crv = bpy.data.curves.new("TF.BoardingWord", type="FONT")
     crv.body = "BOARDING"
-    crv.size = 0.155
+    # fix-wave-2 audit round: 0.155 put the word at 5.4% of frame
+    # height from the 4.6 m lens -- the VLM could not read it
+    # ('SONIC'). 0.30 (cap ~0.21 m, width ~1.5 m = the board face)
+    # with the closer S2 lens below puts it near 17% -- a READABLE
+    # call
+    crv.size = 0.30
     crv.align_x = "CENTER"
     crv.align_y = "CENTER"
     crv.extrude = 0.015

@@ -121,18 +121,22 @@ CAMS_V1 = [
     # S9: inside the barracks strip N looking S back at the stream
     ("CAM_S9",  (0.0, 26.0, 2.6), (0.0, 26.0, 2.6), 40,
      (0.0, 12.0, 0.6), False, 0.0),
-    # S10: the bearer's final approach to the dais (fix-wave-1 re-aim:
-    # the believable 1.8 m/s retime puts him at x -6.4..-4, y -11.3..-12.5
-    # through the shot -- the old NE aim at (-9,-6) framed a cross that
-    # only existed at 13.4 m/s; this aim rides his approach line, the
-    # dais beyond. re-run the tform_camprobe S10 sheet on the next eye
-    # pass -- the round-1 cert predates the retime)
-    ("CAM_S10", (-16.0, -14.0, 1.6), (-16.0, -14.0, 1.6), 45,
-     (-5.0, -10.5, 1.1), False, 0.0),
+    # S10: the bearer's final approach to the dais (fix-wave-2 audit
+    # round: the retime-era path parked him at (-4,-12.5) -- 19 m
+    # SHORT of the dais inlay (x 8.5..11.5, y -1..1); the "at the
+    # dais" claim in the old keys was simply wrong. The re-authored
+    # march (below) now delivers him along the SOUTH lane, arriving
+    # AT the dais south edge (10, -1.8) at f1008. This lens rides the
+    # final leg from the SW: the bearer mid-frame mid-stride, the
+    # dais + drums + the Captain beyond him)
+    ("CAM_S10", (1.5, -7.5, 1.7), (1.5, -7.5, 1.7), 40,
+     (9.5, -2.2, 1.3), False, 0.0),
     # S11: the PLANTED banner + the dais (the bearer plants at f1009
-    # and holds -- round-1: the banner had EXITED frame by the title)
-    ("CAM_S11", (17.5, 4.0, 1.8), (17.5, 4.0, 1.8), 40,
-     (-3.5, -12.2, 1.6), False, 0.0),
+    # at the dais SOUTH edge and holds; the title text rides the
+    # banner cloth's own ignition material. Frame: the banner +
+    # cloth centered, the drums flanking, the Captain beyond)
+    ("CAM_S11", (3.0, -7.0, 2.2), (3.0, -7.0, 2.2), 40,
+     (10.2, -1.2, 1.9), False, 0.0),
     # S12: final aerial SW: the mark + long shadows + the departing file
     ("CAM_S12", (-20.0, -14.0, 12.0), (-20.0, -14.0, 12.0), 35,
      (2.0, 6.0, 0.0), False, 0.0),
@@ -254,7 +258,15 @@ def _heroes(scene):
         out[name] = ob
     # the BANNER: pole + cloth parented to the bearer -- the pole is
     # RAISED (round-2 probe: the cone centered at the root origin sat
-    # half-underground with the cloth at the feet)
+    # half-underground with the cloth at the feet). fix-wave-2 audit
+    # round: the cloth was a BARE grid -- bmesh grids live in the XY
+    # plane, so the cloth hung HORIZONTAL and read edge-on (a thin
+    # line) from every near-level lens -- the real reason S10/S11
+    # read 'no visible banner'. The cloth now stands VERTICAL
+    # (rx=90: the grid's normal +Z -> local -Y) and the pole's yaw
+    # is KEYED to keep the cloth facing the S10/S11 cameras (SW)
+    # through the carry and exactly at the plant (the counter-yaw
+    # law: cloth world yaw = bearer yaw + pole yaw).
     pole = bpy.data.objects.new("banner_pole",
                                 _banner_pole_mesh("banner_pole"))
     pole.location = (0.0, 0.0, 2.0)
@@ -263,6 +275,7 @@ def _heroes(scene):
     cloth = bpy.data.objects.new("banner_cloth",
                                  _banner_cloth_mesh("banner_cloth"))
     cloth.location = (0.0, 0.0, 2.3)
+    cloth.rotation_euler = (math.pi / 2, 0.0, 0.0)   # vertical, facing local -Y
     scene.collection.objects.link(cloth)
     cloth.parent = pole
     out["banner"] = cloth
@@ -511,34 +524,52 @@ def animate(ctx, start_frame=1, n_frames=None, with_crowd=None):
 
 def _kf_standard_bearer(ctx):
     """The banner march + the PLANT: waits W through the ceremony
-    (the ring holds into S7), then carries the banner across the SW
-    foreground at attention-march pace -- f720->f1008, 21.8 m over
-    12.0 s = 1.82 m/s (fix-wave-1 retime: the old 940->1008 cross
-    peaked at 13.4 m/s -- superhuman; the same waypoints now span
-    the officers' beat + the break-off + S10, intermediate keys at
-    f778/f841/f904/f956 hold every segment in the 1.8-1.9 band, the
-    dispersal column's 1.55 m/s class). PLANTS the banner at f1009
-    (the title beat) and holds through the end -- the S11 title
-    frames the planted banner against the dais. S10 (973-1008) is
-    now the final approach: the last ~2.6 m to the dais, which is
-    all a 1.8 m/s march can cover inside a 36-frame shot (CAM_S10
-    re-aimed onto the approach line, see CAMS_V1)."""
+    (the wheel + the halt + the ring hold), then carries the banner
+    across the yard along the SOUTH lane and DELIVERS IT TO THE DAIS
+    (fix-wave-2 audit round: the old retimed path ended at (-4,-12.5)
+    -- 19 m short of the dais inlay (x 8.5..11.5, y -1..1); the
+    plant happened mid-yard and the S11 title frame carried no dais.
+    The re-authored march: step-off at the HALT snap f503, the south
+    lane (-24,-10) -> (-17.5,-11.3) -> (-10,-9.8) -> (-2,-7.2) ->
+    (5.5,-4.2) -> the dais south edge (10,-1.8) at f1008 = 38 m over
+    21.0 s = 1.81 m/s, the attention-march band throughout (the
+    dispersal column's 1.55-1.9 class). The lane stays south of the
+    drill ring (r <= 8.5 around the mark; the lane's closest approach
+    is r 7.3 at (-2,-7.2)) and south of the north-streaming gap
+    column. PLANTS at f1009 facing the yard he served (west) and
+    holds through the end -- the S11 title frames the planted banner
+    against the dais + drums.)"""
     sb = ctx["heroes"]["StandardBearer"]
     _kf(sb, 1, loc=(-24.0, -10.0), rot_z=math.radians(90.0))
-    _kf(sb, 720, loc=(-24.0, -10.0), rot_z=math.radians(90.0))  # the wait ends
-    _kf(sb, 778, loc=(-20.0, -12.0), rot_z=math.radians(70.0))
-    _kf(sb, 841, loc=(-15.5, -10.5), rot_z=math.radians(90.0))  # the break-off
-    _kf(sb, 904, loc=(-11.0, -9.0), rot_z=math.radians(90.0))
-    _kf(sb, 956, loc=(-7.5, -10.75), rot_z=math.radians(110.0))
-    _kf(sb, 1008, loc=(-4.0, -12.5), rot_z=math.radians(110.0))  # at the dais
-    _kf(sb, 1020, loc=(-4.0, -12.5), rot_z=math.radians(180.0))
-    _kf(sb, 1080, loc=(-4.0, -12.5), rot_z=math.radians(180.0))
+    _kf(sb, 503, loc=(-24.0, -10.0), rot_z=math.radians(90.0))  # the halt ends the wait
+    _kf(sb, 640, loc=(-17.5, -11.3), rot_z=math.radians(80.0))
+    _kf(sb, 780, loc=(-10.0, -9.8), rot_z=math.radians(60.0))   # the break-off behind him
+    _kf(sb, 900, loc=(-2.0, -7.2), rot_z=math.radians(35.0))    # past the ring's south arc
+    _kf(sb, 970, loc=(5.5, -4.2), rot_z=math.radians(25.0))     # the final leg
+    _kf(sb, 1008, loc=(10.0, -1.8), rot_z=math.radians(25.0))   # AT the dais south edge
+    _kf(sb, 1009, loc=(10.0, -1.8), rot_z=math.radians(180.0))  # the plant: face the yard
+    _kf(sb, 1080, loc=(10.0, -1.8), rot_z=math.radians(180.0))
     _bezier(sb)
     # fix-wave-1 D2: re-derive facing from the path tangents (the
     # tdawn pattern) -- the bearer is the mover (the S10 cross); the
     # plant hold at the dais sits still and keeps its authored yaw
     import humanoid_crowd as _HC
     _HC.face_tangent(sb, min_mps=0.45)
+    # THE COUNTER-YAW LAW (fix-wave-2 audit round): the banner cloth
+    # faces local -Y (the vertical-cloth fix in _heroes); its WORLD
+    # facing = bearer yaw + pole yaw. Key the POLE so the cloth faces
+    # SW (233 deg -- the S10/S11 camera side) through the carry and
+    # exactly at the plant (bearer 180 + pole 143 = 323 -> cloth 233).
+    # During the carry face_tangent holds the bearer near 0-30 deg,
+    # so pole 295-334 keeps the cloth within ~20 deg of SW.
+    pole = sb.children[0] if sb.children else None
+    if pole is not None and pole.name == "banner_pole":
+        for f, deg in ((1, 233.0), (503, 233.0), (640, 320.0),
+                       (780, 310.0), (900, 300.0), (970, 295.0),
+                       (1008, 295.0), (1009, 143.0), (1080, 143.0)):
+            pole.rotation_euler = (0.0, 0.0, math.radians(deg))
+            pole.keyframe_insert(data_path="rotation_euler", frame=f)
+        _bezier(pole)
 
 
 def _kf_captain(ctx):
@@ -573,9 +604,12 @@ def _kf_pennants(ctx):
 
 def _kf_banner_title(ctx):
     """The title: the banner's cloth emission rises at S11 (f1009) --
-    the text 'THE DRILL' rides the banner material's emission (the
-    title card lives on the cloth; the S11 framing reads it against
-    the dais)."""
+    and THE DRILL itself rides the cloth as a converted FONT mesh
+    (the tdawn title law; fix-wave-2 audit round: the title beat
+    previously had NO word carrier -- a wordless cloth glow while
+    every sibling film carries its words). The text shares the
+    cloth's own ignition material (emission 0 -> 1.35 at f1009) so
+    the word and the cloth ignite together."""
     cloth = ctx["heroes"]["banner"]
     mat = cloth.data.materials[0] if cloth.data.materials else None
     if mat is None:
@@ -583,6 +617,31 @@ def _kf_banner_title(ctx):
                            "material")
     _em_keys(mat, [(1, 0.0), (1008, 0.0), (1009, 1.35), (1080, 1.35)])
     ctx["banner_mat"] = mat
+    # the word ON the cloth: extruded FONT -> CONVERTED MESH (glTF-
+    # safe), parented to the cloth's pole so it rides the plant, in
+    # the cloth's material (the ignition is the cloth's own keys)
+    import bpy
+    pole = cloth.parent
+    crv = bpy.data.curves.new("TF.DrillWord", type="FONT")
+    crv.body = "THE DRILL"
+    crv.size = 0.115
+    crv.align_x = "CENTER"
+    crv.align_y = "CENTER"
+    crv.extrude = 0.012
+    word = bpy.data.objects.new("TF.DrillWord", crv)
+    # on the cloth's -Y face (the cloth stands vertical facing local
+    # -Y; the S11 camera stands SW): rx=90 maps the text normal +Z ->
+    # -Y with the text upright (+Y -> +Z), no mirror
+    word.location = (0.0, -0.055, 2.30)
+    word.rotation_euler = (math.pi / 2, 0.0, 0.0)
+    bpy.context.scene.collection.objects.link(word)
+    word.parent = pole
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = word
+    word.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    word.data.materials.append(mat)
+    ctx["parts"].setdefault("title", []).append(word)
 
 
 def _kf_crane(ctx):

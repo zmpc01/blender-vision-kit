@@ -1355,7 +1355,53 @@ def _cycles_action(act):
     return act
 
 
-def bind_principals(ctx, name_clip_pairs):
+def _nl_windows(ad, acts, windows, hero_name, base_act):
+    """Sequential NLA strips for a windowed clip plan (the
+    bind_principals clip_windows surface). Each window (clip, f0, f1)
+    is a strip on ONE track; adjacent strips overlap 6 frames with
+    blend_in/out crossfades (the FROZEN-SOURCE law's short-blend
+    discipline: a long blend between cyclic gaits sweeps the source
+    through antipodes). The BASE action stays pinned on the slot as
+    the under-layer ONLY where the windows do not reach; strips are
+    REPLACE-type, so inside any window the strip owns the pose."""
+    track = ad.nla_tracks.new()
+    track.name = "clip_windows"
+    prev = None
+    for clip, f0, f1 in windows:
+        if clip in acts and acts[clip] is not base_act:
+            act = acts[clip].copy()
+            act.name = f"{clip}.{hero_name}.w{int(f0)}"
+            _cycles_action(act)
+        else:
+            act = base_act
+            base_act.name = f"{clip}.{hero_name}.w{int(f0)}"
+        strip = track.strips.new(act.name, int(f0), act)
+        strip.frame_start = int(f0)
+        strip.frame_end = int(f1)
+        strip.blend_type = 'REPLACE'
+        strip.extrapolation = 'HOLD'
+        if prev is not None:
+            # the 6-frame crossfade INTO this strip (the overlap with
+            # the previous strip's tail)
+            strip.blend_in = 6.0
+            prev.blend_out = 6.0
+        prev = strip
+    _P(f"clip windows {hero_name}: " +
+       ", ".join(f"{c}@{int(a)}-{int(b)}" for c, a, b in windows))
+
+
+def bind_principals(ctx, name_clip_pairs, clip_windows=None):
+    """clip_windows (fix-wave-2 audit round): optional
+    {name: [(clip, f0, f1), ...]} -- a WINDOWED clip plan. When a name
+    carries windows, the principal gets an NLA track with sequential
+    strips (6-frame crossfades) INSTEAD of a single pinned action: a
+    hero that must STAND in one act and WALK in another (the tmarket
+    child's lost-beat hold) can no longer moonwalk. The film exports
+    ride the glTF bake fallback (the 5.2 ACTIONS-mode KNOWN ISSUE) --
+    the bake samples the EVALUATED scene, so the NLA mix exports
+    faithfully. Windows must tile [1, film_end] or the gaps read as
+    the LAST strip's extrapolation (HOLD)."""
+    clip_windows = clip_windows or {}
     """UAL principals: ONE glTF import per hero via the vendored
     loader's _import_actor (P2-4 thin caller — no JeepRoot demand).
 
@@ -1446,7 +1492,11 @@ def bind_principals(ctx, name_clip_pairs):
             act.name = f"{clip}.{name}"
         _cycles_action(act)
         ad = arm.animation_data_create()
-        _pin_slot(ad, act)
+        windows = clip_windows.get(name)
+        if windows:
+            _nl_windows(ad, acts, windows, name, act)
+        else:
+            _pin_slot(ad, act)
         # D1-REV2: per-hero unique bone names (prefix h<name>:) + the
         # vgroup mirror — the same GLB name-binding law as the crowd.
         # Bind FIRST (above), rename SECOND (the s20 remap law).

@@ -105,8 +105,13 @@ CAMS_V3 = [
     # S10: the reunion (low from the south walk looking NE -- the s28
     # eye gate: the old SE vantage buried the child in the apron blob;
     # this isolates the child + the counter + the vendor behind)
-    ("CAM_S10", (17.2, -4.9, 1.45), (17.2, -4.9, 1.45), 38,
-     (20.1, -1.4, 0.9), False, 0.0),
+    # fix-wave-2 audit round: the reunion verified reading as an
+    # embrace, but the frame carried NO food-court context (a plain
+    # wall behind). The counter + sodium pool + awning live at
+    # (20, -2.6): aim ONTO the counter face so the reunion reads AT
+    # the serving counter (the intent's 'at the food court')
+    ("CAM_S10", (16.8, -5.6, 1.9), (16.8, -5.6, 1.9), 38,
+     (20.0, -2.1, 1.0), False, 0.0),
     # S11: the pull-back crane (the s28 eye gate: the old loc0 sat
     # BEHIND the 3.4m south shopfront -- black frame; start ABOVE it
     # and rise; keyed in _kf_crane)
@@ -571,9 +576,19 @@ def _humanoid_layer(ctx):
     # Sprint), and the Child's scurry is a Walk at 0.78 scale (the
     # design doc's named exception). The cycles+slot+copy fixes
     # apply inside bind_principals either way
+    # fix-wave-2 audit round: the child's WINDOWED clip plan -- she
+    # STANDS lost through the south-walk beat (the look-around yaw
+    # keys f300/f500 + the hold to f710 were playing under Walk_Loop
+    # = 33 s of moonwalk; the VLM read 'walking, not lost'), walks
+    # only the scurry east (f772-894), then stands at the counter
+    # (the reunion hold). 6-frame crossfades (the short-blend law)
     pr = HC.bind_principals(ctx, {
         "Runner": ("Jog_Fwd_Loop", tm_runner_scale, None),
-        "Child": ("Walk_Loop", tm_child_scale, None)})
+        "Child": ("Idle_Loop", tm_child_scale, None)},
+        clip_windows={"Child": [
+            ("Idle_Loop", 1, 778),
+            ("Walk_Loop", 772, 894),
+            ("Idle_Loop", 888, 1080)]})
     ctx["humanoid_principals"] = HC.ride_principals(ctx, pr, {
         "Runner": tm_runner_teal, "Child": tm_child_amber})
 

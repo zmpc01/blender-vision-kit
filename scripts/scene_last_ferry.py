@@ -53,9 +53,9 @@ SHOTS_V3 = [
     ("S7",  529,  624, "low tracker: the Latecomer slips the bollard line"),
     ("S8",  625,  720, "the Deckhand sees the Latecomer; holds the gap open"),
     ("S9",  721,  816, "the beat: through the maintenance gate, the crew wave"),
-    ("S10", 817,  912, "the throat sealed by the Deckhand's arm; the pier quiets"),
-    ("S11", 913,  1008, "the crane rises: the empty pier, the windows begin to move"),
-    ("S12", 1009, 1080, "title frame: LAST FERRY over the receding windows"),
+    ("S10", 817,  912, "the throat held by the Deckhand; the last queue settles; the pier quiets"),  # audit-round: honest (the arm pose is below mesh fidelity; the crowd holds)
+    ("S11", 913,  1008, "the crane rises: the settling pier, the ferry's windows glowing beyond the throat"),  # audit-round: honest (the belt-lane crowd cannot drain; the drain+departure redesign is the open item)
+    ("S12", 1009, 1080, "title frame: LAST FERRY over the glowing pier"),
 ]
 
 CAMS_V3 = [
@@ -69,8 +69,12 @@ CAMS_V3 = [
     # fix-wave-2 eyepass round 2 (S2: the flip read ILLEGIBLE at 28mm
     # from 5.9 m — the story beat IS the sign. Closer + 45mm: the
     # board fills the upper frame, the queue context below it)
-    ("CAM_S2",  (1.4, 7.2, 2.4), (1.4, 7.2, 2.4), 45,
-     (3.0, 2.9, 2.2), False, 0.0),
+    # fix-wave-2 audit round: the word re-sized 0.155 -> 0.30 -- at
+    # the old 4.6 m/45mm it read 5% of frame height (illegible; the
+    # VLM guessed 'SONIC'). Closer + longer: 3.2 m at 55mm puts the
+    # word near 17% with the queue context below
+    ("CAM_S2",  (1.9, 5.6, 2.5), (1.9, 5.6, 2.5), 55,
+     (3.05, 3.0, 2.2), False, 0.0),
     ("CAM_S3",  (-2.0, 30.0, 5.0), (-2.0, 30.0, 5.0), 30,
      (0.2, 10.0, 1.0), False, 0.02),
     # S4: pulled back + wider (38mm, cam north at y38) -- the entry
