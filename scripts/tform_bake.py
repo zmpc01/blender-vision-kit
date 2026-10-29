@@ -970,8 +970,10 @@ def stage_finish(C, out, t0):
           f"formation film -- the sfx spine is authored)")
     digest = bridge.to_previz_cache(
         cache_path, scene, str(out / "cache_v6.npz"),
-        keepouts=[],                       # the empty scaffold (the
-        keepout_radius=C.CAM_KEEPOUT_R,    # camprobe wave adds rows)
+        # fix-wave-2 audit round: the S10/S11 lenses moved onto the
+        # yard's south lane -- the keepout rows are now contract-born
+        keepouts=tuple(C.CAM_KEEPOUTS),
+        keepout_radius=C.CAM_KEEPOUT_R,
         clamp=True,
         clip_source=C.CLIP_SOURCE,         # "channel" (RQ10)
     )
